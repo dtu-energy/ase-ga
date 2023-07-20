@@ -46,6 +46,7 @@ class AddAtoms:
         win.add([_('Add:'), combobox,
                  ui.Button(_('File ...'), callback=choose_file)])
         combobox.widget.bind('<Return>', lambda e: self.add())
+        combobox.widget.bind('<KP_Enter>', lambda e: self.add())
 
         combobox.value = default
         self.combobox = combobox

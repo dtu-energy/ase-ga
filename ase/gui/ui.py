@@ -225,6 +225,7 @@ class SpinBox(Widget):
     def create(self, parent):
         self.widget = self.creator(parent)
         self.widget.bind('<Return>', lambda event: self.callback())
+        self.widget.bind('<KP_Enter>', lambda event: self.callback())
         self.value = self.initial
         return self.widget
 
@@ -270,6 +271,7 @@ class Entry(Widget):
         self.value = self.initial
         if self.callback:
             self.entry.bind('<Return>', self.callback)
+            self.entry.bind('<KP_Enter>', self.callback)
         return self.entry
 
     @property
