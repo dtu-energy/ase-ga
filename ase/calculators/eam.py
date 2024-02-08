@@ -231,7 +231,7 @@ Notes/Issues
 End EAM Interface Documentation
     """
 
-    implemented_properties = ['energy', 'forces']
+    implemented_properties = ['energy', 'free_energy', 'forces']
 
     default_parameters = dict(
         skin=1.0,
@@ -781,6 +781,7 @@ End EAM Interface Documentation
 
         self.results['energy_components'] = components
         self.results['energy'] = energy
+        self.results['free_energy'] = energy
 
     def calculate_forces(self, atoms):
         # calculate the forces based on derivatives of the three EAM functions
