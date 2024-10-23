@@ -14,56 +14,56 @@ from ase.cell import Cell
 from ase.units import Bohr
 
 no_positions_error = (
-    "no positions can be read from this onetep output "
-    "if you wish to use ASE to read onetep outputs "
-    "please use uppercase block positions in your calculations"
+    'no positions can be read from this onetep output '
+    'if you wish to use ASE to read onetep outputs '
+    'please use uppercase block positions in your calculations'
 )
 
-unable_to_read = "unable to read this onetep output file, ending"
+unable_to_read = 'unable to read this onetep output file, ending'
 
 # taken from onetep source code,
 # does not seem to be from any known NIST data
-units = {"Hartree": 27.2116529, "Bohr": 1 / 1.889726134583548707935}
+units = {'Hartree': 27.2116529, 'Bohr': 1 / 1.889726134583548707935}
 
 # Want to add a functionality? add a global constant below
 ONETEP_START = re.compile(
-    r"(?i)^\s*\|\s*Linear-Scaling\s*Ab\s*"
-    r"Initio\s*Total\s*Energy\s*Program\s*\|\s*$"
+    r'(?i)^\s*\|\s*Linear-Scaling\s*Ab\s*'
+    r'Initio\s*Total\s*Energy\s*Program\s*\|\s*$'
 )
-ONETEP_STOP = re.compile(r"(?i)^\s*-+\s*TIMING\s*INFORMATION\s*-+\s*$")
+ONETEP_STOP = re.compile(r'(?i)^\s*-+\s*TIMING\s*INFORMATION\s*-+\s*$')
 ONETEP_TOTAL_ENERGY = re.compile(
-    r"(?i)^\s*\|\s*\*{3}\s*NGWF\s*" r"optimisation\s*converged\s*\*{3}\s*\|\s*$"
+    r'(?i)^\s*\|\s*\*{3}\s*NGWF\s*' r'optimisation\s*converged\s*\*{3}\s*\|\s*$'
 )
-ONETEP_FORCE = re.compile(r"(?i)^\s*\*+\s*Forces\s*\*+\s*$")
-ONETEP_MULLIKEN = re.compile(r"(?i)^\s*Mulliken\s*Atomic\s*Populations\s*$")
-ONETEP_SPIN = re.compile(r"(?i)^\s*Down\s*spin\s*density")
-ONETEP_POSITION = re.compile(r"(?i)^\s*Cell\s*Contents\s*$")
+ONETEP_FORCE = re.compile(r'(?i)^\s*\*+\s*Forces\s*\*+\s*$')
+ONETEP_MULLIKEN = re.compile(r'(?i)^\s*Mulliken\s*Atomic\s*Populations\s*$')
+ONETEP_SPIN = re.compile(r'(?i)^\s*Down\s*spin\s*density')
+ONETEP_POSITION = re.compile(r'(?i)^\s*Cell\s*Contents\s*$')
 ONETEP_FIRST_POSITION = re.compile(
-    r"^\s*%BLOCK\s*POSITIONS\s*_?\s*(ABS|FRAC)\s*:?\s*([*#!].*)?$"
+    r'^\s*%BLOCK\s*POSITIONS\s*_?\s*(ABS|FRAC)\s*:?\s*([*#!].*)?$'
 )
 ONETEP_WRONG_FIRST_POSITION = re.compile(
-    r"^\s*%block\s*positions\s*_?\s*(abs|frac)\s*:?\s*([*#!].*)?$"
+    r'^\s*%block\s*positions\s*_?\s*(abs|frac)\s*:?\s*([*#!].*)?$'
 )
 ONETEP_RESUMING_GEOM = re.compile(
-    r"(?i)^\s*<{16}\s*Resuming\s*previous"
-    r"\s*ONETEP\s*Geometry\s*Optimisation\s*>{16}\s*$"
+    r'(?i)^\s*<{16}\s*Resuming\s*previous'
+    r'\s*ONETEP\s*Geometry\s*Optimisation\s*>{16}\s*$'
 )
 
-ONETEP_ATOM_COUNT = re.compile(r"(?i)^\s*Totals\s*:\s*(\d+\s*)*$")
-ONETEP_IBFGS_ITER = re.compile(r"(?i)^\s*BFGS\s*:\s*starting\s*iteration")
-ONETEP_IBFGS_IMPROVE = re.compile(r"(?i)^\s*BFGS\s*:\s*improving\s*iteration")
+ONETEP_ATOM_COUNT = re.compile(r'(?i)^\s*Totals\s*:\s*(\d+\s*)*$')
+ONETEP_IBFGS_ITER = re.compile(r'(?i)^\s*BFGS\s*:\s*starting\s*iteration')
+ONETEP_IBFGS_IMPROVE = re.compile(r'(?i)^\s*BFGS\s*:\s*improving\s*iteration')
 ONETEP_START_GEOM = re.compile(
-    r"(?i)^<+\s*Starting\s*ONETEP\s*Geometry\s*Optimisation\s*>+$"
+    r'(?i)^<+\s*Starting\s*ONETEP\s*Geometry\s*Optimisation\s*>+$'
 )
-ONETEP_END_GEOM = re.compile(r"(?i)^\s*BFGS\s*:\s*Final\s*Configuration:\s*$")
+ONETEP_END_GEOM = re.compile(r'(?i)^\s*BFGS\s*:\s*Final\s*Configuration:\s*$')
 
-ONETEP_SPECIES = re.compile(r"(?i)^\s*%BLOCK\s*SPECIES\s*:?\s*([*#!].*)?$")
+ONETEP_SPECIES = re.compile(r'(?i)^\s*%BLOCK\s*SPECIES\s*:?\s*([*#!].*)?$')
 
 ONETEP_FIRST_CELL = re.compile(
-    r"(?i)^\s*%BLOCK\s*LATTICE\s*_?\s*CART\s*:?\s*([*#!].*)?$"
+    r'(?i)^\s*%BLOCK\s*LATTICE\s*_?\s*CART\s*:?\s*([*#!].*)?$'
 )
 ONETEP_STRESS_CELL = re.compile(
-    r"(?i)^\s*stress_calculation:\s*cell\s*geometry\s*$"
+    r'(?i)^\s*stress_calculation:\s*cell\s*geometry\s*$'
 )
 
 
@@ -77,10 +77,10 @@ def get_onetep_keywords(path):
     # If there is an include file, the entire
     # file keyword's will be included in the dict
     # and the include_file keyword will be deleted
-    if "include_file" in results["keywords"]:
-        warnings.warn("include_file will be deleted from the dict")
-        del results["keywords"]["include_file"]
-    return results["keywords"]
+    if 'include_file' in results['keywords']:
+        warnings.warn('include_file will be deleted from the dict')
+        del results['keywords']['include_file']
+    return results['keywords']
 
 
 def read_onetep_in(fd, **kwargs):
@@ -130,7 +130,7 @@ def read_onetep_in(fd, **kwargs):
         """
         new_lines = []
         for line in lines:
-            sep = re.split(r"[!#]", line.strip())[0]
+            sep = re.split(r'[!#]', line.strip())[0]
             if sep:
                 new_lines.append(sep)
         return new_lines
@@ -151,109 +151,109 @@ def read_onetep_in(fd, **kwargs):
     # Main loop reading the input
     for n, line in enumerate(fdi_lines):
         line_lower = line.lower()
-        if re.search(r"^\s*%block", line_lower):
+        if re.search(r'^\s*%block', line_lower):
             block_start = n + 1
-            if re.search(r"lattice_cart$", line_lower):
-                if re.search(r"^\s*ang\s*$", fdi_lines[block_start]):
-                    cell = np.loadtxt(fdi_lines[n + 2: n + 5])
+            if re.search(r'lattice_cart$', line_lower):
+                if re.search(r'^\s*ang\s*$', fdi_lines[block_start]):
+                    cell = np.loadtxt(fdi_lines[n + 2 : n + 5])
                 else:
-                    cell = np.loadtxt(fdi_lines[n + 1: n + 4])
+                    cell = np.loadtxt(fdi_lines[n + 1 : n + 4])
                     cell *= Bohr
 
         if not block_start:
-            if "devel_code" in line_lower:
-                warnings.warn("devel_code is not supported")
+            if 'devel_code' in line_lower:
+                warnings.warn('devel_code is not supported')
                 continue
             # Splits line on any valid onetep separator
-            sep = re.split(r"[:=\s]+", line)
-            keywords[sep[0]] = " ".join(sep[1:])
+            sep = re.split(r'[:=\s]+', line)
+            keywords[sep[0]] = ' '.join(sep[1:])
             # If include_file is used, we open the included file
             # and insert it in the current fdi_lines...
             # ONETEP does not work with cascade
             # and this SHOULD NOT work with cascade
-            if re.search(r"^\s*include_file$", sep[0]):
-                name = sep[1].replace("'", "")
-                name = name.replace('"', "")
+            if re.search(r'^\s*include_file$', sep[0]):
+                name = sep[1].replace("'", '')
+                name = name.replace('"', '')
                 new_path = fd_parent / name
                 for path in include_files:
                     if new_path.samefile(path):
-                        raise ValueError("invalid/recursive include_file")
+                        raise ValueError('invalid/recursive include_file')
                 new_fd = open(new_path)
                 new_lines = new_fd.readlines()
                 new_lines = clean_lines(new_lines)
                 for include_line in new_lines:
-                    sep = re.split(r"[:=\s]+", include_line)
-                    if re.search(r"^\s*include_file$", sep[0]):
-                        raise ValueError("nested include_file")
+                    sep = re.split(r'[:=\s]+', include_line)
+                    if re.search(r'^\s*include_file$', sep[0]):
+                        raise ValueError('nested include_file')
                 fdi_lines[:] = (
-                    fdi_lines[: n + 1] + new_lines + fdi_lines[n + 1:]
+                    fdi_lines[: n + 1] + new_lines + fdi_lines[n + 1 :]
                 )
                 include_files.append(new_path)
                 continue
 
-        if re.search(r"^\s*%endblock", line_lower):
-            if re.search(r"\s*positions_", line_lower):
-                head = re.search(r"(?i)^\s*(\S*)\s*$", fdi_lines[block_start])
-                head = head.group(1).lower() if head else ""
-                conv = 1 if head == "ang" else units["Bohr"]
+        if re.search(r'^\s*%endblock', line_lower):
+            if re.search(r'\s*positions_', line_lower):
+                head = re.search(r'(?i)^\s*(\S*)\s*$', fdi_lines[block_start])
+                head = head.group(1).lower() if head else ''
+                conv = 1 if head == 'ang' else units['Bohr']
                 # Skip one line if head is True
-                to_read = fdi_lines[block_start + int(bool(head)): n]
+                to_read = fdi_lines[block_start + int(bool(head)) : n]
                 positions = np.loadtxt(to_read, usecols=(1, 2, 3))
                 positions *= conv
-                symbols = np.loadtxt(to_read, usecols=(0), dtype="str")
-                if re.search(r".*frac$", line_lower):
+                symbols = np.loadtxt(to_read, usecols=(0), dtype='str')
+                if re.search(r'.*frac$', line_lower):
                     fractional = True
-            elif re.search(r"^\s*%endblock\s*species$", line_lower):
+            elif re.search(r'^\s*%endblock\s*species$', line_lower):
                 els = fdi_lines[block_start:n]
                 species = {}
                 for el in els:
                     sep = el.split()
                     species[sep[0]] = sep[1]
                 to_read = [i.strip() for i in fdi_lines[block_start:n]]
-                keywords["species"] = to_read
-            elif re.search(r"lattice_cart$", line_lower):
+                keywords['species'] = to_read
+            elif re.search(r'lattice_cart$', line_lower):
                 pass
             else:
                 to_read = [i.strip() for i in fdi_lines[block_start:n]]
-                block_title = line_lower.replace("%endblock", "").strip()
+                block_title = line_lower.replace('%endblock', '').strip()
                 keywords[block_title] = to_read
             block_start = 0
 
     # We don't need a fully valid onetep
     # input to read the keywords, just
     # the keywords
-    if kwargs.get("only_keywords", False):
-        return {"keywords": keywords}
+    if kwargs.get('only_keywords', False):
+        return {'keywords': keywords}
     # Necessary if we have only one atom
     # Check if the cell is valid (3D)
     if not cell.any(axis=1).all():
-        raise ValueError("invalid cell specified")
+        raise ValueError('invalid cell specified')
 
     if positions is False:
-        raise ValueError("invalid position specified")
+        raise ValueError('invalid position specified')
 
     if symbols is False:
-        raise ValueError("no symbols found")
+        raise ValueError('no symbols found')
 
     positions = positions.reshape(-1, 3)
     symbols = symbols.reshape(-1)
     tags = []
-    info = {"onetep_species": []}
+    info = {'onetep_species': []}
     for symbol in symbols:
-        label = symbol.replace(species[symbol], "")
+        label = symbol.replace(species[symbol], '')
         if label.isdigit():
             tags.append(int(label))
         else:
             tags.append(0)
-        info["onetep_species"].append(symbol)
+        info['onetep_species'].append(symbol)
     atoms = Atoms(
         [species[i] for i in symbols], cell=cell, pbc=True, tags=tags, info=info
     )
     if fractional:
-        atoms.set_scaled_positions(positions / units["Bohr"])
+        atoms.set_scaled_positions(positions / units['Bohr'])
     else:
         atoms.set_positions(positions)
-    results = {"atoms": atoms, "keywords": keywords}
+    results = {'atoms': atoms, 'keywords': keywords}
     return results
 
 
@@ -261,14 +261,14 @@ def write_onetep_in(
     fd,
     atoms,
     edft=False,
-    xc="PBE",
+    xc='PBE',
     ngwf_count=-1,
     ngwf_radius=9.0,
     keywords={},
     pseudopotentials={},
-    pseudo_path=".",
+    pseudo_path='.',
     pseudo_suffix=None,
-    **kwargs
+    **kwargs,
 ):
     """
     Write a single ONETEP input.
@@ -342,15 +342,15 @@ def write_onetep_in(
         pseudopotentials in pseudo_path.
     """
 
-    label = kwargs.get("label", "onetep")
+    label = kwargs.get('label', 'onetep')
     try:
-        directory = kwargs.get("directory", Path(dirname(fd.name)))
+        directory = kwargs.get('directory', Path(dirname(fd.name)))
     except AttributeError:
-        directory = "."
-    autorestart = kwargs.get("autorestart", False)
+        directory = '.'
+    autorestart = kwargs.get('autorestart', False)
     elements = np.array(atoms.symbols)
     tags = np.array(atoms.get_tags())
-    species_maybe = atoms.info.get("onetep_species", False)
+    species_maybe = atoms.info.get('onetep_species', False)
     #  We look if the atom.info contains onetep species information
     # If it does, we use it, as it might contains character
     #  which are not allowed in ase tags, if not we fall back
@@ -361,7 +361,7 @@ def write_onetep_in(
         else:
             species = elements
     else:
-        formatted_tags = np.array(["" if i == 0 else str(i) for i in tags])
+        formatted_tags = np.array(['' if i == 0 else str(i) for i in tags])
         species = np.char.add(elements, formatted_tags)
     numbers = np.array(atoms.numbers)
     tmp = np.argsort(species)
@@ -385,7 +385,7 @@ def write_onetep_in(
     elif isinstance(ngwf_count, dict):
         pass
     else:
-        raise TypeError("ngwf_count can only be int|list|dict")
+        raise TypeError('ngwf_count can only be int|list|dict')
 
     if isinstance(ngwf_radius, float):
         ngwf_radius = dict(zip(u_species, [ngwf_radius] * n_sp))
@@ -394,77 +394,77 @@ def write_onetep_in(
     elif isinstance(ngwf_radius, dict):
         pass
     else:
-        raise TypeError("ngwf_radius can only be float|list|dict")
+        raise TypeError('ngwf_radius can only be float|list|dict')
 
-    pp_files = re.sub("'|\"", "", keywords.get("pseudo_path", pseudo_path))
-    pp_files = Path(pp_files).glob("*")
+    pp_files = re.sub('\'|"', '', keywords.get('pseudo_path', pseudo_path))
+    pp_files = Path(pp_files).glob('*')
     pp_files = [i for i in pp_files if i.is_file()]
 
     if pseudo_suffix:
         common_suffix = [pseudo_suffix]
     else:
-        common_suffix = [".usp", ".recpot", ".upf", ".paw", ".psp", ".pspnc"]
+        common_suffix = ['.usp', '.recpot', '.upf', '.paw', '.psp', '.pspnc']
 
-    if keywords.get("species_pot", False):
-        pp_list = keywords["species_pot"]
+    if keywords.get('species_pot', False):
+        pp_list = keywords['species_pot']
     elif isinstance(pseudopotentials, dict):
         pp_list = []
         for idx, el in enumerate(u_species):
             if el in pseudopotentials:
-                pp_list.append(f"{el} {pseudopotentials[el]}")
+                pp_list.append(f'{el} {pseudopotentials[el]}')
             else:
                 for i in pp_files:
-                    reg_el_candidate = re.split(r"[-_.:= ]+", i.stem)[0]
+                    reg_el_candidate = re.split(r'[-_.:= ]+', i.stem)[0]
                     if (
                         elements[idx] == reg_el_candidate.title()
                         and i.suffix.lower() in common_suffix
                     ):
-                        pp_list.append(f"{el} {i.name}")
+                        pp_list.append(f'{el} {i.name}')
     else:
-        raise TypeError("pseudopotentials object can only be dict")
+        raise TypeError('pseudopotentials object can only be dict')
 
     default_species = []
     for idx, el in enumerate(u_species):
-        tmp = ""
-        tmp += u_species[idx] + " " + elements[idx] + " "
-        tmp += str(numbers[idx]) + " "
+        tmp = ''
+        tmp += u_species[idx] + ' ' + elements[idx] + ' '
+        tmp += str(numbers[idx]) + ' '
         try:
-            tmp += str(ngwf_count[el]) + " "
+            tmp += str(ngwf_count[el]) + ' '
         except KeyError:
-            tmp += str(ngwf_count[elements[idx]]) + " "
+            tmp += str(ngwf_count[elements[idx]]) + ' '
         try:
             tmp += str(ngwf_radius[el])
         except KeyError:
             tmp += str(ngwf_radius[elements[idx]])
         default_species.append(tmp)
 
-    positions_abs = ["ang"]
+    positions_abs = ['ang']
     for s, p in zip(species, atoms.get_positions()):
-        line = "{s:>5} {0:>12.6f} {1:>12.6f} {2:>12.6f}".format(s=s, *p)
+        line = '{s:>5} {0:>12.6f} {1:>12.6f} {2:>12.6f}'.format(s=s, *p)
         positions_abs.append(line)
 
-    lattice_cart = ["ang"]
+    lattice_cart = ['ang']
     for axis in atoms.get_cell():
-        line = "{:>16.8f} {:>16.8f} {:>16.8f}".format(*axis)
+        line = '{:>16.8f} {:>16.8f} {:>16.8f}'.format(*axis)
         lattice_cart.append(line)
 
     # Default keywords if not provided by the user,
     # most of them are ONETEP default, except write_forces
     # which is always turned on.
     default_keywords = {
-        "xc_functional": xc,
-        "edft": edft,
-        "cutoff_energy": 20,
-        "paw": False,
-        "task": "singlepoint",
-        "output_detail": "normal",
-        "species": default_species,
-        "pseudo_path": pseudo_path,
-        "species_pot": pp_list,
-        "positions_abs": positions_abs,
-        "lattice_cart": lattice_cart,
-        "write_forces": True,
-        "forces_output_detail": "verbose",
+        'xc_functional': xc,
+        'edft': edft,
+        'cutoff_energy': 20,
+        'paw': False,
+        'task': 'singlepoint',
+        'output_detail': 'normal',
+        'species': default_species,
+        'pseudo_path': pseudo_path,
+        'species_pot': pp_list,
+        'positions_abs': positions_abs,
+        'lattice_cart': lattice_cart,
+        'write_forces': True,
+        'forces_output_detail': 'verbose',
     }
 
     # Main loop, fill the keyword dictionary
@@ -477,11 +477,11 @@ def write_onetep_in(
     # If autorestart is True, we look for restart files,
     # and turn on relevant keywords...
     if autorestart:
-        keywords["read_denskern"] = isfile(directory / (label + ".dkn"))
-        keywords["read_tightbox_ngwfs"] = isfile(
-            directory / (label + ".tightbox_ngwfs")
+        keywords['read_denskern'] = isfile(directory / (label + '.dkn'))
+        keywords['read_tightbox_ngwfs'] = isfile(
+            directory / (label + '.tightbox_ngwfs')
         )
-        keywords["read_hamiltonian"] = isfile(directory / (label + ".ham"))
+        keywords['read_hamiltonian'] = isfile(directory / (label + '.ham'))
 
     # If not EDFT, hamiltonian is irrelevant.
     # print(keywords.get('edft', False))
@@ -496,51 +496,51 @@ def write_onetep_in(
     for key, value in keywords.items():
         if isinstance(value, (list, np.ndarray)):
             if not all(isinstance(_, str) for _ in value):
-                raise TypeError("list values for blocks must be strings only")
-            block_lines.append(("\n%block " + key).upper())
+                raise TypeError('list values for blocks must be strings only')
+            block_lines.append(('\n%block ' + key).upper())
             block_lines.extend(value)
-            block_lines.append(("%endblock " + key).upper())
+            block_lines.append(('%endblock ' + key).upper())
         elif isinstance(value, bool):
-            lines.append(str(key) + " : " + str(value)[0])
+            lines.append(str(key) + ' : ' + str(value)[0])
         elif isinstance(value, (str, int, float)):
-            lines.append(str(key) + " : " + str(value))
+            lines.append(str(key) + ' : ' + str(value))
         else:
-            raise TypeError("keyword values must be list|str|bool")
+            raise TypeError('keyword values must be list|str|bool')
     input_header = (
-        "!"
-        + "-" * 78
-        + "!\n"
-        + "!"
-        + "-" * 33
-        + " INPUT FILE "
-        + "-" * 33
-        + "!\n"
-        + "!"
-        + "-" * 78
-        + "!\n\n"
+        '!'
+        + '-' * 78
+        + '!\n'
+        + '!'
+        + '-' * 33
+        + ' INPUT FILE '
+        + '-' * 33
+        + '!\n'
+        + '!'
+        + '-' * 78
+        + '!\n\n'
     )
 
     input_footer = (
-        "\n!"
-        + "-" * 78
-        + "!\n"
-        + "!"
-        + "-" * 32
-        + " END OF INPUT "
-        + "-" * 32
-        + "!\n"
-        + "!"
-        + "-" * 78
-        + "!"
+        '\n!'
+        + '-' * 78
+        + '!\n'
+        + '!'
+        + '-' * 32
+        + ' END OF INPUT '
+        + '-' * 32
+        + '!\n'
+        + '!'
+        + '-' * 78
+        + '!'
     )
 
     fd.write(input_header)
-    fd.writelines(line + "\n" for line in lines)
-    fd.writelines(b_line + "\n" for b_line in block_lines)
+    fd.writelines(line + '\n' for line in lines)
+    fd.writelines(b_line + '\n' for b_line in block_lines)
 
-    if "devel_code" in kwargs:
-        warnings.warn("writing devel code as it is, at the end of the file")
-        fd.writelines("\n" + line for line in kwargs["devel_code"])
+    if 'devel_code' in kwargs:
+        warnings.warn('writing devel code as it is, at the end of the file')
+        fd.writelines('\n' + line for line in kwargs['devel_code'])
 
     fd.write(input_footer)
 
@@ -551,7 +551,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
 
     !!!
     This function will be used by ASE when performing
-    various workflows (Opt, NEB...)
+    various workflows (opt, NEB...)
     !!!
 
     Parameters
@@ -573,7 +573,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
     fdo_lines = fd.readlines()
     n_lines = len(fdo_lines)
 
-    freg = re.compile(r"-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+\-]?\d+)?")
+    freg = re.compile(r'-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+\-]?\d+)?')
 
     # Used to store index of important elements
     output = {
@@ -609,7 +609,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
     ]
 
     # Find all matches append them to the dictionary
-    breg = "|".join([i.pattern.replace("(?i)", "") for i in output.keys()])
+    breg = '|'.join([i.pattern.replace('(?i)', '') for i in output.keys()])
     prematch = {}
 
     for idx, line in enumerate(fdo_lines):
@@ -650,7 +650,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
     core_keywords = np.sort(core_keywords)
 
     i_first_positions = output[ONETEP_FIRST_POSITION]
-    is_frac_positions = [i for i in i_first_positions if "FRAC" in fdo_lines[i]]
+    is_frac_positions = [i for i in i_first_positions if 'FRAC' in fdo_lines[i]]
 
     # In onetep species can have arbritary names,
     # We want to map them to real element names
@@ -695,15 +695,15 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
             if past < idx < future:
                 if past in onetep_start:
                     if future in ibfgs_start or future in ibfgs_resume:
-                        return "resume"
+                        return 'resume'
                     continue
                 # Are we in start or resume or improve
                 if past in ibfgs_start:
-                    return "start"
+                    return 'start'
                 elif past in ibfgs_resume:
-                    return "resume"
+                    return 'resume'
                 elif past in ibfgs_improve:
-                    return "improve"
+                    return 'improve'
 
         return False
 
@@ -739,12 +739,12 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
         if has_bfgs:
             which_bfgs = where_in_bfgs(past)
 
-            if which_bfgs == "resume":
+            if which_bfgs == 'resume':
                 to_del.append(idx)
                 continue
 
             if not improving:
-                if which_bfgs == "improve":
+                if which_bfgs == 'improve':
                     to_del.append(idx)
                     continue
 
@@ -763,7 +763,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
 
     # Bunch of methods to grep properties from output.
     def parse_cell(idx):
-        a, b, c = np.loadtxt([fdo_lines[idx + 2]]) * units["Bohr"]
+        a, b, c = np.loadtxt([fdo_lines[idx + 2]]) * units['Bohr']
         al, be, ga = np.loadtxt([fdo_lines[idx + 4]])
         cell = Cell.fromcellpar([a, b, c, al, be, ga])
         return np.array(cell)
@@ -774,7 +774,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
         while idx + n < len(fdo_lines):
             if not fdo_lines[idx + n].strip():
                 tmp_charges = np.loadtxt(
-                    fdo_lines[idx + offset: idx + n - 1], usecols=3
+                    fdo_lines[idx + offset : idx + n - 1], usecols=3
                 )
                 return np.reshape(tmp_charges, -1)
             n += 1
@@ -788,9 +788,9 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
     def parse_energy(idx):
         n = 0
         while idx + n < len(fdo_lines):
-            if re.search(r"^\s*\|\s*Total\s*:.*\|\s*$", fdo_lines[idx + n]):
+            if re.search(r'^\s*\|\s*Total\s*:.*\|\s*$', fdo_lines[idx + n]):
                 energy_str = re.search(freg, fdo_lines[idx + n]).group(0)
-                return float(energy_str) * units["Hartree"]
+                return float(energy_str) * units['Hartree']
             n += 1
         return None
 
@@ -798,14 +798,14 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
         n = 0
         fermi_levels = None
         while idx + n < len(fdo_lines):
-            if "Fermi_level" in fdo_lines[idx + n]:
-                tmp = "\n".join(fdo_lines[idx + n: idx + n + 1])
+            if 'Fermi_level' in fdo_lines[idx + n]:
+                tmp = '\n'.join(fdo_lines[idx + n : idx + n + 1])
                 fermi_level = re.findall(freg, tmp)
                 fermi_levels = [
-                    float(i) * units["Hartree"] for i in fermi_level
+                    float(i) * units['Hartree'] for i in fermi_level
                 ]
             if re.search(
-                r"^\s*<{5}\s*CALCULATION\s*SUMMARY\s*>{5}\s*$",
+                r'^\s*<{5}\s*CALCULATION\s*SUMMARY\s*>{5}\s*$',
                 fdo_lines[idx + n],
             ):
                 return fermi_levels
@@ -821,12 +821,12 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
             ):
                 offset += 1
             if re.search(
-                r"(?i)^\s*%ENDBLOCK\s*LATTICE"
-                r"\s*_?\s*CART\s*:?\s*([*#!].*)?$",
+                r'(?i)^\s*%ENDBLOCK\s*LATTICE'
+                r'\s*_?\s*CART\s*:?\s*([*#!].*)?$',
                 fdo_lines[idx + n],
             ):
-                cell = np.loadtxt(fdo_lines[idx + offset: idx + n])
-                return cell if offset == 2 else cell * units["Bohr"]
+                cell = np.loadtxt(fdo_lines[idx + offset : idx + n])
+                return cell if offset == 2 else cell * units['Bohr']
             n += 1
         return None
 
@@ -838,13 +838,13 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
                 r'(?i)^\s*"?\s*ang\s*"?\s*([*#!].*)?$', fdo_lines[idx + n]
             ):
                 offset += 1
-            if re.search(r"^\s*%ENDBLOCK\s*POSITIONS_", fdo_lines[idx + n]):
-                if "FRAC" in fdo_lines[idx + n]:
+            if re.search(r'^\s*%ENDBLOCK\s*POSITIONS_', fdo_lines[idx + n]):
+                if 'FRAC' in fdo_lines[idx + n]:
                     conv_factor = 1
                 else:
-                    conv_factor = units["Bohr"]
+                    conv_factor = units['Bohr']
                 tmp = np.loadtxt(
-                    fdo_lines[idx + offset: idx + n], dtype="str"
+                    fdo_lines[idx + offset : idx + n], dtype='str'
                 ).reshape(-1, 4)
                 els = np.char.array(tmp[:, 0])
                 if offset == 2:
@@ -861,7 +861,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
                     )
                     atoms = Atoms(real_elements, pos)
                     atoms.set_tags(tags)
-                    atoms.info["onetep_species"] = list(els)
+                    atoms.info['onetep_species'] = list(els)
                 return atoms
             n += 1
         return None
@@ -869,13 +869,13 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
     def parse_force(idx):
         n = 0
         while idx + n < len(fdo_lines):
-            if re.search(r"(?i)^\s*\*\s*TOTAL:.*\*\s*$", fdo_lines[idx + n]):
+            if re.search(r'(?i)^\s*\*\s*TOTAL:.*\*\s*$', fdo_lines[idx + n]):
                 tmp = np.loadtxt(
-                    fdo_lines[idx + 6: idx + n - 2],
+                    fdo_lines[idx + 6 : idx + n - 2],
                     dtype=np.float64,
                     usecols=(3, 4, 5),
                 )
-                return tmp * units["Hartree"] / units["Bohr"]
+                return tmp * units['Hartree'] / units['Bohr']
             n += 1
         return None
 
@@ -884,16 +884,16 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
         offset = 7
         stop = 0
         while idx + n < len(fdo_lines):
-            if re.search(r"^\s*x{60,}\s*$", fdo_lines[idx + n]):
+            if re.search(r'^\s*x{60,}\s*$', fdo_lines[idx + n]):
                 stop += 1
             if stop == 2:
                 tmp = np.loadtxt(
-                    fdo_lines[idx + offset: idx + n],
-                    dtype="str",
+                    fdo_lines[idx + offset : idx + n],
+                    dtype='str',
                     usecols=(1, 3, 4, 5),
                 )
                 els = np.char.array(tmp[:, 0])
-                pos = tmp[:, 1:].astype(np.float64) * units["Bohr"]
+                pos = tmp[:, 1:].astype(np.float64) * units['Bohr']
                 try:
                     atoms = Atoms(els, pos)
                 # ASE doesn't recognize names used in ONETEP
@@ -902,7 +902,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
                     tags, real_elements = find_correct_species(els, idx)
                     atoms = Atoms(real_elements, pos)
                     atoms.set_tags(tags)
-                    atoms.info["onetep_species"] = list(els)
+                    atoms.info['onetep_species'] = list(els)
                 return atoms
             n += 1
         return None
@@ -913,12 +913,12 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
         while idx + n < len(fdo_lines):
             sep = fdo_lines[idx + n].split()
             if re.search(
-                r"(?i)^\s*%ENDBLOCK\s*SPECIES\s*:?\s*([*#!].*)?$",
+                r'(?i)^\s*%ENDBLOCK\s*SPECIES\s*:?\s*([*#!].*)?$',
                 fdo_lines[idx + n],
             ):
                 return element_map
             to_skip = re.search(
-                r"(?i)^\s*(ang|bohr)\s*([*#!].*)?$", fdo_lines[idx + n]
+                r'(?i)^\s*(ang|bohr)\s*([*#!].*)?$', fdo_lines[idx + n]
             )
             if not to_skip:
                 element_map[sep[0]] = sep[1]
@@ -933,7 +933,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
                 # If no spin is present we return None
                 try:
                     tmp_spins = np.loadtxt(
-                        fdo_lines[idx + offset: idx + n - 1], usecols=4
+                        fdo_lines[idx + offset : idx + n - 1], usecols=4
                     )
                     return np.reshape(tmp_spins, -1)
                 except ValueError:
@@ -956,7 +956,7 @@ def read_onetep_out(fd, index=-1, improving=False, **kwargs):
         elements_map = real_species[closest_species]
         for el in els:
             real_elements.append(elements_map[el])
-            tag_maybe = el.replace(elements_map[el], "")
+            tag_maybe = el.replace(elements_map[el], '')
             if tag_maybe.isdigit():
                 tags.append(int(tag_maybe))
             else:
