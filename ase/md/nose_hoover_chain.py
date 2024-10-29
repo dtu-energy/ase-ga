@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+from scipy.special import exprel
 
 import ase.units
 from ase import Atoms
@@ -65,14 +66,6 @@ class NoseHooverChainNVT(MolecularDynamics):
             The number of thermostat variables in the Nose-Hoover chain.
         tloop: int
             The number of sub-steps in thermostat integration.
-        trajectory: str or None
-            If `trajectory` is str, `Trajectory` will be instantiated.
-            Set `None` for no trajectory.
-        logfile: IO or str or None
-            If `logfile` is str, a file with that name will be opened.
-            Set `-` to output into stdout.
-        loginterval: int
-            Write a log line for every `loginterval` time steps.
         **kwargs : dict, optional
             Additional arguments passed to :class:~ase.md.md.MolecularDynamics
             base class.
@@ -226,3 +219,268 @@ class NoseHooverChainThermostat:
             self._integrate_p_eta_j(p, j, delta2, delta4)
 
         return p
+
+
+class IsotropicMTKNPT(MolecularDynamics):
+    """Isothermal-isobaric molecular dynamics with isotropic volume fluctuations
+    by Martyna-Tobias-Klein (MTK) method [1].
+
+    See also `NoseHooverChainNVT` for the references.
+
+    - [1] G. J. Martyna, D. J. Tobias, and M. L. Klein, J. Chem. Phys. 101,
+          4177-4189 (1994). https://doi.org/10.1063/1.467468
+    """
+    def __init__(
+        self,
+        atoms: Atoms,
+        timestep: float,
+        temperature_K: float,
+        pressure_GPa: float,
+        tdamp: float,
+        pdamp: float,
+        tchain: int = 3,
+        pchain: int = 3,
+        tloop: int = 1,
+        ploop: int = 1,
+        **kwargs,
+    ):
+        """
+        Parameters
+        ----------
+        atoms: ase.Atoms
+            The atoms object.
+        timestep: float
+            The time step in ASE time units.
+        temperature_K: float
+            The target temperature in K.
+        pressure_GPa: float
+            The external pressure in GPa.
+        tdamp: float
+            The characteristic time scale for the thermostat in ASE time units.
+            Typically, it is set to 100 times of `timestep`.
+        pdamp: float
+            The characteristic time scale for the barostat in ASE time units.
+            Typically, it is set to 1000 times of `timestep`.
+        tchain: int
+            The number of thermostat variables in the Nose-Hoover thermostat.
+        pchain: int
+            The number of barostat variables in the MTK barostat.
+        tloop: int
+            The number of sub-steps in thermostat integration.
+        ploop: int
+            The number of sub-steps in barostat integration.
+        **kwargs : dict, optional
+            Additional arguments passed to :class:~ase.md.md.MolecularDynamics
+            base class.
+        """
+        super().__init__(
+            atoms=atoms,
+            timestep=timestep,
+            **kwargs,
+        )
+        assert self.masses.shape == (len(self.atoms), 1)
+
+        if len(atoms.constraints) > 0:
+            raise NotImplementedError(
+                "Current implementation does not support constraints"
+            )
+
+        self._thermostat = NoseHooverChainThermostat(
+            masses=self.masses,
+            temperature_K=temperature_K,
+            tdamp=tdamp,
+            tchain=tchain,
+            tloop=tloop,
+        )
+        self._barostat = IsotropicMTKBarostat(
+            masses=self.masses,
+            temperature_K=temperature_K,
+            pdamp=pdamp,
+            pchain=pchain,
+            ploop=ploop,
+        )
+
+        self._temperature_K = temperature_K
+        self._pressure_GPa = pressure_GPa
+
+        self._kT = ase.units.kB * self._temperature_K
+        self._volume0 = self.atoms.get_volume()
+        self._cell0 = np.array(self.atoms.get_cell())
+
+        # The following variables are updated during self.step()
+        self._q = self.atoms.get_positions()  # positions
+        self._p = self.atoms.get_momenta()  # momenta
+        self._eps = 0.0  # volume
+        self._p_eps = 0.0  # volume momenta
+
+    def step(self) -> None:
+        dt2 = self.dt / 2
+
+        self._p_eps = self._barostat.integrate_nhc_baro(self._p_eps, dt2)
+        self._p = self._thermostat.integrate_nhc(self._p, dt2)
+        self._integrate_p_cell(dt2)
+        self._integrate_p(dt2)
+        self._integrate_q(self.dt)
+        self._integrate_q_cell(self.dt)
+        self._integrate_p(dt2)
+        self._integrate_p_cell(dt2)
+        self._p = self._thermostat.integrate_nhc(self._p, dt2)
+        self._p_eps = self._barostat.integrate_nhc_baro(self._p_eps, dt2)
+
+        self._update_atoms()
+
+    def get_conserved_energy(self) -> float:
+        """Return the conserved energy-like quantity.
+
+        This method is mainly used for testing.
+        """
+        conserved_energy = (
+            self.atoms.get_potential_energy(force_consistent=True)
+            + self.atoms.get_kinetic_energy()
+            + self._thermostat.get_thermostat_energy()
+            + self._barostat.get_barostat_energy()
+            + self._p_eps * self._p_eps / (2 * self._barostat.W)
+            + self._pressure_GPa * ase.units.GPa * self._get_volume()
+        )
+        return float(conserved_energy)
+
+    def _update_atoms(self) -> None:
+        self.atoms.set_positions(self._q)
+        self.atoms.set_momenta(self._p)
+        cell = self._cell0 * np.exp(self._eps)
+        # Never set scale_atoms=True
+        self.atoms.set_cell(cell, scale_atoms=False)
+
+    def _get_volume(self) -> float:
+        return self._volume0 * np.exp(3 * self._eps)
+
+    def _get_forces(self) -> np.ndarray:
+        self._update_atoms()
+        return self.atoms.get_forces(md=True)
+
+    def _get_pressure(self) -> np.ndarray:
+        self._update_atoms()
+        stress = self.atoms.get_stress(voigt=False, include_ideal_gas=True)
+        pressure = -np.trace(stress) / 3
+        return pressure
+
+    def _integrate_q(self, delta: float) -> None:
+        """Integrate exp(i * L_1 * delta)"""
+        x = delta * self._p_eps / self._barostat.W
+        self._q = (
+            self._q * np.exp(x)
+            + self._p * delta / self.masses * exprel(x)
+        )
+
+    def _integrate_p(self, delta: float) -> None:
+        """Integrate exp(i * L_2 * delta)"""
+        x = (1 + 1 / len(self.atoms)) * self._p_eps * delta / self._barostat.W
+        forces = self._get_forces()
+        self._p = self._p * np.exp(-x) + delta * forces * exprel(-x)
+
+    def _integrate_q_cell(self, delta: float) -> None:
+        """Integrate exp(i * L_(epsilon, 1) * delta)"""
+        self._eps += delta * self._p_eps / self._barostat.W
+
+    def _integrate_p_cell(self, delta: float) -> None:
+        """Integrate exp(i * L_(epsilon, 2) * delta)"""
+        pressure = self._get_pressure()
+        volume = self._get_volume()
+        G = (
+            3 * volume * (pressure - self._pressure_GPa * ase.units.GPa)
+            + np.sum(self._p**2 / self.masses) / len(self.atoms)
+        )
+        self._p_eps += delta * G
+
+
+class IsotropicMTKBarostat:
+    """MTK barostat for isotropic volume fluctuations.
+
+    See `IsotropicMTKNPT` for the references.
+    """
+    def __init__(
+        self,
+        masses: np.ndarray,
+        temperature_K: float,
+        pdamp: float,
+        pchain: int = 3,
+        ploop: int = 1,
+    ):
+        self._num_atoms = masses.shape[0]
+        self._masses = masses  # (num_atoms, 1)
+        self._pdamp = pdamp
+        self._pchain = pchain
+        self._ploop = ploop
+
+        self._kT = ase.units.kB * temperature_K
+
+        self._W = (3 * self._num_atoms + 3) * self._kT * self._pdamp**2
+
+        assert pchain >= 1
+        self._R = np.zeros(self._pchain)
+        self._R[0] = self._kT * self._pdamp**2
+        self._R[1:] = self._kT * self._pdamp**2
+
+        self._xi = np.zeros(self._pchain)  # barostat coordinates
+        self._p_xi = np.zeros(self._pchain)
+
+    @property
+    def W(self) -> float:
+        """Virtual mass for barostat momenta `p_xi`."""
+        return self._W
+
+    def get_barostat_energy(self) -> float:
+        """Return energy-like contribution from the barostat variables."""
+        energy = (
+            + np.sum(0.5 * self._p_xi**2 / self._R)
+            + self._kT * np.sum(self._xi)
+        )
+        return float(energy)
+
+    def integrate_nhc_baro(self, p_eps: float, delta: float) -> float:
+        """Integrate exp(i * L_NHC-baro * delta)"""
+        for _ in range(self._ploop):
+            for coeff in FOURTH_ORDER_COEFFS:
+                p_eps = self._integrate_nhc_baro_loop(
+                    p_eps, coeff * delta / len(FOURTH_ORDER_COEFFS)
+                )
+        return p_eps
+
+    def _integrate_nhc_baro_loop(self, p_eps: float, delta: float) -> float:
+        delta2 = delta / 2
+        delta4 = delta / 4
+
+        def _integrate_p_xi_j(p_eps: float, j: int) -> None:
+            if j < self._pchain - 1:
+                self._p_xi[j] *= np.exp(
+                    -delta4 * self._p_xi[j + 1] / self._R[j + 1]
+                )
+
+            if j == 0:
+                g_j = p_eps ** 2 / self._W - self._kT
+            else:
+                g_j = self._p_xi[j - 1] ** 2 / self._R[j - 1] - self._kT
+            self._p_xi[j] += delta2 * g_j
+
+            if j < self._pchain - 1:
+                self._p_xi[j] *= np.exp(
+                    -delta4 * self._p_xi[j + 1] / self._R[j + 1]
+                )
+
+        def _integrate_xi() -> None:
+            self._xi += delta * self._p_xi / self._R
+
+        def _integrate_nhc_p_eps(p_eps: float) -> float:
+            p_eps_new = p_eps * float(
+                np.exp(-delta * self._p_xi[0] / self._R[0])
+            )
+            return p_eps_new
+
+        for j in range(self._pchain):
+            _integrate_p_xi_j(p_eps, self._pchain - j - 1)
+        _integrate_xi()
+        p_eps = _integrate_nhc_p_eps(p_eps)
+        for j in range(self._pchain):
+            _integrate_p_xi_j(p_eps, j)
+
+        return p_eps
