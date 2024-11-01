@@ -214,7 +214,7 @@ def lammps_data_to_ase_atoms(
             (colname.startswith('c_') and not colname.startswith('c_q['))):
             out_atoms.new_array(colname, get_quantity([colname]),
                                 dtype='float')
-    
+
         elif colname.startswith('i_') or colname.startswith('i2_'):
             out_atoms.new_array(colname, get_quantity([colname]),
                                 dtype='int')
