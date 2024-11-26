@@ -211,7 +211,7 @@ def find_all_niggli_ops(length_grid, angle_grid, lattices=None):
         niggli_ops = find_niggli_ops(latcls, length_grid, angle_grid)
         print(f'Found {len(niggli_ops)} ops for {latname}')
         for key, count in niggli_ops.items():
-            print(f'  {str(np.array(key)):>40}: {count}')
+            print(f'  {np.array(key)!s:>40}: {count}')
         print()
         all_niggli_ops[latname] = niggli_ops
     return all_niggli_ops

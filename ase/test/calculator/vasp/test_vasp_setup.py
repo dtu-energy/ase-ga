@@ -17,21 +17,21 @@ def check_potcar(setups, filename='POTCAR'):
         assert setup in pp
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms_1():
     return Atoms('CaGdCs',
                  positions=[[0, 0, 1], [0, 0, 2], [0, 0, 3]],
                  cell=[5, 5, 5])
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms_2():
     return Atoms('CaInI',
                  positions=[[0, 0, 1], [0, 0, 2], [0, 0, 3]],
                  cell=[5, 5, 5])
 
 
-@pytest.fixture
+@pytest.fixture()
 def do_check():
     def _do_check(factory, atoms, expected, settings, should_raise=False):
         calc = factory.calc(**settings)

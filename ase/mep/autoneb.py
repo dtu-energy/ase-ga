@@ -303,7 +303,7 @@ class AutoNEB:
                 n_between = 1
 
             toInterpolate = [self.all_images[jmax]]
-            for i in range(n_between):
+            for _ in range(n_between):
                 toInterpolate += [toInterpolate[0].copy()]
             toInterpolate += [self.all_images[jmax + 1]]
 
@@ -544,7 +544,7 @@ class AutoNEB:
             try:
                 energies.append(a.get_potential_energy())
             except RuntimeError:
-                energies.append(np.NaN)
+                energies.append(np.nan)
         return energies
 
     def get_energies_one_image(self, image):
@@ -553,7 +553,7 @@ class AutoNEB:
         try:
             energy = image.get_potential_energy()
         except RuntimeError:
-            energy = np.NaN
+            energy = np.nan
         return energy
 
     def get_highest_energy_index(self):

@@ -1,10 +1,11 @@
-import pytest
 import numpy as np
-from ase.optimize.cellawarebfgs import CellAwareBFGS
-from ase.optimize import BFGS
-from ase.filters import FrechetCellFilter, UnitCellFilter
+import pytest
+
 from ase.build import bulk, fcc110
 from ase.calculators.emt import EMT
+from ase.filters import FrechetCellFilter, UnitCellFilter
+from ase.optimize import BFGS
+from ase.optimize.cellawarebfgs import CellAwareBFGS
 from ase.stress import get_elasticity_tensor
 from ase.units import GPa
 

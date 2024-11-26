@@ -40,6 +40,22 @@ def test_set_masses():
     assert atoms.get_masses() == pytest.approx([1, m0[1]])
 
 
+def test_ndof():
+    a = Atoms('CO')
+    b = Atoms('H2O')
+
+    assert a.get_number_of_degrees_of_freedom() == 6
+    assert b.get_number_of_degrees_of_freedom() == 9
+
+    c = a + b
+
+    assert c.get_number_of_degrees_of_freedom() == 15
+
+    del c[0]
+
+    assert c.get_number_of_degrees_of_freedom() == 12
+
+
 @pytest.mark.parametrize('zlength', [0, 10])
 def test_get_com(zlength):
     """Test that atoms.get_center_of_mass(scaled=True) works"""

@@ -11,8 +11,13 @@ import ase.build
 import ase.io
 from ase.build import graphene_nanoribbon
 from ase.calculators.calculator import compare_atoms
-from ase.constraints import (FixAtoms, FixedLine, FixedPlane, FixScaled,
-                             constrained_indices)
+from ase.constraints import (
+    FixAtoms,
+    FixedLine,
+    FixedPlane,
+    FixScaled,
+    constrained_indices,
+)
 from ase.io.vasp import read_vasp_xdatcar, write_vasp_xdatcar
 
 
@@ -42,7 +47,7 @@ class TestXdatcarRoundtrip(unittest.TestCase):
 
     def test_roundtrip(self):
         # Create a series of translated cells
-        trajectory = [self.NaCl.copy() for i in range(5)]
+        trajectory = [self.NaCl.copy() for _ in range(5)]
         for i, atoms in enumerate(trajectory):
             atoms.set_scaled_positions(
                 atoms.get_scaled_positions() + i * np.array([0.05, 0, 0.02])

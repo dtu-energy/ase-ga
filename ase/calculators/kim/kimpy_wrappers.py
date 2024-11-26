@@ -10,8 +10,12 @@ from abc import ABC
 
 import numpy as np
 
-from .exceptions import (KIMModelInitializationError, KIMModelNotFound,
-                         KIMModelParameterError, KimpyError)
+from .exceptions import (
+    KIMModelInitializationError,
+    KIMModelNotFound,
+    KIMModelParameterError,
+    KimpyError,
+)
 
 
 class LazyKimpyImport:
@@ -95,7 +99,7 @@ def check_call(f, *args, **kwargs):
         return f(*args, **kwargs)
     except RuntimeError as e:
         raise KimpyError(
-            f'Calling kimpy function "{f.__name__}" failed:\n  {str(e)}')
+            f'Calling kimpy function "{f.__name__}" failed:\n  {e!s}')
 
 
 def check_call_wrapper(func):

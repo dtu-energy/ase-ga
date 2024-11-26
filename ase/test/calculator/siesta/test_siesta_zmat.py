@@ -2,6 +2,7 @@
 import os
 
 import pytest
+
 from ase import Atoms
 from ase.constraints import FixAtoms, FixCartesian, FixedLine, FixedPlane
 
@@ -51,14 +52,10 @@ def test_siesta_zmat(siesta_factory, atoms: Atoms):
     assert ['%endblock', 'Zmatrix'] in lsl
     assert ['MD.TypeOfRun', 'CG'] in lsl
 
-    assert any([line.split()[4:9] == ['0', '0', '0', '1', 'C']
-                for line in lines])
-    assert any([line.split()[4:9] == ['0', '1', '0', '2', 'H']
-                for line in lines])
-    assert any([line.split()[4:9] == ['0', '1', '1', '3', 'H']
-                for line in lines])
-    assert any([line.split()[4:9] == ['0', '0', '1', '4', 'H']
-                for line in lines])
+    assert any(line.split()[4:9] == ['0', '0', '0', '1', 'C'] for line in lines)
+    assert any(line.split()[4:9] == ['0', '1', '0', '2', 'H'] for line in lines)
+    assert any(line.split()[4:9] == ['0', '1', '1', '3', 'H'] for line in lines)
+    assert any(line.split()[4:9] == ['0', '0', '1', '4', 'H'] for line in lines)
 
 
 @pytest.mark.parametrize("constraint_class", [FixedLine, FixedPlane])

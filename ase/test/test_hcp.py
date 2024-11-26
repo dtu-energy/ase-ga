@@ -50,7 +50,7 @@ def test_hcp(testdir):
     a0 = 3.52 / np.sqrt(2)
     c0 = np.sqrt(8 / 3.0) * a0
     print(f'{a0:.4f} {c0 / a0:.3f}')
-    for i in range(3):
+    for _ in range(3):
         with Trajectory('Ni.traj', 'w') as traj:
             eps = 0.01
             for a in a0 * np.linspace(1 - eps, 1 + eps, 4):

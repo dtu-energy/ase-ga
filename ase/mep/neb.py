@@ -930,7 +930,7 @@ class NEBOptimizer(Optimizer):
 
     def run_static(self, fmax):
         X = self.neb.get_positions().reshape(-1)
-        for step in range(self.max_steps):
+        for _ in range(self.max_steps):
             F = self.force_function(X)
             if self.neb.get_residual() <= fmax:
                 return True
@@ -1007,6 +1007,7 @@ class SingleCalculatorNEB(NEB):
     .. deprecated:: 3.23.0
         Please use ``NEB(allow_shared_calculator=True)`` instead
     """
+
     def __init__(self, images, *args, **kwargs):
         kwargs["allow_shared_calculator"] = True
         super().__init__(images, *args, **kwargs)
@@ -1223,7 +1224,7 @@ class NEBTools:
         # Sanity check that the energies of the last images line up too.
         e_last = self.images[nimages - 1].get_potential_energy()
         e_nextlast = self.images[2 * nimages - 1].get_potential_energy()
-        if not (e_last == e_nextlast):
+        if e_last != e_nextlast:
             raise RuntimeError('Could not guess number of images per band.')
         sys.stdout.write('Number of images per band guessed to be {:d}.\n'
                          .format(nimages))

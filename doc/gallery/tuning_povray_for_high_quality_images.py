@@ -2,11 +2,11 @@
 
 # This script creates pictures of sample structures, the cut sqs cell will keep
 # the same crystallographic orientation in the image as the unit cell
-from ase.io.pov import get_bondpairs
-from ase.data.colors import jmol_colors as chemical_colors
-from ase.data import covalent_radii
-from ase.io.pov import write_pov
 from ase import build
+from ase.data import covalent_radii
+from ase.data.colors import jmol_colors as chemical_colors
+from ase.io.pov import get_bondpairs, write_pov
+
 unit_cell = build.bulk('AlN', 'wurtzite', a=3.129, c=5.017)
 sqs_cell = build.cut(unit_cell,
                      a=[1, 0, 1],

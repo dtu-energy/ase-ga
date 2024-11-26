@@ -6,7 +6,6 @@ import pytest
 from ase import Atoms
 from ase.calculators.calculator import CalculatorSetupError
 
-
 """
 These tests monkeypatch Popen so as to abort execution and verify that
 a particular command as executed.
@@ -73,8 +72,8 @@ calculators = {
 @pytest.fixture(autouse=True)
 def miscellaneous_hacks(monkeypatch, tmp_path):
     from ase.calculators.calculator import FileIOCalculator
-    from ase.calculators.demon import Demon
     from ase.calculators.crystal import CRYSTAL
+    from ase.calculators.demon import Demon
     from ase.calculators.dftb import Dftb
     from ase.calculators.gamess_us import GAMESSUS
     from ase.calculators.gulp import GULP
@@ -254,6 +253,7 @@ default_commands = {
     'dftd3': f'dftd3 {dftd3_boilerplate}'.split(),
     'elk': 'elk > elk.out',
     'gamess_us': 'rungms gamess_us.inp > gamess_us.log 2> gamess_us.err',
+    'gaussian': 'g16 < Gaussian.com > Gaussian.log',
     'gulp': 'gulp < gulp.gin > gulp.got',
     'lammpsrun': ['lammps', '-echo', 'log', '-screen', 'none',
                   '-log', '/dev/stdout'],
@@ -271,7 +271,6 @@ calculators_which_raise = [
     'crystal',
     'demon',
     'dmol',
-    'gaussian',
     'gromacs',
     # Fixme: onetep raises AttributError
     # Should be handled universally by GenericFileIO system

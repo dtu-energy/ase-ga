@@ -25,7 +25,12 @@ ase.symbols
 
 
 @pytest.mark.parametrize('modname', module_names)
-def test_doctest(testdir, modname):
+def test_doctest(testdir, modname, recwarn):
     mod = importlib.import_module(modname)
     with np.printoptions(legacy='1.13'):
         doctest.testmod(mod, raise_on_error=True, verbose=True)
+        nwarnings = len(recwarn.list)
+        if modname == 'ase.phasediagram':
+            assert nwarnings == 1
+        else:
+            assert nwarnings == 0

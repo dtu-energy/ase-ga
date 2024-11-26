@@ -4,7 +4,7 @@ from ase.build import bulk
 from ase.io import write
 
 
-@pytest.fixture
+@pytest.fixture()
 def fname(testdir):
     atoms = bulk('Au')
     filename = 'file.traj'

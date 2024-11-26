@@ -4,17 +4,17 @@ import pytest
 from ase.lattice import MCLC
 
 
-@pytest.fixture
+@pytest.fixture()
 def lat():
     return MCLC(3, 4, 5, 70)
 
 
-@pytest.fixture
+@pytest.fixture()
 def cell(lat):
     return lat.tocell()
 
 
-@pytest.fixture
+@pytest.fixture()
 def bandpath(lat):
     return lat.bandpath(npoints=0)
 
@@ -42,12 +42,10 @@ def test_zero_npoints(lat):
     assert len(path.kpts) == len(path.get_linear_kpoint_axis()[2])  # XXX ugly
 
 
-@pytest.fixture
+@pytest.fixture()
 def custom_points():
     rng = np.random.RandomState(0)
-    dct = {}
-    for name in ['K', 'K1', 'Kpoint', 'Kpoint1']:
-        dct[name] = rng.random(3)
+    dct = {name: rng.random(3) for name in ['K', 'K1', 'Kpoint', 'Kpoint1']}
     return dct
 
 

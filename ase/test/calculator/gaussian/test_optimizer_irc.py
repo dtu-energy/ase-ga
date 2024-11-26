@@ -6,7 +6,7 @@ from ase.io import read
 from ase.optimize import LBFGS
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     return Atoms('CHO',
                  [[0.0, 0.0, 0.0],

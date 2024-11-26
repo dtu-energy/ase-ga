@@ -55,9 +55,9 @@ def search_pubchem_raw(search, field, silent=False, mock_test=False):
         suffix = 'sdf?record_type=3d'
 
         url = (
-            f'{base_url}/{field}/{str(search)}/{suffix}'
+            f'{base_url}/{field}/{search!s}/{suffix}'
             if field == 'conformers'
-            else f'{base_url}/compound/{field}/{str(search)}/{suffix}'
+            else f'{base_url}/compound/{field}/{search!s}/{suffix}'
         )
         try:
             r = urllib.request.urlopen(url)
@@ -203,7 +203,7 @@ def available_conformer_search(search, field, mock_test=False):
                 than the CID numbers
     """
     suffix = 'conformers/JSON'
-    url = f'{base_url}/compound/{field}/{str(search)}/{suffix}'
+    url = f'{base_url}/compound/{field}/{search!s}/{suffix}'
     if mock_test:
         r = BytesIO(test_conformer_output)
     else:

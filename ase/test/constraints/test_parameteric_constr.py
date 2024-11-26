@@ -2,8 +2,11 @@ import numpy as np
 
 from ase.build import bulk
 from ase.calculators.emt import EMT
-from ase.constraints import (FixCartesianParametricRelations,
-                             FixScaledParametricRelations, dict2constraint)
+from ase.constraints import (
+    FixCartesianParametricRelations,
+    FixScaledParametricRelations,
+    dict2constraint,
+)
 
 
 def test_parameteric_constr():

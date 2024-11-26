@@ -61,7 +61,7 @@ class OutputReader:
                 # XXX dangerous, this should test the string in question.
                 free_energy = float(line.split()[-1])
 
-        return dict(energy=energy, free_energy=free_energy)
+        return {'energy': energy, 'free_energy': free_energy}
 
     def read_forces_stress(self):
         """Read the forces and stress from the FORCE_STRESS file.
@@ -117,7 +117,7 @@ class OutputReader:
                 eig_array[s, k, :] = n2e
 
         assert np.isfinite(eig_array).all()
-        return dict(eigenvalues=eig_array, fermi_energy=fermi_energy)
+        return {'eigenvalues': eig_array, 'fermi_energy': fermi_energy}
 
     def read_kpoints(self):
         """ Reader of the .KP files """
@@ -138,7 +138,7 @@ class OutputReader:
         except OSError:
             return {}
 
-        return dict(kpoints=kpoints, kweights=kweights)
+        return {'kpoints': kpoints, 'kpoint_weights': kweights}
 
     def read_dipole(self):
         """Read dipole moment. """
@@ -162,7 +162,7 @@ def read_bands_file(fd):
 
     # Read energies for each kpoint:
     data = []
-    for i in range(nkpts):
+    for _ in range(nkpts):
         line = next(fd)
         tokens = line.split()
         while len(tokens) < ntokens:

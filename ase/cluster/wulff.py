@@ -60,8 +60,7 @@ def wulff_construction(symbol, surfaces, energies, size, structure,
         elif structure == 'sc':
             from ase.cluster.cubic import SimpleCubic as structure
         elif structure == 'hcp':
-            from ase.cluster.hexagonal import \
-                HexagonalClosedPacked as structure
+            from ase.cluster.hexagonal import HexagonalClosedPacked as structure
         elif structure == 'graphite':
             from ase.cluster.hexagonal import Graphite as structure
         else:

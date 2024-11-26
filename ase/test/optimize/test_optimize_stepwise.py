@@ -7,21 +7,21 @@ from ase.io.trajectory import Trajectory
 from ase.optimize import BFGS
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms0():
     atoms = bulk('Au', cubic=True)
     atoms.rattle(stdev=0.15)
     return atoms
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms(atoms0):
     atoms = atoms0.copy()
     atoms.calc = EMT()
     return atoms
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_irun_start(atoms0, atoms):
     opt = BFGS(atoms)
     irun = opt.irun(fmax=0.0)
@@ -31,7 +31,7 @@ def test_irun_start(atoms0, atoms):
     assert compare_atoms(atoms0, atoms) == ['positions']
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_attach_trajectory(tmp_path, atoms0, atoms):
     # Previously one needed to specify the same atoms object to
     # both trajectory and optimizer, if trajectory was opened separately.

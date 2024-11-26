@@ -105,7 +105,7 @@ def test_parsemath():
         pass
 
     try:
-        eval_expression("e" * 10000000, dict())
+        eval_expression("e" * 10000000, {})
         raise RuntimeError(
             "This should not be reached, the parser is now vulnerable "
             "to memory based DOS attack")

@@ -123,7 +123,7 @@ def crystal(symbols=None, basis=None, occupancies=None, spacegroup=1, setting=1,
         if symbols is None:
             symbols = basis.get_chemical_symbols()
     else:
-        basis_coords = np.array(basis, dtype=float, copy=False, ndmin=2)
+        basis_coords = np.array(basis, dtype=float, ndmin=2)
 
     if occupancies is not None:
         occupancies_dict = {}

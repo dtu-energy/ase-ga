@@ -63,7 +63,7 @@ def db_call_with_error_tol(db_cursor, expression, args=[]):
     employed.
     """
     import sqlite3
-    for i in range(10):
+    for _ in range(10):
         try:
             db_cursor.execute(expression, args)
             return

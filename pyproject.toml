@@ -1,22 +1,20 @@
 [build-system]
-requires = ['setuptools']
+requires = ['setuptools >= 61.0.0']
 build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'ase'
 description='Atomic Simulation Environment'
-version = '3.23.0b1'  # Change also in ase/__init__.py
+dynamic = ['version']
 readme = 'README.rst'
 license = { text = 'LGPLv2.1+' }
 maintainers = [{ name = 'ASE Community', email = 'ase-users@listserv.fysik.dtu.dk' }]
 classifiers = [
     'Development Status :: 6 - Mature',
-    'License :: OSI Approved :: ',
-    'GNU Lesser General Public License v2 or later (LGPLv2+)',
+    'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
     'Intended Audience :: Science/Research',
     'Operating System :: OS Independent',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
@@ -24,22 +22,24 @@ classifiers = [
     'Intended Audience :: Science/Research',
     'Topic :: Scientific/Engineering :: Physics'
 ]
-requires-python = '>=3.8'
+requires-python = '>=3.9'
 dependencies = [
-    'numpy>=1.18.5',  # June 2020
+    'numpy>=1.19.5',  # January 2021
     'scipy>=1.6.0',  # December 2020
     'matplotlib>=3.3.4'  # January 2021 (3.3.0 is July 2020)
 ]
 
 [project.urls]
-homepage = 'https://wiki.fysik.dtu.dk/ase/'
+Homepage = 'https://wiki.fysik.dtu.dk/ase/'
+Repository = 'https://gitlab.com/ase/ase.git'
+Issues = 'https://gitlab.com/ase/ase/issues/'
 
 [project.scripts]
 ase = 'ase.cli.main:main'
 
 [project.optional-dependencies]
 docs = ['sphinx', 'sphinx_rtd_theme', 'pillow']
-test = ['pytest>=6.2.5', 'pytest-xdist>=2.1.0']
+test = ['pytest>=7.0.0', 'pytest-xdist>=2.1.0']
 spglib = ['spglib>=1.9']
 
 [tool.setuptools.package-data]
@@ -52,6 +52,9 @@ ase = [
     'test/pytest.ini',
     'test/testdata/**',
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = 'ase.__version__'}
 
 [tool.pytest.ini_options]
 testpaths = ['ase/test']
@@ -75,3 +78,37 @@ exclude_also = [
     'if TYPE_CHECKING:',
     'if __name__ == .__main__.:'
 ]
+
+[tool.ruff]
+line-length = 80
+exclude = ["./build/", "./dist", "./doc/build"]
+src = ["ase"]
+
+[tool.ruff.format]
+quote-style = "single"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+preview = true  # necessary to activate many pycodestyle rules
+select = [
+    "F",  # Pyflakes
+    "E",  # pycodestyle
+    "W",  # pycodestyle
+    "I"   # isort
+]
+ignore = [
+    "F841",  # unused-variable
+    "E741",  # ambiguous-variable-name
+    "W505",  # doc-line-too-long
+]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 80
+max-doc-length = 80
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.isort]
+known-first-party = ["ase"]
+

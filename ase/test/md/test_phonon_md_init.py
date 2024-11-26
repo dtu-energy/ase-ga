@@ -9,7 +9,7 @@ from ase.optimize import FIRE
 from ase.phonons import Phonons
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_phonon_md_init(asap3, testdir):
     # Tests the phonon-based perturbation and velocity distribution
     # for thermal equilibration in MD.
@@ -94,11 +94,3 @@ def test_phonon_md_init(asap3, testdir):
     assert Terr < 0.1 * T, Terr  # error in Kelvin for instantaneous velocity
     # Epot == Ekin give or take 2 %:
     assert relative_imbalance < 0.1, relative_imbalance
-
-    if 0:
-        import matplotlib.pyplot as plt
-        Ivalues = np.arange(len(Epots))
-        plt.plot(Ivalues, Epots, 'o', label='pot')
-        plt.plot(Ivalues, Ekins, 'o', label='kin')
-        plt.plot(Ivalues, Etots, 'o', label='tot')
-        plt.show()

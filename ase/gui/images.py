@@ -33,7 +33,7 @@ class Images:
 
     # XXXXXXX hack
     # compatibility hacks while allowing variable number of atoms
-    def get_dynamic(self, atoms):
+    def get_dynamic(self, atoms: Atoms) -> np.ndarray:
         dynamic = np.ones(len(atoms), bool)
         for constraint in atoms.constraints:
             if isinstance(constraint, FixAtoms):
@@ -54,20 +54,17 @@ class Images:
     def scale_radii(self, scaling_factor):
         self.covalent_radii *= scaling_factor
 
-    def get_energy(self, atoms):
+    def get_energy(self, atoms: Atoms) -> np.float64:
         try:
-            e = atoms.get_potential_energy() * self.repeat.prod()
+            return atoms.get_potential_energy()
         except RuntimeError:
-            e = np.nan
-        return e
+            return np.nan
 
-    def get_forces(self, atoms):
+    def get_forces(self, atoms: Atoms):
         try:
-            F = atoms.get_forces(apply_constraint=False)
+            return atoms.get_forces(apply_constraint=False)
         except RuntimeError:
             return None
-        else:
-            return F
 
     def initialize(self, images, filenames=None):
         nimages = len(images)
@@ -104,7 +101,7 @@ class Images:
         self.visible = np.ones(self.maxnatoms, bool)
         self.repeat = np.ones(3, int)
 
-    def get_radii(self, atoms):
+    def get_radii(self, atoms: Atoms) -> np.ndarray:
         radii = np.array([self.covalent_radii[z] for z in atoms.numbers])
         radii *= self.atom_scale
         return radii
@@ -156,7 +153,7 @@ class Images:
 
         self.initialize(images, names)
 
-    def repeat_results(self, atoms, repeat=None, oldprod=None):
+    def repeat_results(self, atoms: Atoms, repeat=None, oldprod=None):
         """Return a dictionary which updates the magmoms, energy and forces
         to the repeated amount of atoms.
         """
@@ -273,7 +270,7 @@ class Images:
         for atoms in self:
             atoms.center()
 
-    def graph(self, expr):
+    def graph(self, expr: str) -> np.ndarray:
         """Routine to create the data in graphs, defined by the
         string expr."""
         import ase.units as units
@@ -401,6 +398,6 @@ class Images:
         return atoms
 
     def delete(self, i):
-        self.images.pop(i)
+        self._images.pop(i)
         self.filenames.pop(i)
-        self.initialize(self.images, self.filenames)
+        self.initialize(self._images, self.filenames)

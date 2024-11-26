@@ -16,7 +16,7 @@ ase -T db -v testase.json "H>0" --delete-keys foo"""
 dbtypes = ['json', 'db', 'postgresql', 'mysql', 'mariadb']
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 @pytest.mark.parametrize('dbtype', dbtypes)
 def test_db(dbtype, cli, testdir, get_db_name):
     def count(n, *args, **kwargs):

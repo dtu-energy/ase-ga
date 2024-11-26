@@ -14,7 +14,7 @@ except ImportError:
     netCDF4 = 0
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     a = 5.0
     d = 1.9
@@ -54,7 +54,7 @@ def check(a, ref_atoms, format):
         assert abs(a.get_forces() - ref_atoms.get_forces()).max() < 1e-12
 
 
-@pytest.fixture
+@pytest.fixture()
 def catch_warnings():
     with warnings.catch_warnings():
         yield

@@ -2,9 +2,17 @@ import pytest
 
 from ase.build import bulk
 from ase.calculators.emt import EMT
-from ase.optimize import (BFGS, FIRE, LBFGS, BFGSLineSearch,
-                          GoodOldQuasiNewton, GPMin, LBFGSLineSearch, MDMin,
-                          ODE12r)
+from ase.optimize import (
+    BFGS,
+    FIRE,
+    LBFGS,
+    BFGSLineSearch,
+    GoodOldQuasiNewton,
+    GPMin,
+    LBFGSLineSearch,
+    MDMin,
+    ODE12r,
+)
 from ase.optimize.precon import PreconFIRE, PreconLBFGS, PreconODE12r
 from ase.optimize.sciopt import SciPyFminBFGS, SciPyFminCG
 
@@ -61,7 +69,7 @@ def fixture_kwargs(optcls):
     kwargs = {}
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 @pytest.mark.filterwarnings("ignore: estimate_mu")
 def test_optimize(optcls, atoms, ref_atoms, kwargs):
     """Test if forces can be converged using the optimizer."""
@@ -83,13 +91,14 @@ def test_optimize(optcls, atoms, ref_atoms, kwargs):
     assert e_err < 1.75e-5  # (This tolerance is arbitrary)
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_unconverged(optcls, atoms, kwargs):
     """Test if things work properly when forces are not converged."""
     fmax = 1e-9  # small value to not get converged
     with optcls(atoms, **kwargs) as opt:
         opt.run(fmax=fmax, steps=1)  # only one step to not get converged
     assert not opt.converged()
+    assert opt.todict()["fmax"] == 1e-9
 
 
 def test_run_twice(optcls, atoms, kwargs):

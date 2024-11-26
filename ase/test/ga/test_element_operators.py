@@ -3,9 +3,13 @@ import numpy as np
 from ase import Atoms
 from ase.ga import get_raw_score, set_raw_score
 from ase.ga.element_crossovers import OnePointElementCrossover
-from ase.ga.element_mutations import (RandomElementMutation,
-                                      MoveDownMutation, MoveLeftMutation,
-                                      MoveRightMutation, MoveUpMutation)
+from ase.ga.element_mutations import (
+    MoveDownMutation,
+    MoveLeftMutation,
+    MoveRightMutation,
+    MoveUpMutation,
+    RandomElementMutation,
+)
 
 
 def test_element_operators(seed):

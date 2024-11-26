@@ -30,13 +30,7 @@ def read_gen(fileobj):
 
     # Read atomic symbols
     line = lines[1].split()
-    # Define a dictionary with symbols-id
-    symboldict = {}
-    symbolid = 1
-    for symb in line:
-        symboldict[symbolid] = symb
-        symbolid += 1
-
+    symboldict = {symbolid: symb for symbolid, symb in enumerate(line, start=1)}
     # Read atoms (GEN format supports only single snapshot)
     del lines[:2]
     positions = []

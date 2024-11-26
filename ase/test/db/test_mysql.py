@@ -41,12 +41,12 @@ def url(mysql_port):
     return db_url
 
 
-@pytest.fixture
+@pytest.fixture()
 def db(url):
     return connect(url)
 
 
-@pytest.fixture
+@pytest.fixture()
 def h2o():
     return molecule('H2O')
 

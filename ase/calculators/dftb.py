@@ -10,8 +10,12 @@ import os
 
 import numpy as np
 
-from ase.calculators.calculator import (FileIOCalculator, kpts2ndarray,
-                                        kpts2sizeandoffsets)
+from ase.calculators.calculator import (
+    BadConfiguration,
+    FileIOCalculator,
+    kpts2ndarray,
+    kpts2sizeandoffsets,
+)
 from ase.units import Bohr, Hartree
 
 
@@ -21,6 +25,7 @@ class Dftb(FileIOCalculator):
     discard_results_on_any_change = True
 
     fileio_rules = FileIOCalculator.ruleset(
+        configspec=dict(skt_path=None),
         stdout_name='{prefix}.out')
 
     def __init__(self, restart=None,
@@ -92,16 +97,26 @@ class Dftb(FileIOCalculator):
         if command is None:
             if 'DFTB_COMMAND' in self.cfg:
                 command = self.cfg['DFTB_COMMAND'] + ' > PREFIX.out'
-            else:
-                command = 'dftb+ > PREFIX.out'
+
+        if command is None and profile is None:
+            try:
+                profile = self.load_argv_profile(self.cfg, 'dftb')
+            except BadConfiguration:
+                pass
+
+        if command is None:
+            command = 'dftb+ > PREFIX.out'
 
         if slako_dir is None:
-            slako_dir = self.cfg.get('DFTB_PREFIX', './')
+            if profile is not None:
+                slako_dir = profile.configvars.get('skt_path')
+
+            if slako_dir is None:
+                slako_dir = self.cfg.get('DFTB_PREFIX', './')
             if not slako_dir.endswith('/'):
                 slako_dir += '/'
 
         self.slako_dir = slako_dir
-
         if kwargs.get('Hamiltonian_', 'DFTB') == 'DFTB':
             self.default_parameters = dict(
                 Hamiltonian_='DFTB',
@@ -113,12 +128,14 @@ class Dftb(FileIOCalculator):
                 Options_='',
                 Options_WriteResultsTag='Yes',
                 ParserOptions_='',
+                ParserOptions_ParserVersion=1,
                 ParserOptions_IgnoreUnprocessedNodes='Yes')
         else:
             self.default_parameters = dict(
                 Options_='',
                 Options_WriteResultsTag='Yes',
                 ParserOptions_='',
+                ParserOptions_ParserVersion=1,
                 ParserOptions_IgnoreUnprocessedNodes='Yes')
 
         self.pcpot = None
@@ -377,7 +394,7 @@ class Dftb(FileIOCalculator):
         gradients = []
         for j in range(index_force_begin, index_force_end):
             word = self.lines[j].split()
-            gradients.append([float(word[k]) for k in range(0, 3)])
+            gradients.append([float(word[k]) for k in range(3)])
 
         return np.array(gradients) * Hartree / Bohr
 

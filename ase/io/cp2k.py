@@ -183,7 +183,7 @@ def read_cp2k_dcd(fileobj, index=-1, ref_atoms=None, aligned=False):
     if ref_atoms:
         symbols = ref_atoms.get_chemical_symbols()
     else:
-        symbols = ['X' for i in range(natoms)]
+        symbols = ['X' for _ in range(natoms)]
     if natoms != len(symbols):
         raise ValueError("Length of ref_atoms does not match natoms "
                          "from dcd file")
@@ -271,7 +271,7 @@ def read_cp2k_restart(fileobj):
                     idx = char2idx[line[:2]]
                     cell[idx] = [float(x) for x in line.split()[1:]]
                     pbc[idx] = True
-            if not {len(v) for v in cell} == {3}:
+            if {len(v) for v in cell} != {3}:
                 raise RuntimeError("Bad Cell Definition found.")
         return cell, pbc
 

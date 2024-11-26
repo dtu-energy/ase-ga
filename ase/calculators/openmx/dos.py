@@ -84,56 +84,56 @@ class DOS:
             key = 'p'
             atom_and_orbital = str(atom_index) + orbital
         key += 'dos'
-        self.dos_dict[key + '_energies_' + atom_and_orbital] = np.ndarray(
+        self.dos_dict[f'{key}_energies_{atom_and_orbital}'] = np.ndarray(
             number_of_lines)
         if spin_polarization:
-            self.dos_dict[key + atom_and_orbital + 'up'] = \
+            self.dos_dict[f'{key}{atom_and_orbital}up'] = \
                 np.ndarray(number_of_lines)
-            self.dos_dict[key + atom_and_orbital + 'down'] = \
+            self.dos_dict[f'{key}{atom_and_orbital}down'] = \
                 np.ndarray(number_of_lines)
-            self.dos_dict[key + '_cum_' + atom_and_orbital + 'up'] = \
+            self.dos_dict[f'{key}_cum_{atom_and_orbital}up'] = \
                 np.ndarray(number_of_lines)
-            self.dos_dict[key + '_cum_' + atom_and_orbital + 'down'] = \
+            self.dos_dict[f'{key}_cum_{atom_and_orbital}down'] = \
                 np.ndarray(number_of_lines)
         else:
-            self.dos_dict[key + atom_and_orbital] = np.ndarray(number_of_lines)
-            self.dos_dict[key + '_cum_' + atom_and_orbital] = \
+            self.dos_dict[f'{key}{atom_and_orbital}'] = \
                 np.ndarray(number_of_lines)
-        fd = open(filename)
-        if spin_polarization:
-            for i in range(number_of_lines):
-                line = fd.readline()
-                self.dos_dict[key + '_energies_' + atom_and_orbital][i] = \
-                    read_nth_to_last_value(line, 5)
-                self.dos_dict[key + atom_and_orbital + 'up'][i] = \
-                    read_nth_to_last_value(line, 4)
-                self.dos_dict[key + atom_and_orbital + 'down'][i] = \
-                    -float(read_nth_to_last_value(line, 3))
-                self.dos_dict[key + '_cum_' + atom_and_orbital + 'up'][i] = \
-                    read_nth_to_last_value(line, 2)
-                self.dos_dict[key + '_cum_' + atom_and_orbital + 'down'][i] = \
-                    read_nth_to_last_value(line)
-        elif add:
-            for i in range(number_of_lines):
-                line = fd.readline()
-                self.dos_dict[key + '_energies_' + atom_and_orbital][i] = \
-                    read_nth_to_last_value(line, 5)
-                self.dos_dict[key + atom_and_orbital][i] = \
-                    float(read_nth_to_last_value(line, 4)) - \
-                    float(read_nth_to_last_value(line, 3))
-                self.dos_dict[key + '_cum_' + atom_and_orbital][i] = \
-                    float(read_nth_to_last_value(line, 2)) + \
-                    float(read_nth_to_last_value(line))
-        else:
-            for i in range(number_of_lines):
-                line = fd.readline()
-                self.dos_dict[key + '_energies_' + atom_and_orbital][i] = \
-                    read_nth_to_last_value(line, 3)
-                self.dos_dict[key + atom_and_orbital][i] = \
-                    read_nth_to_last_value(line, 2)
-                self.dos_dict[key + '_cum_' + atom_and_orbital][i] = \
-                    read_nth_to_last_value(line)
-        fd.close()
+            self.dos_dict[f'{key}_cum_{atom_and_orbital}'] = \
+                np.ndarray(number_of_lines)
+        with open(filename) as fd:
+            if spin_polarization:
+                for i in range(number_of_lines):
+                    line = fd.readline()
+                    self.dos_dict[f'{key}_energies_{atom_and_orbital}'][i] = \
+                        read_nth_to_last_value(line, 5)
+                    self.dos_dict[f'{key}{atom_and_orbital}up'][i] = \
+                        read_nth_to_last_value(line, 4)
+                    self.dos_dict[f'{key}{atom_and_orbital}down'][i] = \
+                        -float(read_nth_to_last_value(line, 3))
+                    self.dos_dict[f'{key}_cum_{atom_and_orbital}up'][i] = \
+                        read_nth_to_last_value(line, 2)
+                    self.dos_dict[f'{key}_cum_{atom_and_orbital}down'][i] = \
+                        read_nth_to_last_value(line)
+            elif add:
+                for i in range(number_of_lines):
+                    line = fd.readline()
+                    self.dos_dict[f'{key}_energies_{atom_and_orbital}'][i] = \
+                        read_nth_to_last_value(line, 5)
+                    self.dos_dict[f'{key}{atom_and_orbital}'][i] = \
+                        float(read_nth_to_last_value(line, 4)) - \
+                        float(read_nth_to_last_value(line, 3))
+                    self.dos_dict[f'{key}_cum_{atom_and_orbital}'][i] = \
+                        float(read_nth_to_last_value(line, 2)) + \
+                        float(read_nth_to_last_value(line))
+            else:
+                for i in range(number_of_lines):
+                    line = fd.readline()
+                    self.dos_dict[f'{key}_energies_{atom_and_orbital}'][i] = \
+                        read_nth_to_last_value(line, 3)
+                    self.dos_dict[f'{key}{atom_and_orbital}'][i] = \
+                        read_nth_to_last_value(line, 2)
+                    self.dos_dict[f'{key}_cum_{atom_and_orbital}'][i] = \
+                        read_nth_to_last_value(line)
 
     def subplot_dos(self, axis, density=True, cum=False, pdos=False,
                     atom_index=1, orbital='', spin='',

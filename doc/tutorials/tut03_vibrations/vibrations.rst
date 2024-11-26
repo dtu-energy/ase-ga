@@ -65,4 +65,4 @@ the density, or effects of the simulation box size.
 A solution and other comments to this exercise can be found on the
 GPAW web page:
 
-https://wiki.fysik.dtu.dk/gpaw/exercises/vibrations/vibrations.html
+https://gpaw.readthedocs.io/tutorialsexercises/vibrational/vibrations/vibrations.html

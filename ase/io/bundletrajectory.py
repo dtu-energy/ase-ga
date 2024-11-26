@@ -29,8 +29,11 @@ from pathlib import Path
 import numpy as np
 
 from ase import Atoms
-from ase.calculators.singlepoint import (PropertyNotImplementedError,
-                                         SinglePointCalculator)
+from ase.calculators.singlepoint import (
+    PropertyNotImplementedError,
+    SinglePointCalculator,
+)
+
 # The system json module causes memory leaks!  Use ase's own.
 # import json
 from ase.io import jsonio
@@ -953,17 +956,17 @@ def print_bundletrajectory_info(filename):
             else:
                 print('  Constraints are absent.')
         elif k == 'pbc':
-            print(f'  Periodic boundary conditions: {str(v)}')
+            print(f'  Periodic boundary conditions: {v!s}')
         elif k == 'natoms':
             print('  Number of atoms: %i' % (v,))
         elif hasattr(v, 'shape'):
-            print(f'  {k}: shape = {str(v.shape)}, type = {str(v.dtype)}')
+            print(f'  {k}: shape = {v.shape!s}, type = {v.dtype!s}')
             if k == 'cell':
                 print('        [[%12.6f, %12.6f, %12.6f],' % tuple(v[0]))
                 print('         [%12.6f, %12.6f, %12.6f],' % tuple(v[1]))
                 print('         [%12.6f, %12.6f, %12.6f]]' % tuple(v[2]))
         else:
-            print(f'  {k}: {str(v)}')
+            print(f'  {k}: {v!s}')
     # Read info from separate files.
     if metadata['subtype'] == 'split':
         nsplit = small['fragments']
@@ -974,7 +977,7 @@ def print_bundletrajectory_info(filename):
             info = backend.read_info(frame, k, nsplit)
             infoline = f'  {k}: '
             for k, v in info.items():
-                infoline += f'{k} = {str(v)}, '
+                infoline += f'{k} = {v!s}, '
             infoline = infoline[:-2] + '.'  # Fix punctuation.
             print(infoline)
 

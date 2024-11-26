@@ -24,14 +24,14 @@ def mock_gui_error(title, text=None):
     raise GUIError(title, text)
 
 
-@pytest.fixture
+@pytest.fixture()
 def display():
     pytest.importorskip('tkinter')
     if not os.environ.get('DISPLAY'):
         raise pytest.skip('no display')
 
 
-@pytest.fixture
+@pytest.fixture()
 def gui(guifactory):
     return guifactory(None)
 
@@ -51,7 +51,7 @@ def no_blocking_errors_monkeypatch(monkeypatch):
     # ui.error = orig_ui_error
 
 
-@pytest.fixture
+@pytest.fixture()
 def guifactory(display):
     guis = []
 
@@ -65,14 +65,14 @@ def guifactory(display):
         gui.exit()
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms(gui):
     atoms = bulk('Ti') * (2, 2, 2)
     gui.new_atoms(atoms)
     return atoms
 
 
-@pytest.fixture
+@pytest.fixture()
 def animation(guifactory):
     images = [bulk(sym) for sym in ['Cu', 'Ag', 'Au']]
     gui = guifactory(images)
@@ -162,7 +162,7 @@ def test_rotate(gui):
 
 def test_open_and_save(gui, testdir):
     mol = molecule('H2O')
-    for i in range(3):
+    for j in range(3):
         mol.write('h2o.json')
     gui.open(filename='h2o.json')
     save_dialog(gui, 'h2o.cif@-1')
@@ -209,13 +209,13 @@ def test_povray(gui, testdir):
         assert 'atom' in _
 
 
-@pytest.fixture
+@pytest.fixture()
 def with_bulk_ti(gui):
     atoms = bulk('Ti') * (2, 2, 2)
     gui.new_atoms(atoms)
 
 
-@pytest.fixture
+@pytest.fixture()
 def modify(gui, with_bulk_ti):
     gui.images.selected[:4] = True
     return gui.modify_atoms()
@@ -253,12 +253,14 @@ def test_modify_magmom(gui, modify):
 
 
 def test_repeat(gui):
-    fe = bulk('Fe')
-    gui.new_atoms(fe)
+    atoms = bulk('Fe')
+    energy = 1.0
+    atoms.calc = SinglePointCalculator(atoms, energy=energy)
+    gui.new_atoms(atoms)
     repeat = gui.repeat_window()
 
     multiplier = [2, 3, 4]
-    expected_atoms = fe * multiplier
+    expected_atoms = atoms * multiplier
     natoms = np.prod(multiplier)
     for i, value in enumerate(multiplier):
         repeat.repeat[i].value = value
@@ -266,7 +268,10 @@ def test_repeat(gui):
     repeat.change()
     assert len(gui.atoms) == natoms
     assert gui.atoms.positions == pytest.approx(expected_atoms.positions)
-    assert gui.atoms.cell == pytest.approx(fe.cell[:])  # Still old cell
+    assert gui.atoms.cell == pytest.approx(atoms.cell[:])  # Still old cell
+
+    energy_ref = energy * multiplier[0] * multiplier[1] * multiplier[2]
+    assert gui.images.get_energy(gui.images[0]) == pytest.approx(energy_ref)
 
     repeat.set_unit_cell()
     assert gui.atoms.cell[:] == pytest.approx(expected_atoms.cell[:])
@@ -284,6 +289,31 @@ def test_surface(gui):
 def test_movie(animation):
     movie = animation.movie_window
     assert movie is not None
+
+    animation.step('Home')
+    assert movie.frame_number.value == 0
+
+    animation.step('Page-Up')
+    assert movie.frame_number.value == 0
+
+    animation.step('Page-Down')
+    assert movie.frame_number.value == 1
+
+    animation.step('Page-Down')
+    assert movie.frame_number.value == 2
+
+    last_index = len(animation.images) - 1
+    animation.step('End')
+    assert movie.frame_number.value == last_index
+
+    animation.step('Page-Down')
+    assert movie.frame_number.value == last_index
+
+    animation.step('Page-Up')
+    assert movie.frame_number.value == last_index - 1
+
+    animation.step('Page-Up')
+    assert movie.frame_number.value == last_index - 2
 
     movie.play()
     movie.stop()

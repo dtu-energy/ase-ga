@@ -1,18 +1,18 @@
-import pytest
 import os
 
-from ase.calculators.vasp import Vasp
+import pytest
 
 from ase.build import bulk, molecule
+from ase.calculators.vasp import Vasp
 
 
-@pytest.fixture
+@pytest.fixture()
 def nacl():
     atoms = bulk("NaCl", crystalstructure="rocksalt", a=4.1, cubic=True)
     return atoms
 
 
-@pytest.fixture
+@pytest.fixture()
 def nh3():
     atoms = molecule("NH3", vacuum=10)
     return atoms

@@ -13,7 +13,7 @@ from ase.optimize import FIRE
 from ase.units import GPa
 
 
-@pytest.fixture
+@pytest.fixture()
 def mm_calc():
     bulk_at = bulk("Cu", cubic=True)
     sigma = (bulk_at * 2).get_distance(0, 1) * (2. ** (-1. / 6))
@@ -21,19 +21,19 @@ def mm_calc():
     return LennardJones(sigma=sigma, epsilon=0.05)
 
 
-@pytest.fixture
+@pytest.fixture()
 def qm_calc():
     return EMT()
 
 
-@pytest.fixture
+@pytest.fixture()
 def bulk_at():
     bulk_at = bulk("Cu", cubic=True)
 
     return bulk_at
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_qm_buffer_mask(qm_calc, mm_calc, bulk_at):
     """
     test number of atoms in qm_buffer_mask for
@@ -286,7 +286,7 @@ def test_rescaled_calculator():
     assert abs((B_mm_r - B_qm) / B_qm) < 1e-3
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_forceqmmm(qm_calc, mm_calc, bulk_at):
 
     # parameters
@@ -353,7 +353,7 @@ def test_forceqmmm(qm_calc, mm_calc, bulk_at):
     assert du_global[-1] < 1e-10
 
 
-@pytest.fixture
+@pytest.fixture()
 def at0(qm_calc, mm_calc, bulk_at):
     alat = bulk_at.cell[0, 0]
     at0 = bulk_at * 5
@@ -412,8 +412,9 @@ def test_set_masks_from_region(at0, qm_calc, mm_calc):
                           buffer_width=3.61)
 
     # assert that number of qm atoms is different
-    assert not (np.count_nonzero(qmmm.qm_selection_mask) ==
-                np.count_nonzero(test_qmmm.qm_selection_mask))
+    assert np.count_nonzero(qmmm.qm_selection_mask) != np.count_nonzero(
+        test_qmmm.qm_selection_mask
+    )
 
     test_qmmm.set_masks_from_region(region)
 

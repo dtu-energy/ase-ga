@@ -82,7 +82,7 @@ def write_gromos(fileobj, atoms):
         gromos_residuenames = atoms.get_array('residuenames')
     except KeyError:
         gromos_residuenames = []
-        for idum in range(natoms):
+        for _ in range(natoms):
             gromos_residuenames.append('1DUM')
     try:
         gromos_atomtypes = atoms.get_array('atomtypes')

@@ -146,7 +146,7 @@ class SetupSurfaceSlab:
         self.x_warn.text = ''
         self.y_warn.text = ''
         if symbol is None:
-            return
+            return None
 
         x = self.x.value
         y = self.y.value
@@ -162,25 +162,25 @@ class SetupSurfaceSlab:
         ortho_warn_even = _('Please enter an even value for orthogonal cell')
 
         struct = self.structure.value
-        if struct == _('BCC(111)') and (not (y % 2 == 0) and ortho):
+        if struct == _('BCC(111)') and y % 2 != 0 and ortho:
             self.y_warn.text = ortho_warn_even
-            return
-        if struct == _('BCC(110)') and (not (y % 2 == 0) and ortho):
+            return None
+        if struct == _('BCC(110)') and y % 2 != 0 and ortho:
             self.y_warn.text = ortho_warn_even
-            return
-        if struct == _('FCC(111)') and (not (y % 2 == 0) and ortho):
+            return None
+        if struct == _('FCC(111)') and y % 2 != 0 and ortho:
             self.y_warn.text = ortho_warn_even
-            return
-        if struct == _('FCC(211)') and (not (x % 3 == 0) and ortho):
+            return None
+        if struct == _('FCC(211)') and x % 3 != 0 and ortho:
             self.x_warn.text = _('Please enter a value divisible by 3'
                                  ' for orthogonal cell')
-            return
-        if struct == _('HCP(0001)') and (not (y % 2 == 0) and ortho):
+            return None
+        if struct == _('HCP(0001)') and y % 2 != 0 and ortho:
             self.y_warn.text = ortho_warn_even
-            return
-        if struct == _('HCP(10-10)') and (not (y % 2 == 0) and ortho):
+            return None
+        if struct == _('HCP(10-10)') and y % 2 != 0 and ortho:
             self.y_warn.text = ortho_warn_even
-            return
+            return None
 
         for surface in surfaces:
             if surface[0] == struct:

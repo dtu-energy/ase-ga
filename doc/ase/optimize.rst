@@ -12,6 +12,17 @@ optimization algorithms which find a nearby local minimum and
 global optimization algorithms that try to find the global
 minimum (a much harder task).
 
+Most optimization algorithms available in ASE inherit the following
+:class:`~ase.optimize.optimize.Optimizer` base-class.
+
+.. autoclass:: ase.optimize.optimize.Optimizer
+
+.. note::
+
+    :class:`~ase.optimize.optimize.Optimizer` classes themselves optimize only
+    internal atomic positions.
+    Cell volume and shape can also be optimized in combination with ``Filter``
+    classes. (See :doc:`filters` for details.)
 
 Local optimization
 ==================
@@ -23,7 +34,7 @@ The local optimization algorithms available in ASE are: :class:`BFGS`,
 .. seealso::
 
     `Performance test
-    <https://wiki.fysik.dtu.dk/gpaw/devel/ase_optimize/ase_optimize.html>`_
+    <https://gpaw.readthedocs.io/devel/ase_optimize/ase_optimize.html>`_
     for all ASE local optimizers.
 
 
@@ -46,12 +57,6 @@ The convergence criterion is that the force on all individual atoms
 should be less than *fmax*:
 
 .. math:: \max_a |\vec{F_a}| < f_\text{max}
-
-.. note::
-
-    ``Optimizer`` classes themselves optimize only internal atomic positions.
-    Cell volume and shape can also be optimized in combination with ``Filter``
-    classes. (See :doc:`filters` for details.)
 
 BFGS
 ----
@@ -124,10 +129,10 @@ Aside from the geometry, the Hessian of the previous run can and
 should be retained for the second run.  Use the ``restart`` keyword to
 specify a file in which to save the Hessian::
 
-  dyn = BFGS(atoms=system, trajectory='qn.traj', restart='qn.pckl')
+  dyn = BFGS(atoms=system, trajectory='qn.traj', restart='qn.json')
 
 This will create an optimizer which saves the Hessian to
-:file:`qn.pckl` (using the Python :mod:`pickle` module) on each
+:file:`qn.json` (using the Python :mod:`json` module) on each
 step.  If the file already exists, the Hessian will also be
 *initialized* from that file.
 
@@ -151,7 +156,7 @@ The file :file:`history.traj` will then contain all necessary
 information.
 
 When switching between different types of optimizers, e.g. between
-``BFGS`` and ``LBFGS``, the pickle-files specified by the
+``BFGS`` and ``LBFGS``, the JSON-files specified by the
 ``restart`` keyword are not compatible, but the Hessian can still be
 retained by replaying the trajectory as above.
 

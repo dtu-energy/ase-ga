@@ -8,6 +8,17 @@ from ase.io.espresso_namelist.keys import ALL_KEYS
 
 
 class Namelist(UserDict):
+    """A case-insensitive dictionary for storing Quantum Espresso namelists.
+    This class is a subclass of UserDict, which is a wrapper around a regular
+    dictionary. This allows us to define custom behavior for the dictionary
+    methods, while still having access to the full dictionary API.
+
+    to_string() have been added to handle the conversion of the dictionary
+    to a string for writing to a file or quick lookup using print().
+
+    to_nested() have been added to convert the dictionary to a nested
+    dictionary with the correct structure for the specified binary.
+    """
     def __getitem__(self, key):
         return super().__getitem__(key.lower())
 
@@ -49,18 +60,18 @@ class Namelist(UserDict):
         pwi = []
         for key, value in self.items():
             if isinstance(value, (Namelist, dict)):
-                pwi.append(f"{' '* indent}&{key.upper()}\n")
+                pwi.append(f"{' ' * indent}&{key.upper()}\n")
                 pwi.extend(Namelist.to_string(value, indent=indent + 3))
-                pwi.append(f"{' '* indent}/\n")
+                pwi.append(f"{' ' * indent}/\n")
             else:
                 if value is True:
-                    pwi.append(f"{' '* indent}{key:16} = .true.\n")
+                    pwi.append(f"{' ' * indent}{key:16} = .true.\n")
                 elif value is False:
-                    pwi.append(f"{' '* indent}{key:16} = .false.\n")
+                    pwi.append(f"{' ' * indent}{key:16} = .false.\n")
                 elif isinstance(value, Path):
-                    pwi.append(f"{' '* indent}{key:16} = '{value}'\n")
+                    pwi.append(f"{' ' * indent}{key:16} = '{value}'\n")
                 else:
-                    pwi.append(f"{' '* indent}{key:16} = {value!r}\n")
+                    pwi.append(f"{' ' * indent}{key:16} = {value!r}\n")
         if list_form:
             return pwi
         else:

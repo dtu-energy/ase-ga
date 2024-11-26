@@ -2,8 +2,11 @@ import numpy as np
 import pytest
 
 from ase.build import fcc111, molecule
-from ase.build.attach import (attach, attach_randomly,
-                              attach_randomly_and_broadcast)
+from ase.build.attach import (
+    attach,
+    attach_randomly,
+    attach_randomly_and_broadcast,
+)
 from ase.parallel import world
 
 
@@ -75,7 +78,7 @@ def test_attach_randomly():
     rng = np.random.RandomState(42)  # ensure the same seed
     pos2_ac = np.zeros((5, 3))
     N = 25
-    for i in range(N):
+    for _ in range(N):
         atoms = attach_randomly(m1, m2, distance, rng=rng)
         pos2_ac += atoms.get_positions()[12:, :]
     # the average position should be "zero" approximately

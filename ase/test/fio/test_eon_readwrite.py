@@ -1,8 +1,8 @@
 """Check that reading and writing .con files is consistent."""
 
-import pytest
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import ase
 import ase.io

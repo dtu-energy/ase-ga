@@ -6,9 +6,12 @@ from pytest import approx
 
 from ase.atoms import Atoms
 from ase.build import bulk
-from ase.constraints import (FixAtoms, FixCartesian,
-                             FixCartesianParametricRelations,
-                             FixScaledParametricRelations)
+from ase.constraints import (
+    FixAtoms,
+    FixCartesian,
+    FixCartesianParametricRelations,
+    FixScaledParametricRelations,
+)
 from ase.io.aims import parse_geometry_lines
 from ase.io.aims import read_aims as read
 
@@ -17,12 +20,12 @@ format = "aims"
 file = "geometry.in"
 
 
-@pytest.fixture
+@pytest.fixture()
 def Si():
     return bulk("Si")
 
 
-@pytest.fixture
+@pytest.fixture()
 def H2O():
     return Atoms("H2O", [(0.9584, 0.0, 0.0),
                  (-0.2400, 0.9279, 0.0), (0.0, 0.0, 0.0)])

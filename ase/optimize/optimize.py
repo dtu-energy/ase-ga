@@ -1,18 +1,17 @@
 """Structure optimization. """
 import time
+import warnings
 from collections.abc import Callable
 from math import sqrt
 from os.path import isfile
 from typing import IO, Any, Dict, List, Optional, Tuple, Union
-import warnings
 
 from ase import Atoms
-from ase.filters import UnitCellFilter
 from ase.calculators.calculator import PropertyNotImplementedError
-from ase.parallel import barrier, world
+from ase.filters import UnitCellFilter
+from ase.parallel import world
 from ase.utils import IOContext, lazyproperty
 from ase.utils.abc import Optimizable
-
 
 DEFAULT_MAX_STEPS = 100_000_000
 
@@ -77,49 +76,62 @@ class Dynamics(IOContext):
         trajectory: Optional[str] = None,
         append_trajectory: bool = False,
         master: Optional[bool] = None,
+        comm=world,
+        *,
+        loginterval: int = 1,
     ):
         """Dynamics object.
 
-        Parameters:
-
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms : Atoms object
             The Atoms object to operate on.
 
-        logfile: file object or str
+        logfile : file object or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        trajectory: Trajectory object or str
+        trajectory : Trajectory object or str
             Attach trajectory object.  If *trajectory* is a string a
             Trajectory will be constructed.  Use *None* for no
             trajectory.
 
-        append_trajectory: boolean
+        append_trajectory : bool
             Defaults to False, which causes the trajectory file to be
             overwriten each time the dynamics is restarted from scratch.
             If True, the new structures are appended to the trajectory
             file instead.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
-        """
+        master : bool
+            Defaults to None, which causes only rank 0 to save files. If set to
+            true, this rank will save files.
 
+        comm : Communicator object
+            Communicator to handle parallel file reading and writing.
+
+        loginterval : int, default: 1
+            Only write a log line for every *loginterval* time steps.
+        """
         self.atoms = atoms
         self.optimizable = atoms.__ase_optimizable__()
-        self.logfile = self.openfile(logfile, mode='a', comm=world)
+        self.logfile = self.openfile(file=logfile, comm=comm, mode='a')
         self.observers: List[Tuple[Callable, int, Tuple, Dict[str, Any]]] = []
         self.nsteps = 0
         self.max_steps = 0  # to be updated in run or irun
+        self.comm = comm
 
         if trajectory is not None:
             if isinstance(trajectory, str):
                 from ase.io.trajectory import Trajectory
                 mode = "a" if append_trajectory else "w"
                 trajectory = self.closelater(Trajectory(
-                    trajectory, mode=mode, master=master
+                    trajectory, mode=mode, master=master, comm=comm
                 ))
-            self.attach(trajectory, atoms=self.optimizable)
+            self.attach(
+                trajectory,
+                interval=loginterval,
+                atoms=self.optimizable,
+            )
 
         self.trajectory = trajectory
 
@@ -300,50 +312,42 @@ class Optimizer(Dynamics):
         restart: Optional[str] = None,
         logfile: Optional[Union[IO, str]] = None,
         trajectory: Optional[str] = None,
-        master: Optional[bool] = None,
         append_trajectory: bool = False,
-        force_consistent=_deprecated,
+        **kwargs,
     ):
-        """Structure optimizer object.
+        """
 
-        Parameters:
-
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
         restart: str
-            Filename for restart file.  Default value is *None*.
+            Filename for restart file. Default value is *None*.
 
         logfile: file object or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
         trajectory: Trajectory object or str
-            Attach trajectory object.  If *trajectory* is a string a
-            Trajectory will be constructed.  Use *None* for no
+            Attach trajectory object. If *trajectory* is a string a
+            Trajectory will be constructed. Use *None* for no
             trajectory.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
-
-        append_trajectory: boolean
+        append_trajectory: bool
             Appended to the trajectory file instead of overwriting it.
 
-        force_consistent: boolean or None
-            Use force-consistent energy calls (as opposed to the energy
-            extrapolated to 0 K).  If force_consistent=None, uses
-            force-consistent energies if available in the calculator, but
-            falls back to force_consistent=False if not.
-        """
-        self.check_deprecated(force_consistent)
+        kwargs : dict, optional
+            Extra arguments passed to :class:`~ase.optimize.optimize.Dynamics`.
 
+        """
         super().__init__(
             atoms=atoms,
             logfile=logfile,
             trajectory=trajectory,
             append_trajectory=append_trajectory,
-            master=master)
+            **kwargs,
+        )
 
         self.restart = restart
 
@@ -353,18 +357,7 @@ class Optimizer(Dynamics):
             self.initialize()
         else:
             self.read()
-            barrier()
-
-    @classmethod
-    def check_deprecated(cls, force_consistent):
-        if force_consistent is cls._deprecated:
-            return False
-
-        warnings.warn(
-            'force_consistent keyword is deprecated and will '
-            'be ignored.  This will raise an error in future versions '
-            'of ASE.',
-            FutureWarning)
+            self.comm.barrier()
 
     def read(self):
         raise NotImplementedError
@@ -375,7 +368,8 @@ class Optimizer(Dynamics):
             "optimizer": self.__class__.__name__,
         }
         # add custom attributes from subclasses
-        for attr in ('maxstep', 'alpha', 'max_steps', 'restart'):
+        for attr in ('maxstep', 'alpha', 'max_steps', 'restart',
+                     'fmax'):
             if hasattr(self, attr):
                 description.update({attr: getattr(self, attr)})
         return description
@@ -445,7 +439,7 @@ class Optimizer(Dynamics):
 
     def dump(self, data):
         from ase.io.jsonio import write_json
-        if world.rank == 0 and self.restart is not None:
+        if self.comm.rank == 0 and self.restart is not None:
             with open(self.restart, 'w') as fd:
                 write_json(fd, data)
 

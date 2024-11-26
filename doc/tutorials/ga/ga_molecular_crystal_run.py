@@ -8,8 +8,12 @@ from ase.ga.offspring_creator import OperationSelector
 from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.population import Population
 from ase.ga.soft_mutation import SoftMutation
-from ase.ga.standardmutations import (RattleMutation, RattleRotationalMutation,
-                                      RotationalMutation, StrainMutation)
+from ase.ga.standardmutations import (
+    RattleMutation,
+    RattleRotationalMutation,
+    RotationalMutation,
+    StrainMutation,
+)
 from ase.ga.utilities import CellBounds, closest_distances_generator
 from ase.io import write
 

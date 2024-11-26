@@ -55,11 +55,20 @@ def get_cell_coordinates(cell, shifted=False):
 
 
 def get_bonds(atoms, covalent_radii):
-    from ase.neighborlist import NeighborList
-    nl = NeighborList(covalent_radii * 1.5,
-                      skin=0, self_interaction=False)
-    nl.update(atoms)
-    nbonds = nl.nneighbors + nl.npbcneighbors
+    from ase.neighborlist import PrimitiveNeighborList
+
+    nl = PrimitiveNeighborList(
+        covalent_radii * 1.5,
+        skin=0.0,
+        self_interaction=False,
+        bothways=False,
+    )
+    nl.update(atoms.pbc, atoms.get_cell(complete=True), atoms.positions)
+    number_of_neighbors = sum(indices.size for indices in nl.neighbors)
+    number_of_pbc_neighbors = sum(
+        offsets.any(axis=1).sum() for offsets in nl.displacements
+    )  # sum up all neighbors that have non-zero supercell offsets
+    nbonds = number_of_neighbors + number_of_pbc_neighbors
 
     bonds = np.empty((nbonds, 5), int)
     if nbonds == 0:
@@ -92,12 +101,10 @@ class View:
 
         # XXX
         self.colormode = 'jmol'
-        self.colors = {}
-
-        for i, rgb in enumerate(jmol_colors):
-            self.colors[i] = ('#{:02X}{:02X}{:02X}'
-                              .format(*(int(x * 255) for x in rgb)))
-
+        self.colors = {
+            i: ('#{:02X}{:02X}{:02X}'.format(*(int(x * 255) for x in rgb)))
+            for i, rgb in enumerate(jmol_colors)
+        }
         # scaling factors for vectors
         self.force_vector_scale = self.config['force_vector_scale']
         self.velocity_vector_scale = self.config['velocity_vector_scale']
@@ -141,6 +148,11 @@ class View:
         else:
             self.draw()
 
+    def get_bonds(self, atoms):
+        # this method exists rather than just using the standalone function
+        # so that it can be overridden by external libraries
+        return get_bonds(atoms, self.get_covalent_radii(atoms))
+
     def set_atoms(self, atoms):
         natoms = len(atoms)
 
@@ -153,7 +165,7 @@ class View:
         if self.showing_bonds():
             atomscopy = atoms.copy()
             atomscopy.cell *= self.images.repeat[:, np.newaxis]
-            bonds = get_bonds(atomscopy, self.get_covalent_radii(atoms))
+            bonds = self.get_bonds(atomscopy)
         else:
             bonds = np.empty((0, 5), int)
 
@@ -170,29 +182,27 @@ class View:
         self.X_cell = self.X[natoms:natoms + len(B1)]
         self.X_bonds = self.X[natoms + len(B1):]
 
-        if 1:  # if init or frame != self.frame:
-            cell = atoms.cell
-            ncellparts = len(B1)
-            nbonds = len(bonds)
+        cell = atoms.cell
+        ncellparts = len(B1)
+        nbonds = len(bonds)
 
-            if 1:  # init or (atoms.cell != self.atoms.cell).any():
-                self.X_cell[:] = np.dot(B1, cell)
-                self.B = np.empty((ncellparts + nbonds, 3))
-                self.B[:ncellparts] = np.dot(B2, cell)
+        self.X_cell[:] = np.dot(B1, cell)
+        self.B = np.empty((ncellparts + nbonds, 3))
+        self.B[:ncellparts] = np.dot(B2, cell)
 
-            if nbonds > 0:
-                P = atoms.positions
-                Af = self.images.repeat[:, np.newaxis] * cell
-                a = P[bonds[:, 0]]
-                b = P[bonds[:, 1]] + np.dot(bonds[:, 2:], Af) - a
-                d = (b**2).sum(1)**0.5
-                r = 0.65 * self.get_covalent_radii()
-                x0 = (r[bonds[:, 0]] / d).reshape((-1, 1))
-                x1 = (r[bonds[:, 1]] / d).reshape((-1, 1))
-                self.X_bonds[:] = a + b * x0
-                b *= 1.0 - x0 - x1
-                b[bonds[:, 2:].any(1)] *= 0.5
-                self.B[ncellparts:] = self.X_bonds + b
+        if nbonds > 0:
+            P = atoms.positions
+            Af = self.images.repeat[:, np.newaxis] * cell
+            a = P[bonds[:, 0]]
+            b = P[bonds[:, 1]] + np.dot(bonds[:, 2:], Af) - a
+            d = (b**2).sum(1)**0.5
+            r = 0.65 * self.get_covalent_radii()
+            x0 = (r[bonds[:, 0]] / d).reshape((-1, 1))
+            x1 = (r[bonds[:, 1]] / d).reshape((-1, 1))
+            self.X_bonds[:] = a + b * x0
+            b *= 1.0 - x0 - x1
+            b[bonds[:, 2:].any(1)] *= 0.5
+            self.B[ncellparts:] = self.X_bonds + b
 
     def showing_bonds(self):
         return self.window['toggle-show-bonds']

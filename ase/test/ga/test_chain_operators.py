@@ -4,8 +4,11 @@ from ase import Atoms
 from ase.ga.cutandsplicepairing import CutAndSplicePairing
 from ase.ga.standardmutations import StrainMutation
 from ase.ga.startgenerator import StartGenerator
-from ase.ga.utilities import (CellBounds, atoms_too_close,
-                              closest_distances_generator)
+from ase.ga.utilities import (
+    CellBounds,
+    atoms_too_close,
+    closest_distances_generator,
+)
 
 
 def test_chain_operators(seed):

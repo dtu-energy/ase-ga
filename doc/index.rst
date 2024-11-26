@@ -63,6 +63,8 @@ Mopac_
 News
 ====
 
+* :ref:`ASE version 3.23.0 <releasenotes>` released (31 May 2024).
+
 * :ref:`ASE version 3.22.1 <releasenotes>` released (1 December 2021).
 
 * :ref:`ASE version 3.22.0 <releasenotes>` released (24 June 2021).
@@ -252,7 +254,7 @@ Contents
    :target: ase/calculators/gamess_us.html
    :align: middle
 .. |gpaw| image:: static/gpaw.png
-   :target: https://wiki.fysik.dtu.dk/gpaw/
+   :target: https://gpaw.readthedocs.io/
    :align: middle
 .. |gromacs| image:: static/gromacs.png
    :target: ase/calculators/gromacs.html

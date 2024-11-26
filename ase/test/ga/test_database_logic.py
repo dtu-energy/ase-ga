@@ -44,7 +44,7 @@ def test_database_logic(seed, testdir):
                         rng=rng)
 
     # generate the starting population
-    starting_population = [sg.get_new_candidate() for i in range(20)]
+    starting_population = [sg.get_new_candidate() for _ in range(20)]
 
     d = PrepareDB(db_file_name=db_file,
                   simulation_cell=slab,

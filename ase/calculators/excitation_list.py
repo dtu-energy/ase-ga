@@ -57,13 +57,13 @@ class Excitation:
         l = string.split()
         energy = float(l.pop(0))
         index = int(l.pop(0))
-        mur = np.array([float(l.pop(0)) for i in range(3)])
+        mur = np.array([float(l.pop(0)) for _ in range(3)])
         try:
-            muv = np.array([float(l.pop(0)) for i in range(3)])
+            muv = np.array([float(l.pop(0)) for _ in range(3)])
         except IndexError:
             muv = None
         try:
-            magn = np.array([float(l.pop(0)) for i in range(3)])
+            magn = np.array([float(l.pop(0)) for _ in range(3)])
         except IndexError:
             magn = None
 

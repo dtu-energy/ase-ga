@@ -147,7 +147,7 @@ def write_gromacs(fileobj, atoms):
         gromacs_residuenames = atoms.get_array('residuenames')
     except KeyError:
         gromacs_residuenames = []
-        for idum in range(natoms):
+        for _ in range(natoms):
             gromacs_residuenames.append('1DUM')
     try:
         gromacs_atomtypes = atoms.get_array('atomtypes')
@@ -171,15 +171,15 @@ def write_gromacs(fileobj, atoms):
     # No "#" in the first line to prevent read error in VMD
     fileobj.write('A Gromacs structure file written by ASE \n')
     fileobj.write('%5d\n' % len(atoms))
-    count = 1
-
     # gromacs line see
     # manual.gromacs.org/documentation/current/user-guide/file-formats.html#gro
     # (EDH: link seems broken as of 2020-02-21)
     #    1WATER  OW1    1   0.126   1.624   1.679  0.1227 -0.0580  0.0434
-    for (resnb, resname, atomtype, xyz,
-         vxyz) in zip(residuenumbers, gromacs_residuenames, gromacs_atomtypes,
-                      pos, vel):
+    for count, (resnb, resname, atomtype,
+                xyz, vxyz) in enumerate(zip(residuenumbers,
+                                            gromacs_residuenames,
+                                            gromacs_atomtypes, pos, vel),
+                                        start=1):
 
         # THIS SHOULD BE THE CORRECT, PYTHON FORMATTING, EQUIVALENT TO THE
         # C FORMATTING GIVEN IN THE GROMACS DOCUMENTATION:
@@ -191,8 +191,6 @@ def write_gromacs(fileobj, atoms):
                                                     vxyz[2]))
 
         fileobj.write(line)
-        count += 1
-
     # write box geometry
     if atoms.get_pbc().any():
         # gromacs manual (manual.gromacs.org/online/gro.html) says:

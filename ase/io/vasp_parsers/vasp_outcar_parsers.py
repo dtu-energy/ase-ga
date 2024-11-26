@@ -11,8 +11,10 @@ import numpy as np
 
 import ase
 from ase import Atoms
-from ase.calculators.singlepoint import (SinglePointDFTCalculator,
-                                         SinglePointKPoint)
+from ase.calculators.singlepoint import (
+    SinglePointDFTCalculator,
+    SinglePointKPoint,
+)
 from ase.data import atomic_numbers
 from ase.io import ParseError, read
 from ase.io.utils import ImageChunk
@@ -396,36 +398,49 @@ class Magmom(VaspChunkPropertyParser):
         idx = parts.index('magnetization') + 1
         magmom_lst = parts[idx:]
         if len(magmom_lst) != 1:
-            warn(
-                'Non-collinear spin is not yet implemented. '
-                'Setting magmom to x value.')
-        magmom = float(magmom_lst[0])
-        # Use these lines when non-collinear spin is supported!
-        # Remember to check that format fits!
-        # else:
-        #     # Non-collinear spin
-        #     # Make a (3,) dim array
-        #     magmom = np.array(list(map(float, magmom)))
+            magmom = np.array(list(map(float, magmom_lst)))
+        else:
+            magmom = float(magmom_lst[0])
         return {'magmom': magmom}
 
 
-class Magmoms(SimpleVaspChunkParser):
-    """Get the x-component of the magnitization.
-    This is just the magmoms in the collinear case.
-
-    non-collinear spin is (currently) not supported"""
-    LINE_DELIMITER = 'magnetization (x)'
+class Magmoms(VaspChunkPropertyParser):
+    def has_property(self, cursor: _CURSOR, lines: _CHUNK) -> bool:
+        line = lines[cursor]
+        if 'magnetization (x)' in line:
+            natoms = self.get_from_header('natoms')
+            self.non_collinear = False
+            if cursor + natoms + 9 < len(lines):
+                line_y = self.get_line(cursor + natoms + 9, lines)
+                if 'magnetization (y)' in line_y:
+                    self.non_collinear = True
+            return True
+        return False
 
     def parse(self, cursor: _CURSOR, lines: _CHUNK) -> _RESULT:
-        # Magnetization for collinear
+
         natoms = self.get_from_header('natoms')
-        nskip = 4  # Skip some lines
-        magmoms = np.zeros(natoms)
-        for i in range(natoms):
-            line = self.get_line(cursor + i + nskip, lines)
-            magmoms[i] = float(line.split()[-1])
-        # Once we support non-collinear spin,
-        # search for magnetization (y) and magnetization (z) as well.
+        if self.non_collinear:
+            magmoms = np.zeros((natoms, 3))
+            nskip = 4  # Skip some lines
+            for i in range(natoms):
+                line = self.get_line(cursor + i + nskip, lines)
+                magmoms[i, 0] = float(line.split()[-1])
+            nskip = natoms + 13  # Skip some lines
+            for i in range(natoms):
+                line = self.get_line(cursor + i + nskip, lines)
+                magmoms[i, 1] = float(line.split()[-1])
+            nskip = 2 * natoms + 22  # Skip some lines
+            for i in range(natoms):
+                line = self.get_line(cursor + i + nskip, lines)
+                magmoms[i, 2] = float(line.split()[-1])
+        else:
+            magmoms = np.zeros(natoms)
+            nskip = 4  # Skip some lines
+            for i in range(natoms):
+                line = self.get_line(cursor + i + nskip, lines)
+                magmoms[i] = float(line.split()[-1])
+
         return {'magmoms': magmoms}
 
 

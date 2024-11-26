@@ -12,6 +12,7 @@ from typing import List, Tuple
 import numpy as np
 
 import ase
+
 # independent unit management included here:
 # When high accuracy is required, this allows to easily pin down
 # unit conversion factors from different "unit definition systems"
@@ -21,9 +22,10 @@ import ase
 import ase.units
 from ase.constraints import FixAtoms, FixCartesian, FixedLine, FixedPlane
 from ase.geometry.cell import cellpar_to_cell
+from ase.io.castep.castep_reader import read_castep_castep
 from ase.parallel import paropen
 from ase.spacegroup import Spacegroup
-from ase.utils import atoms_to_spglib_cell
+from ase.utils import atoms_to_spglib_cell, reader, writer
 
 units_ase = {
     'hbar': ase.units._hbar * ase.units.J,
@@ -68,10 +70,7 @@ for d in (units_CODATA1986, units_CODATA2002):
 
 __all__ = [
     # routines for the generic io function
-    'read_castep',
     'read_castep_castep',
-    'read_castep_castep_old',
-    'read_cell',
     'read_castep_cell',
     'read_geom',
     'read_castep_geom',
@@ -119,20 +118,7 @@ def write_freeform(fd, outputobj):
             fd.write(f'{kw.upper()}: {opt.value}\n')
 
 
-def write_cell(filename, atoms, positions_frac=False, castep_cell=None,
-               force_write=False):
-    """
-    Wrapper function for the more generic write() functionality.
-
-    Note that this is function is intended to maintain backwards-compatibility
-    only.
-    """
-    from ase.io import write
-
-    write(filename, atoms, positions_frac=positions_frac,
-          castep_cell=castep_cell, force_write=force_write)
-
-
+@writer
 def write_castep_cell(fd, atoms, positions_frac=False, force_write=False,
                       precision=6, magnetic_moments=None,
                       castep_cell=None):
@@ -276,7 +262,7 @@ def write_castep_cell(fd, atoms, positions_frac=False, force_write=False,
                         mass_block.append('{} {}'.format(
                             custom_species_name, mass_val))
 
-        setattr(cell, 'species_mass', mass_block)
+        cell.species_mass = mass_block
 
     if atoms.has('castep_labels'):
         labels = atoms.get_array('castep_labels')
@@ -386,7 +372,7 @@ def read_freeform(fd):
     keywords and lists of strings for blocks).
     """
 
-    from ase.calculators.castep import CastepInputFile
+    from ase.io.castep.castep_input_file import CastepInputFile
 
     inputobj = CastepInputFile(keyword_tolerance=2)
 
@@ -440,17 +426,7 @@ def read_freeform(fd):
     return inputobj.get_attr_dict(types=True)
 
 
-def read_cell(filename, index=None):
-    """
-    Wrapper function for the more generic read() functionality.
-
-    Note that this is function is intended to maintain backwards-compatibility
-    only.
-    """
-    from ase.io import read
-    return read(filename, index=index, format='castep-cell')
-
-
+@reader
 def read_castep_cell(fd, index=None, calculator_args={}, find_spg=False,
                      units=units_CODATA2002):
     """Read a .cell file and return an atoms object.
@@ -661,7 +637,7 @@ def read_castep_cell(fd, index=None, calculator_args={}, find_spg=False,
         line_tokens = [line.split() for line in lines]
 
         for tokens in line_tokens:
-            if not len(tokens) == 6:
+            if len(tokens) != 6:
                 continue
             _, species, nic, x, y, z = tokens
             # convert xyz to floats
@@ -782,145 +758,6 @@ def read_castep_cell(fd, index=None, calculator_args={}, find_spg=False,
     atoms.calc.push_oldstate()
 
     return atoms
-
-
-def read_castep(filename, index=None):
-    """
-    Wrapper function for the more generic read() functionality.
-
-    Note that this is function is intended to maintain backwards-compatibility
-    only.
-    """
-    from ase.io import read
-    return read(filename, index=index, format='castep-castep')
-
-
-def read_castep_castep(fd, index=None):
-    """
-    Reads a .castep file and returns an atoms  object.
-    The calculator information will be stored in the calc attribute.
-
-    There is no use of the "index" argument as of now, it is just inserted for
-    convenience to comply with the generic "read()" in ase.io
-
-    Please note that this routine will return an atom ordering as found
-    within the castep file. This means that the species will be ordered by
-    ascending atomic numbers. The atoms witin a species are ordered as given
-    in the original cell file.
-
-    Note: This routine returns a single atoms_object only, the last
-    configuration in the file. Yet, if you want to parse an MD run, use the
-    novel function `read_md()`
-    """
-
-    from ase.calculators.castep import Castep
-
-    try:
-        calc = Castep()
-    except Exception as e:
-        # No CASTEP keywords found?
-        warnings.warn(f'WARNING: {e} Using fallback .castep reader...')
-        # Fall back on the old method
-        return read_castep_castep_old(fd, index)
-
-    calc.read(castep_file=fd)
-
-    # now we trick the calculator instance such that we can savely extract
-    # energies and forces from this atom. Basically what we do is to trick the
-    # internal routine calculation_required() to always return False such that
-    # we do not need to re-run a CASTEP calculation.
-    #
-    # Probably we can solve this with a flag to the read() routine at some
-    # point, but for the moment I do not want to change too much in there.
-    calc._old_atoms = calc.atoms
-    calc._old_param = calc.param
-    calc._old_cell = calc.cell
-
-    return [calc.atoms]  # Returning in the form of a list for next()
-
-
-def read_castep_castep_old(fd, index=None):
-    """
-    DEPRECATED
-    Now replaced by ase.calculators.castep.Castep.read(). Left in for future
-    reference and backwards compatibility needs, as well as a fallback for
-    when castep_keywords.py can't be created.
-
-    Reads a .castep file and returns an atoms  object.
-    The calculator information will be stored in the calc attribute.
-    If more than one SCF step is found, a list of all steps
-    will be stored in the traj attribute.
-
-    Note that the index argument has no effect as of now.
-
-    Please note that this routine will return an atom ordering as found
-    within the castep file. This means that the species will be ordered by
-    ascending atomic numbers. The atoms witin a species are ordered as given
-    in the original cell file.
-    """
-    from ase.calculators.singlepoint import SinglePointCalculator
-
-    lines = fd.readlines()
-
-    traj = []
-    energy_total = None
-    energy_0K = None
-    for i, line in enumerate(lines):
-        if 'NB est. 0K energy' in line:
-            energy_0K = float(line.split()[6])
-        # support also for dispersion correction
-        elif 'NB dispersion corrected est. 0K energy*' in line:
-            energy_0K = float(line.split()[-2])
-        elif 'Final energy, E' in line:
-            energy_total = float(line.split()[4])
-        elif 'Dispersion corrected final energy' in line:
-            pass
-            # dispcorr_energy_total = float(line.split()[-2])
-            # sedc_apply = True
-        elif 'Dispersion corrected final free energy' in line:
-            pass  # dispcorr_energy_free = float(line.split()[-2])
-        elif 'dispersion corrected est. 0K energy' in line:
-            pass  # dispcorr_energy_0K = float(line.split()[-2])
-        elif 'Unit Cell' in line:
-            cell = [x.split()[0:3] for x in lines[i + 3:i + 6]]
-            cell = np.array([[float(col) for col in row] for row in cell])
-        elif 'Cell Contents' in line:
-            geom_starts = i
-            start_found = False
-            for j, jline in enumerate(lines[geom_starts:]):
-                if jline.find('xxxxx') > 0 and start_found:
-                    geom_stop = j + geom_starts
-                    break
-                if jline.find('xxxx') > 0 and not start_found:
-                    geom_start = j + geom_starts + 4
-                    start_found = True
-            species = [line.split()[1] for line in lines[geom_start:geom_stop]]
-            geom = np.dot(np.array([[float(col) for col in line.split()[3:6]]
-                                    for line in lines[geom_start:geom_stop]]),
-                          cell)
-        elif 'Writing model to' in line:
-            atoms = ase.Atoms(
-                cell=cell,
-                pbc=True,
-                positions=geom,
-                symbols=''.join(species))
-            # take 0K energy where available, else total energy
-            if energy_0K:
-                energy = energy_0K
-            else:
-                energy = energy_total
-            # generate a minimal single-point calculator
-            sp_calc = SinglePointCalculator(atoms=atoms,
-                                            energy=energy,
-                                            forces=None,
-                                            magmoms=None,
-                                            stress=None)
-            atoms.calc = sp_calc
-            traj.append(atoms)
-    if index is None:
-        return traj
-    else:
-        return traj[index]
 
 
 def read_geom(filename, index=':', units=units_CODATA2002):
@@ -1052,12 +889,12 @@ def read_castep_phonon(fd, index=None, read_vib_data=False,
         elif 'Number of wavevectors' in line:
             Nq = int(line.split()[3])
         elif 'Unit cell vectors (A)' in line:
-            for ll in range(3):
+            for _ in range(3):
                 L += 1
                 fields = lines[L].split()
                 cell.append([float(x) for x in fields[0:3]])
         elif 'Fractional Co-ordinates' in line:
-            for ll in range(N):
+            for _ in range(N):
                 L += 1
                 fields = lines[L].split()
                 scaled_positions.append([float(x) for x in fields[1:4]])
@@ -1084,12 +921,12 @@ def read_castep_phonon(fd, index=None, read_vib_data=False,
     weights = []
     frequencies = []
     displacements = []
-    for nq in range(Nq):
+    for _ in range(Nq):
         fields = lines[L].split()
         qpoints.append([float(x) for x in fields[2:5]])
         weights.append(float(fields[5]))
     freqs = []
-    for ll in range(Nb):
+    for _ in range(Nb):
         L += 1
         fields = lines[L].split()
         freqs.append(frequency_factor * float(fields[1]))
@@ -1104,9 +941,9 @@ def read_castep_phonon(fd, index=None, read_vib_data=False,
     #      np.array(displacements).shape == (Nb,3*N)
 
     disps = []
-    for ll in range(Nb):
+    for _ in range(Nb):
         disp_coords = []
-        for lll in range(N):
+        for _ in range(N):
             L += 1
             fields = lines[L].split()
             disp_x = float(fields[2]) + float(fields[3]) * 1.0j
@@ -1402,7 +1239,7 @@ def read_seed(seed, new_seed=None, ignore_internal_keys=False):
     castepfile = os.path.join(directory, f'{seed}.castep')
     checkfile = os.path.join(directory, f'{seed}.check')
 
-    atoms = read_cell(cellfile)
+    atoms = read_castep_cell(cellfile)
     atoms.calc._directory = directory
     atoms.calc._rename_existing_dir = False
     atoms.calc._castep_pp_path = directory
@@ -1430,7 +1267,6 @@ def read_seed(seed, new_seed=None, ignore_internal_keys=False):
     else:
         # There are cases where we only want to restore a calculator/atoms
         # setting without a castep file...
-        pass
         # No print statement required in these cases
         warnings.warn(
             'Corresponding *.castep file not found. '
@@ -1440,53 +1276,55 @@ def read_seed(seed, new_seed=None, ignore_internal_keys=False):
     return atoms
 
 
-def read_bands(filename='', fd=None, units=units_CODATA2002):
-    """Read Castep.bands file to kpoints, weights and eigenvalues
+@reader
+def read_bands(fd, units=units_CODATA2002):
+    """Read Castep.bands file to kpoints, weights and eigenvalues.
 
-    Args:
-        filename (str):
-            path to seedname.bands file
-        fd (fd):
-            file descriptor for open bands file
-        units (dict):
-            Conversion factors for atomic units
+    Parameters
+    ----------
+    fd : str | io.TextIOBase
+        Path to the `.bands` file or file descriptor for open `.bands` file.
+    units : dict
+        Conversion factors for atomic units.
 
-    Returns:
-        (tuple):
-            (kpts, weights, eigenvalues, efermi)
+    Returns
+    -------
+    kpts : np.ndarray
+        1d NumPy array for k-point coordinates.
+    weights : np.ndarray
+        1d NumPy array for k-point weights.
+    eigenvalues : np.ndarray
+        NumPy array for eigenvalues with shape (spin, kpts, nbands).
+    efermi : float
+        Fermi energy.
 
-            Where ``kpts`` and ``weights`` are 1d numpy arrays, eigenvalues
-            is an array of shape (spin, kpts, nbands) and efermi is a float
     """
-
     Hartree = units['Eh']
 
-    if fd is None:
-        if filename == '':
-            raise ValueError('One between filename and fd must be provided')
-        fd = open(filename)
-    elif filename:
-        warnings.warn('Filestream used to read param, file name will be '
-                      'ignored')
+    nkpts = int(fd.readline().split()[-1])
+    nspin = int(fd.readline().split()[-1])
+    _ = float(fd.readline().split()[-1])
+    nbands = int(fd.readline().split()[-1])
+    efermi = float(fd.readline().split()[-1])
 
-    nkpts, nspin, _, nbands, efermi = (t(fd.readline().split()[-1]) for t in
-                                       [int, int, float, int, float])
-
-    kpts, weights = np.zeros((nkpts, 3)), np.zeros(nkpts)
+    kpts = np.zeros((nkpts, 3))
+    weights = np.zeros(nkpts)
     eigenvalues = np.zeros((nspin, nkpts, nbands))
 
     # Skip unit cell
     for _ in range(4):
         fd.readline()
 
-    def _kptline_to_i_k_wt(line):
-        line = line.split()
-        line = [int(line[1])] + list(map(float, line[2:]))
-        return (line[0] - 1, line[1:4], line[4])
+    def _kptline_to_i_k_wt(line: str) -> Tuple[int, List[float], float]:
+        split_line = line.split()
+        i_kpt = int(split_line[1]) - 1
+        kpt = list(map(float, split_line[2:5]))
+        wt = float(split_line[5])
+        return i_kpt, kpt, wt
 
     # CASTEP often writes these out-of-order, so check index and write directly
     # to the correct row
-    for kpt_line in range(nkpts):
+    for _ in range(nkpts):
         i_kpt, kpt, wt = _kptline_to_i_k_wt(fd.readline())
         kpts[i_kpt, :], weights[i_kpt] = kpt, wt
         for spin in range(nspin):

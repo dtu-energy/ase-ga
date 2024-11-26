@@ -119,8 +119,6 @@ common to all the atoms or defined for the collection of atoms:
 
 .. list-table::
 
-  * - :meth:`~Atoms.get_calculator`
-    - :meth:`~Atoms.set_calculator`
   * - :meth:`~Atoms.get_cell`
     - :meth:`~Atoms.set_cell`
   * - :meth:`~Atoms.get_cell_lengths_and_angles`

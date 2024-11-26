@@ -46,8 +46,10 @@ def Trajectory(filename, mode='r', atoms=None, properties=None, master=None,
         Controls which process does the actual writing. The
         default is that process number 0 does this.  If this
         argument is given, processes where it is True will write.
+    comm: Communicator object
+        Communicator to handle parallel file reading and writing.
 
-    The atoms, properties and master arguments are ignores in read mode.
+    The atoms, properties and master arguments are ignored in read mode.
     """
     if mode == 'r':
         return TrajectoryReader(filename)

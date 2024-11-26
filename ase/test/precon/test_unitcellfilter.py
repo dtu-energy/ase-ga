@@ -8,8 +8,8 @@ from ase.optimize.precon import Exp, PreconLBFGS
 
 
 # @pytest.mark.skip('FAILS WITH PYAMG')
-@pytest.mark.optimize
-@pytest.mark.slow
+@pytest.mark.optimize()
+@pytest.mark.slow()
 # Ignore UserWarning by failure of Armijo line search in PreconLBFGS
 @pytest.mark.filterwarnings('ignore::UserWarning')
 @pytest.mark.parametrize("filter_cls, tol", [

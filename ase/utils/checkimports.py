@@ -34,7 +34,7 @@ def exec_and_check_modules(expression: str) -> Set[str]:
     # `import os` before expression
     null = os.devnull
     command = ("import sys;"
-               f" stdout = sys.stdout; sys.stdout = open({repr(null)}, 'w');"
+               f" stdout = sys.stdout; sys.stdout = open({null!r}, 'w');"
                f" {expression};"
                " sys.stdout = stdout;"
                " modules = list(sys.modules);"

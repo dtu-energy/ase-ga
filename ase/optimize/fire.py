@@ -55,33 +55,63 @@ class FIRE(Optimizer):
         astart: float = 0.1,
         fa: float = 0.99,
         a: float = 0.1,
-        master: Optional[bool] = None,
         downhill_check: bool = False,
         position_reset_callback: Optional[Callable] = None,
-        force_consistent=Optimizer._deprecated,
+        **kwargs,
     ):
-        """Parameters:
+        """
 
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
-            Pickle file used to store hessian matrix. If set, file with
+        restart: str
+            JSON file used to store hessian matrix. If set, file with
             such a name will be searched and hessian matrix stored will
             be used, if the file exists.
-
-        trajectory: string
-            Pickle file used to store trajectory of atomic movement.
 
         logfile: file object or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
+        trajectory: str
+            Trajectory file used to store optimisation path.
 
-        downhill_check: boolean
+        dt: float
+            Initial time step. Defualt value is 0.1
+
+        maxstep: float
+            Used to set the maximum distance an atom can move per
+            iteration (default value is 0.2).
+
+        dtmax: float
+            Maximum time step. Default value is 1.0
+
+        Nmin: int
+            Number of steps to wait after the last time the dot product of
+            the velocity and force is negative (P in The FIRE article) before
+            increasing the time step. Default value is 5.
+
+        finc: float
+            Factor to increase the time step. Default value is 1.1
+
+        fdec: float
+            Factor to decrease the time step. Default value is 0.5
+
+        astart: float
+            Initial value of the parameter a. a is the Coefficient for
+            mixing the velocity and the force. Called alpha in the FIRE article.
+            Default value 0.1.
+
+        fa: float
+            Factor to decrease the parameter alpha. Default value is 0.99
+
+        a: float
+            Coefficient for mixing the velocity and the force. Called
+            alpha in the FIRE article. Default value 0.1.
+
+        downhill_check: bool
             Downhill check directly compares potential energies of subsequent
             steps of the FIRE algorithm rather than relying on the current
             product v*f that is positive if the FIRE dynamics moves downhill.
@@ -94,11 +124,15 @@ class FIRE(Optimizer):
             *r* that the optimizer will revert to, current energy *e* and
             energy of last step *e_last*. This is only called if e > e_last.
 
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
+
         .. deprecated:: 3.19.3
             Use of ``maxmove`` is deprecated; please use ``maxstep``.
+
         """
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory,
-                           master, force_consistent=force_consistent)
+        Optimizer.__init__(self, atoms, restart, logfile, trajectory, **kwargs)
 
         self.dt = dt
 

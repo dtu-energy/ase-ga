@@ -1,6 +1,9 @@
 """Helper functions for creating supercells."""
 
+import warnings
+
 import numpy as np
+
 from ase import Atoms
 
 
@@ -9,7 +12,8 @@ class SupercellError(Exception):
 
 
 def get_deviation_from_optimal_cell_shape(cell, target_shape="sc", norm=None):
-    r"""
+    r"""Calculate the deviation from the target cell shape.
+
     Calculates the deviation of the given cell metric from the ideal
     cell metric defining a certain shape. Specifically, the function
     evaluates the expression `\Delta = || Q \mathbf{h} -
@@ -18,6 +22,10 @@ def get_deviation_from_optimal_cell_shape(cell, target_shape="sc", norm=None):
     while the target metric `\mathbf{h}_{target}` (via
     *target_shape*) represent simple cubic ('sc') or face-centered
     cubic ('fcc') cell shapes.
+
+    Replaced with code from the `doped` defect simulation package
+    (https://doped.readthedocs.io) to be rotationally invariant,
+    boosting performance.
 
     Parameters:
 
@@ -31,15 +39,34 @@ def get_deviation_from_optimal_cell_shape(cell, target_shape="sc", norm=None):
         recomputing the normalization factor when computing the
         deviation for a series of P matrices.
 
-    """
+    Returns:
+        float: Cell metric (0 is perfect score)
 
-    if target_shape in ["sc", "simple-cubic"]:
-        target_metric = np.eye(3)
-    elif target_shape in ["fcc", "face-centered cubic"]:
-        target_metric = 0.5 * np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
-    if not norm:
-        norm = (np.linalg.det(cell) / np.linalg.det(target_metric))**(-1.0 / 3)
-    return np.linalg.norm(norm * cell - target_metric)
+    .. deprecated:: 3.24.0
+        `norm` is unused in ASE 3.24.0 and removed in ASE 3.25.0.
+
+    """
+    if norm is not None:
+        warnings.warn(
+            '`norm` is unused in ASE 3.24.0 and removed in ASE 3.25.0',
+            FutureWarning,
+        )
+
+    cell_lengths = np.linalg.norm(cell, axis=1)
+    eff_cubic_length = float(abs(np.linalg.det(cell)) ** (1 / 3))  # 'a_0'
+
+    if target_shape == 'sc':
+        target_length = eff_cubic_length
+
+    elif target_shape == 'fcc':
+        # FCC is characterised by 60 degree angles & lattice vectors = 2**(1/6)
+        # times the eff cubic length:
+        target_length = eff_cubic_length * 2 ** (1 / 6)
+
+    inv_target_length = 1.0 / target_length
+
+    # rms difference to eff cubic/FCC length:
+    return np.sqrt(np.sum((cell_lengths * inv_target_length - 1.0) ** 2))
 
 
 def find_optimal_cell_shape(
@@ -50,16 +77,24 @@ def find_optimal_cell_shape(
     upper_limit=2,
     verbose=False,
 ):
-    """Returns the transformation matrix that produces a supercell
+    """Obtain the optimal transformation matrix for a supercell of target size
+    and shape.
+
+    Returns the transformation matrix that produces a supercell
     corresponding to *target_size* unit cells with metric *cell* that
     most closely approximates the shape defined by *target_shape*.
+
+    Updated with code from the `doped` defect simulation package
+    (https://doped.readthedocs.io) to be rotationally invariant and
+    allow transformation matrices with negative determinants, boosting
+    performance.
 
     Parameters:
 
     cell: 2D array of floats
         Metric given as a (3x3 matrix) of the input structure.
     target_size: integer
-        Size of desired super cell in number of unit cells.
+        Size of desired supercell in number of unit cells.
     target_shape: str
         Desired supercell shape. Can be 'sc' for simple cubic or
         'fcc' for face-centered cubic.
@@ -71,12 +106,16 @@ def find_optimal_cell_shape(
         Set to True to obtain additional information regarding
         construction of transformation matrix.
 
+    Returns:
+        2D array of integers: Transformation matrix that produces the
+        optimal supercell.
     """
+    cell = np.asarray(cell)
 
     # Set up target metric
-    if target_shape in ["sc", "simple-cubic"]:
+    if target_shape == 'sc':
         target_metric = np.eye(3)
-    elif target_shape in ["fcc", "face-centered cubic"]:
+    elif target_shape == 'fcc':
         target_metric = 0.5 * np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]],
                                        dtype=float)
     if verbose:
@@ -84,8 +123,8 @@ def find_optimal_cell_shape(
         print(target_metric)
 
     # Normalize cell metric to reduce computation time during looping
-    norm = (target_size * np.linalg.det(cell) /
-            np.linalg.det(target_metric))**(-1.0 / 3)
+    norm = (target_size * abs(np.linalg.det(cell)) /
+            np.linalg.det(target_metric)) ** (-1.0 / 3)
     norm_cell = norm * cell
     if verbose:
         print("normalization factor (Q): %g" % norm)
@@ -105,13 +144,20 @@ def find_optimal_cell_shape(
 
     best_score = 1e6
     optimal_P = None
-    for dP in product(range(lower_limit, upper_limit + 1), repeat=9):
-        dP = np.array(dP, dtype=int).reshape(3, 3)
-        P = starting_P + dP
-        if int(np.around(np.linalg.det(P), 0)) != target_size:
-            continue
-        score = get_deviation_from_optimal_cell_shape(
-            np.dot(P, norm_cell), target_shape=target_shape, norm=1.0)
+
+    # Build a big matrix of all admissible integer matrix operations.
+    # (If this takes too much memory we could do blocking but there are
+    # too many for looping one by one.)
+    operations = np.array([
+        *product(range(lower_limit, upper_limit + 1), repeat=9)
+    ]).reshape(-1, 3, 3) + starting_P
+    determinants = np.linalg.det(operations)
+
+    good_indices = np.where(abs(determinants - target_size) < 1e-12)[0]
+
+    for i in good_indices:
+        P = operations[i]
+        score = get_deviation_from_optimal_cell_shape(P @ cell, target_shape)
         if score < best_score:
             best_score = score
             optimal_P = P
@@ -119,6 +165,9 @@ def find_optimal_cell_shape(
     if optimal_P is None:
         print("Failed to find a transformation matrix.")
         return None
+
+    if np.linalg.det(optimal_P) <= 0:
+        optimal_P *= -1  # flip signs if negative determinant
 
     # Finalize.
     if verbose:

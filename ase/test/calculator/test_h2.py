@@ -2,7 +2,6 @@ import pytest
 
 from ase.build import molecule
 
-
 calc = pytest.mark.calculator
 
 

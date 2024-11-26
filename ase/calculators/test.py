@@ -4,6 +4,7 @@ import numpy as np
 
 from ase.atoms import Atoms
 from ase.calculators.calculator import Calculator, kpts2ndarray
+from ase.calculators.fd import calculate_numerical_forces
 from ase.units import Bohr, Ha
 
 
@@ -167,66 +168,6 @@ class FreeElectrons(Calculator):
         return 1
 
 
-def numeric_force(atoms, a, i, d=0.001):
-    """Compute numeric force on atom with index a, Cartesian component i,
-    with finite step of size d
-    """
-    p0 = atoms.get_positions()
-    p = p0.copy()
-    p[a, i] += d
-    atoms.set_positions(p, apply_constraint=False)
-    eplus = atoms.get_potential_energy()
-    p[a, i] -= 2 * d
-    atoms.set_positions(p, apply_constraint=False)
-    eminus = atoms.get_potential_energy()
-    atoms.set_positions(p0, apply_constraint=False)
-    return (eminus - eplus) / (2 * d)
-
-
-def numeric_forces(atoms, d=0.001):
-    return np.array([[numeric_force(atoms, a, i, d)
-                      for i in range(3)] for a in range(len(atoms))])
-
-
-def numeric_stress(atoms, d=1e-6, voigt=True):
-    stress = np.zeros((3, 3), dtype=float)
-
-    cell = atoms.cell.copy()
-    V = atoms.get_volume()
-    for i in range(3):
-        x = np.eye(3)
-        x[i, i] += d
-        atoms.set_cell(np.dot(cell, x), scale_atoms=True)
-        eplus = atoms.get_potential_energy(force_consistent=True)
-
-        x[i, i] -= 2 * d
-        atoms.set_cell(np.dot(cell, x), scale_atoms=True)
-        eminus = atoms.get_potential_energy(force_consistent=True)
-
-        stress[i, i] = (eplus - eminus) / (2 * d * V)
-        x[i, i] += d
-
-        j = i - 2
-        x[i, j] = d
-        x[j, i] = d
-        atoms.set_cell(np.dot(cell, x), scale_atoms=True)
-        eplus = atoms.get_potential_energy(force_consistent=True)
-
-        x[i, j] = -d
-        x[j, i] = -d
-        atoms.set_cell(np.dot(cell, x), scale_atoms=True)
-        eminus = atoms.get_potential_energy(force_consistent=True)
-
-        stress[i, j] = (eplus - eminus) / (4 * d * V)
-        stress[j, i] = stress[i, j]
-    atoms.set_cell(cell, scale_atoms=True)
-
-    if voigt:
-        return stress.flat[[0, 4, 8, 5, 2, 1]]
-    else:
-        return stress
-
-
 def gradient_test(atoms, indices=None):
     """
     Use numeric_force to compare analytical and numerical forces on atoms
@@ -238,9 +179,6 @@ def gradient_test(atoms, indices=None):
     f = atoms.get_forces()[indices]
     print('{:>16} {:>20}'.format('eps', 'max(abs(df))'))
     for eps in np.logspace(-1, -8, 8):
-        fn = np.zeros((len(indices), 3))
-        for idx, i in enumerate(indices):
-            for j in range(3):
-                fn[idx, j] = numeric_force(atoms, i, j, eps)
+        fn = calculate_numerical_forces(atoms, eps, indices)
         print(f'{eps:16.12f} {abs(fn - f).max():20.12f}')
     return f, fn

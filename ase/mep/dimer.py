@@ -321,23 +321,26 @@ class MinModeControl(IOContext):
     """
     parameters: Dict[str, Any] = {}
 
-    def __init__(self, logfile='-', eigenmode_logfile=None, **kwargs):
+    def __init__(self, logfile='-', eigenmode_logfile=None, comm=world,
+                 **kwargs):
         # Overwrite the defaults with the input parameters given
         for key in kwargs:
             if key not in self.parameters:
                 e = (f'Invalid parameter >>{key}<< with value >>'
-                     f'{str(kwargs[key])}<< in {self.__class__.__name__}')
+                     f'{kwargs[key]!s}<< in {self.__class__.__name__}')
                 raise ValueError(e)
             else:
                 self.set_parameter(key, kwargs[key], log=False)
 
-        self.initialize_logfiles(logfile, eigenmode_logfile)
+        self.initialize_logfiles(comm=comm, logfile=logfile,
+                                 eigenmode_logfile=eigenmode_logfile)
         self.counters = {'forcecalls': 0, 'rotcount': 0, 'optcount': 0}
         self.log()
 
-    def initialize_logfiles(self, logfile=None, eigenmode_logfile=None):
-        self.logfile = self.openfile(logfile, comm=world)
-        self.eigenmode_logfile = self.openfile(eigenmode_logfile, comm=world)
+    def initialize_logfiles(self, comm, logfile=None, eigenmode_logfile=None):
+        self.logfile = self.openfile(file=logfile, comm=comm)
+        self.eigenmode_logfile = self.openfile(file=eigenmode_logfile,
+                                               comm=comm)
 
     def log(self, parameter=None):
         """Log the parameters of the eigenmode search."""
@@ -345,7 +348,7 @@ class MinModeControl(IOContext):
     def set_parameter(self, parameter, value, log=True):
         """Change a parameter's value."""
         if parameter not in self.parameters:
-            e = f'Invalid parameter >>{parameter}<< with value >>{str(value)}<<'
+            e = f'Invalid parameter >>{parameter}<< with value >>{value!s}<<'
             raise ValueError(e)
         self.parameters[parameter] = value
         if log:
@@ -519,7 +522,7 @@ class MinModeAtoms:
     """
 
     def __init__(self, atoms, control=None, eigenmodes=None,
-                 random_seed=None, **kwargs):
+                 random_seed=None, comm=world, **kwargs):
         self.minmode_init = True
         self.atoms = atoms
 
@@ -546,7 +549,7 @@ class MinModeAtoms:
                     mlogfile = kwargs[key]
                 else:
                     self.control.set_parameter(key, kwargs[key])
-            self.control.initialize_logfiles(logfile=logfile,
+            self.control.initialize_logfiles(comm=comm, logfile=logfile,
                                              eigenmode_logfile=mlogfile)
 
         # Seed the randomness
@@ -617,7 +620,7 @@ class MinModeAtoms:
         # Create random higher order mode guesses
         if self.order > 1:
             if len(eigenmodes) == 1:
-                for k in range(1, self.order):
+                for _ in range(1, self.order):
                     pos = self.get_positions()
                     self.displace(log=False, gauss_std=gauss_std,
                                   method=method)
@@ -834,11 +837,11 @@ class MinModeAtoms:
         # Check for conflicts
         if displacement_vector is not None and method.lower() != 'vector':
             e = 'displacement_vector was supplied but a different method ' + \
-                f'(\'{str(method)}\') was chosen.\n'
+                f'(\'{method!s}\') was chosen.\n'
             raise ValueError(e)
         elif displacement_vector is None and method.lower() == 'vector':
             e = 'A displacement_vector must be supplied when using ' + \
-                f'method = \'{str(method)}\'.\n'
+                f'method = \'{method!s}\'.\n'
             raise ValueError(e)
         elif displacement_center is not None and radius is None and \
                 number_of_atoms is None:
@@ -912,7 +915,7 @@ class MinModeAtoms:
                                     self.control.get_parameter('gauss_std')
                             diff = self.random_state.normal(0.0, gauss_std)
                         else:
-                            e = f'Invalid displacement method >>{str(method)}<<'
+                            e = f'Invalid displacement method >>{method!s}<<'
                             raise ValueError(e)
                         diff_line.append(diff)
                     displacement_vector.append(diff_line)
@@ -1138,13 +1141,10 @@ def read_eigenmode(mlog, index=-1):
                 i = index
 
     mode = np.ndarray(shape=(n, 3), dtype=float)
-    k_atom = 0
-    for k in range(1, n + 1):
+    for k_atom, k in enumerate(range(1, n + 1)):
         line = lines[i * (n + 1) + k].split()
         for k_dim in range(3):
             mode[k_atom][k_dim] = float(line[k_dim + 2])
-        k_atom += 1
-
     if mlog_is_str:
         fd.close()
 

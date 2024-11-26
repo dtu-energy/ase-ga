@@ -1,3 +1,3 @@
-from . import namelist, keys
+from . import keys, namelist
 
 __all__ = ('namelist', 'keys')

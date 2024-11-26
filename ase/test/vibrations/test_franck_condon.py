@@ -8,8 +8,11 @@ from ase.build import molecule
 from ase.calculators.emt import EMT
 from ase.optimize import BFGS
 from ase.vibrations import Vibrations
-from ase.vibrations.franck_condon import (FranckCondon, FranckCondonOverlap,
-                                          FranckCondonRecursive)
+from ase.vibrations.franck_condon import (
+    FranckCondon,
+    FranckCondonOverlap,
+    FranckCondonRecursive,
+)
 
 
 def equal(x, y, tolerance=0, fail=True, msg=''):
@@ -24,7 +27,7 @@ def equal(x, y, tolerance=0, fail=True, msg=''):
             sys.stderr.write('WARNING: %s\n' % msg)
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_franck_condon(testdir):
     # FCOverlap
 
@@ -108,7 +111,7 @@ def vibname(testdir, relaxed):
     return name
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_ch4_all(forces_a, relaxed, vibname):
     """Evaluate Franck-Condon overlaps in
     a molecule suddenly exposed to a different potential"""
@@ -128,7 +131,7 @@ def test_ch4_all(forces_a, relaxed, vibname):
     assert len(freq[0]) == 2 * ndof + 1
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_ch4_minfreq(forces_a, relaxed, vibname):
     # FC factor for relevant frequencies only
     fc = FranckCondon(relaxed, vibname, minfreq=2000)

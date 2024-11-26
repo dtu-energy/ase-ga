@@ -592,7 +592,7 @@ class OPLSStructure(Atoms):
         if check:
             for a, b in zip(self, atoms):
                 # check that the atom types match
-                if not (a.tag + 1 == b.number):
+                if a.tag + 1 != b.number:
                     raise RuntimeError('Atoms index %d are of different '
                                        'type (%d != %d)'
                                        % (a.index, a.tag + 1, b.number))

@@ -7,7 +7,7 @@ from ase.io import Trajectory
 from ase.optimize import QuasiNewton
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_example(testdir):
     atoms = Atoms('H7',
                   positions=[(0, 0, 0),

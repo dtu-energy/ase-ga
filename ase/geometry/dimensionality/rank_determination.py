@@ -19,7 +19,7 @@ from ase.geometry.dimensionality.disjoint_set import DisjointSet
 
 
 def dot_product(A, B):
-    return sum([a * b for a, b in zip(A, B)])
+    return sum(a * b for a, b in zip(A, B))
 
 
 def cross_product(a, b):
@@ -211,9 +211,9 @@ class RDA:
         """
         component_dim = {e: self.ranks[e] for e in self.roots}
         relabelled_components = self.graph.find_all(relabel=True)
-        relabelled_dim = {}
-        for k, v in component_dim.items():
-            relabelled_dim[relabelled_components[k]] = v
+        relabelled_dim = {
+            relabelled_components[k]: v for k, v in component_dim.items()
+        }
         self.cdim_cached = relabelled_dim
         self.components_cached = relabelled_components
 

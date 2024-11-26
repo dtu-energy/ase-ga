@@ -20,23 +20,23 @@ class BFGS(Optimizer):
         trajectory: Optional[str] = None,
         append_trajectory: bool = False,
         maxstep: Optional[float] = None,
-        master: Optional[bool] = None,
         alpha: Optional[float] = None,
+        **kwargs,
     ):
         """BFGS optimizer.
 
-        Parameters:
-
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
-            Pickle file used to store hessian matrix. If set, file with
+        restart: str
+            JSON file used to store hessian matrix. If set, file with
             such a name will be searched and hessian matrix stored will
             be used, if the file exists.
 
-        trajectory: string
-            Pickle file used to store trajectory of atomic movement.
+        trajectory: str
+            Trajectory file used to store optimisation path.
 
         logfile: file object or str
             If *logfile* is a string, a file with that name will be opened.
@@ -46,15 +46,16 @@ class BFGS(Optimizer):
             Used to set the maximum distance an atom can move per
             iteration (default value is 0.2 Å).
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
-
         alpha: float
             Initial guess for the Hessian (curvature of energy surface). A
             conservative value of 70.0 is the default, but number of needed
             steps to converge might be less if a lower value is used. However,
             a lower value also means risk of instability.
+
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
+
         """
         if maxstep is None:
             self.maxstep = self.defaults['maxstep']
@@ -70,7 +71,8 @@ class BFGS(Optimizer):
             self.alpha = self.defaults['alpha']
         Optimizer.__init__(self, atoms=atoms, restart=restart,
                            logfile=logfile, trajectory=trajectory,
-                           master=master, append_trajectory=append_trajectory)
+                           append_trajectory=append_trajectory,
+                           **kwargs)
 
     def initialize(self):
         # initial hessian
@@ -131,7 +133,7 @@ class BFGS(Optimizer):
         """Determine step to take according to maxstep
 
         Normalize all steps as the largest step. This way
-        we still move along the eigendirection.
+        we still move along the direction.
         """
         maxsteplength = np.max(steplengths)
         if maxsteplength >= self.maxstep:

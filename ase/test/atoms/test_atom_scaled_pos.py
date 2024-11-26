@@ -8,7 +8,7 @@ def get_spos(atoms):
     return atoms.get_scaled_positions(wrap=False)
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     rng = np.random.RandomState(0)
     atoms = bulk('Ti') * (2, 2, 1)
@@ -17,13 +17,13 @@ def atoms():
     return atoms
 
 
-@pytest.fixture
+@pytest.fixture()
 def displacement(atoms):
     rng = np.random.RandomState(12345)
     return 0.1 * (rng.random((len(atoms), 3)) - 0.5)
 
 
-@pytest.fixture
+@pytest.fixture()
 def reference(displacement, atoms):
     return displacement + get_spos(atoms)
 

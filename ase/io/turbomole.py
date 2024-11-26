@@ -105,7 +105,7 @@ def read_turbomole_gradient(fd, index=-1):
             energy = float(fields[2].split()[0]) * Hartree
             # gradient = float(fields[3].split()[0])
         except (IndexError, ValueError) as e:
-            raise TurbomoleFormatError() from e
+            raise TurbomoleFormatError from e
 
         # coordinates/gradient
         atoms = Atoms()
@@ -119,9 +119,9 @@ def read_turbomole_gradient(fd, index=-1):
                     # if dummy atom specified, substitute 'Q' with 'X'
                     if symbol == 'Q':
                         symbol = 'X'
-                    position = tuple([Bohr * float(x) for x in fields[0:3]])
+                    position = tuple(Bohr * float(x) for x in fields[0:3])
                 except ValueError as e:
-                    raise TurbomoleFormatError() from e
+                    raise TurbomoleFormatError from e
                 atoms.append(Atom(symbol, position))
             elif len(fields) == 3:  # gradients
                 #  -.51654903354681D-07  -.51654903206651D-07  0.51654903169644D-07  # noqa: E501
@@ -132,7 +132,7 @@ def read_turbomole_gradient(fd, index=-1):
                             -float(val.replace('D', 'E')) * Hartree / Bohr
                         )
                     except ValueError as e:
-                        raise TurbomoleFormatError() from e
+                        raise TurbomoleFormatError from e
                 forces.append(grad)
             else:  # next cycle
                 break

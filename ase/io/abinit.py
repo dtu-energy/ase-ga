@@ -470,7 +470,7 @@ def read_eigenvalues_for_one_spin(fd, nkpts):
     kpoint_coords = []
 
     eig_kn = []
-    for ikpt in range(nkpts):
+    for _ in range(nkpts):
         header = next(fd)
         nbands, weight, kvector = match_kpt_header(header)
         kpoint_coords.append(kvector)

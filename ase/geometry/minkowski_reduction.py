@@ -40,7 +40,7 @@ def reduction_gauss(B, hu, hv):
     u = hu @ B
     v = hv @ B
 
-    for it in range(MAX_IT):
+    for _ in range(MAX_IT):
         x = int(round(np.dot(u, v) / np.dot(u, u)))
         hu, hv = hv - x * hu, hu
         u = hu @ B
@@ -65,7 +65,7 @@ def closest_vector(t0, u, v):
     rs, cs = relevant_vectors_2D(u, v)
 
     dprev = float("inf")
-    for it in range(MAX_IT):
+    for _ in range(MAX_IT):
         ds = np.linalg.norm(rs + t, axis=1)
         index = np.argmin(ds)
         if index == 0 or ds[index] >= dprev:
@@ -86,7 +86,7 @@ def reduction_full(B):
     H = np.eye(3, dtype=int)
     norms = np.linalg.norm(B, axis=1)
 
-    for it in range(MAX_IT):
+    for _ in range(MAX_IT):
         # Sort vectors by norm
         H = H[np.argsort(norms, kind='merge')]
 

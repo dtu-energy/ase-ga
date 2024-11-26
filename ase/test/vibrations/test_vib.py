@@ -4,7 +4,12 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
+
+try:
+    from numpy.exceptions import ComplexWarning  # NumPy 2.0.0
+except ImportError:
+    from numpy import ComplexWarning
 
 import ase.io
 from ase import Atoms, units
@@ -16,7 +21,7 @@ from ase.thermochemistry import IdealGasThermo
 from ase.vibrations import Vibrations, VibrationsData
 
 
-@pytest.fixture
+@pytest.fixture()
 def random_dimer():
     rng = np.random.RandomState(42)
 
@@ -299,7 +304,7 @@ class TestVibrationsDataStaticMethods:
                     assert image.info[key] == value
 
 
-@pytest.fixture
+@pytest.fixture()
 def n2_data():
     return {'atoms': Atoms('N2', positions=[[0., 0., 0.05095057],
                                             [0., 0., 1.04904943]]),
@@ -332,7 +337,7 @@ def n2_data():
             }
 
 
-@pytest.fixture
+@pytest.fixture()
 def n2_unstable_data():
     return {'atoms': Atoms('N2', positions=[[0., 0., 0.45],
                                             [0., 0., -0.45]]),
@@ -351,7 +356,7 @@ def n2_unstable_data():
             }
 
 
-@pytest.fixture
+@pytest.fixture()
 def n2_vibdata(n2_data):
     return VibrationsData(n2_data['atoms'], n2_data['hessian'])
 
@@ -437,14 +442,14 @@ def test_constrained_atoms(n2_data):
 
 
 def test_dos(n2_vibdata):
-    with pytest.warns(np.ComplexWarning):
+    with pytest.warns(ComplexWarning):
         dos = n2_vibdata.get_dos()
     assert_array_almost_equal(dos.get_energies(),
                               n2_vibdata.get_energies())
 
 
 def test_pdos(n2_vibdata):
-    with pytest.warns(np.ComplexWarning):
+    with pytest.warns(ComplexWarning):
         pdos = n2_vibdata.get_pdos()
     assert_array_almost_equal(pdos[0].get_energies(),
                               n2_vibdata.get_energies())
@@ -561,6 +566,7 @@ def test_vibration_on_surface(testdir):
     vibs = Vibrations(ag_slab, indices=[-2, -1])
     vibs.run()
     vibs.read()
+    assert len(vibs.get_frequencies()) == 6
 
     assert_array_almost_equal(vibs.get_vibrations().get_hessian(),
                               hessian_bottom_corner)
@@ -575,3 +581,27 @@ def test_vibration_on_surface(testdir):
 
         # The N atoms should have finite displacement
         assert np.all(np.any(vibs.get_mode(i)[-2:, :], axis=1))
+
+    # Check that FixAtoms works in the same way
+    ag_slab_fixed = ag_slab.copy()
+    ag_slab_fixed.calc = ForceConstantCalculator(
+        hessian.reshape((34 * 3, 34 * 3)), ref=ag_slab.copy(),
+        f0=np.zeros((34, 3))
+    )
+    ag_slab_fixed.set_constraint(
+        FixAtoms(mask=[True] * (len(ag_slab_fixed) - 2) + [False] * 2))
+    vibs_fixed_atoms = Vibrations(ag_slab_fixed)
+    vibs_fixed_atoms.run()
+    vibs_fixed_atoms.read()
+    assert_array_equal(vibs_fixed_atoms.indices, np.array([32, 33]))
+    assert len(vibs_fixed_atoms.get_frequencies()) == 6
+    assert_array_almost_equal(
+        vibs.get_frequencies(), vibs_fixed_atoms.get_frequencies()
+    )
+
+    # Check that we respect the user
+    vibs_fixed_atoms2 = Vibrations(ag_slab_fixed, indices=[0])
+    vibs_fixed_atoms2.run()
+    vibs_fixed_atoms2.read()
+    assert_array_equal(vibs_fixed_atoms2.indices, np.array([0]))
+    assert len(vibs_fixed_atoms2.get_frequencies()) == 3

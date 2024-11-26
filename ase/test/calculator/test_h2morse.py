@@ -1,10 +1,17 @@
 import numpy as np
 import pytest
 
-from ase.calculators.h2morse import (De, Etrans, H2Morse, H2MorseCalculator,
-                                     H2MorseExcitedStates,
-                                     H2MorseExcitedStatesAndCalculator,
-                                     H2MorseExcitedStatesCalculator, Re, ome)
+from ase.calculators.h2morse import (
+    De,
+    Etrans,
+    H2Morse,
+    H2MorseCalculator,
+    H2MorseExcitedStates,
+    H2MorseExcitedStatesAndCalculator,
+    H2MorseExcitedStatesCalculator,
+    Re,
+    ome,
+)
 from ase.vibrations import Vibrations
 
 

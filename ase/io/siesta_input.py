@@ -58,6 +58,7 @@ class SiestaInput:
     @classmethod
     def get_species(cls, atoms, species, basis_set):
         from ase.calculators.siesta.parameters import Species
+
         # For each element use default species from the species input, or set
         # up a default species  from the general default parameters.
         tags = atoms.get_tags()
@@ -90,7 +91,7 @@ class SiestaInput:
             mask = np.logical_and(mask1, mask2)
             if sum(mask) > 0:
                 species_numbers[mask] = i
-                i += 1
+            i += 1
         all_species = default_species + non_default_species
 
         return all_species, species_numbers
@@ -125,5 +126,5 @@ class SiestaInput:
             elif isinstance(const, FixCartesian):
                 moved[const.get_indices()] = 1 - const.mask.astype(int)
             else:
-                warnings.warn(f'Constraint {str(const)} is ignored')
+                warnings.warn(f'Constraint {const!s} is ignored')
         return moved

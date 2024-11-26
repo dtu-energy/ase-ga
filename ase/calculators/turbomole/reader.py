@@ -474,11 +474,9 @@ def read_forces(results, natoms):
     """Read forces from Turbomole gradient file."""
     dg = read_data_group('grad')
     if len(dg) == 0:
-        return
-    file = open('gradient')
-    lines = file.readlines()
-    file.close()
-
+        return None
+    with open('gradient') as file:
+        lines = file.readlines()
     forces = np.array([[0, 0, 0]])
 
     nline = len(lines)

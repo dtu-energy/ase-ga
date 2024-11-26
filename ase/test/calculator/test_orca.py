@@ -11,12 +11,12 @@ from ase.units import Hartree
 calc = pytest.mark.calculator
 
 
-@pytest.fixture
+@pytest.fixture()
 def txt1():
     return '               Program Version 4.1.2  - RELEASE  -'
 
 
-@pytest.fixture
+@pytest.fixture()
 def ref1():
     return '4.1.2'
 
@@ -43,7 +43,7 @@ def test_ohh(factory):
     atoms.calc = factory.calc(orcasimpleinput='BLYP def2-SVP')
 
 
-@pytest.fixture
+@pytest.fixture()
 def water():
     return Atoms('OHH', positions=[(0, 0, 0), (1, 0, 0), (0, 1, 0)])
 
@@ -57,7 +57,28 @@ def test_orca(water, factory):
         opt.run(fmax=0.05)
 
     final_energy = water.get_potential_energy()
+    final_dipole = water.get_dipole_moment()
+
     np.testing.assert_almost_equal(final_energy, -2077.24420, decimal=0)
+    np.testing.assert_almost_equal(
+        final_dipole, [0.28669234, 0.28669234, 0.], decimal=6)
+
+
+@pytest.mark.parametrize('charge', [-2, 0])
+@calc('orca')
+def test_orca_charged_dipole(water, factory, charge):
+    # Make sure that dipole obeys the correct translation symmetry
+    water.calc = factory.calc(label='water',
+                              charge=charge,
+                              orcasimpleinput='BLYP def2-SVP Engrad')
+
+    displacement = np.array([0.2, 1.5, -4.2])
+    dipole = water.get_dipole_moment()
+    water.translate(displacement)
+    new_dipole = water.get_dipole_moment()
+
+    np.testing.assert_almost_equal(
+        dipole + charge * displacement, new_dipole, decimal=4)
 
 
 @calc('orca')

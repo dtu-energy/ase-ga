@@ -73,7 +73,7 @@ def _setup_images_global():
     return neb.images, i1, i2
 
 
-@pytest.fixture
+@pytest.fixture()
 def setup_images(_setup_images_global):
     images, i1, i2 = _setup_images_global
     new_images = [img.copy() for img in images]
@@ -102,7 +102,7 @@ def _ref_vacancy_global(_setup_images_global):
     return Ef_ref, dE_ref, saddle
 
 
-@pytest.fixture
+@pytest.fixture()
 def ref_vacancy(_ref_vacancy_global):
     Ef_ref, dE_ref, saddle = _ref_vacancy_global
     return Ef_ref, dE_ref, saddle.copy()

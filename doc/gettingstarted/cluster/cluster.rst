@@ -112,7 +112,7 @@ strongly size dependent.
 The above analysis is speculative.  To verify the analysis
 we would want to calculate s, p, and d-projected DOS to see if our
 assumptions were correct.  In case we want to go on doing this,
-the GPAW documentation will be of help, see: `GPAW DOS <https://wiki.fysik.dtu.dk/gpaw/documentation/pdos/pdos.html#density-of-states>`__.
+the GPAW documentation will be of help, see: `GPAW DOS <https://gpaw.readthedocs.io/tutorialsexercises/electronic/pdos/pdos.html#module-gpaw.dos>`__.
 
 
 Solutions

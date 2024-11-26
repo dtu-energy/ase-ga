@@ -11,7 +11,7 @@ from ase.utils.xrdebye import XrDebye, wavelengths
 tolerance = 1E-5
 
 
-@pytest.fixture
+@pytest.fixture()
 def xrd():
     # test system -- cluster of 587 silver atoms
     atoms = FaceCenteredCubic('Ag', [(1, 0, 0), (1, 1, 0), (1, 1, 1)],

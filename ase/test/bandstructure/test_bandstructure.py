@@ -23,9 +23,12 @@ def test_bandstructure(testdir, plt):
     print(labels)
     assert ''.join(labels) == 'GXWKGLUWLKUX'
     bs.plot(emax=10, filename='bs.png')
+    cols = np.linspace(-1.0, 1.0, bs.energies.size)
+    cols.shape = bs.energies.shape
+    bs.plot(emax=10, point_colors=cols, filename='bs2.png')
 
 
-@pytest.fixture
+@pytest.fixture()
 def bs():
     rhl = RHL(4.0, 65.0)
     path = rhl.bandpath()

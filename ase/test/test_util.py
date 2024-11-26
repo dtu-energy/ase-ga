@@ -170,6 +170,7 @@ class Dummy:
 
 class TestString2Index:
     """Test `string2index`"""
+
     def test_zero(self):
         """Test 0"""
         assert string2index("0") == 0

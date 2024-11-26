@@ -4,14 +4,14 @@ import pytest
 from ase import Atoms
 
 
-@pytest.fixture
+@pytest.fixture()
 def lj_epsilons():
     # Set up original LJ epsilon energy parameter and another, modified,
     # epsilon value
     return {"eps_orig": 2.5, "eps_modified": 4.25}
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator("lammpslib")
 def test_change_cell_dimensions_and_pbc(factory, dimer_params, lj_epsilons):
     """Ensure that post_change_box commands are actually executed after

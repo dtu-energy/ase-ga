@@ -1,8 +1,10 @@
 from math import gcd
+
 import numpy as np
 from numpy.linalg import norm, solve
 
 from ase.build import bulk
+from ase.build.surface import create_tags
 
 
 def surface(lattice, indices, layers, vacuum=None, tol=1e-10, periodic=False):
@@ -75,6 +77,7 @@ def build(lattice, basis, layers, tol, periodic):
     surf.set_scaled_positions(scaled)
     surf.set_cell(np.dot(basis, surf.cell), scale_atoms=True)
     surf *= (1, 1, layers)
+    surf.set_tags(create_tags((1, len(lattice), layers)))
 
     a1, a2, a3 = surf.cell
     surf.set_cell([a1, a2,

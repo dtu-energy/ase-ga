@@ -42,15 +42,11 @@ oldlibs:
       -W "ignore:can't resolve package"
       -W ignore::PendingDeprecationWarning
 
+
 # For testing newest versions of libraries against standard images
 # on dockerhub.
-#
-# psycopg2-binary is for testing the postgres backend for ase.db
-# Currently we have trouble with pyhon3.8 where we need to compile some
-# libraries that don't have binary wheels; we don't want to install gcc
-# in this test job.
 pipinstall:
-  image: python:3.8
+  image: python:3.11
   extends: .database-configuration
   script:
     - python --version
@@ -121,6 +117,7 @@ calculators-lite:
   script:
     - pip install --no-deps --editable .
     - export ASE_CONFIG_PATH=/home/ase/aseconfig.ini
+    - sed 's/binary = /command = /' -i /home/ase/aseconfig.ini
     - >
       ase test calculator --calculators=auto --coverage
       --pytest -m calculator_lite --color=yes --durations=20 -v
@@ -150,6 +147,7 @@ calculators:
   script:
     - pip install --no-deps --editable .
     - export ASE_CONFIG_PATH=/home/ase/aseconfig.ini
+    - sed 's/binary = /command = /' -i /home/ase/aseconfig.ini
     - ase info --calculators
     - >
       ase test calculator --calculators abinit,asap,cp2k,dftb,espresso,gpaw,kim,lammpslib,lammpsrun,mopac,nwchem,octopus,siesta
@@ -172,6 +170,24 @@ calculators:
         path: coverage.xml
       junit: ase/test/report.xml
     expire_in: 1 week
+
+bleeding-edge:
+  image: python:3.12.4-alpine
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
+  before_script:
+    - pip install --editable .[test]
+    - pip freeze
+  script:
+    - >
+      ase test -j0 --pytest --color=yes -m 'not slow'
+      --ignore gui/ --ignore test_imports.py
+      --durations 20
+  cache:
+    paths:
+      - $PIP_CACHE_DIR
+    key: $CI_PROJECT_ID
+
 
 doc:
   image: registry.gitlab.com/ase/ase:ase-main
@@ -230,7 +246,7 @@ lint:
     - mypy --version
     - mypy --color-output -p ase
     - python -We:invalid -m compileall -f -q ase/
-    - flake8 .
+    - ruff check
 
 coverage-combine:
   image: registry.gitlab.com/ase/ase:ase-paperwork
@@ -251,27 +267,21 @@ coverage-combine:
       - coverage-html
     expire_in: 1 week
 
-.shared_windows_runners:
-  tags:
-    - shared-windows
-    - windows
-    - windows-1809
-
 windows_test:
-  extends:
-    - .shared_windows_runners
+  tags:
+    - saas-windows-medium-amd64
   stage: test
   before_script:
     # https://stackoverflow.com/questions/61791108/gitlab-ci-shared-windows-runner-for-python
     # https://gitlab.com/gitlab-org/ci-cd/shared-runners/images/gcp/windows-containers/-/issues/13
     - Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-    - choco install python --version=3.8 -y -f
+    - choco install python --version=3.9 -y -f
     - refreshenv
-  script:
     - python --version
     - python -m pip install --upgrade pip
     - python -m pip install pytest pytest-mock
     - python -m pip install .
+  script:
     - >
       ase test
       --calculators eam,ff,lj,morse,tip3p,tip4p

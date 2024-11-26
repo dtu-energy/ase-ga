@@ -2,19 +2,21 @@
 from io import StringIO
 
 import numpy as np
-from ase.calculators.castep import (
-    _read_header,
-    _read_unit_cell,
-    _read_fractional_coordinates,
-    _read_forces,
-    _read_stress,
-    _read_mulliken_charges,
-    _read_hirshfeld_details,
-    _read_hirshfeld_charges,
-    _get_indices_to_sort_back,
-    _set_energy_and_free_energy,
-)
+import pytest
+
 from ase.constraints import FixAtoms, FixCartesian
+from ase.io.castep.castep_reader import (
+    _read_forces,
+    _read_fractional_coordinates,
+    _read_header,
+    _read_hirshfeld_charges,
+    _read_hirshfeld_details,
+    _read_mulliken_charges,
+    _read_stress,
+    _read_unit_cell,
+    _set_energy_and_free_energy,
+    read_castep_castep,
+)
 from ase.units import GPa
 
 HEADER = """\
@@ -534,16 +536,6 @@ def test_hirshfeld_spin_polarized():
     np.testing.assert_allclose(results['hirshfeld_magmoms'], [+4.40, +0.36])
 
 
-def test_get_indices_to_sort_back():
-    """Test if spicies in .castep are sorted back to atoms.symbols."""
-    symbols = ['Si', 'Al', 'P', 'Al', 'P', 'Al', 'P', 'C']
-    species = ['C', 'Al', 'Al', 'Al', 'Si', 'P', 'P', 'P']
-    indices_ref = [4, 1, 5, 2, 6, 3, 7, 0]
-    assert [species[_] for _ in indices_ref] == symbols
-    indices = _get_indices_to_sort_back(symbols, species)
-    assert indices.tolist() == indices_ref
-
-
 def test_energy_and_free_energy_metallic():
     """Test if `energy` and `free_energy` is set correctly.
 
@@ -619,3 +611,33 @@ def test_energy_and_free_energy_non_metallic():
     _set_energy_and_free_energy(results)
     assert results['energy'] == -341.516024
     assert results['free_energy'] == -341.5163888035
+
+
+@pytest.mark.filterwarnings('ignore::UserWarning')
+def test_md_images(datadir):
+    """Test if multiple images can be read for the MolecularDynamics task."""
+    images = read_castep_castep(f'{datadir}/castep/md.castep', index=':')
+
+    assert len(images) == 3  # 0th, 1st, 2nd steps
+
+    # `read_castep_castep_old` could parse multi-images but not forces / stress
+    # check if new `read_castep_castep` can do
+
+    atoms = images[-1]
+
+    forces_ref = [
+        [-0.09963, +0.10729, -0.00665],
+        [+0.09339, +0.01482, +0.01147],
+        [-0.02828, -0.11817, -0.03557],
+        [+0.14991, -0.01604, +0.02132],
+        [-0.03495, +0.04016, -0.03526],
+        [+0.07136, -0.07883, +0.04578],
+        [-0.26870, -0.12445, -0.14684],
+        [+0.11690, +0.17523, +0.14574],
+    ]
+    np.testing.assert_array_almost_equal(atoms.get_forces(), forces_ref)
+
+    stress_ref = [
+        +0.390672, +0.388091, +0.385978, -0.276337, -0.061901, -0.144025,
+    ]
+    np.testing.assert_array_almost_equal(atoms.get_stress() / GPa, stress_ref)

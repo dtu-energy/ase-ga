@@ -1,5 +1,12 @@
+import pytest
+
+from ase.constraints import FixAtoms
 from ase.lattice.cubic import FaceCenteredCubic
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+from ase.md.velocitydistribution import (
+    MaxwellBoltzmannDistribution,
+    Stationary,
+    ZeroRotation,
+)
 from ase.units import kB
 
 
@@ -12,3 +19,21 @@ def test_maxwellboltzmann():
 
     print("Temperature", temp, " (should be 0.1)")
     assert abs(temp - 0.1) < 1e-3
+
+
+def test_maxwellboltzmann_dof():
+
+    atoms = FaceCenteredCubic(size=(50, 50, 50), symbol="Cu", pbc=False)
+    atoms.set_constraint(FixAtoms(range(250000)))
+
+    MaxwellBoltzmannDistribution(atoms, temperature_K=1000)
+    assert pytest.approx(atoms.get_temperature(), 5) == 1000
+
+    MaxwellBoltzmannDistribution(atoms, temperature_K=1000, force_temp=True)
+    assert pytest.approx(atoms.get_temperature(), 1e-8) == 1000
+
+    Stationary(atoms, preserve_temperature=True)
+    assert pytest.approx(atoms.get_temperature(), 1e-8) == 1000
+
+    ZeroRotation(atoms, preserve_temperature=True)
+    assert pytest.approx(atoms.get_temperature(), 1e-8) == 1000

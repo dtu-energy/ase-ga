@@ -17,7 +17,7 @@ def setup_atoms():
     return atoms
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 @pytest.mark.parametrize('scaling', [0.0, 0.01])
 def test_climb_fix_internals(scaling, testdir):
     """Climb along the constrained bondcombo coordinate while optimizing the
@@ -48,7 +48,7 @@ def test_climb_fix_internals(scaling, testdir):
 # end example for documentation
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_initialization_with_different_constraints():
     """Remember to provide reaction coordinates as nested lists.
     Definitions in this example are arbitrary,

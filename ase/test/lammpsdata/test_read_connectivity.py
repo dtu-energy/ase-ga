@@ -80,7 +80,7 @@ REFERENCE = {
 }
 
 
-@pytest.fixture
+@pytest.fixture()
 def fmt():
     return 'lammps-data'
 
@@ -90,7 +90,7 @@ def sort_by_id(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture()
 def lammpsdata(fmt, sort_by_id):
     fd = StringIO(CONTENTS)
     return read(fd, format=fmt, sort_by_id=sort_by_id), SORTED[sort_by_id]

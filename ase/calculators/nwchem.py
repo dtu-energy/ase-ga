@@ -170,6 +170,8 @@ class NWChem(FileIOCalculator):
         """
         FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
                                   label, atoms, command, **kwargs)
+        if self.prefix is None:
+            self.prefix = 'nwchem'
         self.calc = None
 
     def input_filename(self):
@@ -192,7 +194,7 @@ class NWChem(FileIOCalculator):
                  label=self.label, **self.parameters)
 
     def read_results(self):
-        output = io.read(self.output_filename())
+        output = io.read(Path(self.directory) / self.output_filename())
         self.calc = output.calc
         self.results = output.calc.results
 

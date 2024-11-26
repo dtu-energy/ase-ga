@@ -15,8 +15,11 @@ from math import floor, log10
 
 import numpy as np
 
-from ase.calculators.calculator import (Calculator,
-                                        PropertyNotImplementedError, ReadError)
+from ase.calculators.calculator import (
+    Calculator,
+    PropertyNotImplementedError,
+    ReadError,
+)
 from ase.calculators.turbomole import reader
 from ase.calculators.turbomole.executor import execute, get_output_filename
 from ase.calculators.turbomole.parameters import TurbomoleParameters

@@ -7,12 +7,12 @@ from ase import Atoms
 from ase.io import formats, qbox
 
 
-@pytest.fixture
+@pytest.fixture()
 def qboxfile(datadir):
     return datadir / 'qbox_test.xml'
 
 
-@pytest.fixture
+@pytest.fixture()
 def qballfile(datadir):
     return datadir / 'qbox_04_md_ntc.reference.xml'
 

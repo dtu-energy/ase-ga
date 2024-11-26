@@ -421,6 +421,8 @@ class MenuItem:
         if key:
             if key[:4] == 'Ctrl':
                 self.keyname = f'<Control-{key[-1].lower()}>'
+            elif key[:3] == 'Alt':
+                self.keyname = f'<Alt-{key[-1].lower()}>'
             else:
                 self.keyname = {
                     'Home': '<Home>',
@@ -671,7 +673,8 @@ class ASEGUIWindow(MainWindow):
                                width=width)
 
     def line(self, bbox, width=1):
-        self.canvas.create_line(*tuple(int(x) for x in bbox), width=width)
+        self.canvas.create_line(*tuple(int(x) for x in bbox), width=width,
+                                fill='black')
 
     def text(self, x, y, txt, anchor=tk.CENTER, color='black'):
         anchor = {'SE': tk.SE}.get(anchor, anchor)

@@ -2,10 +2,9 @@ import argparse
 import os
 import sys
 import warnings
+from multiprocessing import cpu_count
 from pathlib import Path
 from subprocess import Popen
-
-from multiprocessing import cpu_count
 
 from ase.calculators.names import names as calc_names
 from ase.cli.main import CLIError, main

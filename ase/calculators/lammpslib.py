@@ -333,7 +333,7 @@ xz and yz are the tilt of the lattice vectors, all to be edited.
                 posmin = np.amin(pos, axis=0)
                 posmax = np.amax(pos, axis=0)
 
-                for i in range(0, 3):
+                for i in range(3):
                     if lammps_boundary_conditions[i] == 's':
                         box_hi[i] = 1.05 * abs(posmax[i] - posmin[i])
 
@@ -377,7 +377,7 @@ xz and yz are the tilt of the lattice vectors, all to be edited.
         system_changes: list of str
             List of what has changed since last calculation.  Can be
             any combination of these five: 'positions', 'numbers', 'cell',
-            'pbc', 'charges' and 'magmoms'.
+            'pbc', 'initial_charges' and 'initial_magmoms'.
         """
         if len(system_changes) == 0:
             return
@@ -415,9 +415,10 @@ xz and yz are the tilt of the lattice vectors, all to be edited.
         if self.parameters.atom_types is None:
             raise NameError("atom_types are mandatory.")
 
-        do_rebuild = (not np.array_equal(atoms.numbers,
-                                         self.previous_atoms_numbers)
-                      or ("numbers" in system_changes))
+        do_rebuild = (
+            not np.array_equal(atoms.numbers, self.previous_atoms_numbers)
+            or any(_ in system_changes for _ in ('numbers', 'initial_charges'))
+        )
         if not do_rebuild:
             do_redo_atom_types = not np.array_equal(
                 atoms.numbers, self.previous_atoms_numbers)
@@ -557,7 +558,7 @@ xz and yz are the tilt of the lattice vectors, all to be edited.
             retval = 'p p p'
         else:
             cell = atoms.get_cell()
-            for i in range(0, 3):
+            for i in range(3):
                 if pbc[i]:
                     retval += 'p '
                 else:
@@ -612,6 +613,14 @@ xz and yz are the tilt of the lattice vectors, all to be edited.
         for (i, i_type) in current_types - previous_types:
             cmd = f"set atom {i} type {i_type}"
             self.lmp.command(cmd)
+
+        # set charges only when LAMMPS `atom_style` permits charges
+        # https://docs.lammps.org/Library_properties.html#extract-atom-flags
+        if self.lmp.extract_setting('q_flag') == 1:
+            charges = atoms.get_initial_charges()
+            if np.any(charges != 0.0):
+                for i, q in enumerate(charges):
+                    self.lmp.command(f'set atom {i + 1} charge {q}')
 
         self.previous_atoms_numbers = atoms.numbers.copy()
 

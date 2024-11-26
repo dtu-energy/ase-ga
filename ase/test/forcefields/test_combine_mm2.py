@@ -30,7 +30,7 @@ def make_4mer():
     return atoms
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_combine_mm2(testdir):
     # More biased initial positions for faster test. Set
     # to false for a slower, harder test.
@@ -40,7 +40,7 @@ def test_combine_mm2(testdir):
     atoms.constraints = FixBondLengths([(3 * i + j, 3 * i + (j + 1) % 3)
                                         for i in range(int(len(atoms) // 3))
                                         for j in [0, 1, 2]])
-    atoms.calc = TIP3P(np.Inf)
+    atoms.calc = TIP3P(np.inf)
     tag = '4mer_tip3_opt.'
     with FIRE(atoms, logfile=tag + 'log', trajectory=tag + 'traj') as opt:
         opt.run(fmax=0.05)
@@ -48,7 +48,7 @@ def test_combine_mm2(testdir):
 
     sig = np.array([sigma0, 0, 0])
     eps = np.array([epsilon0, 0, 0])
-    rc = np.Inf
+    rc = np.inf
     idxes = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11],
              list(range(6)), list(range(9)), list(range(6, 12))]
 

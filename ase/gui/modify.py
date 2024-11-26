@@ -1,5 +1,7 @@
 from functools import partial
 
+import numpy as np
+
 import ase.gui.ui as ui
 from ase.gui.i18n import _
 from ase.gui.utils import get_magmoms
@@ -34,11 +36,11 @@ class ModifyAtoms:
             element.symbol = sym[0]
 
         tags = atoms.get_tags()[selected]
-        if tags.ptp() == 0:
+        if np.ptp(tags) == 0:
             self.tag.value = tags[0]
 
         magmoms = get_magmoms(atoms)[selected]
-        if magmoms.round(2).ptp() == 0.0:
+        if np.ptp(magmoms.round(2)) == 0.0:
             self.magmom.value = round(magmoms[0], 2)
 
     def selection(self):

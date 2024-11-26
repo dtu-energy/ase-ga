@@ -1,8 +1,9 @@
 import sys
 from subprocess import run
-from ase.parallel import world
 
 import pytest
+
+from ase.parallel import world
 
 
 def test_mpi():

@@ -19,7 +19,7 @@ def view_x3d(atoms, *args, **kwargs):
         from IPython.display import HTML
     except ImportError:
         warnings.warn('Please install IPython')
-        return
+        return None
 
     notebook_style = {'width': '400px', 'height': '300px'}
 

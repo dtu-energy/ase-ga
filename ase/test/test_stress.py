@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from ase.build import bulk
+from ase.calculators.fd import calculate_numerical_stress
 from ase.calculators.lj import LennardJones
 from ase.filters import UnitCellFilter
 from ase.optimize import BFGS
@@ -11,7 +12,7 @@ vol0 = 4 * 0.91615977036  # theoretical minimum
 a0 = vol0**(1 / 3)
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     """two atoms at potential minimum"""
     atoms = bulk('X', 'fcc', a=a0)
@@ -33,8 +34,8 @@ def test_stress_voigt_shape(atoms):
         assert atoms.get_stresses(voigt=False, **kw).shape == (len(atoms), 3, 3)
 
 
-@pytest.mark.optimize
-@pytest.mark.slow
+@pytest.mark.optimize()
+@pytest.mark.slow()
 def test_stress(atoms):
     cell0 = atoms.get_cell()
 
@@ -51,7 +52,7 @@ def test_stress(atoms):
 
     # Verify analytical stress tensor against numerical value
     s_analytical = atoms.get_stress()
-    s_numerical = atoms.calc.calculate_numerical_stress(atoms, 1e-5)
+    s_numerical = calculate_numerical_stress(atoms, 1e-5)
     s_p_err = 100 * (s_numerical - s_analytical) / s_numerical
 
     print("Analytical stress:\n", s_analytical)

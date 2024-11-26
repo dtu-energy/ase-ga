@@ -62,62 +62,62 @@ Pourbaix diagrams
 =================
 
 Let's create a Pourbaix diagram for ZnO from experimental numbers.
+We start by collecting the experimental formation energies of
+solvated zinc-containing ions and molecules by using the :func:`solvated` function:
 
->>> from ase.phasediagram import Pourbaix, solvated
+>>> from ase.pourbaix import Pourbaix
+>>> from ase.phasediagram import solvated
 >>> refs = solvated('Zn')
 >>> print(refs)
 [('HZnO2-(aq)', -4.801274772854441), ('ZnO2--(aq)', -4.0454382546928365), ('ZnOH+(aq)', -3.5207324675582736), ('ZnO(aq)', -2.9236086089762137), ('H2O(aq)', -2.458311658897383), ('Zn++(aq)', -1.5264168353005447), ('H+(aq)', 0.0)]
 
-We use the :func:`solvated` function to get solvation energies for zinc
-containing molecules (plus water and a proton):
-
 .. autofunction:: solvated
 
-We add two solids and one more dissolved molecule to the references and create
-a :class:`Pourbaix` object:
+We add two solids and one more dissolved molecule to the references,
+convert them to a dictionary and create a :class:`~ase.pourbaix.Pourbaix`
+object using the class default arguments:
 
 >>> refs += [('Zn', 0.0), ('ZnO', -3.323), ('ZnO2(aq)', -2.921)]
->>> pb = Pourbaix(refs, Zn=1, O=1)
+>>> pb = Pourbaix('ZnO', dict(refs))
 
-To see what ZnO will :meth:`~Pourbaix.decompose` to at a potential of 1 eV
-and a pH of 9.0, we do this:
+We can determine what is the most stable phase at a potential of 1 V
+and a pH of 9.0, see the corresponding chemical reaction and determine
+the Pourbaix energy, i.e. the energy of the target material ZnO
+relative to the most stable competing phase:
 
->>> coefs, energy = pb.decompose(1.0, 9.0)
-0    HZnO2-(aq)    -5.158
-1    ZnO2--(aq)    -4.403
-2    ZnOH+(aq)     -3.878
-3    ZnO(aq)       -3.281
-4    H2O(aq)       -2.458
-5    Zn++(aq)      -1.884
-6    H+(aq)        -0.536
-7    Zn             0.000
-8    ZnO           -3.323
-9    ZnO2(aq)      -3.278
-10   e-            -1.000
-reference    coefficient      energy
-------------------------------------
-H2O(aq)               -1      -2.458
-H+(aq)                 2      -0.536
-ZnO2(aq)               1      -3.278
-e-                     2      -1.000
-------------------------------------
-Total energy:                 -3.891
-------------------------------------
->>> print(coefs, energy)
-(array([  0.00000000e+00,   0.00000000e+00,   6.66133815e-16,
-         0.00000000e+00,  -1.00000000e+00,   0.00000000e+00,
-         2.00000000e+00,   0.00000000e+00,   0.00000000e+00,
-         1.00000000e+00,   2.00000000e+00]), -3.8913313372636829)
+>>> energy, phase = pbx.get_pourbaix_energy(1.0, 9.0, verbose=True)
+Stable phase:
+ZnO + H2O  ➜  2H+ + 2e- + ZnO2(aq)
+Energy: 0.560 eV
 
-The full :meth:`~Pourbaix.diagram` is calculated like this:
+As we can see in these conditions ZnO spontaneously decomposes
+into acqueous :mol:`ZnO2` and lies 560 meV above the latter species.
+This chemical reaction is described by a :class:`ase.pourbaix.RedOx` object.
+We can show that, in the same conditions, the reaction occurs spontaneously
+releasing the opposite of the pourbaix energy, i.e. -560 meV:
 
->>> import numpy as np
->>> U = np.linspace(-2, 2, 200)
->>> pH = np.linspace(-2, 16, 300)
->>> d, names, text = pb.diagram(U, pH, plot=True)
+>>> print(type(phase))
+<class 'ase.pourbaix.RedOx'>
+>>> print(phase.get_free_energy(1.0, 9.0))
+-0.5595239105125918
+
+If we repeat the evaluation at a potential of 0 V and a pH of 10,
+we can see that ZnO is now the most stable phase (although barely),
+and the associated Pourbaix energy is (slightly) negative.
+
+>>> pbx.get_pourbaix_energy(0.0, 10.0, verbose=True)
+ZnO is stable.
+Energy: -0.033 eV
+
+Finally, we can evaluate the complete Pourbaix diagram of ZnO
+in a potential window between -2 and +2 V, and a pH window between
+0 and 14:
+
+>>> Urange = [-2, 2]
+>>> pHrange = [0, 14]
+>>> pbx.plot(Urange, pHrange, show=True)
 
 .. image:: zno.png
 
-.. autoclass:: ase.phasediagram.Pourbaix
-    :members:
-    :member-order: bysource
+.. autoclass:: ase.pourbaix.Pourbaix
+.. autoclass:: ase.pourbaix.RedOx

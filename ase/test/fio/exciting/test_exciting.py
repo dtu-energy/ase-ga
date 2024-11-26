@@ -8,17 +8,18 @@ import pytest
 
 import ase
 import ase.io.exciting
+
 # Import a realistic looking exciting text output file as a string.
 from ase.test.calculator.exciting.test_exciting import LDA_VWN_AR_INFO_OUT
 
 
-@pytest.fixture
+@pytest.fixture()
 def excitingtools():
     """If we cannot import excitingtools we skip tests with this fixture."""
     return pytest.importorskip('excitingtools')
 
 
-@pytest.fixture
+@pytest.fixture()
 def nitrogen_trioxide_atoms():
     """Helper fixture to create a NO3 ase atoms object for tests."""
     return ase.Atoms('NO3',
@@ -75,7 +76,8 @@ def test_write_bs_xml(
 
     """
     from excitingtools.input.bandstructure import (
-        band_structure_input_from_ase_atoms_obj)
+        band_structure_input_from_ase_atoms_obj,
+    )
     file_path = tmp_path / 'input.xml'
     ground_state_input_dict = {
         "rgkmax": 8.0,
@@ -213,15 +215,16 @@ def test_parse_info_out_xml_bad_path(tmp_path, excitingtools):
 def test_parse_info_out_energy(tmp_path, excitingtools):
     """Test parsing the INFO.OUT output from exciting using parse_output()."""
     expected_lattice_cell = [
-        ['10.3360193975', '10.3426010725', '0.0054547264'],
-        ['-10.3461511392', '10.3527307290', '0.0059928210'],
-        ['10.3354645037', '10.3540072605', '20.6246241525']]
+        [10.3360193975, 10.3426010725, 0.0054547264],
+        [-10.3461511392, 10.3527307290, 0.0059928210],
+        [10.3354645037, 10.3540072605, 20.6246241525]]
 
     file = tmp_path / "INFO.OUT"
     file.write_text(LDA_VWN_AR_INFO_OUT)
     assert file.exists(), "INFO.OUT written to tmp_path"
 
     results = ase.io.exciting.parse_output(file)
+    initialization = results['initialization']
 
     # Finally ensure that we that the final SCL cycle is what we expect and
     # the final SCL results can be accessed correctly:
@@ -235,13 +238,16 @@ def test_parse_info_out_energy(tmp_path, excitingtools):
     assert pytest.approx(float(results["scl"][
         final_scl_iteration]["Hartree energy"])) == 205.65454603
     assert pytest.approx(float(
-        results['initialization']['Unit cell volume'])) == 4412.7512103067
-    assert results['initialization']['Total number of k-points'] == '1'
-    assert results['initialization']['Maximum number of plane-waves'] == '251'
+        initialization['Unit cell volume'])) == 4412.7512103067
+
+    # This used to be '1' (str) in version 'nitrogen' but is 1 (int)
+    # as of version 'neon':
+    assert int(initialization['Total number of k-points']) == 1
+    assert int(initialization['Maximum number of plane-waves']) == 251
+
     # Grab the lattice vectors. excitingtools parses them in a fortran like
     # vector. We reshape accordingly into a 3x3 matrix where rows correspond
     # to lattice vectors.
-    lattice_vectors_as_matrix = np.reshape(
-        results['initialization']['Lattice vectors (cartesian)'],
-        (3, 3), 'F')
+    lattice_vectors_as_matrix = np.array(np.reshape(
+        initialization['Lattice vectors (cartesian)'], (3, 3), 'F'), float)
     assert lattice_vectors_as_matrix.tolist() == expected_lattice_cell

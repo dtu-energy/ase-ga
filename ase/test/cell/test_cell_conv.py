@@ -76,7 +76,7 @@ def test_cell_conv():
     ref1 = si_prim_m2[:]
     ref2 = si_ortho_m[:]
     ref3 = si_cubic_m[:]
-    for i in range(20):
+    for _ in range(20):
         ref1[:] = p2c(c2p(ref1))
         ref2[:] = p2c(c2p(ref2))
         ref3[:] = p2c(c2p(ref3))

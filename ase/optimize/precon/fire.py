@@ -10,41 +10,42 @@ class PreconFIRE(Optimizer):
 
     def __init__(self, atoms, restart=None, logfile='-', trajectory=None,
                  dt=0.1, maxmove=0.2, dtmax=1.0, Nmin=5, finc=1.1, fdec=0.5,
-                 astart=0.1, fa=0.99, a=0.1, theta=0.1, master=None,
-                 precon=None, use_armijo=True, variable_cell=False):
+                 astart=0.1, fa=0.99, a=0.1, theta=0.1,
+                 precon=None, use_armijo=True, variable_cell=False, **kwargs):
         """
         Preconditioned version of the FIRE optimizer
 
-        Parameters:
+        In time this implementation is expected to replace
+        :class:`~ase.optimize.fire.FIRE`.
 
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
         restart: string
-            Pickle file used to store hessian matrix. If set, file with
+            JSON file used to store hessian matrix. If set, file with
             such a name will be searched and hessian matrix stored will
             be used, if the file exists.
 
         trajectory: string
-            Pickle file used to store trajectory of atomic movement.
+            Trajectory file used to store optimisation path.
 
         logfile: file object or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        master: bool
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
-
         variable_cell: bool
             If True, wrap atoms in UnitCellFilter to relax cell and positions.
 
-        In time this implementation is expected to replace
-        ase.optimize.fire.FIRE.
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
+
         """
         if variable_cell:
             atoms = UnitCellFilter(atoms)
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory, master)
+        Optimizer.__init__(self, atoms, restart, logfile, trajectory, **kwargs)
 
         self._actual_atoms = atoms
 

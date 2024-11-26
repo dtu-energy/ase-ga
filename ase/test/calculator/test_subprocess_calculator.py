@@ -5,10 +5,12 @@ import pytest
 
 from ase.build import bulk, molecule
 from ase.calculators.emt import EMT
-from ase.calculators.subprocesscalculator import (NamedPackedCalculator,
-                                                  gpaw_process,
-                                                  MPICommand,
-                                                  ParallelDispatch)
+from ase.calculators.subprocesscalculator import (
+    MPICommand,
+    NamedPackedCalculator,
+    ParallelDispatch,
+    gpaw_process,
+)
 from ase.optimize import BFGS
 
 
@@ -16,7 +18,7 @@ def get_fmax(forces):
     return max((forces**2).sum(axis=1)**0.5)
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     atoms = bulk('Au') * (2, 2, 2)
     atoms.rattle(stdev=0.05, seed=2)
@@ -47,7 +49,7 @@ def test_subprocess_calculator_emt(atoms):
     assert_results_equal_to_ordinary_emt(atoms)
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_subprocess_calculator_optimize(atoms):
     pack = NamedPackedCalculator('emt')
     opt = BFGS(atoms)
@@ -64,7 +66,7 @@ def test_subprocess_calculator_optimize(atoms):
     assert_results_equal_to_ordinary_emt(atoms)
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('gpaw')
 def test_subprocess_calculator_mpi(factory):
     atoms = molecule('H2', vacuum=2.0)

@@ -6,8 +6,11 @@ from ase.ga.offspring_creator import OperationSelector
 from ase.ga.pbs_queue_run import PBSQueueRun
 from ase.ga.population import Population
 from ase.ga.standard_comparators import InteratomicDistanceComparator
-from ase.ga.standardmutations import (MirrorMutation, PermutationMutation,
-                                      RattleMutation)
+from ase.ga.standardmutations import (
+    MirrorMutation,
+    PermutationMutation,
+    RattleMutation,
+)
 from ase.ga.utilities import closest_distances_generator, get_all_atom_types
 from ase.io import write
 

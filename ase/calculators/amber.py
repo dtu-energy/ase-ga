@@ -9,10 +9,11 @@ Before usage, input files (infile, topologyfile, incoordfile)
 import subprocess
 
 import numpy as np
-from scipy.io import netcdf
+from scipy.io import netcdf_file
 
 import ase.units as units
 from ase.calculators.calculator import Calculator, FileIOCalculator
+from ase.io.amber import read_amber_coordinates, write_amber_coordinates
 
 
 class Amber(FileIOCalculator):
@@ -106,83 +107,19 @@ class Amber(FileIOCalculator):
         """Write updated coordinates to a file."""
 
         FileIOCalculator.write_input(self, atoms, properties, system_changes)
-        self.write_coordinates(atoms)
+        self.write_coordinates(atoms, self.incoordfile)
 
     def read_results(self):
         """ read energy and forces """
         self.read_energy()
         self.read_forces()
 
-    def write_coordinates(self, atoms, filename=''):
+    def write_coordinates(self, atoms, filename):
         """ write amber coordinates in netCDF format,
             only rectangular unit cells are allowed"""
-        if filename == '':
-            filename = self.incoordfile
-        from scipy.io import netcdf_file
-        fout = netcdf_file(filename, 'w')
-        # dimension
-        fout.Conventions = 'AMBERRESTART'
-        fout.ConventionVersion = "1.0"
-        fout.title = 'Ase-generated-amber-restart-file'
-        fout.application = "AMBER"
-        fout.program = "ASE"
-        fout.programVersion = "1.0"
-        fout.createDimension('cell_spatial', 3)
-        fout.createDimension('label', 5)
-        fout.createDimension('cell_angular', 3)
-        fout.createDimension('time', 1)
-        time = fout.createVariable('time', 'd', ('time',))
-        time.units = 'picosecond'
-        time[0] = 0
-        fout.createDimension('spatial', 3)
-        spatial = fout.createVariable('spatial', 'c', ('spatial',))
-        spatial[:] = np.asarray(list('xyz'))
-        # spatial = 'xyz'
+        write_amber_coordinates(atoms, filename)
 
-        natom = len(atoms)
-        fout.createDimension('atom', natom)
-        coordinates = fout.createVariable('coordinates', 'd',
-                                          ('atom', 'spatial'))
-        coordinates.units = 'angstrom'
-        coordinates[:] = atoms.get_positions()[:]
-
-        if atoms.get_velocities() is not None:
-            velocities = fout.createVariable('velocities', 'd',
-                                             ('atom', 'spatial'))
-            velocities.units = 'angstrom/picosecond'
-            velocities[:] = atoms.get_velocities()[:]
-
-        # title
-        cell_angular = fout.createVariable('cell_angular', 'c',
-                                           ('cell_angular', 'label'))
-        cell_angular[0] = np.asarray(list('alpha'))
-        cell_angular[1] = np.asarray(list('beta '))
-        cell_angular[2] = np.asarray(list('gamma'))
-
-        # title
-        cell_spatial = fout.createVariable('cell_spatial', 'c',
-                                           ('cell_spatial',))
-        cell_spatial[0], cell_spatial[1], cell_spatial[2] = 'a', 'b', 'c'
-
-        # data
-        cell_lengths = fout.createVariable('cell_lengths', 'd',
-                                           ('cell_spatial',))
-        cell_lengths.units = 'angstrom'
-        cell_lengths[0] = atoms.get_cell()[0, 0]
-        cell_lengths[1] = atoms.get_cell()[1, 1]
-        cell_lengths[2] = atoms.get_cell()[2, 2]
-
-        cell_angles = fout.createVariable('cell_angles', 'd',
-                                          ('cell_angular',))
-        box_alpha, box_beta, box_gamma = 90.0, 90.0, 90.0
-        cell_angles[0] = box_alpha
-        cell_angles[1] = box_beta
-        cell_angles[2] = box_gamma
-
-        cell_angles.units = 'degree'
-        fout.close()
-
-    def read_coordinates(self, atoms, filename=''):
+    def read_coordinates(self, atoms):
         """Import AMBER16 netCDF restart files.
 
         Reads atom positions and
@@ -192,66 +129,30 @@ class Amber(FileIOCalculator):
         This may be useful if you have run amber many steps and
         want to read new positions and velocities
         """
-
-        if filename == '':
-            filename = self.outcoordfile
-
-        import numpy as np
-        from scipy.io import netcdf
-
-        import ase.units as units
-
-        fin = netcdf.netcdf_file(filename, 'r')
-        all_coordinates = fin.variables['coordinates'][:]
-        get_last_frame = False
-        if hasattr(all_coordinates, 'ndim'):
-            if all_coordinates.ndim == 3:
-                get_last_frame = True
-        elif hasattr(all_coordinates, 'shape'):
-            if len(all_coordinates.shape) == 3:
-                get_last_frame = True
-        if get_last_frame:
-            all_coordinates = all_coordinates[-1]
-        atoms.set_positions(all_coordinates)
-        if 'velocities' in fin.variables:
-            all_velocities = fin.variables['velocities'][:] / (1000 * units.fs)
-            if get_last_frame:
-                all_velocities = all_velocities[-1]
-            atoms.set_velocities(all_velocities)
-        if 'cell_lengths' in fin.variables:
-            all_abc = fin.variables['cell_lengths']
-            if get_last_frame:
-                all_abc = all_abc[-1]
-            a, b, c = all_abc
-            all_angles = fin.variables['cell_angles']
-            if get_last_frame:
-                all_angles = all_angles[-1]
-            alpha, beta, gamma = all_angles
-
-            if (all(angle > 89.99 for angle in [alpha, beta, gamma]) and
-                    all(angle < 90.01 for angle in [alpha, beta, gamma])):
-                atoms.set_cell(
-                    np.array([[a, 0, 0],
-                              [0, b, 0],
-                              [0, 0, c]]))
-                atoms.set_pbc(True)
-            else:
-                raise NotImplementedError('only rectangular cells are'
-                                          ' implemented in ASE-AMBER')
-
-        else:
-            atoms.set_pbc(False)
+        # For historical reasons we edit the input atoms rather than
+        # returning new atoms.
+        _atoms = read_amber_coordinates(self.outcoordfile)
+        atoms.cell[:] = _atoms.cell
+        atoms.pbc[:] = _atoms.pbc
+        atoms.positions[:] = _atoms.positions
+        atoms.set_momenta(_atoms.get_momenta())
 
     def read_energy(self, filename='mden'):
         """ read total energy from amber file """
-        with open(filename) as fd:
+        with open(filename, 'r') as fd:
             lines = fd.readlines()
+            blocks = []
+            while 'L0' in lines[0].split()[0]:
+                blocks.append(lines[0:10])
+                lines = lines[10:]
+                if lines == []:
+                    break
         self.results['energy'] = \
-            float(lines[16].split()[2]) * units.kcal / units.mol
+            float(blocks[-1][6].split()[2]) * units.kcal / units.mol
 
     def read_forces(self, filename='mdfrc'):
         """ read forces from amber file """
-        fd = netcdf.netcdf_file(filename, 'r')
+        fd = netcdf_file(filename, 'r', mmap=False)
         try:
             forces = fd.variables['forces']
             self.results['forces'] = forces[-1, :, :] \
@@ -278,7 +179,7 @@ class Amber(FileIOCalculator):
         subprocess.check_call(parmed_command, shell=True, cwd=self.directory)
 
     def get_virtual_charges(self, atoms):
-        with open(self.topologyfile) as fd:
+        with open(self.topologyfile, 'r') as fd:
             topology = fd.readlines()
         for n, line in enumerate(topology):
             if '%FLAG CHARGE' in line:

@@ -156,7 +156,7 @@ class DemonNano(FileIOCalculator):
             value = self.parameters['print_out']
             assert (isinstance(value, str))
 
-            if not len(value) == 0:
+            if len(value) != 0:
                 self._write_argument('PRINT', value, fd)
                 fd.write('\n')
 

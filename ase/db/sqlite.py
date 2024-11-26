@@ -26,8 +26,16 @@ import numpy as np
 import ase.io.jsonio
 from ase.calculators.calculator import all_properties
 from ase.data import atomic_numbers
-from ase.db.core import (Database, bytes_to_object, invop, lock, now,
-                         object_to_bytes, ops, parse_selection)
+from ase.db.core import (
+    Database,
+    bytes_to_object,
+    invop,
+    lock,
+    now,
+    object_to_bytes,
+    ops,
+    parse_selection,
+)
 from ase.db.row import AtomsRow
 from ase.parallel import parallel_function
 
@@ -316,8 +324,8 @@ class SQLite3Database(Database):
             if not isinstance(data, (str, bytes)):
                 data = encode(data, binary=self.version >= 9)
 
-            values += (row.get('energy'),
-                       row.get('free_energy'),
+            values += (float_if_not_none(row.get('energy')),
+                       float_if_not_none(row.get('free_energy')),
                        blob(row.get('forces')),
                        blob(row.get('stress')),
                        blob(row.get('dipole')),
@@ -627,14 +635,14 @@ class SQLite3Database(Database):
                 limit=None, offset=0, sort=None, include_data=True,
                 columns='all'):
 
-        values = np.array([None for i in range(27)])
+        values = np.array([None for _ in range(27)])
         values[25] = '{}'
         values[26] = 'null'
 
         if columns == 'all':
             columnindex = list(range(26))
         else:
-            columnindex = [c for c in range(0, 26)
+            columnindex = [c for c in range(26)
                            if self.columnnames[c] in columns]
         if include_data:
             columnindex.append(26)
@@ -751,7 +759,7 @@ class SQLite3Database(Database):
                         format(table, ', '.join([str(id) for id in ids])))
 
     def vacuum(self):
-        if not self.type == 'db':
+        if self.type != 'db':
             return
 
         with self.managed_connection() as con:

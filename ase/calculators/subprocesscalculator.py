@@ -303,7 +303,6 @@ class Client:
             raise RuntimeError(f'Bad instruction: {instruction}')
 
         try:
-            print('ARGS', args)
             value = function(*args)
         except Exception as ex:
             import traceback

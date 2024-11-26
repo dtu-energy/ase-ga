@@ -5,7 +5,7 @@ from ase.calculators.emt import EMT
 from ase.optimize import BFGS
 
 
-@pytest.fixture
+@pytest.fixture()
 def opt():
     atoms = bulk('Au', cubic=True)
     atoms.rattle(stdev=0.12345, seed=42)
@@ -23,7 +23,7 @@ def test_nsteps(opt, steps):
     """
     irun = opt.irun(fmax=0, steps=steps)
 
-    for i in range(steps + 1):
+    for _ in range(steps + 1):
         next(irun)
 
     with pytest.raises(StopIteration):

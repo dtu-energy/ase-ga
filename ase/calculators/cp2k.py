@@ -7,14 +7,18 @@ Author: Ole Schuett <ole.schuett@mat.ethz.ch>
 import os
 import os.path
 import subprocess
-from warnings import warn
 from contextlib import AbstractContextManager
+from warnings import warn
 
 import numpy as np
 
 import ase.io
-from ase.calculators.calculator import (Calculator, CalculatorSetupError,
-                                        Parameters, all_changes)
+from ase.calculators.calculator import (
+    Calculator,
+    CalculatorSetupError,
+    Parameters,
+    all_changes,
+)
 from ase.config import cfg
 from ase.units import Rydberg
 
@@ -163,6 +167,11 @@ class CP2K(Calculator, AbstractContextManager):
         MEDIUM Quite some output
         SILENT Almost no output
         Default is 'LOW'
+    set_pos_file: bool
+        Send updated positions to the CP2K shell via file instead of
+        via stdin, which can bypass limitations for sending large
+        structures via stdin for CP2K built with some MPI libraries.
+        Requires CP2K 2024.2
     """
 
     implemented_properties = ['energy', 'free_energy', 'forces', 'stress']
@@ -184,7 +193,9 @@ class CP2K(Calculator, AbstractContextManager):
         uks=False,
         poisson_solver='auto',
         xc='LDA',
-        print_level='LOW')
+        print_level='LOW',
+        set_pos_file=False,
+    )
 
     def __init__(self, restart=None,
                  ignore_bad_restart_file=Calculator._deprecated,
@@ -296,11 +307,27 @@ class CP2K(Calculator, AbstractContextManager):
             self._shell.expect('* READY')
 
         if 'positions' in system_changes:
-            self._shell.send('SET_POS %d' % self._force_env_id)
-            self._shell.send('%d' % (3 * n_atoms))
-            for pos in self.atoms.get_positions():
-                self._shell.send('%.18e %.18e %.18e' % tuple(pos))
-            self._shell.send('*END')
+            if self.parameters.set_pos_file:
+                # TODO: Update version number when released
+                if self._shell.version < 7:
+                    raise ValueError('SET_POS_FILE requires > CP2K 2024.2')
+                pos: np.ndarray = self.atoms.get_positions()
+                fn = self.label + '.pos'
+                with open(fn, 'w') as fp:
+                    print(3 * n_atoms, file=fp)
+                    for pos in self.atoms.get_positions():
+                        print('%.18e %.18e %.18e' % tuple(pos), file=fp)
+                self._shell.send(f'SET_POS_FILE {fn} {self._force_env_id}')
+            else:
+                if len(atoms) > 100 and 'psmp' in self.command:
+                    warn('ASE may stall when passing large structures'
+                         ' to MPI versions of CP2K.'
+                         ' Consider using `set_pos_file=True`.')
+                self._shell.send('SET_POS %d' % self._force_env_id)
+                self._shell.send('%d' % (3 * n_atoms))
+                for pos in self.atoms.get_positions():
+                    self._shell.send('%.18e %.18e %.18e' % tuple(pos))
+                self._shell.send('*END')
             max_change = float(self._shell.recv())
             assert max_change >= 0  # sanity check
             self._shell.expect('* READY')
@@ -518,7 +545,8 @@ class Cp2kShell:
         if not line.startswith('CP2K Shell Version:'):
             raise RuntimeError('Cannot determine version of CP2K shell.  '
                                'Probably the shell version is too old.  '
-                               'Please update to CP2K 3.0 or newer.')
+                               'Please update to CP2K 3.0 or newer.  '
+                               f'Received: {line}')
 
         shell_version = line.rsplit(":", 1)[1]
         self.version = float(shell_version)

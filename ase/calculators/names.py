@@ -1,6 +1,5 @@
-from collections.abc import Mapping
 import importlib
-
+from collections.abc import Mapping
 
 # Recognized names of calculators sorted alphabetically:
 names = ['abinit', 'ace', 'aims', 'amber', 'asap', 'castep', 'cp2k',

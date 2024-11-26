@@ -717,11 +717,7 @@ class IOContext:
     def close(self):
         self._exitstack.close()
 
-    def openfile(self, file, comm=None, mode='w'):
-        from ase.parallel import world
-        if comm is None:
-            comm = world
-
+    def openfile(self, file, comm, mode='w'):
         if hasattr(file, 'close'):
             return file  # File already opened, not for us to close.
 

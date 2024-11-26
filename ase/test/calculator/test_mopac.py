@@ -7,8 +7,8 @@ from ase.io.trajectory import Trajectory
 from ase.optimize import BFGS
 
 
-@pytest.mark.calculator_lite
-@pytest.mark.calculator
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator()
 def test_mopac(mopac_factory):
     """Test H2 molecule atomization with MOPAC."""
     # Unrestricted Hartree-Fock; enable magmom calc
@@ -42,7 +42,7 @@ def test_mopac(mopac_factory):
     print('magmom:', calc.get_magnetic_moment())
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 def test_mopac_forces_consistent(mopac_factory):
     """Check MOPAC forces follow Newton's 3rd Law"""
 

@@ -232,18 +232,20 @@ def find_mic(v, cell, pbc=True):
 
 
 def conditional_find_mic(vectors, cell, pbc):
-    """Return list of vector arrays and corresponding list of vector lengths
-    for a given list of vector arrays. The minimum image convention is applied
-    if cell and pbc are set. Can be used like a simple version of get_distances.
+    """Return vectors and their lengths considering cell and pbc.
+
+    The minimum image convention is applied if cell and pbc are set.
+    This can be used like a simple version of get_distances.
     """
+    vectors = np.array(vectors)
     if (cell is None) != (pbc is None):
         raise ValueError("cell or pbc must be both set or both be None")
     if cell is not None:
         mics = [find_mic(v, cell, pbc) for v in vectors]
         vectors, vector_lengths = zip(*mics)
     else:
-        vector_lengths = np.linalg.norm(vectors, axis=2)
-    return [np.asarray(v) for v in vectors], vector_lengths
+        vector_lengths = np.sqrt(np.add.reduce(vectors**2, axis=-1))
+    return vectors, vector_lengths
 
 
 def get_angles(v0, v1, cell=None, pbc=None):
@@ -339,14 +341,14 @@ def get_dihedrals_derivatives(v0, v1, v2, cell=None, pbc=None):
     (v0, v1, v2), (nv0, nv1, nv2) = conditional_find_mic([v0, v1, v2], cell,
                                                          pbc)
 
-    v0 /= nv0[:, np.newaxis]
-    v1 /= nv1[:, np.newaxis]
-    v2 /= nv2[:, np.newaxis]
-    normal_v01 = np.cross(v0, v1, axis=1)
-    normal_v12 = np.cross(v1, v2, axis=1)
-    cos_psi01 = np.einsum('ij,ij->i', v0, v1)  # == np.sum(v0 * v1, axis=1)
+    v0n = v0 / nv0[:, np.newaxis]
+    v1n = v1 / nv1[:, np.newaxis]
+    v2n = v2 / nv2[:, np.newaxis]
+    normal_v01 = np.cross(v0n, v1n, axis=1)
+    normal_v12 = np.cross(v1n, v2n, axis=1)
+    cos_psi01 = np.einsum('ij,ij->i', v0n, v1n)  # == np.sum(v0 * v1, axis=1)
     sin_psi01 = np.sin(np.arccos(cos_psi01))
-    cos_psi12 = np.einsum('ij,ij->i', v1, v2)
+    cos_psi12 = np.einsum('ij,ij->i', v1n, v2n)
     sin_psi12 = np.sin(np.arccos(cos_psi12))
     if (sin_psi01 == 0.).any() or (sin_psi12 == 0.).any():
         msg = ('Undefined derivative for undefined dihedral with planar inner '

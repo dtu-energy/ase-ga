@@ -11,7 +11,7 @@ from ase.constraints import FixLinearTriatomic
 from ase.md import Langevin
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_CO2linear_Au111_langevin(testdir):
     """Test Langevin with constraints for rigid linear
     triatomic molecules"""

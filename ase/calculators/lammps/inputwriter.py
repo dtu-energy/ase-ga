@@ -88,7 +88,7 @@ def write_lammps_in(lammps_in, parameters, atoms, prismobj,
         # write additional lines needed for some LAMMPS potentials
         if 'model_post' in parameters:
             mlines = parameters['model_post']
-            for ii in range(0, len(mlines)):
+            for ii in range(len(mlines)):
                 fileobj.write(mlines[ii])
 
         if "masses" in parameters:
@@ -138,7 +138,7 @@ def write_lammps_in(lammps_in, parameters, atoms, prismobj,
     # write initialization lines needed for some LAMMPS potentials
     if 'model_init' in parameters:
         mlines = parameters['model_init']
-        for ii in range(0, len(mlines)):
+        for ii in range(len(mlines)):
             fileobj.write(mlines[ii])
 
     # write units
@@ -243,7 +243,7 @@ def write_lammps_in(lammps_in, parameters, atoms, prismobj,
         )
     if "run" in parameters:
         fileobj.write("run {}\n".format(parameters["run"]))
-    if not (("minimize" in parameters) or ("run" in parameters)):
+    if "minimize" not in parameters and "run" not in parameters:
         fileobj.write("run 0\n")
 
     fileobj.write(

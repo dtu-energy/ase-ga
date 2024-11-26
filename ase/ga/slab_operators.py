@@ -185,7 +185,7 @@ class SlabOperator(OffspringCreator):
         self.rng.shuffle(allowed_list)
         for ac in allowed_list:
             diff = self.get_composition_diff(comp, ac)
-            numdiff = sum([abs(i) for i in diff])
+            numdiff = sum(abs(i) for i in diff)
             if numdiff < mindiff:
                 mindiff = numdiff
                 ccdiff = diff
@@ -200,8 +200,9 @@ class SlabOperator(OffspringCreator):
     def get_possible_mutations(self, a):
         unique_syms, comp = np.unique(sorted(a.get_chemical_symbols()),
                                       return_counts=True)
-        min_num = min([i for i in np.ravel(list(self.allowed_compositions))
-                       if i > 0])
+        min_num = min(
+            i for i in np.ravel(list(self.allowed_compositions)) if i > 0
+        )
         muts = set()
         for i, n in enumerate(comp):
             if n != 0:
@@ -485,6 +486,7 @@ class SymmetrySlabPermutation(SlabOperator):
                 self.descriptor + parent_message)
 
     def operate(self, atoms):
+        from ase.spacegroup.symmetrize import spglib_get_symmetry_dataset
         # Do the operation
         sym_num = 1
         sg = self.sym_goal
@@ -493,7 +495,7 @@ class SymmetrySlabPermutation(SlabOperator):
                 for _ in range(2):
                     permute2(atoms, rng=self.rng)
                 self.dcf(atoms)
-                sym_num = spglib.get_symmetry_dataset(
+                sym_num = spglib_get_symmetry_dataset(
                     atoms_to_spglib_cell(atoms))['number']
                 if sym_num >= sg:
                     break

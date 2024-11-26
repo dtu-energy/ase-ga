@@ -23,8 +23,11 @@ import numpy as np
 
 from ase.calculators.calculator import kpts2sizeandoffsets
 from ase.calculators.openmx import parameters as param
-from ase.calculators.openmx.reader import (get_file_name, get_standard_key,
-                                           read_electron_valency)
+from ase.calculators.openmx.reader import (
+    get_file_name,
+    get_standard_key,
+    read_electron_valency,
+)
 from ase.config import cfg
 from ase.units import Bohr, Ha, Ry, fs, m, s
 
@@ -81,8 +84,7 @@ def parameters_to_keywords(label=None, atoms=None, parameters=None,
     """
     from collections import OrderedDict
 
-    from ase.calculators.openmx.parameters import (matrix_keys,
-                                                   unit_dat_keywords)
+    from ase.calculators.openmx.parameters import matrix_keys, unit_dat_keywords
     keywords = OrderedDict()
     sequence = [
         'system_currentdirectory', 'system_name', 'data_path',

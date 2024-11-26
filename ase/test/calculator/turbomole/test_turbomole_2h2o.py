@@ -40,7 +40,7 @@ def test_turbomole_2h2o(turbomole_factory):
     conv = {'e': [1.0], 'c': [1.0]}
     thres = {'e': 1e-4, 'c': 1e-2}
     iteration = 0
-    while any([conv[key][-1] > thres[key] for key in conv]):
+    while any(conv[key][-1] > thres[key] for key in conv):
         iteration += 1
         new = polarization_cycle(part1, part2, charges_2=prop['c2'][-1])
         for key in prop:
@@ -75,4 +75,4 @@ def test_turbomole_2h2o(turbomole_factory):
         print(f'Deviation of {key} is {dev[key]:10f}')
 
     # allow deviations of up to 5%
-    assert all([dev[key] < 5e-2 for key in dev]), 'deviation too large'
+    assert all(dev[key] < 5e-2 for key in dev), 'deviation too large'

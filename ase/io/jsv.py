@@ -65,11 +65,11 @@ def read_jsv(f):
                 if len(tokens) > 5:
                     shell_numbers[i] = float(tokens[5])  # float?
         elif tag == 'bonds':
-            for i in range(nbond):
+            for _ in range(nbond):
                 f.readline()
             bonds = NotImplemented
         elif tag == 'poly':
-            for i in range(npoly):
+            for _ in range(npoly):
                 f.readline()
             poly = NotImplemented
         elif tag == 'origin':

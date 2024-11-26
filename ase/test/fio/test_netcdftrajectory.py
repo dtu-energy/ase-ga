@@ -21,7 +21,7 @@ def catch_netcdf4_warning():
         yield
 
 
-@pytest.fixture
+@pytest.fixture()
 def co(netCDF4):
     return Atoms([Atom('C', (0, 0, 0)),
                   Atom('O', (0, 0, 1.2))],
@@ -32,7 +32,7 @@ def co(netCDF4):
 def test_netcdftrajectory(co):
     rng = np.random.RandomState(17)
     traj = NetCDFTrajectory('1.nc', 'w', co)
-    for i in range(5):
+    for _ in range(5):
         co.positions[:, 2] += 0.1
         traj.write()
     del traj
@@ -100,8 +100,10 @@ def test_netcdftrajectory(co):
     # File is not created before first write
     co.set_pbc([True, False, False])
     d = co.get_distance(0, 1)
-    with pytest.warns(None):
+
+    with pytest.warns(UserWarning, match='Atoms have nonperiodic'):
         t.write(co)
+
     del t
     # Check pbc
     for c in [1, 1000]:

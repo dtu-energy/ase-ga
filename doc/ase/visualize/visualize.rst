@@ -78,7 +78,7 @@ actual viewer (`.view` member), a reference to control widgets box
 :func:`ase.visualize.view.nglview.NGLDisplay.custom_colors` method. The
 notebook interface is not blocked by the above call and the returned object
 may be further manipulated by the following code in the separate cell (the
-`_` variable contains output from the previous cell):
+`\_` variable contains output from the previous cell):
 
 >>> v=_
 >>> v.custom_colors({'Mn':'green','As':'blue'})

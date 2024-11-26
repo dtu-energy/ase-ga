@@ -34,7 +34,7 @@ def attach_charges(atoms, fileobj='ACF.dat', displacement=1e-4):
             if k == 1:
                 break
             k += 1
-        if not i > 1:
+        if i <= 1:
             pass
         else:
             words = line.split()

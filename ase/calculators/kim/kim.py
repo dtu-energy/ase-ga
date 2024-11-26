@@ -13,8 +13,12 @@ on KIM, visit https://openkim.org.
 """
 
 from . import kimpy_wrappers
-from .calculators import (ASAPCalculator, KIMCalculator, LAMMPSLibCalculator,
-                          LAMMPSRunCalculator)
+from .calculators import (
+    ASAPCalculator,
+    KIMCalculator,
+    LAMMPSLibCalculator,
+    LAMMPSRunCalculator,
+)
 from .exceptions import KIMCalculatorError
 
 

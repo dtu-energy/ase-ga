@@ -12,9 +12,14 @@ import numpy as np
 
 import ase.data
 import ase.io
-from ase.calculators.calculator import (FileIOCalculator, Parameters,
-                                        ReadError, all_changes, equal,
-                                        CalculatorSetupError)
+from ase.calculators.calculator import (
+    CalculatorSetupError,
+    FileIOCalculator,
+    Parameters,
+    ReadError,
+    all_changes,
+    equal,
+)
 from ase.units import Bohr, Hartree
 
 from .demon_io import parse_xray
@@ -329,7 +334,7 @@ class Demon(FileIOCalculator):
             assert isinstance(value, str)
             value = value + add_print
 
-            if not len(value) == 0:
+            if len(value) != 0:
                 self._write_argument('PRINT', value, fd)
                 fd.write('#\n')
 
@@ -345,19 +350,19 @@ class Demon(FileIOCalculator):
             self._write_basis(fd, atoms, basis, string='BASIS')
 
             ecps = self.parameters['ecps']
-            if not len(ecps) == 0:
+            if len(ecps) != 0:
                 self._write_basis(fd, atoms, ecps, string='ECPS')
 
             mcps = self.parameters['mcps']
-            if not len(mcps) == 0:
+            if len(mcps) != 0:
                 self._write_basis(fd, atoms, mcps, string='MCPS')
 
             auxis = self.parameters['auxis']
-            if not len(auxis) == 0:
+            if len(auxis) != 0:
                 self._write_basis(fd, atoms, auxis, string='AUXIS')
 
             augment = self.parameters['augment']
-            if not len(augment) == 0:
+            if len(augment) != 0:
                 self._write_basis(fd, atoms, augment, string='AUGMENT')
 
             # write geometry
@@ -483,7 +488,7 @@ class Demon(FileIOCalculator):
         chemical_symbols = atoms.get_chemical_symbols()
         chemical_symbols_set = set(chemical_symbols)
 
-        for i in range(chemical_symbols_set.__len__()):
+        for _ in range(chemical_symbols_set.__len__()):
             symbol = chemical_symbols_set.pop()
 
             if symbol in basis:

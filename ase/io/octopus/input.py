@@ -516,7 +516,7 @@ def atoms2kwargs(atoms, use_ase_cell):
 
         if atoms.cell.orthorhombic:
             Lsize = 0.5 * np.diag(cell)
-            kwargs['lsize'] = [[repr(size) for size in Lsize]]
+            kwargs['lsize'] = [[str(size) for size in Lsize]]
             # ASE uses (0...cell) while Octopus uses -L/2...L/2.
             # Lsize is really cell / 2, and we have to adjust our
             # positions by subtracting Lsize (see construction of the coords
@@ -533,7 +533,7 @@ def atoms2kwargs(atoms, use_ase_cell):
             if sym is None:
                 raise ValueError('Cannot represent atom X without tags and '
                                  'species info in atoms.info')
-        coord_block.append([repr(sym)] + [repr(x) for x in pos])
+        coord_block.append([repr(sym)] + [str(x) for x in pos])
 
     kwargs[coordtype] = coord_block
     npbc = sum(atoms.pbc)

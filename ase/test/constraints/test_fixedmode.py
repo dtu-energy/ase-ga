@@ -19,3 +19,6 @@ def test_fixedmode():
     dict_constraint = constraint.todict()
     new_constraint = dict2constraint(dict_constraint)
     assert np.isclose(new_constraint.mode, constraint.mode).all()
+
+    atoms.set_constraint(constraint)
+    assert atoms.get_number_of_degrees_of_freedom() == 2 * len(atoms)

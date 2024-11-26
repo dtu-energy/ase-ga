@@ -195,7 +195,7 @@ def read_cube(file_obj, read_data=True, program=None, verbose=False):
         raw_volume = [float(s) for s in file_obj.read().split()]
         # Split each value at each point into a separate list.
         raw_volumes = [np.array(raw_volume[offset::num_val])
-                       for offset in range(0, num_val)]
+                       for offset in range(num_val)]
 
         datas = []
 

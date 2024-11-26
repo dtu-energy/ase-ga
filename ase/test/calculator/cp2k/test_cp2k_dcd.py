@@ -31,7 +31,7 @@ inp = """\
 """
 
 
-@pytest.fixture
+@pytest.fixture()
 def cp2k_main(testconfig):
     try:
         return testconfig.parser['cp2k']['cp2k_main']
@@ -48,7 +48,7 @@ Missing cp2k configuration.  Requires:
 # Let's do it when calculator factory reporting is user friendly.
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('cp2k')
 def test_dcd(factory, cp2k_main):
     calc = factory.calc(label='test_dcd', inp=inp)

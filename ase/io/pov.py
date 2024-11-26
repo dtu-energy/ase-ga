@@ -326,7 +326,7 @@ Output_to_File=True
 Output_File_Type=N
 Output_Alpha={'on' if self.transparent else 'off'}
 ; if you adjust Height, and width, you must preserve the ratio
-; Width / Height = {self.canvas_width/self.canvas_height:f}
+; Width / Height = {self.canvas_width / self.canvas_height:f}
 Width={self.canvas_width}
 Height={self.canvas_height}
 Antialias=True
@@ -395,7 +395,7 @@ Verbose=False
                 tex = self.textures[a]
             if self.transmittances is not None:
                 trans = self.transmittances[a]
-            atoms += f'atom({pa(loc)}, {dia/2.:.2f}, {pc(col)}, '\
+            atoms += f'atom({pa(loc)}, {dia / 2.:.2f}, {pc(col)}, '\
                      f'{trans}, {tex}) // #{a:n}\n'
             a += 1
         atoms = atoms.strip('\n')
@@ -530,7 +530,7 @@ Verbose=False
                 trans = 0.0
                 if self.transmittances is not None:
                     trans = self.transmittances[a]
-                constraints += f'constrain({pa(loc)}, {dia/2.:.2f}, Black, '\
+                constraints += f'constrain({pa(loc)}, {dia / 2.:.2f}, Black, '\
                     f'{trans}, {tex}) // #{a:n} \n'
         constraints = constraints.strip('\n')
 
@@ -764,8 +764,7 @@ class POVRAYIsosurface:
             from skimage.measure import marching_cubes
         except ImportError:
             # Old skimage (remove at some point)
-            from skimage.measure import \
-                marching_cubes_lewiner as marching_cubes
+            from skimage.measure import marching_cubes_lewiner as marching_cubes
 
         return marching_cubes(
             density_grid,

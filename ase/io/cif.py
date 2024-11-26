@@ -401,13 +401,13 @@ class CIFBlock(collections.abc.Mapping):
                     setting = 2
                 else:
                     warnings.warn(
-                        f'unexpected crystal system {repr(setting_name)} '
-                        f'for space group {repr(spacegroup)}')
+                        f'unexpected crystal system {setting_name!r} '
+                        f'for space group {spacegroup!r}')
             # FIXME - check for more crystal systems...
             else:
                 warnings.warn(
-                    f'crystal system {repr(setting_name)} is not '
-                    f'interpreted for space group {repr(spacegroup)}. '
+                    f'crystal system {setting_name!r} is not '
+                    f'interpreted for space group {spacegroup!r}. '
                     'This may result in wrong setting!')
 
         spg = Spacegroup(spacegroup, setting)
@@ -492,10 +492,10 @@ class CIFBlock(collections.abc.Mapping):
             if kwargs.get('info') is not None:
                 atoms.info.update(kwargs['info'])
             if occupancies is not None:
-                # Compile an occupancies dictionary
-                occ_dict = {}
-                for i, sym in enumerate(atoms.symbols):
-                    occ_dict[str(i)] = {sym: occupancies[i]}
+                occ_dict = {
+                    str(i): {sym: occupancies[i]}
+                    for i, sym in enumerate(atoms.symbols)
+                }
                 atoms.info['occupancy'] = occ_dict
 
         return atoms
@@ -722,7 +722,7 @@ class CIFLoop:
 @iofunction('wb')
 def write_cif(fd, images, cif_format=None,
               wrap=True, labels=None, loop_keys=None) -> None:
-    """Write *images* to CIF file.
+    r"""Write *images* to CIF file.
 
     wrap: bool
         Wrap atoms into unit cell.
@@ -733,8 +733,8 @@ def write_cif(fd, images, cif_format=None,
         it from the element symbol.
 
     loop_keys: dict
-        Add the information from this dictionary to the `loop_`
-        section.  Keys are printed to the `loop_` section preceeded by
+        Add the information from this dictionary to the `loop\_`
+        section.  Keys are printed to the `loop\_` section preceeded by
         ' _'. dict[key] should contain the data printed for each atom,
         so it needs to have the setup `dict[key][i_frame][i_atom] =
         string`. The strings are printed as they are, so take care of

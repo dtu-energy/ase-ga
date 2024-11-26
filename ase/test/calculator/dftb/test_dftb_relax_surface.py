@@ -5,7 +5,7 @@ from ase.constraints import FixAtoms
 from ase.optimize import BFGS
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('dftb')
 def test_dftb_relax_surface(factory):
     calc = factory.calc(

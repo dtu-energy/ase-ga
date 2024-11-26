@@ -184,12 +184,10 @@ def test_header_initial_atoms(header_chunk, initial_cell, initial_positions):
     assert np.allclose(header_chunk.initial_atoms.positions, initial_positions)
     assert np.all(["Na", "Cl"] == header_chunk.initial_atoms.symbols)
     assert all(
-        [
-            str(const_1) == str(const_2)
-            for const_1, const_2 in zip(
-                header_chunk.constraints, header_chunk.initial_atoms.constraints
-            )
-        ]
+        str(const_1) == str(const_2)
+        for const_1, const_2 in zip(
+            header_chunk.constraints, header_chunk.initial_atoms.constraints
+        )
     )
 
 
@@ -310,12 +308,11 @@ def test_header_transfer_initial_atoms(
         initial_positions)
     assert np.all(["Na", "Cl"] == empty_calc_chunk.initial_atoms.symbols)
     assert all(
-        [
-            str(const_1) == str(const_2)
-            for const_1, const_2 in zip(
-                empty_calc_chunk.constraints, empty_calc_chunk.initial_atoms.constraints
-            )
-        ]
+        str(const_1) == str(const_2)
+        for const_1, const_2 in zip(
+            empty_calc_chunk.constraints,
+            empty_calc_chunk.initial_atoms.constraints,
+        )
     )
 
 
@@ -339,7 +336,7 @@ def test_default_calc_energy_raises_error(empty_calc_chunk):
     with pytest.raises(
         AimsParseError, match="No energy is associated with the structure."
     ):
-        getattr(empty_calc_chunk, "energy")
+        getattr(empty_calc_chunk, "total_energy")
 
 
 @pytest.mark.parametrize(
@@ -822,12 +819,10 @@ def test_calc_atoms(calc_chunk, initial_cell, initial_positions):
     assert np.allclose(calc_chunk.atoms.positions, initial_positions)
     assert np.all(["Na", "Cl"] == calc_chunk.atoms.symbols)
     assert all(
-        [
-            str(const_1) == str(const_2)
-            for const_1, const_2 in zip(
-                calc_chunk.constraints, calc_chunk.atoms.constraints
-            )
-        ]
+        str(const_1) == str(const_2)
+        for const_1, const_2 in zip(
+            calc_chunk.constraints, calc_chunk.atoms.constraints
+        )
     )
 
 
@@ -899,10 +894,11 @@ def test_calc_free_energy(calc_chunk):
 
 
 def test_calc_energy(calc_chunk):
-    energy = -2.169503986610555e05
-    assert np.abs(calc_chunk.energy - energy) < eps_hp
-    assert np.abs(calc_chunk.atoms.get_potential_energy() - energy) < eps_hp
-    assert np.abs(calc_chunk.results["energy"] - energy) < eps_hp
+    total_energy = -2.169503986610555e05
+    free_energy = -3.169503986610555e05
+    assert np.abs(calc_chunk.total_energy - total_energy) < eps_hp
+    assert np.abs(calc_chunk.atoms.get_potential_energy() - free_energy) < eps_hp
+    assert np.abs(calc_chunk.results["total_energy"] - total_energy) < eps_hp
 
 
 def test_calc_magnetic_moment(calc_chunk):
@@ -1188,12 +1184,13 @@ def test_molecular_calc_free_energy(molecular_calc_chunk):
 
 
 def test_molecular_calc_energy(molecular_calc_chunk):
-    energy = -0.206778551123339e04
-    assert np.abs(molecular_calc_chunk.energy - energy) < eps_hp
+    free_energy = -2.206778551123339e04
+    total_energy = -0.206778551123339e04
+    assert np.abs(molecular_calc_chunk.total_energy - total_energy) < eps_hp
     assert np.abs(
         molecular_calc_chunk.atoms.get_potential_energy() -
-        energy) < eps_hp
-    assert np.abs(molecular_calc_chunk.results["energy"] - energy) < eps_hp
+        free_energy) < eps_hp
+    assert np.abs(molecular_calc_chunk.results["total_energy"] - total_energy) < eps_hp
 
 
 def test_molecular_calc_n_iter(molecular_calc_chunk):

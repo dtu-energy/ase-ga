@@ -2,11 +2,12 @@ import pytest
 from numpy.testing import assert_allclose
 
 from ase.build import molecule
+from ase.calculators.fd import calculate_numerical_forces
 
 
 @pytest.mark.skip(reason='we do not know how to compile psi4')
 @pytest.mark.filterwarnings('once::DeprecationWarning')
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('psi4')
 def test_main(factory):
     atoms = molecule('H2O')
@@ -30,5 +31,5 @@ def test_main(factory):
                     rtol=1e-4, atol=1e-4)
 
     # Compare analytical vs numerical forces
-    assert_allclose(atoms.get_forces(), calc.calculate_numerical_forces(atoms),
+    assert_allclose(atoms.get_forces(), calculate_numerical_forces(atoms),
                     rtol=1e-4, atol=1e-4)

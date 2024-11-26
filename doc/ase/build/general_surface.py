@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 from ase import Atoms
-from ase.build import surface, bulk
+from ase.build import bulk, surface
 from ase.io import write
 
 # Au example:

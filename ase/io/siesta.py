@@ -178,7 +178,7 @@ def read_struct_out(fd):
     """Read a siesta struct file"""
 
     cell = []
-    for i in range(3):
+    for _ in range(3):
         line = next(fd)
         v = np.array(line.split(), float)
         cell.append(v)
@@ -200,7 +200,7 @@ def read_struct_out(fd):
 
 def read_siesta_xv(fd):
     vectors = []
-    for i in range(3):
+    for _ in range(3):
         data = next(fd).split()
         vectors.append([float(data[j]) * Bohr for j in range(3)])
 

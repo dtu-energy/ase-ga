@@ -42,8 +42,8 @@ def forcefield_params(atoms0):
     i_list, j_list, d_list, fixed_atoms = get_neighbours(atoms=a, r_cut=cutoff)
     for i, j in zip(i_list, j_list):
         neighbor_list[i].append(j)
-    for i in range(len(neighbor_list)):
-        neighbor_list[i].sort()
+    for neighbor in neighbor_list:
+        neighbor.sort()
 
     # create lists of morse, bending and torsion interactions
     for i in range(len(a)):
@@ -74,12 +74,12 @@ def forcefield_params(atoms0):
     return dict(morses=morses, angles=angles, dihedrals=dihedrals, vdws=vdws)
 
 
-@pytest.fixture
+@pytest.fixture()
 def calc(forcefield_params):
     return ForceField(**forcefield_params)
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms(atoms0, calc):
     atoms = atoms0.copy()
     atoms.calc = calc
@@ -92,8 +92,8 @@ ref_energy = 17.238525
 # @pytest.mark.skip('FAILS WITH PYAMG')
 
 
-@pytest.mark.optimize
-@pytest.mark.slow
+@pytest.mark.optimize()
+@pytest.mark.slow()
 def test_opt_with_precon(atoms, forcefield_params):
     kw = dict(forcefield_params)
     kw.pop('vdws')

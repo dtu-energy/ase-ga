@@ -13,11 +13,9 @@ from ase.parallel import world
 
 class GPMin(Optimizer, GaussianProcess):
     def __init__(self, atoms, restart=None, logfile='-', trajectory=None,
-                 prior=None, kernel=None, master=None, noise=None, weight=None,
-                 scale=None, force_consistent=Optimizer._deprecated,
-                 batch_size=None,
-                 bounds=None, update_prior_strategy="maximum",
-                 update_hyperparams=False):
+                 prior=None, kernel=None, noise=None, weight=None, scale=None,
+                 batch_size=None, bounds=None, update_prior_strategy="maximum",
+                 update_hyperparams=False, **kwargs):
         """Optimize atomic positions using GPMin algorithm, which uses both
         potential energies and forces information to build a PES via Gaussian
         Process (GP) regression and then minimizes it.
@@ -43,13 +41,13 @@ class GPMin(Optimizer, GaussianProcess):
             bounds: irrelevant
             batch_size: irrelevant
 
-        Parameters:
-        ------------------
+        Parameters
+        ----------
 
-        atoms: Atoms object
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
+        restart: str
             JSON file used to store the training set. If set, file with
             such a name will be searched and the data in the file incorporated
             to the new training set, if the file exists.
@@ -58,12 +56,8 @@ class GPMin(Optimizer, GaussianProcess):
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout
 
-        trajectory: string
+        trajectory: str
             File used to store trajectory of atomic movement.
-
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files. If
-            set to True, this rank will save files.
 
         prior: Prior object or None
             Prior for the GP regression of the PES surface
@@ -86,7 +80,7 @@ class GPMin(Optimizer, GaussianProcess):
             If *update_hyperparams* is False, changing this parameter
             has no effect on the dynamics of the algorithm.
 
-        update_prior_strategy: string
+        update_prior_strategy: str
             Strategy to update the constant from the ConstantPrior
             when more data is collected. It does only work when
             Prior = None
@@ -99,7 +93,7 @@ class GPMin(Optimizer, GaussianProcess):
         scale: float
             scale of the Squared Exponential Kernel
 
-        update_hyperparams: boolean
+        update_hyperparams: bool
             Update the scale of the Squared exponential kernel
             every batch_size-th iteration by maximizing the
             marginal likelihood.
@@ -118,6 +112,10 @@ class GPMin(Optimizer, GaussianProcess):
             step.
             If bounds is False, no constraints are set in the optimization of
             the hyperparameters.
+
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
 
         .. warning:: The memory of the optimizer scales as O(n²N²) where
                      N is the number of atoms and n the number of steps.
@@ -185,8 +183,8 @@ class GPMin(Optimizer, GaussianProcess):
         self.x_list = []      # Training set features
         self.y_list = []      # Training set targets
 
-        Optimizer.__init__(self, atoms, restart, logfile,
-                           trajectory, master, force_consistent)
+        Optimizer.__init__(self, atoms, restart=restart, logfile=logfile,
+                           trajectory=trajectory, **kwargs)
         if prior is None:
             self.update_prior = True
             prior = ConstantPrior(constant=None)
@@ -286,7 +284,7 @@ class GPMin(Optimizer, GaussianProcess):
     def dump(self):
         """Save the training set"""
         if world.rank == 0 and self.restart is not None:
-            with open(self.restart, 'wb') as fd:
+            with open(self.restart, 'w') as fd:
                 write_json(fd, (self.x_list, self.y_list))
 
     def read(self):

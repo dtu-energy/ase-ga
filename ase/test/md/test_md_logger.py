@@ -12,7 +12,7 @@ from ase.md.verlet import VelocityVerlet
 from ase.optimize import BFGS, FIRE
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     dimer = s22.create_s22_system("Water_dimer")
     dimer.constraints = FixBondLengths(
@@ -21,7 +21,7 @@ def atoms():
     return dimer
 
 
-@pytest.fixture
+@pytest.fixture()
 def calc():
     return TIP3P(rc=9.0)
 

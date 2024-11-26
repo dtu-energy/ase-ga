@@ -112,9 +112,9 @@ def read_static_info_kpoints(fd):
         kpts.append(kxyz)
         weights.append(weight)
 
-    ibz_k_points = np.array(kpts, float)
-    k_point_weights = np.array(weights, float)
-    return dict(ibz_k_points=ibz_k_points, k_point_weights=k_point_weights)
+    ibz_kpoints = np.array(kpts, float)
+    kpoint_weights = np.array(weights, float)
+    return dict(ibz_kpoints=ibz_kpoints, kpoint_weights=kpoint_weights)
 
 
 def read_static_info_eigenvalues(fd, energy_unit):
@@ -186,31 +186,28 @@ def read_static_info(fd):
         elif line.startswith('Energy ['):
             unit = get_energy_unit(line)
             results.update(read_static_info_energy(fd, unit))
-        elif line.startswith('Stress tensor'):
-            assert line.split()[-1] == '[H/b^3]'
-            stress = read_static_info_stress(fd)
-            stress *= Hartree / Bohr**3
-            results.update(stress=stress)
+        elif line.startswith('Total stress tensor ['):
+            if '[H/b^3]' in line:
+                stress = read_static_info_stress(fd)
+                stress *= Hartree / Bohr**3
+                results.update(stress=stress)
         elif line.startswith('Total Magnetic Moment'):
-            if 0:
-                line = next(fd)
+            line = next(fd)
+            values = line.split()
+            results['magmom'] = float(values[-1])
+            line = next(fd)
+            assert line.startswith('Local Magnetic Moments')
+            line = next(fd)
+            assert line.split() == ['Ion', 'mz']
+            # Reading  Local Magnetic Moments
+            magmoms = []
+            for line in fd:
+                if line == '\n':
+                    break  # there is no more thing to search for
+                line = line.replace('\n', ' ')
                 values = line.split()
-                results['magmom'] = float(values[-1])
-
-                line = next(fd)
-                assert line.startswith('Local Magnetic Moments')
-                line = next(fd)
-                assert line.split() == ['Ion', 'mz']
-                # Reading  Local Magnetic Moments
-                mag_moment = []
-                for line in fd:
-                    if line == '\n':
-                        break  # there is no more thing to search for
-                    line = line.replace('\n', ' ')
-                    values = line.split()
-                    mag_moment.append(float(values[-1]))
-
-                results['magmoms'] = np.array(mag_moment)
+                magmoms.append(float(values[-1]))
+            results['magmoms'] = np.array(magmoms)
         elif line.startswith('Dipole'):
             assert line.split()[-1] == '[Debye]'
             dipole = [float(next(fd).split()[-1]) for i in range(3)]
@@ -228,26 +225,5 @@ def read_static_info(fd):
                 tokens = line.split()[-3:]
                 forces.append([float(f) for f in tokens])
             results['forces'] = np.array(forces) * forceunit
-        elif line.startswith('Fermi'):
-            tokens = line.split()
-            unit = {'eV': eV, 'H': Hartree}[tokens[-1]]
-            eFermi = float(tokens[-2]) * unit
-            results['efermi'] = eFermi
-
-    if 'ibz_k_points' not in results:
-        results['ibz_k_points'] = np.zeros((1, 3))
-        results['k_point_weights'] = np.ones(1)
-    if 0:  # 'efermi' not in results:
-        # Find HOMO level.  Note: This could be a very bad
-        # implementation with fractional occupations if the Fermi
-        # level was not found otherwise.
-        all_energies = results['eigenvalues'].ravel()
-        all_occupations = results['occupations'].ravel()
-        args = np.argsort(all_energies)
-        for arg in args[::-1]:
-            if all_occupations[arg] > 0.1:
-                break
-        eFermi = all_energies[arg]
-        results['efermi'] = eFermi
 
     return results

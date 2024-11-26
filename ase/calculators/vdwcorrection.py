@@ -147,7 +147,7 @@ class vdWTkatchenko09prl(Calculator, IOContext):
                  Rmax=10.,  # maximal radius for periodic calculations
                  Ldecay=1.,  # decay length for smoothing in periodic calcs
                  vdWDB_alphaC6=vdWDB_alphaC6,
-                 txt=None, sR=None):
+                 txt=None, sR=None, comm=world):
         """Constructor
 
         Parameters
@@ -166,8 +166,8 @@ class vdWTkatchenko09prl(Calculator, IOContext):
         if hasattr(self.calculator, 'world'):
             self.comm = self.calculator.world
         else:
-            self.comm = world  # the best we know
-        self.txt = self.openfile(txt, self.comm)
+            self.comm = comm  # the best we know
+        self.txt = self.openfile(file=txt, comm=self.comm)
 
         self.vdwradii = vdwradii
         self.vdWDB_alphaC6 = vdWDB_alphaC6
@@ -282,12 +282,12 @@ class vdWTkatchenko09prl(Calculator, IOContext):
                                    a=atoms,
                                    cutoff=Reff,
                                    self_interaction=False)
-            atom_list = [[] for _ in range(0, len(atoms))]
-            d_list = [[] for _ in range(0, len(atoms))]
-            v_list = [[] for _ in range(0, len(atoms))]
+            atom_list = [[] for _ in range(len(atoms))]
+            d_list = [[] for _ in range(len(atoms))]
+            v_list = [[] for _ in range(len(atoms))]
             # r_list = [[] for _ in range(0, len(atoms))]
             # Look for neighbor pairs
-            for k in range(0, len(n_list[0])):
+            for k in range(len(n_list[0])):
                 i = n_list[0][k]
                 j = n_list[1][k]
                 dist = n_list[2][k]
@@ -305,7 +305,7 @@ class vdWTkatchenko09prl(Calculator, IOContext):
             v_list = []
             # r_list = []
             # Do this to avoid double counting
-            for i in range(0, len(atoms)):
+            for i in range(len(atoms)):
                 atom_list.append(range(i + 1, len(atoms)))
                 d_list.append([atoms.get_distance(i, j)
                                for j in range(i + 1, len(atoms))])

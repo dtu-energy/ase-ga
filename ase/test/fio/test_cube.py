@@ -178,8 +178,11 @@ def test_cube_reading_multiple():
 
         # and datas
         assert len(result["datas"]) == 2
-        assert result[DATA].shape == result["datas"][0].shape and \
-            result["datas"][0].shape == result["datas"][1].shape
+        assert (
+            result[DATA].shape
+            == result["datas"][0].shape
+            == result["datas"][1].shape
+        )
 
         # check labels
         assert result["labels"] == [21, 22]

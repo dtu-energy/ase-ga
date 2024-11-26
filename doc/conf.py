@@ -1,18 +1,15 @@
 import datetime
-import sys
 
-import sphinx_rtd_theme
-
-sys.path.append('.')
-
-extensions = ['ext',
+extensions = ['ase.utils.sphinx',
               'sphinx.ext.autodoc',
               'sphinx.ext.doctest',
               'sphinx.ext.extlinks',
               'sphinx.ext.mathjax',
               'sphinx.ext.viewcode',
               'sphinx.ext.napoleon',
-              'sphinx.ext.intersphinx']
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.imgconverter']
+
 extlinks = {
     'doi': ('https://doi.org/%s', 'doi: %s'),
     'arxiv': ('https://arxiv.org/abs/%s', 'arXiv: %s'),
@@ -38,7 +35,6 @@ nitpick_ignore = [('envvar', 'VASP_PP_PATH'),
                   ('envvar', 'VASP_SCRIPT')]
 
 html_theme = 'sphinx_rtd_theme'
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_style = 'ase.css'
 html_favicon = 'static/ase.ico'
 html_static_path = ['static']
@@ -47,10 +43,11 @@ html_last_updated_fmt = '%a, %d %b %Y %H:%M:%S'
 latex_elements = {'papersize': 'a4paper'}
 latex_show_urls = 'inline'
 latex_show_pagerefs = True
+latex_engine = 'xelatex'
 latex_documents = [
     ('index', 'ASE.tex', 'ASE', 'ASE-developers', 'howto', not True)]
 
-intersphinx_mapping = {'gpaw': ('https://wiki.fysik.dtu.dk/gpaw', None),
+intersphinx_mapping = {'gpaw': ('https://gpaw.readthedocs.io', None),
                        'python': ('https://docs.python.org/3.10', None)}
 
 # Avoid GUI windows during doctest:

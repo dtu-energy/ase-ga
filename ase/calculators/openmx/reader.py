@@ -317,37 +317,38 @@ def read_scfout_file(filename=None):
                         Hks[spin][ct_AN][h_AN].append(floa(fd.read(8 * TNO2)))
         return Hks
 
-    fd = open(filename, mode='rb')
-    atomnum, SpinP_switch = inte(fd.read(8))
-    Catomnum, Latomnum, Ratomnum, TCpyCell = inte(fd.read(16))
-    atv = floa(fd.read(8 * 4 * (TCpyCell + 1)), shape=(TCpyCell + 1, 4))
-    atv_ijk = inte(fd.read(4 * 4 * (TCpyCell + 1)), shape=(TCpyCell + 1, 4))
-    Total_NumOrbs = np.insert(inte(fd.read(4 * (atomnum))), 0, 1, axis=0)
-    FNAN = np.insert(inte(fd.read(4 * (atomnum))), 0, 0, axis=0)
-    natn = ins(spl(inte(fd.read(4 * sum(FNAN[1:] + 1))), cum(FNAN[1:] + 1)),
-               0, zeros(FNAN[0] + 1), axis=0)[:-1]
-    ncn = ins(spl(inte(fd.read(4 * np.sum(FNAN[1:] + 1))), cum(FNAN[1:] + 1)),
-              0, np.zeros(FNAN[0] + 1), axis=0)[:-1]
-    tv = ins(floa(fd.read(8 * 3 * 4), shape=(3, 4)), 0, [0, 0, 0, 0], axis=0)
-    rtv = ins(floa(fd.read(8 * 3 * 4), shape=(3, 4)), 0, [0, 0, 0, 0], axis=0)
-    Gxyz = ins(floa(fd.read(8 * (atomnum) * 4), shape=(atomnum, 4)), 0,
-               [0., 0., 0., 0.], axis=0)
-    Hks = readHam(SpinP_switch, FNAN, atomnum, Total_NumOrbs, natn, fd)
-    iHks = []
-    if SpinP_switch == 3:
-        iHks = readHam(SpinP_switch, FNAN, atomnum, Total_NumOrbs, natn, fd)
-    OLP = readOverlap(atomnum, Total_NumOrbs, FNAN, natn, fd)
-    OLPpox = readOverlap(atomnum, Total_NumOrbs, FNAN, natn, fd)
-    OLPpoy = readOverlap(atomnum, Total_NumOrbs, FNAN, natn, fd)
-    OLPpoz = readOverlap(atomnum, Total_NumOrbs, FNAN, natn, fd)
-    DM = readHam(SpinP_switch, FNAN, atomnum, Total_NumOrbs, natn, fd)
-    Solver = inte(fd.read(4))
-    ChemP, E_Temp = floa(fd.read(8 * 2))
-    dipole_moment_core = floa(fd.read(8 * 3))
-    dipole_moment_background = floa(fd.read(8 * 3))
-    Valence_Electrons, Total_SpinS = floa(fd.read(8 * 2))
+    with open(filename, mode='rb') as fd:
+        atomnum, SpinP_switch = inte(fd.read(8))
+        Catomnum, Latomnum, Ratomnum, TCpyCell = inte(fd.read(16))
+        atv = floa(fd.read(8 * 4 * (TCpyCell + 1)), shape=(TCpyCell + 1, 4))
+        atv_ijk = inte(fd.read(4 * 4 * (TCpyCell + 1)), shape=(TCpyCell + 1, 4))
+        Total_NumOrbs = np.insert(inte(fd.read(4 * (atomnum))), 0, 1, axis=0)
+        FNAN = np.insert(inte(fd.read(4 * (atomnum))), 0, 0, axis=0)
+        natn = ins(spl(inte(fd.read(4 * sum(FNAN[1:] + 1))), cum(FNAN[1:] + 1)),
+                   0, zeros(FNAN[0] + 1), axis=0)[:-1]
+        ncn = ins(spl(inte(fd.read(4 * np.sum(FNAN[1:] + 1))), cum(FNAN[1:] + 1)),
+                  0, np.zeros(FNAN[0] + 1), axis=0)[:-1]
+        tv = ins(floa(fd.read(8 * 3 * 4), shape=(3, 4)),
+                 0, [0, 0, 0, 0], axis=0)
+        rtv = ins(floa(fd.read(8 * 3 * 4), shape=(3, 4)),
+                  0, [0, 0, 0, 0], axis=0)
+        Gxyz = ins(floa(fd.read(8 * (atomnum) * 4), shape=(atomnum, 4)), 0,
+                   [0., 0., 0., 0.], axis=0)
+        Hks = readHam(SpinP_switch, FNAN, atomnum, Total_NumOrbs, natn, fd)
+        iHks = []
+        if SpinP_switch == 3:
+            iHks = readHam(SpinP_switch, FNAN, atomnum, Total_NumOrbs, natn, fd)
+        OLP = readOverlap(atomnum, Total_NumOrbs, FNAN, natn, fd)
+        OLPpox = readOverlap(atomnum, Total_NumOrbs, FNAN, natn, fd)
+        OLPpoy = readOverlap(atomnum, Total_NumOrbs, FNAN, natn, fd)
+        OLPpoz = readOverlap(atomnum, Total_NumOrbs, FNAN, natn, fd)
+        DM = readHam(SpinP_switch, FNAN, atomnum, Total_NumOrbs, natn, fd)
+        Solver = inte(fd.read(4))
+        ChemP, E_Temp = floa(fd.read(8 * 2))
+        dipole_moment_core = floa(fd.read(8 * 3))
+        dipole_moment_background = floa(fd.read(8 * 3))
+        Valence_Electrons, Total_SpinS = floa(fd.read(8 * 2))
 
-    fd.close()
     scf_out = {'atomnum': atomnum, 'SpinP_switch': SpinP_switch,
                'Catomnum': Catomnum, 'Latomnum': Latomnum, 'Hks': Hks,
                'Ratomnum': Ratomnum, 'TCpyCell': TCpyCell, 'atv': atv,
@@ -380,7 +381,7 @@ def read_band_file(filename=None):
         band_data['band_kpath_unitcell'] = [line[:3], line[3:6], line[6:9]]
         line = fd.readline().split()
         band_data['band_nkpath'] = int(line[0])
-        for i in range(band_data['band_nkpath']):
+        for _ in range(band_data['band_nkpath']):
             line = fd.readline().split()
             band_kpath.append(line)
             nkpts += int(line[0])
@@ -430,11 +431,11 @@ def rn(line='\n', n=1):
 
 
 def read_tuple_integer(line):
-    return tuple([int(x) for x in line.split()[-3:]])
+    return tuple(int(x) for x in line.split()[-3:])
 
 
 def read_tuple_float(line):
-    return tuple([float(x) for x in line.split()[-3:]])
+    return tuple(float(x) for x in line.split()[-3:])
 
 
 def read_integer(line):
@@ -516,7 +517,7 @@ def read_energies(line, fd, debug=None):
         point = 7  # Version 3.8
     else:
         point = 16  # Version 3.9
-    for i in range(point):
+    for _ in range(point):
         fd.readline()
     line = fd.readline()
     energies = []

@@ -10,7 +10,7 @@ from ase.optimize.precon import Precon, make_precon
 from ase.utils.ff import Bond
 
 
-@pytest.fixture
+@pytest.fixture()
 def ref_atoms():
     atoms = bulk('Al', a=3.994) * 2
     atoms.calc = EMT()
@@ -19,20 +19,20 @@ def ref_atoms():
     return atoms, bonds
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms(ref_atoms):
     atoms, bonds = ref_atoms
     atoms.rattle(stdev=0.1, seed=7)
     return atoms, bonds
 
 
-@pytest.fixture
+@pytest.fixture()
 def var_cell(atoms):
     atoms, bonds = atoms
     return UnitCellFilter(atoms), bonds
 
 
-@pytest.fixture
+@pytest.fixture()
 def fixed_atoms(atoms):
     atoms, bonds = atoms
     atoms.set_constraint(FixAtoms(indices=[0]))

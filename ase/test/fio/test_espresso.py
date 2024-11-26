@@ -16,9 +16,14 @@ import ase.io
 from ase import Atoms
 from ase.calculators.calculator import compare_atoms
 from ase.constraints import FixAtoms, FixCartesian, FixScaled
-from ase.io.espresso import (get_atomic_species, parse_position_line,
-                             read_espresso_in, read_fortran_namelist,
-                             write_espresso_in, write_fortran_namelist)
+from ase.io.espresso import (
+    get_atomic_species,
+    parse_position_line,
+    read_espresso_in,
+    read_fortran_namelist,
+    write_espresso_in,
+    write_fortran_namelist,
+)
 
 # This file is parsed correctly by pw.x, even though things are
 # scattered all over the place with some namelist edge cases
@@ -396,6 +401,42 @@ def test_pw_input_write():
         _, cards = read_fortran_namelist(f)
 
         assert "K_POINTS gamma" in cards
+        assert cards[-3] == "test1"
+        assert cards[-1] == "test3"
+
+    assert np.allclose(bulk.positions, readback.positions)
+
+
+def test_pw_input_write_raw_kpts():
+    """Write a structure and read it back."""
+    bulk = ase.build.bulk('NiO', 'rocksalt', 4.813, cubic=True)
+    bulk.set_initial_magnetic_moments([2.2 if atom.symbol == 'Ni' else 0.0
+                                       for atom in bulk])
+
+    fh = 'espresso_test.pwi'
+    pseudos = {'Ni': 'potato', 'O': 'orange'}
+    kpts = np.random.random((10, 4))
+
+    write_espresso_in(fh, bulk, pseudopotentials=pseudos, kpts=kpts)
+    readback = read_espresso_in('espresso_test.pwi')
+    assert np.allclose(bulk.positions, readback.positions)
+
+    sections = {'system': {
+        'lda_plus_u': True,
+        'Hubbard_U(1)': 4.0,
+        'Hubbard_U(2)': 0.0}}
+    write_espresso_in(fh, bulk, sections, pseudopotentials=pseudos,
+                      additional_cards=["test1", "test2", "test3"],
+                      kpts=kpts)
+
+    readback = read_espresso_in('espresso_test.pwi')
+
+    with open('espresso_test.pwi') as f:
+        _, cards = read_fortran_namelist(f)
+
+        assert "K_POINTS crystal" in cards
+        assert cards[5].startswith(f"{kpts[0, 0]:.12f}"[:10])
+        assert cards[6].startswith(f"{kpts[1, 0]:.12f}"[:10])
         assert cards[-3] == "test1"
         assert cards[-1] == "test3"
 

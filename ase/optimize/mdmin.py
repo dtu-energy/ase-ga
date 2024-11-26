@@ -18,22 +18,24 @@ class MDMin(Optimizer):
         trajectory: Optional[str] = None,
         dt: Optional[float] = None,
         maxstep: Optional[float] = None,
-        master: Optional[bool] = None,
+        **kwargs,
     ):
-        """Parameters:
+        """
 
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
-            Pickle file used to store hessian matrix. If set, file with
+        restart: str
+            JSON file used to store hessian matrix. If set, file with
             such a name will be searched and hessian matrix stored will
             be used, if the file exists.
 
-        trajectory: string
-            Pickle file used to store trajectory of atomic movement.
+        trajectory: str
+            Trajectory file used to store optimisation path.
 
-        logfile: string
+        logfile: str
             Text file used to write summary information.
 
         dt: float
@@ -43,11 +45,12 @@ class MDMin(Optimizer):
             Spatial step limit in Angstrom. This allows larger values of dt
             while being more robust to instabilities in the optimization.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
+
         """
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory, master)
+        Optimizer.__init__(self, atoms, restart, logfile, trajectory, **kwargs)
 
         self.dt = dt or self.defaults['dt']
         self.maxstep = maxstep or self.defaults['maxstep']

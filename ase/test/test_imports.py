@@ -3,7 +3,11 @@ from importlib import import_module
 from pathlib import Path
 
 import pytest
-from numpy import VisibleDeprecationWarning
+
+try:
+    from numpy.exceptions import VisibleDeprecationWarning  # NumPy 2.0.0
+except ImportError:
+    from numpy import VisibleDeprecationWarning
 
 import ase
 

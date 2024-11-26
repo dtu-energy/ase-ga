@@ -60,9 +60,8 @@ class PBSQueueRun:
                                         a.info['confid'])
         write(fname, a)
         job_name = '{}_{}'.format(self.job_prefix, a.info['confid'])
-        fd = open('tmp_job_file.job', 'w')
-        fd.write(self.job_template_generator(job_name, fname))
-        fd.close()
+        with open('tmp_job_file.job', 'w') as fd:
+            fd.write(self.job_template_generator(job_name, fname))
         os.system(f'{self.qsub_command} tmp_job_file.job')
 
     def enough_jobs_running(self):

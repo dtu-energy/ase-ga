@@ -121,8 +121,11 @@ class CLICommand:
 def build_molecule(args):
     from ase.atoms import Atoms
     from ase.build import molecule
-    from ase.data import (atomic_numbers, covalent_radii,
-                          ground_state_magnetic_moments)
+    from ase.data import (
+        atomic_numbers,
+        covalent_radii,
+        ground_state_magnetic_moments,
+    )
     from ase.symbols import string2symbols
 
     try:

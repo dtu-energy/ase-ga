@@ -91,8 +91,8 @@ def test_parse_relax(testdir):
     traj = read(parent / "testdata/aims/relax.out", ":", format="aims-output")
     assert len(traj) == 8
     p0 = [[0.0, 0.0, 0.0], [0.25, 0.25, 0.25]]
-    assert all([np.allclose(at.get_scaled_positions(), p0) for at in traj])
-    assert all([np.allclose(at.get_forces(), np.zeros((2, 3))) for at in traj])
+    assert all(np.allclose(at.get_scaled_positions(), p0) for at in traj)
+    assert all(np.allclose(at.get_forces(), np.zeros((2, 3))) for at in traj)
 
     s0 = full_3x3_to_voigt_6_stress(
         [
@@ -139,6 +139,8 @@ def test_parse_singlepoint(testdir):
 
     results = read_aims_results(parent / "testdata/aims/singlepoint.out")
     assert np.allclose(results["forces"], f0)
+    assert np.abs(results["total_energy"] + 2.06302072675943e03) < 1e-15
+    assert np.abs(results["free_energy"] + 2.06302072675943e03) < 1e-15
     assert np.abs(results["energy"] + 2.06302072675943e03) < 1e-15
 
 
@@ -184,3 +186,14 @@ def test_numerical_stress(testdir):
     ]
 
     assert np.allclose(stress, stress_actual)
+
+
+def test_spin_collinear_w_md_light(testdir):
+    """Issue 3345"""
+    outfile = parent / "testdata/aims/issue_3345_spin_md_light.out"
+    atoms = read(outfile, format="aims-output")
+
+    e0 = -13.0174218930995
+    ee = atoms.get_potential_energy()
+
+    assert np.allclose(e0, ee)

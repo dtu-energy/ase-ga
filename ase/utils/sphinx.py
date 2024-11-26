@@ -8,11 +8,8 @@ from pathlib import Path
 from stat import ST_MTIME
 from subprocess import DEVNULL, CalledProcessError, check_call
 
-import matplotlib
 from docutils import nodes
 from docutils.parsers.rst.roles import set_classes
-
-matplotlib.use('Agg')
 
 
 def mol_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
@@ -63,6 +60,18 @@ def git_role_tmpl(urlroot,
     node = nodes.reference(rawtext, name, refuri=ref,
                            **options)
     return [node], []
+
+
+def git_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
+    return git_role_tmpl('https://gitlab.com/ase/ase/blob/master/',
+                         role,
+                         rawtext, text, lineno, inliner, options, content)
+
+
+def setup(app):
+    app.add_role('mol', mol_role)
+    app.add_role('git', git_role)
+    create_png_files()
 
 
 def creates():

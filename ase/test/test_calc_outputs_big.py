@@ -3,17 +3,19 @@ import pytest
 
 from ase.build import bulk
 from ase.calculators.abc import GetOutputsMixin
-from ase.calculators.singlepoint import (SinglePointDFTCalculator,
-                                         arrays_to_kpoints)
+from ase.calculators.singlepoint import (
+    SinglePointDFTCalculator,
+    arrays_to_kpoints,
+)
 from ase.outputs import Properties, all_outputs
 
 
-@pytest.fixture
+@pytest.fixture()
 def rng():
     return np.random.RandomState(17)
 
 
-@pytest.fixture
+@pytest.fixture()
 def props(rng):
     nspins, nkpts, nbands = 2, 3, 5
     natoms = 4

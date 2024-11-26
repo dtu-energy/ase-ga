@@ -4,11 +4,15 @@ import pytest
 import ase
 import ase.lattice.hexagonal
 from ase.build import bulk, molecule
-from ase.neighborlist import (first_neighbors, mic, neighbor_list,
-                              primitive_neighbor_list)
+from ase.neighborlist import (
+    first_neighbors,
+    mic,
+    neighbor_list,
+    primitive_neighbor_list,
+)
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_neighbor_kernel():
     tol = 1e-7
 

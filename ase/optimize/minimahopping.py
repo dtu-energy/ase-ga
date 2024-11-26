@@ -460,11 +460,11 @@ class PassedMinimum:
             return None
         status = True
         index = -1
-        for i_up in range(self._nup):
+        for _ in range(self._nup):
             if energies[index] < energies[index - 1]:
                 status = False
             index -= 1
-        for i_down in range(self._ndown):
+        for _ in range(self._ndown):
             if energies[index] > energies[index - 1]:
                 status = False
             index -= 1

@@ -5,7 +5,7 @@ with open('formatoptions.rst', 'w') as fd:
     print('============================================', file=fd)
     print('Format Specific Options', file=fd)
     print('============================================', file=fd)
-    format_names = list(sorted(all_formats.keys()))
+    format_names = sorted(all_formats.keys())
     for name in format_names:
         fmt = all_formats[name]
         print(f".. _{name}:\n", file=fd)

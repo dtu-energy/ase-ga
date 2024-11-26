@@ -6,8 +6,10 @@ import pytest
 from ase import Atoms
 from ase.build import bulk
 from ase.spacegroup import crystal, spacegroup
-from ase.utils.structure_comparator import (SpgLibNotFoundError,
-                                            SymmetryEquivalenceCheck)
+from ase.utils.structure_comparator import (
+    SpgLibNotFoundError,
+    SymmetryEquivalenceCheck,
+)
 
 heavy_test = False
 

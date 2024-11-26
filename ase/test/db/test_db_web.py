@@ -1,4 +1,5 @@
 import io
+
 import pytest
 
 from ase import Atoms
@@ -39,7 +40,7 @@ def database(tmp_path_factory):
                    't2': t2})
     db.write(atoms)
 
-    yield db
+    return db
 
 
 @pytest.fixture(scope='module')

@@ -9,8 +9,8 @@ from ase.constraints import FixBondLengths
 from ase.optimize import BFGS
 
 
-@pytest.mark.optimize
-@pytest.mark.slow
+@pytest.mark.optimize()
+@pytest.mark.slow()
 @pytest.mark.parametrize('wrap', [False, True])
 def test_CO2_Au111(wrap, testdir):
     zpos = cos(134.3 / 2.0 * pi / 180.0) * 1.197

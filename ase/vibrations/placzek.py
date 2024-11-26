@@ -128,7 +128,7 @@ class Profeta(ResonantRaman):
 
         mr = 0
         for a, i, r in zip(self.myindices, self.myxyz, self.myr):
-            if not energy_derivative < 0:
+            if energy_derivative >= 0:
                 V_rcc[r] += pre * (
                     kappa_cc(self.expm_rpc[mr], self.ex0E_p,
                              omega, gamma, self.dipole_form) -

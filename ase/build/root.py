@@ -1,5 +1,5 @@
-from math import log10, atan2, cos, sin
-from ase.build import hcp0001, fcc111, bcc111
+from math import atan2, cos, log10, sin
+
 import numpy as np
 
 
@@ -13,6 +13,7 @@ def hcp0001_root(symbol, root, size, a=None, c=None,
     The first 20 valid roots for nonorthogonal are...
     1, 3, 4, 7, 9, 12, 13, 16, 19, 21, 25,
     27, 28, 31, 36, 37, 39, 43, 48, 49"""
+    from ase.build import hcp0001
     atoms = hcp0001(symbol=symbol, size=(1, 1, size[2]),
                     a=a, c=c, vacuum=vacuum, orthogonal=orthogonal)
     atoms = root_surface(atoms, root)
@@ -29,6 +30,7 @@ def fcc111_root(symbol, root, size, a=None,
     The first 20 valid roots for nonorthogonal are...
     1, 3, 4, 7, 9, 12, 13, 16, 19, 21, 25, 27,
     28, 31, 36, 37, 39, 43, 48, 49"""
+    from ase.build import fcc111
     atoms = fcc111(symbol=symbol, size=(1, 1, size[2]),
                    a=a, vacuum=vacuum, orthogonal=orthogonal)
     atoms = root_surface(atoms, root)
@@ -46,6 +48,7 @@ def bcc111_root(symbol, root, size, a=None,
     The first 20 valid roots for nonorthogonal are...
     1, 3, 4, 7, 9, 12, 13, 16, 19, 21, 25,
     27, 28, 31, 36, 37, 39, 43, 48, 49"""
+    from ase.build import bcc111
     atoms = bcc111(symbol=symbol, size=(1, 1, size[2]),
                    a=a, vacuum=vacuum, orthogonal=orthogonal)
     atoms = root_surface(atoms, root)

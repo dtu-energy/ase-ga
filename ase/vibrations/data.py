@@ -1,6 +1,7 @@
 """Storage and analysis for vibrational data"""
 
 import collections
+from functools import cached_property
 from math import pi, sin, sqrt
 from numbers import Integral, Real
 from typing import Any, Dict, Iterator, List, Sequence, Tuple, TypeVar, Union
@@ -14,7 +15,7 @@ from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms, FixCartesian, constrained_indices
 from ase.spectrum.doscollection import DOSCollection
 from ase.spectrum.dosdata import RawDOSData
-from ase.utils import jsonable, lazymethod
+from ase.utils import jsonable
 
 RealSequence4D = Sequence[Sequence[Sequence[Sequence[Real]]]]
 VD = TypeVar('VD', bound='VibrationsData')
@@ -284,7 +285,7 @@ class VibrationsData:
 
         return cls(data['atoms'], data['hessian'], indices=data['indices'])
 
-    @lazymethod
+    @cached_property
     def _energies_and_modes(self) -> Tuple[np.ndarray, np.ndarray]:
         """Diagonalise the Hessian to obtain harmonic modes
 
@@ -339,7 +340,7 @@ class VibrationsData:
 
         """
 
-        energies, modes_from_hessian = self._energies_and_modes()
+        energies, modes_from_hessian = self._energies_and_modes
 
         if all_atoms:
             n_active_atoms = len(self.get_indices())

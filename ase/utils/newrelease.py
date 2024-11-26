@@ -14,7 +14,7 @@ import subprocess
 from pathlib import Path
 from time import strftime
 
-os.environ['LANGUAGE'] = 'C'
+import ase
 
 
 def runcmd(cmd, output=False, error_ok=False):
@@ -36,7 +36,7 @@ def runcmd(cmd, output=False, error_ok=False):
 bash = runcmd
 
 
-def py(cmd, output=False):
+def py(cmd):
     return runcmd(f'python3 {cmd}')
 
 
@@ -45,8 +45,10 @@ def git(cmd, error_ok=False):
     return runcmd(cmd, output=True, error_ok=error_ok)
 
 
-cwd = os.getcwd()
-versionfile = 'ase/__init__.py'
+versionfile = Path(ase.__file__)
+
+ase_toplevel = versionfile.parent.parent
+pyproject = ase_toplevel / 'pyproject.toml'
 
 
 def get_version():
@@ -83,35 +85,40 @@ def main():
         git('checkout master')
         # git('tag -d {}'.format(version), error_ok=True)
         git(f'branch -D {branchname}', error_ok=True)
-        git('branch -D {}'.format('web-page'), error_ok=True)
+        # git('branch -D {}'.format('web-page'), error_ok=True)
         return
 
     print(f'New release: {version}')
 
     txt = git('status')
     branch = re.match(r'On branch (\S+)', txt).group(1)
-    print(f'Creating new release from branch {repr(branch)}')
-    git(f'checkout -b {branchname}')
 
-    def update_version(version):
-        print(f'Editing {versionfile}: version {version}')
-        new_versionline = f"__version__ = '{version}'\n"
+    def match_and_edit_version(path, pattern, replacement):
+        print(f'Editing {path}: version {version}')
         lines = []
-        ok = False
-        with open(versionfile) as fd:
+        matches = 0
+
+        with open(path) as fd:
             for line in fd:
-                if line.startswith('__version__'):
-                    ok = True
-                    line = new_versionline
+                if line.startswith(pattern):
+                    line = replacement.rstrip() + '\n'
+                    matches += 1
                 lines.append(line)
-        assert ok
-        with open(versionfile, 'w') as fd:
-            for line in lines:
-                fd.write(line)
 
-    update_version(version)
+        assert matches == 1, 'Should only match one line!'
+        path.write_text(''.join(lines))
 
-    releasenotes = 'doc/releasenotes.rst'
+    match_and_edit_version(
+        versionfile,
+        pattern='__version__ = ',
+        replacement=f"__version__ = '{version}'")
+
+    match_and_edit_version(
+        pyproject,
+        pattern='version = ',
+        replacement=f"version = '{version}'")
+
+    releasenotes = ase_toplevel / 'doc/releasenotes.rst'
 
     searchtxt = re.escape("""\
 Git master branch
@@ -164,7 +171,7 @@ News
 
     replacetxt = replacetxt.format(version=version, date=date)
 
-    frontpage = 'doc/index.rst'
+    frontpage = ase_toplevel / 'doc/index.rst'
 
     print(f'Editing {frontpage}')
     with open(frontpage) as fd:
@@ -174,7 +181,7 @@ News
     with open(frontpage, 'w') as fd:
         fd.write(txt)
 
-    installdoc = 'doc/install.rst'
+    installdoc = ase_toplevel / 'doc/install.rst'
     print(f'Editing {installdoc}')
 
     with open(installdoc) as fd:
@@ -190,8 +197,13 @@ News
     with open(installdoc, 'w') as fd:
         fd.write(txt)
 
-    git('add {}'.format(' '.join([versionfile, installdoc,
-                                  frontpage, releasenotes])))
+    print(f'Creating new release from branch {branch!r}')
+    git(f'checkout -b {branchname}')
+
+    edited_paths = [versionfile, installdoc, pyproject,
+                    frontpage, releasenotes]
+
+    git('add {}'.format(' '.join(str(path) for path in edited_paths)))
     git(f'commit -m "ASE version {version}"')
     # git('tag -s {0} -m "ase-{0}"'.format(version))
 
@@ -203,9 +215,11 @@ News
         shutil.rmtree('build')
     else:
         print('No stale build directory found; proceeding')
-    py('setup.py sdist > setup_sdist.log')
-    py('setup.py bdist_wheel > setup_bdist_wheel3.log')
-    bash(f'gpg --armor --yes --detach-sign dist/ase-{version}.tar.gz')
+
+    py('-m build')
+    # py('setup.py sdist > setup_sdist.log')
+    # py('setup.py bdist_wheel > setup_bdist_wheel3.log')
+    # bash(f'gpg --armor --yes --detach-sign dist/ase-{version}.tar.gz')
 
     print()
     print('Automatic steps done.')
@@ -228,4 +242,8 @@ News
 
 
 if __name__ == '__main__':
+    assert versionfile.name == '__init__.py'
+    assert ase_toplevel == Path.cwd()
+    os.environ['LANGUAGE'] = 'C'
+
     main()

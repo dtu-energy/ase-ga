@@ -30,32 +30,31 @@ def main():
     dirlist = list(filter(filterre.search, dirlist))
     namelist = [d.strip('.csv') for d in dirlist]
 
-    fd = open('testoptimize.rst', 'w')
-    fd.write(rst)
+    with open('testoptimize.rst', 'w') as fd:
+        fd.write(rst)
 
-    for name in namelist:
-        lines = open(name + '.csv').read().split('\n')
-        firstline = lines.pop(0)
-        fd.write(
-            '\n' +
-            name + '\n' +
-            '=' * len(name) + '\n'
-            'Calculator used: %s\n' % firstline.split(',')[-1] +
-            '\n' +
-            bars +
-            header +
-            bars
-        )
-        for line in lines:
-            if len(line):
-                print(line.split(','))
-                fd.write(
-                    '%-15s %5s %17s %10s %s\n' % tuple(line.split(','))
-                )
-        fd.write(
-            bars
-        )
-    fd.close()
+        for name in namelist:
+            lines = open(name + '.csv').read().split('\n')
+            firstline = lines.pop(0)
+            fd.write(
+                '\n' +
+                name + '\n' +
+                '=' * len(name) + '\n'
+                'Calculator used: %s\n' % firstline.split(',')[-1] +
+                '\n' +
+                bars +
+                header +
+                bars
+            )
+            for line in lines:
+                if len(line):
+                    print(line.split(','))
+                    fd.write(
+                        '%-15s %5s %17s %10s %s\n' % tuple(line.split(','))
+                    )
+            fd.write(
+                bars
+            )
 
 
 if __name__ == '__main__':

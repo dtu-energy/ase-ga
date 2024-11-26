@@ -403,9 +403,9 @@ class Database:
         anything and return None.
         """
 
-        for dct in self._select([],
-                                [(key, '=', value)
-                                 for key, value in key_value_pairs.items()]):
+        for _ in self._select([],
+                              [(key, '=', value)
+                               for key, value in key_value_pairs.items()]):
             return None
 
         atoms = Atoms()
@@ -531,7 +531,7 @@ class Database:
         len(db) to count all rows.
         """
         n = 0
-        for row in self.select(selection, **kwargs):
+        for _ in self.select(selection, **kwargs):
             n += 1
         return n
 
@@ -678,7 +678,7 @@ def o2b(obj: Any, parts: List[bytes]):
                                 offset]}
     if isinstance(obj, complex):
         return {'__complex__': [obj.real, obj.imag]}
-    objtype = getattr(obj, 'ase_objtype')
+    objtype = obj.ase_objtype
     if objtype:
         dct = o2b(obj.todict(), parts)
         dct['__ase_objtype__'] = objtype

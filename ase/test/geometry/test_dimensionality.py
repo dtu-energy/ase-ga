@@ -2,8 +2,10 @@ import pytest
 
 import ase.build
 from ase import Atoms
-from ase.geometry.dimensionality import (analyze_dimensionality,
-                                         isolate_components)
+from ase.geometry.dimensionality import (
+    analyze_dimensionality,
+    isolate_components,
+)
 from ase.lattice.cubic import FaceCenteredCubic
 
 

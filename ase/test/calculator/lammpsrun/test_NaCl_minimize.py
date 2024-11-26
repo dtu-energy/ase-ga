@@ -7,7 +7,7 @@ from ase.optimize import QuasiNewton
 from ase.spacegroup import crystal
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('lammpsrun')
 def test_NaCl_minimize(factory):
     a = 6.15

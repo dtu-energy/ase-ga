@@ -288,9 +288,9 @@ class CRYSTAL(FileIOCalculator):
             word = self.lines[j].split()
             # If GHOST atoms give problems, have a close look at this
             if len(word) == 5:
-                gradients.append([float(word[k + 2]) for k in range(0, 3)])
+                gradients.append([float(word[k + 2]) for k in range(3)])
             elif len(word) == 4:
-                gradients.append([float(word[k + 1]) for k in range(0, 3)])
+                gradients.append([float(word[k + 1]) for k in range(3)])
             else:
                 raise RuntimeError('Problem in reading forces')
 

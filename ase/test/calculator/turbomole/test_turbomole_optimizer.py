@@ -6,12 +6,12 @@ from ase.build import molecule
 from ase.calculators.turbomole import Turbomole, TurbomoleOptimizer
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     return molecule('H2O')
 
 
-@pytest.fixture
+@pytest.fixture()
 def calc():
     params = {
         'title': 'water',
