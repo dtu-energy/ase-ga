@@ -3,8 +3,6 @@ import pytest
 
 # matplotlib only imported in debugging mode (in function test_nvt)
 # import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
-
 from ase.build import bulk
 from ase.md.langevin import Langevin
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
@@ -60,20 +58,18 @@ def run_nvt(atoms, nsteps, dt, T0, dynmaker, rng=None, intval=5):
     measure = MeasureEnergy(atoms)
     dyn.attach(measure, interval=1)
     dyn.run(nsteps)
-    temperatures = measure.temperatures
 
     # Run again while taking data
     dyn = dynmaker(atoms, T0, dt, tau, rng=rng, logint=2500)
     measure = MeasureEnergy(atoms)
     dyn.attach(measure, interval=intval)
     com_before = atoms.get_center_of_mass()
-    dyn.run(nsteps * 20) # XXXX
+    dyn.run(nsteps * 20)
     com_after = atoms.get_center_of_mass()
     energies = measure.energies
     energies = energies[len(energies) // 10:]
     temperatures2 = measure.temperatures
     temperatures2 = temperatures2[len(temperatures2) // 5:]
-    times2 = np.arange(len(temperatures2)) * dt * intval
 
     stdE = np.std(energies)
     avgT = np.mean(temperatures2)
