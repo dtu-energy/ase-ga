@@ -65,27 +65,29 @@ def run_nvt(atoms, nsteps, dt, expected_T, dynmaker, rng=None, intval=5):
     temperatures2 = measure.temperatures
     temperatures2 = temperatures2[len(temperatures2) // 5:]
 
-    stdE = np.std(energies)
-    avgT = np.mean(temperatures2)
+    stdev_energy = np.std(energies)
+    agv_temperature = np.mean(temperatures2)
     # Expected energy fluctuation: sqrt(k_B T^2 3 N k_B) = k_B * T * sqrt(3 * N)
     expected = kB * expected_T * np.sqrt(3 * len(atoms))
 
     # Output results
-    print(f'Observed energy fluctuation: {stdE:.2f} eV')
+    print(f'Observed energy fluctuation: {stdev_energy:.2f} eV')
     print(f'Expected energy fluctuation: {expected:.2f} eV')
-    print(f'Error: {(stdE / expected - 1) * 100:.1f}%')
-    assert np.abs(stdE - expected) < 0.25 * expected, 'Energy fluctuations'
+    print(f'Error: {(stdev_energy / expected - 1) * 100:.1f}%')
+    assert np.abs(stdev_energy - expected) < 0.25 * expected, \
+        'Energy fluctuations'
 
     # Temperature error: We should be able to detect a error of 1/N_atoms
     # The factor .67 is arbitrary, smaller than 1.0 so we consistently
     # detect errors, but not so small that we get false positives.
     maxtemperr = 0.67 * 1 / len(atoms)
     # ... but not if we don't have good statistics.
-    print(f'Observed average temperature:  {avgT:.2f} K'
+    print(f'Observed average temperature:  {agv_temperature:.2f} K'
               + f'   (expected {expected_T:.2f} K)')
-    print(f'Error: {(avgT / expected_T - 1) * 100:.1f}%  '
+    print(f'Error: {(agv_temperature / expected_T - 1) * 100:.1f}%  '
               + f'(max: {maxtemperr * 100:.1f}%)')
-    assert np.abs(avgT - expected_T) < expected_T * maxtemperr, 'Temperature'
+    assert np.abs(agv_temperature - expected_T) < expected_T * maxtemperr, \
+        'Temperature'
 
     print('Center of mass before:', com_before)
     print('Center of mass after: ', com_after)
