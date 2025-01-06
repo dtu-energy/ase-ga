@@ -285,7 +285,9 @@ class IsotropicMTKNPT(MolecularDynamics):
                 "Current implementation does not support constraints"
             )
 
+        num_atoms_global = self.atoms.get_global_number_of_atoms()
         self._thermostat = NoseHooverChainThermostat(
+            num_atoms_global=num_atoms_global,
             masses=self.masses,
             temperature_K=temperature_K,
             tdamp=tdamp,
@@ -293,6 +295,7 @@ class IsotropicMTKNPT(MolecularDynamics):
             tloop=tloop,
         )
         self._barostat = IsotropicMTKBarostat(
+            num_atoms_global=num_atoms_global,
             masses=self.masses,
             temperature_K=temperature_K,
             pdamp=pdamp,
@@ -400,13 +403,14 @@ class IsotropicMTKBarostat:
     """
     def __init__(
         self,
+        num_atoms_global: int,
         masses: np.ndarray,
         temperature_K: float,
         pdamp: float,
         pchain: int = 3,
         ploop: int = 1,
     ):
-        self._num_atoms = masses.shape[0]
+        self._num_atoms_global = num_atoms_global
         self._masses = masses  # (num_atoms, 1)
         self._pdamp = pdamp
         self._pchain = pchain
@@ -414,7 +418,7 @@ class IsotropicMTKBarostat:
 
         self._kT = ase.units.kB * temperature_K
 
-        self._W = (3 * self._num_atoms + 3) * self._kT * self._pdamp**2
+        self._W = (3 * self._num_atoms_global + 3) * self._kT * self._pdamp**2
 
         assert pchain >= 1
         self._R = np.zeros(self._pchain)
@@ -450,37 +454,38 @@ class IsotropicMTKBarostat:
         delta2 = delta / 2
         delta4 = delta / 4
 
-        def _integrate_p_xi_j(p_eps: float, j: int) -> None:
-            if j < self._pchain - 1:
-                self._p_xi[j] *= np.exp(
-                    -delta4 * self._p_xi[j + 1] / self._R[j + 1]
-                )
-
-            if j == 0:
-                g_j = p_eps ** 2 / self._W - self._kT
-            else:
-                g_j = self._p_xi[j - 1] ** 2 / self._R[j - 1] - self._kT
-            self._p_xi[j] += delta2 * g_j
-
-            if j < self._pchain - 1:
-                self._p_xi[j] *= np.exp(
-                    -delta4 * self._p_xi[j + 1] / self._R[j + 1]
-                )
-
-        def _integrate_xi() -> None:
-            self._xi += delta * self._p_xi / self._R
-
-        def _integrate_nhc_p_eps(p_eps: float) -> float:
-            p_eps_new = p_eps * float(
-                np.exp(-delta * self._p_xi[0] / self._R[0])
-            )
-            return p_eps_new
-
         for j in range(self._pchain):
-            _integrate_p_xi_j(p_eps, self._pchain - j - 1)
-        _integrate_xi()
-        p_eps = _integrate_nhc_p_eps(p_eps)
+            self._integrate_p_xi_j(p_eps, self._pchain - j - 1, delta2, delta4)
+        self._integrate_xi(delta)
+        p_eps = self._integrate_nhc_p_eps(p_eps, delta)
         for j in range(self._pchain):
-            _integrate_p_xi_j(p_eps, j)
+            self._integrate_p_xi_j(p_eps, j, delta2, delta4)
 
         return p_eps
+
+    def _integrate_p_xi_j(self, p_eps: float, j: int,
+                          delta2: float, delta4: float) -> None:
+        if j < self._pchain - 1:
+            self._p_xi[j] *= np.exp(
+                -delta4 * self._p_xi[j + 1] / self._R[j + 1]
+            )
+
+        if j == 0:
+            g_j = p_eps ** 2 / self._W - self._kT
+        else:
+            g_j = self._p_xi[j - 1] ** 2 / self._R[j - 1] - self._kT
+        self._p_xi[j] += delta2 * g_j
+
+        if j < self._pchain - 1:
+            self._p_xi[j] *= np.exp(
+                -delta4 * self._p_xi[j + 1] / self._R[j + 1]
+            )
+
+    def _integrate_xi(self, delta) -> None:
+        self._xi += delta * self._p_xi / self._R
+
+    def _integrate_nhc_p_eps(self, p_eps: float, delta: float) -> float:
+        p_eps_new = p_eps * float(
+            np.exp(-delta * self._p_xi[0] / self._R[0])
+        )
+        return p_eps_new

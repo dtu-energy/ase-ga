@@ -62,6 +62,7 @@ def test_isotropic_barostat(asap3, hcp_Cu: Atoms, pchain: int):
 
     timestep = 1.0 * ase.units.fs
     barostat = IsotropicMTKBarostat(
+        num_atoms_global=len(atoms),
         masses=atoms.get_masses()[:, None],
         temperature_K=1000,
         pdamp=1000 * timestep,
