@@ -3,10 +3,12 @@ import pytest
 
 from ase import Atoms
 from ase.build import bulk
+from ase.md.bussi import Bussi
+from ase.md.langevin import Langevin
+from ase.md.nose_hoover_chain import NoseHooverChainNVT
 from ase.md.npt import NPT
 from ase.md.nptberendsen import NPTBerendsen
 from ase.md.nvtberendsen import NVTBerendsen
-from ase.md.langevin import Langevin
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.units import GPa, bar, fs
 
@@ -21,7 +23,13 @@ def dynamicsparams():
                     taup=1000 * fs,
                     compressibility_au=1 / Bgold)
     langevinparam = dict(temperature_K=300, friction=1 / (2 * taut))
-    return dict(nvt=nvtparam, npt=nptparam, langevin=langevinparam)
+    nhparam = dict(temperature_K=300, tdamp=taut)
+    return dict(
+        nvt=nvtparam,
+        npt=nptparam,
+        langevin=langevinparam,
+        nosehoover=nhparam,
+        )
 
 
 @pytest.fixture(scope='module')
@@ -109,13 +117,27 @@ def test_nvtberendsen(asap3, equilibrated, dynamicsparams, allraise):
 @pytest.mark.slow()
 def test_langevin(asap3, equilibrated, dynamicsparams, allraise):
     propagate(Atoms(equilibrated), asap3,
-              Langevin, dynamicsparams)
+              Langevin, dynamicsparams['langevin'])
+
+
+@pytest.mark.optimize()
+@pytest.mark.slow()
+def test_bussi(asap3, equilibrated, dynamicsparams, allraise):
+    propagate(Atoms(equilibrated), asap3,
+              Bussi, dynamicsparams['nvt'])
+
+
+@pytest.mark.optimize()
+@pytest.mark.slow()
+def test_nosehoovernvt(asap3, equilibrated, dynamicsparams, allraise):
+    propagate(Atoms(equilibrated), asap3,
+              NoseHooverChainNVT, dynamicsparams['nosehoover'])
 
 
 @pytest.mark.optimize()
 @pytest.mark.slow()
 def test_nptberendsen(asap3, equilibrated, dynamicsparams, allraise):
-    propagate(Atoms(equilibrated), asap3, NPTBerendsen, 
+    propagate(Atoms(equilibrated), asap3, NPTBerendsen,
               dynamicsparams['npt'], max_pressure_error=25.0 * bar)
 
 
@@ -130,10 +152,7 @@ def test_npt(asap3, equilibrated, dynamicsparams, allraise):
                    externalstress=params['pressure_au'],
                    ttime=params['taut'],
                    pfactor=params['taup']**2 * 1.3),
-              max_pressure_error=100*bar,
+              max_pressure_error=100 * bar,
               com_not_thermalized=True)
     # Unlike NPTBerendsen, NPT assumes that the center of mass is not
     # thermalized, so the kinetic energy should be 3/2 ' kB * (N-1) * T
-    #n = len(equilibrated)
-    #assert abs(t - (n - 1) / n * dynamicsparams['npt']['temperature_K']) < 1.0
-    #assert abs(p - dynamicsparams['npt']['pressure_au']) < 100.0 * bar
