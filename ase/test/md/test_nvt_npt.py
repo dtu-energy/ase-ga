@@ -18,17 +18,23 @@ def dynamicsparams():
     """Parameters for the Dynamics."""
     Bgold = 220.0 * GPa  # Bulk modulus of gold, in bar (1 GPa = 10000 bar)
     taut = 1000 * fs
+    taup = 1000 * fs
     nvtparam = dict(temperature_K=300, taut=taut)
     nptparam = dict(temperature_K=300, pressure_au=5000 * bar, taut=taut,
-                    taup=1000 * fs,
-                    compressibility_au=1 / Bgold)
+                    taup=taup, compressibility_au=1 / Bgold)
     langevinparam = dict(temperature_K=300, friction=1 / (2 * taut))
     nhparam = dict(temperature_K=300, tdamp=taut)
+    # NPT uses different units.  The factor 1.3 is the bulk modulus of gold in
+    # ev/Å^3
+    nptoldparam = dict(temperature_K=300,  ttime=taut,
+                   externalstress=5000 * bar,
+                   pfactor=taup**2 * 1.3)
     return dict(
         nvt=nvtparam,
         npt=nptparam,
         langevin=langevinparam,
         nosehoover=nhparam,
+        nptold=nptoldparam
         )
 
 
@@ -145,13 +151,8 @@ def test_nptberendsen(asap3, equilibrated, dynamicsparams, allraise):
 @pytest.mark.slow()
 def test_npt(asap3, equilibrated, dynamicsparams, allraise):
     params = dynamicsparams['npt']
-    # NPT uses different units.  The factor 1.3 is the bulk modulus of gold in
-    # ev/Å^3
     propagate(Atoms(equilibrated), asap3, NPT,
-              dict(temperature_K=params['temperature_K'],
-                   externalstress=params['pressure_au'],
-                   ttime=params['taut'],
-                   pfactor=params['taup']**2 * 1.3),
+              dynamicsparams['nptold'],
               max_pressure_error=100 * bar,
               com_not_thermalized=True)
     # Unlike NPTBerendsen, NPT assumes that the center of mass is not
