@@ -6,23 +6,26 @@ from ase.build import bulk
 from ase.md.npt import NPT
 from ase.md.nptberendsen import NPTBerendsen
 from ase.md.nvtberendsen import NVTBerendsen
+from ase.md.langevin import Langevin
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.units import GPa, bar, fs
 
 
 @pytest.fixture(scope='module')
-def berendsenparams():
-    """Parameters for the two Berendsen algorithms."""
+def dynamicsparams():
+    """Parameters for the Dynamics."""
     Bgold = 220.0 * GPa  # Bulk modulus of gold, in bar (1 GPa = 10000 bar)
-    nvtparam = dict(temperature_K=300, taut=1000 * fs)
-    nptparam = dict(temperature_K=300, pressure_au=5000 * bar, taut=1000 * fs,
+    taut = 1000 * fs
+    nvtparam = dict(temperature_K=300, taut=taut)
+    nptparam = dict(temperature_K=300, pressure_au=5000 * bar, taut=taut,
                     taup=1000 * fs,
                     compressibility_au=1 / Bgold)
-    return dict(nvt=nvtparam, npt=nptparam)
+    langevinparam = dict(temperature_K=300, friction=1 / (2 * taut))
+    return dict(nvt=nvtparam, npt=nptparam, langevin=langevinparam)
 
 
 @pytest.fixture(scope='module')
-def equilibrated(asap3, berendsenparams):
+def equilibrated(asap3, dynamicsparams):
     """Make an atomic system with equilibrated temperature and pressure."""
     rng = np.random.RandomState(42)
     # Must be small enough that we can see the an off-by-one error
@@ -35,7 +38,7 @@ def equilibrated(asap3, berendsenparams):
     assert abs(atoms.get_temperature() - 300) < 0.0001
     with NPTBerendsen(atoms, timestep=20 * fs, logfile='-',
                       loginterval=200,
-                      **berendsenparams['npt']) as md:
+                      **dynamicsparams['npt']) as md:
         # Equilibrate for 20 ps
         md.run(steps=1000)
     T = atoms.get_temperature()
@@ -52,6 +55,7 @@ def propagate(atoms,
               max_pressure_error=None,
               com_not_thermalized=False
     ):
+    print(f'Propagating algorithm in {str(algorithm)}.')
     T = []
     p = []
     with algorithm(
@@ -96,22 +100,29 @@ def propagate(atoms,
 # We should probably not mark this (in general)
 @pytest.mark.optimize()
 @pytest.mark.slow()
-def test_nvtberendsen(asap3, equilibrated, berendsenparams, allraise):
+def test_nvtberendsen(asap3, equilibrated, dynamicsparams, allraise):
     propagate(Atoms(equilibrated), asap3,
-              NVTBerendsen, berendsenparams['nvt'])
+              NVTBerendsen, dynamicsparams['nvt'])
 
 
 @pytest.mark.optimize()
 @pytest.mark.slow()
-def test_nptberendsen(asap3, equilibrated, berendsenparams, allraise):
+def test_langevin(asap3, equilibrated, dynamicsparams, allraise):
+    propagate(Atoms(equilibrated), asap3,
+              Langevin, dynamicsparams)
+
+
+@pytest.mark.optimize()
+@pytest.mark.slow()
+def test_nptberendsen(asap3, equilibrated, dynamicsparams, allraise):
     propagate(Atoms(equilibrated), asap3, NPTBerendsen, 
-              berendsenparams['npt'], max_pressure_error=25.0 * bar)
+              dynamicsparams['npt'], max_pressure_error=25.0 * bar)
 
 
 @pytest.mark.optimize()
 @pytest.mark.slow()
-def test_npt(asap3, equilibrated, berendsenparams, allraise):
-    params = berendsenparams['npt']
+def test_npt(asap3, equilibrated, dynamicsparams, allraise):
+    params = dynamicsparams['npt']
     # NPT uses different units.  The factor 1.3 is the bulk modulus of gold in
     # ev/Å^3
     propagate(Atoms(equilibrated), asap3, NPT,
@@ -124,5 +135,5 @@ def test_npt(asap3, equilibrated, berendsenparams, allraise):
     # Unlike NPTBerendsen, NPT assumes that the center of mass is not
     # thermalized, so the kinetic energy should be 3/2 ' kB * (N-1) * T
     #n = len(equilibrated)
-    #assert abs(t - (n - 1) / n * berendsenparams['npt']['temperature_K']) < 1.0
-    #assert abs(p - berendsenparams['npt']['pressure_au']) < 100.0 * bar
+    #assert abs(t - (n - 1) / n * dynamicsparams['npt']['temperature_K']) < 1.0
+    #assert abs(p - dynamicsparams['npt']['pressure_au']) < 100.0 * bar
