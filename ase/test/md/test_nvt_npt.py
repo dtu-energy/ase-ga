@@ -26,9 +26,9 @@ def dynamicsparams():
     nhparam = dict(temperature_K=300, tdamp=taut)
     # NPT uses different units.  The factor 1.3 is the bulk modulus of gold in
     # ev/Å^3
-    nptoldparam = dict(temperature_K=300,  ttime=taut,
-                   externalstress=5000 * bar,
-                   pfactor=taup**2 * 1.3)
+    nptoldparam = dict(temperature_K=300, ttime=taut,
+                       externalstress=5000 * bar,
+                       pfactor=taup**2 * 1.3)
     return dict(
         nvt=nvtparam,
         npt=nptparam,
@@ -150,7 +150,6 @@ def test_nptberendsen(asap3, equilibrated, dynamicsparams, allraise):
 @pytest.mark.optimize()
 @pytest.mark.slow()
 def test_npt(asap3, equilibrated, dynamicsparams, allraise):
-    params = dynamicsparams['npt']
     propagate(Atoms(equilibrated), asap3, NPT,
               dynamicsparams['nptold'],
               max_pressure_error=100 * bar,
