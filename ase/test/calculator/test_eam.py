@@ -3,6 +3,10 @@ from scipy.interpolate import InterpolatedUnivariateSpline as spline
 
 from ase.build import bulk
 from ase.calculators.eam import EAM
+from ase.calculators.fd import (
+    calculate_numerical_forces,
+    calculate_numerical_stress,
+)
 
 
 def test_eam(testdir):
@@ -75,3 +79,13 @@ def test_eam(testdir):
     print('read/write check error = ', error)
 
     assert abs(error) < 1e-4
+
+    # test forces against numerical forces
+    forces = al.get_forces()
+    numerical_forces = calculate_numerical_forces(al, eps=1e-5)
+    np.testing.assert_allclose(forces, numerical_forces, atol=1e-5)
+
+    # test stress against numerical stress
+    stress = al.get_stress()
+    numerical_stress = calculate_numerical_stress(al, eps=1e-5)
+    np.testing.assert_allclose(stress, numerical_stress, atol=1e-5)

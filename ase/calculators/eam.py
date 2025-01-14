@@ -95,7 +95,7 @@ by element types.
 Running the Calculator
 ======================
 
-EAM calculates the cohesive atom energy and forces. Internally the
+EAM calculates the cohesive atom energy, forces and stress. Internally the
 potential functions are defined by splines which may be directly
 supplied or created by reading the spline points from a data file from
 which a spline function is created.  The LAMMPS compatible ``.alloy``, ``.fs``
@@ -114,6 +114,7 @@ For example::
     slab.calc = mishin
     slab.get_potential_energy()
     slab.get_forces()
+    slab.get_stress()
 
 The breakdown of energy contribution from the indvidual components are
 stored in the calculator instance ``.results['energy_components']``
@@ -232,7 +233,8 @@ Notes/Issues
 End EAM Interface Documentation
     """
 
-    implemented_properties = ['energy', 'free_energy', 'forces', 'stress', 'stresses']
+    implemented_properties = ['energy', 'free_energy', 'forces', 'stress',
+                              'stresses']
 
     default_parameters = dict(
         skin=1.0,
@@ -680,7 +682,9 @@ End EAM Interface Documentation
             self.update(self.atoms)
             self.calculate_energy(self.atoms)
 
-            if 'forces' in properties or 'stress' in properties or 'stresses' in properties:
+            if ('forces' in properties
+                    or 'stress' in properties
+                    or 'stresses' in properties):
                 self.calculate_forces(self.atoms)
 
         # check we have all the properties requested
