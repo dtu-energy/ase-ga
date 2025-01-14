@@ -7,7 +7,7 @@ from ase import Atoms
 from ase.units import _e, _eps0  # for reference values only
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('lammpsrun')
 def test_lammps_units_conversions(factory):
     distance = 1.5  # Angstr.

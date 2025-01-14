@@ -48,7 +48,7 @@ class DisjointSet:
             return self.parents
 
         # order elements by frequency
-        unique, inverse, counts = np.unique(self.parents,
+        _unique, inverse, counts = np.unique(self.parents,
                                             return_inverse=True,
                                             return_counts=True)
         indices = np.argsort(counts, kind='merge')[::-1]

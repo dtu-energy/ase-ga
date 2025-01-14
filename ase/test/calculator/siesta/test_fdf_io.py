@@ -1,11 +1,15 @@
+import pytest
+
 from ase.build import bulk
 from ase.io.siesta import _read_fdf_lines
 
 
-def test_fdf_io(siesta_factory):
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator('siesta')
+def test_fdf_io(factory):
 
     atoms = bulk('Ti')
-    calc = siesta_factory.calc()
+    calc = factory.calc()
     atoms.calc = calc
     calc.write_input(atoms, properties=['energy'])
     # Should produce siesta.fdf but really we should be more explicit

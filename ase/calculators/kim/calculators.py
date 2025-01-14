@@ -131,10 +131,7 @@ def LAMMPSLibCalculator(model_name, supported_species,
     model_init.append("atom_modify map array sort 0 0" + os.linesep)
 
     # Assign atom types to species
-    atom_types = {}
-    for i_s, s in enumerate(supported_species):
-        atom_types[s] = i_s + 1
-
+    atom_types = {s: i_s + 1 for i_s, s in enumerate(supported_species)}
     kim_interactions = [
         "kim_interactions {}".format(
             (" ").join(supported_species))]

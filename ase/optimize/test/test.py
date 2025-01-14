@@ -102,8 +102,9 @@ class Wrapper:
     def __len__(self):
         return len(self.atoms)
 
-    def __getattr__(self, name):
-        return self.atoms.__getattribute__(name)
+    def __ase_optimizable__(self):
+        from ase.optimize.optimize import OptimizableAtoms
+        return OptimizableAtoms(self)
 
 
 def run_test(atoms, optimizer, tag, fmax=0.02, eggbox=0.0):

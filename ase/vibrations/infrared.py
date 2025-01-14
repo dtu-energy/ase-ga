@@ -162,15 +162,13 @@ class Infrared(Vibrations):
         forces_zero = disp.forces()
         dipole_zero = disp.dipole()
         self.dipole_zero = (sum(dipole_zero**2)**0.5) / units.Debye
-        self.force_zero = max([sum((forces_zero[j])**2)**0.5
-                               for j in self.indices])
+        self.force_zero = max(
+            sum((forces_zero[j])**2)**0.5 for j in self.indices)
 
         ndof = 3 * len(self.indices)
         H = np.empty((ndof, ndof))
         dpdx = np.empty((ndof, 3))
-        r = 0
-
-        for a, i in self._iter_ai():
+        for r, (a, i) in enumerate(self._iter_ai()):
             disp_minus = self._disp(a, i, -1)
             disp_plus = self._disp(a, i, 1)
 
@@ -208,7 +206,6 @@ class Infrared(Vibrations):
                 if n not in self.directions:
                     dpdx[r][n] = 0
                     dpdx[r][n] = 0
-            r += 1
         # Calculate eigenfrequencies and eigenvectors
         masses = self.atoms.get_masses()
         H += H.copy().T

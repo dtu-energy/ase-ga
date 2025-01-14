@@ -7,8 +7,12 @@ from ase import Atoms
 from ase.calculators.lammps.coordinatetransform import calc_rotated_cell
 from ase.cell import Cell
 from ase.ga.offspring_creator import CombinationMutation, OffspringCreator
-from ase.ga.utilities import (atoms_too_close, atoms_too_close_two_sets,
-                              gather_atoms_by_tag, get_rotation_matrix)
+from ase.ga.utilities import (
+    atoms_too_close,
+    atoms_too_close_two_sets,
+    gather_atoms_by_tag,
+    get_rotation_matrix,
+)
 
 
 class RattleMutation(OffspringCreator):
@@ -271,10 +275,7 @@ class MirrorMutation(OffspringCreator):
         top = atoms[len(atoms) - self.n_top: len(atoms)]
         num = top.numbers
         unique_types = list(set(num))
-        nu = {}
-        for u in unique_types:
-            nu[u] = sum(num == u)
-
+        nu = {u: sum(num == u) for u in unique_types}
         n_tries = 1000
         counter = 0
         changed = False

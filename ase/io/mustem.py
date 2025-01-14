@@ -51,7 +51,7 @@ def read_mustem(fd):
     debye_waller_factors = []
     occupancies = []
 
-    for i in range(element_number):
+    for _ in range(element_number):
         # Read the element
         _ = fd.readline()
         line = fd.readline().split()

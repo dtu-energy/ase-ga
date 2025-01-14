@@ -3,8 +3,11 @@ import numpy as np
 
 from ase import Atoms
 from ase.ga.offspring_creator import OffspringCreator
-from ase.ga.utilities import (atoms_too_close, atoms_too_close_two_sets,
-                              gather_atoms_by_tag)
+from ase.ga.utilities import (
+    atoms_too_close,
+    atoms_too_close_two_sets,
+    gather_atoms_by_tag,
+)
 from ase.geometry import find_mic
 
 
@@ -443,15 +446,15 @@ class CutAndSplicePairing(OffspringCreator):
 
             use_total[s] = used
 
-        n_tot = sum([len(ll) for ll in use_total.values()])
+        n_tot = sum(len(ll) for ll in use_total.values())
         assert n_tot == len(sym)
 
         # check if the generated structure contains
         # atoms from both parents:
         count1, count2, N = 0, 0, len(a1)
         for x in use_total.values():
-            count1 += sum([y.origin == 0 for y in x])
-            count2 += sum([y.origin == 1 for y in x])
+            count1 += sum(y.origin == 0 for y in x)
+            count2 += sum(y.origin == 1 for y in x)
 
         nmin = 1 if self.minfrac is None else int(round(self.minfrac * N))
         if count1 < nmin or count2 < nmin:
@@ -466,7 +469,7 @@ class CutAndSplicePairing(OffspringCreator):
             c = a1.get_cell() if p.origin == 0 else a2.get_cell()
             pos = np.dot(p.scaled_positions, c)
             cop = np.dot(p.cop, c)
-            vectors, lengths = find_mic(pos - cop, c, pbc)
+            vectors, _lengths = find_mic(pos - cop, c, pbc)
             newcop = np.dot(p.cop, cell)
             pos = newcop + vectors
             for row in pos:

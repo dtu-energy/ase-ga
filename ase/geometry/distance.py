@@ -37,7 +37,7 @@ def distance(s1, s2, permute=True):
             dist = 0
             for a in s1:
                 imin = None
-                dmin = np.Inf
+                dmin = np.inf
                 for i, b in enumerate(s2):
                     if a.symbol == b.symbol:
                         d = np.sum((a.position - b.position)**2)

@@ -4,7 +4,7 @@ import pytest
 from ase.calculators.turbomole import TurbomoleParameters
 
 
-@pytest.fixture
+@pytest.fixture()
 def default_params():
     return TurbomoleParameters(multiplicity=1)
 

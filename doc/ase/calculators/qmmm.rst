@@ -29,7 +29,7 @@ Other ASE-calculators that currently support EIQMMM:
 3. :mod:`TURBOMOLE <ase.calculators.turbomole>`
 4. :mod:`ORCA <ase.calculators.orca>` 
 
-.. _GPAW: https://wiki.fysik.dtu.dk/gpaw
+.. _GPAW: https://gpaw.readthedocs.io
 
 .. seealso::
 

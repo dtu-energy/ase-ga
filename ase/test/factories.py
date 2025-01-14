@@ -1,9 +1,10 @@
+import importlib.util
 import os
 import re
-from pathlib import Path
 import tempfile
+from functools import cached_property
+from pathlib import Path
 
-import importlib.util
 import pytest
 
 from ase import Atoms
@@ -17,17 +18,19 @@ from ase.calculators.dftd3 import DFTD3
 from ase.calculators.elk import ELK
 from ase.calculators.espresso import Espresso, EspressoTemplate
 from ase.calculators.exciting.exciting import (
-    ExcitingGroundStateCalculator, ExcitingGroundStateTemplate)
+    ExcitingGroundStateCalculator,
+    ExcitingGroundStateTemplate,
+)
 from ase.calculators.genericfileio import read_stdout
 from ase.calculators.gromacs import Gromacs, get_gromacs_version
 from ase.calculators.mopac import MOPAC
-from ase.calculators.names import names as calculator_names, builtin
+from ase.calculators.names import builtin
+from ase.calculators.names import names as calculator_names
 from ase.calculators.nwchem import NWChem
 from ase.calculators.siesta import Siesta
 from ase.calculators.vasp import Vasp, get_vasp_version
 from ase.config import Config
 from ase.io.espresso import Namelist
-from ase.utils import lazyproperty
 
 
 class NotInstalled(Exception):
@@ -42,7 +45,7 @@ Could not import asetest package.  Please install ase-datafiles
 using e.g. "pip install ase-datafiles" to run calculator integration
 tests.""")
 
-    @lazyproperty
+    @cached_property
     def datafiles_module(self):
         try:
             import asetest
@@ -50,7 +53,7 @@ tests.""")
             return None
         return asetest
 
-    @lazyproperty
+    @cached_property
     def datafile_config(self):
         # XXXX TODO avoid requiring the dummy [parallel] section
         datafiles = self.datafiles_module
@@ -58,9 +61,6 @@ tests.""")
             return ''  # empty configfile
         path = self.datafiles_module.paths.DataFiles().datapath
         datafile_config = f"""\
-# Dummy parallel section (make this unnecessary)
-[parallel]
-
 # Configuration for ase-datafiles
 
 [abinit]
@@ -71,7 +71,7 @@ pp_paths =
 
 
 [dftb]
-skt_paths = {path}/dftb
+skt_path = {path}/dftb
 
 [elk]
 species_dir = {path}/elk
@@ -83,20 +83,22 @@ pseudo_dir = {path}/espresso/gbrv-lda-espresso
 potentials = {path}/lammps
 
 [openmx]
-data_path = {path}/openmx
+data_path = {path}/openmx/DFT_DATA19
 
 [siesta]
 pseudo_path = {path}/siesta
 """
         return datafile_config
 
-    @lazyproperty
+    @cached_property
     def cfg(self):
         # First we load the usual configfile.
         # But we don't want to run tests against the user's production
         # configuration since that may be using other pseudopotentials
         # than the ones we want.  Therefore, we override datafile paths.
         cfg = Config.read()
+        # XXX It would be nice if we could avoid triggering MPI,
+        # e.g. by hacking the way commands are handled.
         cfg.parser.read_string(self.datafile_config)
         return cfg
 
@@ -127,17 +129,17 @@ def make_factory_fixture(name):
 @factory('abinit')
 class AbinitFactory:
     def __init__(self, cfg):
-        self._profile = AbinitTemplate().load_profile(cfg)
+        self.profile = AbinitTemplate().load_profile(cfg)
 
     def version(self):
-        return self._profile.version()
+        return self.profile.version()
 
     def _base_kw(self):
         return dict(ecut=150, chksymbreak=0, toldfe=1e-3)
 
     def calc(self, **kwargs):
         kwargs = {**self._base_kw(), **kwargs}
-        return Abinit(profile=self._profile, **kwargs)
+        return Abinit(profile=self.profile, **kwargs)
 
     def socketio(self, unixsocket, **kwargs):
         kwargs = {
@@ -154,15 +156,15 @@ class AbinitFactory:
 @factory('aims')
 class AimsFactory:
     def __init__(self, cfg):
-        self._profile = AimsTemplate().load_profile(cfg)
+        self.profile = AimsTemplate().load_profile(cfg)
 
     def calc(self, **kwargs):
         kwargs1 = dict(xc='LDA')
         kwargs1.update(kwargs)
-        return Aims(profile=self._profile, **kwargs1)
+        return Aims(profile=self.profile, **kwargs1)
 
     def version(self):
-        return self._profile.version()
+        return self.profile.version()
 
     def socketio(self, unixsocket, **kwargs):
         return self.calc(**kwargs).socketio(unixsocket=unixsocket)
@@ -204,7 +206,7 @@ class CP2KFactory:
 @factory('castep')
 class CastepFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['castep']['binary']
+        self.executable = cfg.parser['castep']['command']
 
     def version(self):
         return get_castep_version(self.executable)
@@ -217,20 +219,14 @@ class CastepFactory:
 class DFTBFactory:
     def __init__(self, cfg):
         self.profile = Dftb.load_argv_profile(cfg, 'dftb')
-        self.skt_path = cfg.parser['dftb']['skt_paths']  # multiple paths?
-        # assert len(self.skt_paths) == 1  # XXX instructive error?
 
     def version(self):
-        stdout = read_stdout(self.profile.argv)
+        stdout = read_stdout(self.profile._split_command)
         match = re.search(r'DFTB\+ release\s*(\S+)', stdout, re.M)
         return match.group(1)
 
     def calc(self, **kwargs):
-        return Dftb(
-            profile=self.profile,
-            slako_dir=str(self.skt_path) + '/',  # XXX not obvious
-            **kwargs,
-        )
+        return Dftb(profile=self.profile, **kwargs)
 
     def socketio_kwargs(self, unixsocket):
         return dict(
@@ -243,6 +239,9 @@ class DFTD3Factory:
     def __init__(self, cfg):
         self.executable = cfg.parser['dftd3']['command']
 
+    def version(self):
+        return '<Unknown>'
+
     def calc(self, **kwargs):
         return DFTD3(command=self.executable, **kwargs)
 
@@ -254,7 +253,7 @@ class ElkFactory:
         self.species_dir = cfg.parser['elk']['species_dir']
 
     def version(self):
-        output = read_stdout(self.profile.argv)
+        output = read_stdout(self.profile._split_command)
         match = re.search(r'Elk code version (\S+)', output, re.M)
         return match.group(1)
 
@@ -270,10 +269,10 @@ class EspressoFactory:
     def version(self):
         return self.profile.version()
 
-    @lazyproperty
+    @cached_property
     def pseudopotentials(self):
         pseudopotentials = {}
-        for path in self.profile.pseudo_dir.glob('*.UPF'):
+        for path in Path(self.profile.pseudo_dir).glob('*.UPF'):
             fname = path.name
             # Names are e.g. si_lda_v1.uspp.F.UPF
             symbol = fname.split('_', 1)[0].capitalize()
@@ -301,17 +300,17 @@ class ExcitingFactory:
     def __init__(self, cfg):
         # Where do species come from?  We do not have them in ase-datafiles.
         # We should specify species_path.
-        self._profile = ExcitingGroundStateTemplate().load_profile(cfg)
+        self.profile = ExcitingGroundStateTemplate().load_profile(cfg)
 
     def calc(self, **kwargs):
         """Get instance of Exciting Ground state calculator."""
         return ExcitingGroundStateCalculator(
-            ground_state_input=kwargs, species_path=self._profile.species_path
+            ground_state_input=kwargs, species_path=self.profile.species_path
         )
 
     def version(self):
         """Get exciting executable version."""
-        return self._profile.version
+        return self.profile.version()
 
 
 @factory('mopac')
@@ -339,7 +338,7 @@ class MOPACFactory:
 @factory('vasp')
 class VaspFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['vasp']['binary']
+        self.executable = cfg.parser['vasp']['command']
 
     def version(self):
         header = read_stdout([self.executable], createfile='INCAR')
@@ -398,7 +397,7 @@ class Psi4Factory:
 @factory('gromacs')
 class GromacsFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['gromacs']['binary']
+        self.executable = cfg.parser['gromacs']['command']
 
     def version(self):
         return get_gromacs_version(self.executable)
@@ -430,7 +429,7 @@ class EMTFactory(BuiltinCalculatorFactory):
 @factory('lammpsrun')
 class LammpsRunFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['lammps']['binary']
+        self.executable = cfg.parser['lammps']['command']
         self.potentials_path = cfg.parser['lammps']['potentials']
         # XXX if lammps wants this variable set we should pass it to Popen.
         # But if ASE wants it, it should be passed programmatically.
@@ -489,8 +488,8 @@ class LammpsLibFactory:
 class OpenMXFactory:
     def __init__(self, cfg):
         # XXX Cannot test this, is surely broken.
-        self.executable = cfg.parser['openmx']['binary']
-        self.data_path = cfg.parser['openmx'][0]
+        self.executable = cfg.parser['openmx']['command']
+        self.data_path = cfg.parser['openmx']['data_path']
 
     def version(self):
         from ase.calculators.openmx.openmx import parse_omx_version
@@ -511,20 +510,20 @@ class OpenMXFactory:
 class OctopusFactory:
     def __init__(self, cfg):
         from ase.calculators.octopus import OctopusTemplate
-        self._profile = OctopusTemplate().load_profile(cfg)
+        self.profile = OctopusTemplate().load_profile(cfg)
 
     def version(self):
-        return self._profile.version()
+        return self.profile.version()
 
     def calc(self, **kwargs):
         from ase.calculators.octopus import Octopus
-        return Octopus(profile=self._profile, **kwargs)
+        return Octopus(profile=self.profile, **kwargs)
 
 
 @factory('orca')
 class OrcaFactory:
     def __init__(self, cfg):
-        self.executable = cfg.parser['orca']['binary']
+        self.executable = cfg.parser['orca']['command']
 
     def _profile(self):
         from ase.calculators.orca import OrcaProfile
@@ -544,21 +543,18 @@ class OrcaFactory:
 class SiestaFactory:
     def __init__(self, cfg):
         self.profile = Siesta.load_argv_profile(cfg, 'siesta')
-        self.pseudo_path = str(cfg.parser['siesta']['pseudo_path'])
 
     def version(self):
         from ase.calculators.siesta.siesta import get_siesta_version
 
-        full_ver = get_siesta_version(self.profile.argv[-1])
+        full_ver = get_siesta_version(self.profile._split_command)
         m = re.match(r'siesta-(\S+)', full_ver, flags=re.I)
         if m:
             return m.group(1)
         return full_ver
 
     def calc(self, **kwargs):
-        return Siesta(
-            profile=self.profile, pseudo_path=str(self.pseudo_path), **kwargs
-        )
+        return Siesta(profile=self.profile, **kwargs)
 
     def socketio_kwargs(self, unixsocket):
         return {
@@ -578,7 +574,8 @@ class NWChemFactory:
         self.profile = NWChem.load_argv_profile(cfg, 'nwchem')
 
     def version(self):
-        stdout = read_stdout(self.profile.argv, createfile='nwchem.nw')
+        stdout = read_stdout(self.profile._split_command,
+                             createfile='nwchem.nw')
         match = re.search(
             r'Northwest Computational Chemistry Package \(NWChem\) (\S+)',
             stdout,
@@ -660,7 +657,7 @@ class Factories:
         factories = {}
         why_not = {}
 
-        from ase.calculators.genericfileio import BadConfiguration
+        from ase.calculators.calculator import BadConfiguration
         for name, cls in factory_classes.items():
             try:
                 factories[name] = cls(cfg)

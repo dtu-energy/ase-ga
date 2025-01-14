@@ -72,7 +72,7 @@ def test_xsf_spec():
              '07-anim-crystal-fixcell': f7,
              '08-anim-crystal-varcell': f8}
 
-    names = list(sorted(files.keys()))
+    names = sorted(files.keys())
 
     for name in names:
         check(name, files[name], check_data=False)

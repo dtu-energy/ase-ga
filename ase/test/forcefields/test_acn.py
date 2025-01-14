@@ -1,5 +1,6 @@
 from ase import Atoms
 from ase.calculators.acn import ACN, m_me, r_cn, r_mec
+from ase.calculators.fd import calculate_numerical_forces
 
 
 def test_acn():
@@ -21,7 +22,7 @@ def test_acn():
     dimer.calc = ACN(rc=5.0, width=2.0)  # Put C-C distance in the cutoff range
     F = dimer.get_forces()
     print(F)
-    Fnum = dimer.calc.calculate_numerical_forces(dimer)
+    Fnum = calculate_numerical_forces(dimer)
     dF = Fnum - F
     print(dF)
     assert abs(dF).max() < 2e-6

@@ -6,8 +6,8 @@ from ase.calculators.emt import EMT
 from ase.optimize import FIRE
 
 
-@pytest.mark.optimize
-@pytest.mark.slow
+@pytest.mark.optimize()
+@pytest.mark.slow()
 def test_fire():
     a = bulk('Au')
     a *= (2, 2, 2)
@@ -41,4 +41,4 @@ def test_fire():
 
     assert abs(e1 - e2) < 1e-6
     assert n2 < n1
-    assert (np.array(reset_history) > 0).all
+    assert all(np.array(reset_history) > 0)

@@ -38,8 +38,9 @@ def parse_output(info_out_file_path):
         A dictionary containing information about how the calculation was setup
         and results from the calculations SCF cycles.
     """
-    from excitingtools.exciting_dict_parsers.groundstate_parser import \
-        parse_info_out
+    from excitingtools.exciting_dict_parsers.groundstate_parser import (
+        parse_info_out,
+    )
 
     # Check for the file:
     if not Path(info_out_file_path).is_file():
@@ -61,8 +62,12 @@ def write_input_xml_file(
             after performing the ground state calculation (e.g. bandstructure
             or DOS.)
     """
-    from excitingtools import (ExcitingGroundStateInput, ExcitingInputXML,
-                               ExcitingPropertiesInput, ExcitingStructure)
+    from excitingtools import (
+        ExcitingGroundStateInput,
+        ExcitingInputXML,
+        ExcitingPropertiesInput,
+        ExcitingStructure,
+    )
 
     # Convert ground state dictionary into expected input object.
     ground_state = ExcitingGroundStateInput(**ground_state_input)

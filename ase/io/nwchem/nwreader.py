@@ -4,8 +4,10 @@ from collections import OrderedDict
 import numpy as np
 
 from ase import Atoms
-from ase.calculators.singlepoint import (SinglePointDFTCalculator,
-                                         SinglePointKPoint)
+from ase.calculators.singlepoint import (
+    SinglePointDFTCalculator,
+    SinglePointKPoint,
+)
 from ase.units import Bohr, Hartree
 
 from .parser import _define_pattern
@@ -44,9 +46,8 @@ def read_nwchem_out(fobj, index=-1):
                 return [parse_gto_chunk(''.join(lines))]
             if _pw_block.match(line):
                 return [parse_pw_chunk(''.join(lines))]
-        else:
-            raise ValueError('This does not appear to be a valid NWChem '
-                             'output file.')
+        raise ValueError('This does not appear to be a valid NWChem '
+                         'output file.')
 
     # First, find each SCF block
     group = []
@@ -79,11 +80,10 @@ def read_nwchem_out(fobj, index=-1):
                 lastparser = parser
             group = []
         parser = next_parser
-    else:
-        if not header:
-            atoms = parser(''.join(group))
-            if atoms is not None:
-                atomslist.append(atoms)
+    if not header:
+        atoms = parser(''.join(group))
+        if atoms is not None:
+            atomslist.append(atoms)
 
     return atomslist[index]
 
@@ -212,7 +212,6 @@ def parse_gto_chunk(chunk):
     forces = None
     energy = None
     dipole = None
-    quadrupole = None
     for theory, pattern in _e_gto.items():
         matches = pattern.findall(chunk)
         if matches:
@@ -235,7 +234,7 @@ def parse_gto_chunk(chunk):
         forces *= Hartree / Bohr
         atoms = Atoms(symbols, positions=pos)
 
-    dipole, quadrupole = _get_multipole(chunk)
+    dipole, _quadrupole = _get_multipole(chunk)
 
     kpts = _get_gto_kpts(chunk)
 
@@ -243,7 +242,7 @@ def parse_gto_chunk(chunk):
         atoms = _parse_geomblock(chunk)
 
     if atoms is None:
-        return
+        return None
 
     # SinglePointDFTCalculator doesn't support quadrupole moment currently
     calc = SinglePointDFTCalculator(atoms=atoms,
@@ -418,7 +417,7 @@ _fermi_energy = _define_pattern(
 def parse_pw_chunk(chunk):
     atoms = _parse_geomblock(chunk)
     if atoms is None:
-        return
+        return None
 
     energy = None
     efermi = None

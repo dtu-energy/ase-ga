@@ -1,4 +1,5 @@
 # type: ignore
+import platform
 import re
 import sys
 import tkinter as tk
@@ -54,12 +55,15 @@ def helpwindow(text):
 
 
 def set_windowtype(win, wmtype):
-    # only on X11
-    # WM_TYPE, for possible settings see
-    # https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45623487848608
-    # you want dialog, normal or utility most likely
-    if win._windowingsystem == "x11":
-        win.wm_attributes('-type', wmtype)
+    # introduced tweak to fix GUI on WSL, https://gitlab.com/ase/ase/-/issues/1511
+    if (platform.platform().find('WSL') and
+    platform.platform().find('microsoft')) != -1:
+        # only on X11, but not on WSL
+        # WM_TYPE, for possible settings see
+        # https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45623487848608
+        # you want dialog, normal or utility most likely
+        if win._windowingsystem == "x11":
+            win.wm_attributes('-type', wmtype)
 
 
 class BaseWindow:
@@ -421,6 +425,8 @@ class MenuItem:
         if key:
             if key[:4] == 'Ctrl':
                 self.keyname = f'<Control-{key[-1].lower()}>'
+            elif key[:3] == 'Alt':
+                self.keyname = f'<Alt-{key[-1].lower()}>'
             else:
                 self.keyname = {
                     'Home': '<Home>',
@@ -671,7 +677,8 @@ class ASEGUIWindow(MainWindow):
                                width=width)
 
     def line(self, bbox, width=1):
-        self.canvas.create_line(*tuple(int(x) for x in bbox), width=width)
+        self.canvas.create_line(*tuple(int(x) for x in bbox), width=width,
+                                fill='black')
 
     def text(self, x, y, txt, anchor=tk.CENTER, color='black'):
         anchor = {'SE': tk.SE}.get(anchor, anchor)

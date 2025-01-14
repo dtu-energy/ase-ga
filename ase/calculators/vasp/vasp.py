@@ -321,27 +321,26 @@ class Vasp(GenerateVaspInput, Calculator):  # type: ignore[misc]
         execute VASP. After execution, the energy, forces. etc. are read
         from the VASP output files.
         """
+        Calculator.calculate(self, atoms, properties, system_changes)
         # Check for zero-length lattice vectors and PBC
         # and that we actually have an Atoms object.
-        check_atoms(atoms)
+        check_atoms(self.atoms)
 
         self.clear_results()
-
-        if atoms is not None:
-            self.atoms = atoms.copy()
 
         command = self.make_command(self.command)
         self.write_input(self.atoms, properties, system_changes)
 
         with self._txt_outstream() as out:
-            errorcode = self._run(command=command,
-                                  out=out,
-                                  directory=self.directory)
+            errorcode, stderr = self._run(command=command,
+                                          out=out,
+                                          directory=self.directory)
 
         if errorcode:
             raise calculator.CalculationFailed(
-                '{} in {} returned an error: {:d}'.format(
-                    self.name, Path(self.directory).resolve(), errorcode))
+                '{} in {} returned an error: {:d} stderr {}'.format(
+                    self.name, Path(self.directory).resolve(), errorcode,
+                    stderr))
 
         # Read results from calculation
         self.update_atoms(atoms)
@@ -353,11 +352,14 @@ class Vasp(GenerateVaspInput, Calculator):  # type: ignore[misc]
             command = self.command
         if directory is None:
             directory = self.directory
-        errorcode = subprocess.call(command,
-                                    shell=True,
-                                    stdout=out,
-                                    cwd=directory)
-        return errorcode
+        result = subprocess.run(command,
+                                shell=True,
+                                cwd=directory,
+                                capture_output=True,
+                                text=True)
+        if out is not None:
+            out.write(result.stdout)
+        return result.returncode, result.stderr
 
     def check_state(self, atoms, tol=1e-15):
         """Check for system changes since last calculation."""
@@ -481,13 +483,7 @@ class Vasp(GenerateVaspInput, Calculator):  # type: ignore[misc]
 
     def write_input(self, atoms, properties=None, system_changes=None):
         """Write VASP inputfiles, INCAR, KPOINTS and POTCAR"""
-        # Create the folders where we write the files, if we aren't in the
-        # current working directory.
-        if self.directory != os.curdir and not os.path.isdir(self.directory):
-            os.makedirs(self.directory)
-
         self.initialize(atoms)
-
         GenerateVaspInput.write_input(self, atoms, directory=self.directory)
 
     def read(self, label=None):
@@ -1063,10 +1059,16 @@ class Vasp(GenerateVaspInput, Calculator):  # type: ignore[misc]
         converged = None
         # First check electronic convergence
         for line in lines:
-            if 0:  # vasp always prints that!
-                if line.rfind('aborting loop') > -1:  # scf failed
-                    raise RuntimeError(line.strip())
-                    break
+            # VASP 6 actually labels loop exit reason
+            if 'aborting loop' in line:
+                converged = 'because EDIFF is reached' in line
+                # NOTE: 'EDIFF was not reached (unconverged)'
+                #        and
+                #       'because hard stop was set'
+                # will result in unconverged
+                break
+            # determine convergence by attempting to reproduce VASP's
+            # internal logic
             if 'EDIFF  ' in line:
                 ediff = float(line.split()[2])
             if 'total energy-change' in line:

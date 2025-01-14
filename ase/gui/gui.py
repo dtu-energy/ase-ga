@@ -112,7 +112,7 @@ class GUI(View, Status):
         i = max(0, min(len(self.images) - 1, self.frame + d))
         self.set_frame(i)
         if self.movie_window is not None:
-            self.movie_window.frame_number.value = i + 1
+            self.movie_window.frame_number.value = i
 
     def copy_image(self, key=None):
         self.images._images.append(self.atoms.copy())
@@ -298,7 +298,7 @@ class GUI(View, Status):
     def reciprocal(self):
         if self.atoms.cell.rank != 3:
             self.bad_plot(_('Requires 3D cell.'))
-            return
+            return None
 
         cell = self.atoms.cell.uncomplete(self.atoms.pbc)
         bandpath = cell.bandpath(npoints=0)

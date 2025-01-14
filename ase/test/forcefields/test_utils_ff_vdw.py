@@ -7,7 +7,7 @@ from ase.build import molecule
 from ase.utils.ff import VdW, get_vdw_potential_value
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms() -> Atoms:
     mol = molecule("H2")
     mol.center(5.0)

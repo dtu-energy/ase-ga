@@ -25,6 +25,27 @@ __all__ = [
 ]
 
 
+def parse_poscar_scaling_factor(line: str) -> np.ndarray:
+    """Parse scaling factor(s) in the second line in POSCAR/CONTCAR.
+
+    This can also be one negative number or three positive numbers.
+
+    https://www.vasp.at/wiki/index.php/POSCAR#Full_format_specification
+
+    """
+    scale = []
+    for _ in line.split()[:3]:
+        try:
+            scale.append(float(_))
+        except ValueError:
+            break
+    if len(scale) not in {1, 3}:
+        raise RuntimeError('The number of scaling factors must be 1 or 3.')
+    if len(scale) == 3 and any(_ < 0.0 for _ in scale):
+        raise RuntimeError('All three scaling factors must be positive.')
+    return np.array(scale)
+
+
 def get_atomtypes(fname):
     """Given a file name, get the atomic symbols.
 
@@ -139,21 +160,14 @@ def read_vasp(filename='CONTCAR'):
     # file.
     line1 = fd.readline()
 
-    # Scaling factor
-    # This can also be one negative number or three positive numbers.
-    # https://www.vasp.at/wiki/index.php/POSCAR#Full_format_specification
-    scale = np.array(fd.readline().split()[:3], dtype=float)
-    if len(scale) not in [1, 3]:
-        raise RuntimeError('The number of scaling factors must be 1 or 3.')
-    if len(scale) == 3 and np.any(scale < 0.0):
-        raise RuntimeError('All three scaling factors must be positive.')
+    scale = parse_poscar_scaling_factor(fd.readline())
 
     # Now the lattice vectors
     cell = np.array([fd.readline().split()[:3] for _ in range(3)], dtype=float)
     # Negative scaling factor corresponds to the cell volume.
     if scale[0] < 0.0:
         scale = np.cbrt(-1.0 * scale / np.linalg.det(cell))
-    cell *= scale
+    cell *= scale  # This works for both one and three scaling factors.
 
     # Number of atoms. Again this must be in the same order as
     # in the first line
@@ -331,9 +345,7 @@ def read_vasp_xdatcar(filename='XDATCAR', index=-1):
 
             fd.readline()
 
-        coords = [
-            np.array(fd.readline().split(), float) for ii in range(total)
-        ]
+        coords = [np.array(fd.readline().split(), float) for _ in range(total)]
 
         image = Atoms(atomic_formula, cell=cell, pbc=True)
         image.set_scaled_positions(np.array(coords))
@@ -397,7 +409,6 @@ def read_vasp_xml(filename='vasprun.xml', index=-1):
         SinglePointDFTCalculator,
         SinglePointKPoint,
     )
-    from ase.constraints import FixAtoms, FixScaled
     from ase.units import GPa
 
     tree = ET.iterparse(filename, events=['start', 'end'])
@@ -470,7 +481,7 @@ def read_vasp_xml(filename='vasprun.xml', index=-1):
                         if flags.all():
                             fixed_indices.append(i)
                         elif flags.any():
-                            constraints.append(FixScaled(cell_init, i, flags))
+                            constraints.append(FixScaled(i, flags, cell_init))
 
                     if fixed_indices:
                         constraints.append(FixAtoms(fixed_indices))
@@ -864,7 +875,7 @@ def _handle_ase_constraints(atoms: Atoms) -> np.ndarray:
             mask = np.all(
                 np.abs(np.cross(constr.dir, atoms.cell)) < 1e-5, axis=1
             )
-            if sum(mask) != 1:
+            if mask.sum() != 1:
                 raise RuntimeError(
                     'VASP requires that the direction of FixedPlane '
                     'constraints is parallel with one of the cell axis'
@@ -875,7 +886,7 @@ def _handle_ase_constraints(atoms: Atoms) -> np.ndarray:
             mask = np.all(
                 np.abs(np.cross(constr.dir, atoms.cell)) < 1e-5, axis=1
             )
-            if sum(mask) != 1:
+            if mask.sum() != 1:
                 raise RuntimeError(
                     'VASP requires that the direction of FixedLine '
                     'constraints is parallel with one of the cell axis'
@@ -906,7 +917,7 @@ def _symbol_count_string(
         Sn_d_GW S_GW/357d
                 4        6
     """
-    symbol_mapping = symbol_mapping or dict()
+    symbol_mapping = symbol_mapping or {}
     out_str = ' '
 
     # Allow for VASP 6 format, i.e., specifying the pseudopotential used

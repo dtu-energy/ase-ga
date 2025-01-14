@@ -2,6 +2,7 @@ import numpy as np
 
 from ase.build import bulk
 from ase.calculators.emt import EMT
+from ase.calculators.fd import calculate_numerical_stress
 
 
 def test_emt_stress():
@@ -17,7 +18,7 @@ def test_emt_stress():
     a.rattle()
     # Verify analytical stress tensor against numerical value
     s_analytical = a.get_stress()
-    s_numerical = a.calc.calculate_numerical_stress(a, 1e-5)
+    s_numerical = calculate_numerical_stress(a, 1e-5)
     s_p_err = 100 * (s_numerical - s_analytical) / s_numerical
     print('Analytical stress:\n', s_analytical)
     print('Numerical stress:\n', s_numerical)

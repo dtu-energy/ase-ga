@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-
 # Note: There could be more than one "calculator" for any given code;
 # for example Espresso can work both as GenericFileIOCalculator and
 # SocketIOCalculator, or as part of some DFTD3 combination.
@@ -46,6 +45,7 @@ class CodeMetadata:
 
     def is_generic_fileio(self):
         from ase.calculators.genericfileio import CalculatorTemplate
+
         # It is nicer to check for the template class, since it has the name,
         # but then calculator_class() should be renamed.
         return issubclass(self.calculator_class(), CalculatorTemplate)
@@ -76,8 +76,8 @@ class CodeMetadata:
         return f'BAD: Not a proper calculator (superclasses: {cls.__mro__})'
 
     def profile(self):
-        from ase.calculators.genericfileio import CalculatorTemplate
         from ase.calculators.calculator import FileIOCalculator
+        from ase.calculators.genericfileio import CalculatorTemplate
         from ase.config import cfg
         cls = self.calculator_class()
         if issubclass(cls, CalculatorTemplate):
@@ -193,13 +193,17 @@ codes = register_codes()
 
 
 def list_codes(names):
+    from ase.config import cfg
+    cfg.print_header()
+    print()
+
     for name in names:
         code = codes[name]
+        print(code.name)
         try:
-            print(code.name)
             print(code.description(indent='  '))
         except Exception as ex:
-            raise RuntimeError(code) from ex
+            print(f'Bad configuration of {name}: {ex!r}')
         print()
 
 

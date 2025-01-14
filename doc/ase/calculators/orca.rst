@@ -4,16 +4,16 @@
 ORCA
 ======
 
-`ORCA <https://orcaforum.kofo.mpg.de/app.php/portal>`_ is a computational chemistry code 
+`ORCA <https://orcaforum.kofo.mpg.de/app.php/portal>`_ is a computational chemistry code
 that can do SCF, (TD)DFT, semi-empirical potentials, MP2, CASSCF, Coupled Cluster
-calculations, and more. 
+calculations, and more.
 
 
-It is closed source, but free for academic users. Register on the forum to receive 
+It is closed source, but free for academic users. Register on the forum to receive
 a download link for the binaries, as well as access to the latest manual.
 
 
-Many input examples are available at the 
+Many input examples are available at the
 `ORCA Input Library <https://sites.google.com/site/orcainputlibrary>`_.
 
 
@@ -28,40 +28,34 @@ The :class:`ORCA` ASE-interface is very simple. Two keywords are defined::
       What you'd put in the "% ... end"-blocks.
 
 
-The ASE-calculator also works with the 
-:mod:`~ase.calculators.qmmm.EIQMMM`-calculator 
-for QM/MM simulations (see :mod:`~ase.calculators.qmmm` for 
-more info). 
+The ASE-calculator also works with the
+:mod:`~ase.calculators.qmmm.EIQMMM`-calculator
+for QM/MM simulations (see :mod:`~ase.calculators.qmmm` for
+more info).
 
 Setup and usage
 ===============
 
-.. highlight:: bash
-
-The default command that ASE will use to start ORCA is
-``orca PREFIX.inp > PREFIX.out``. 
-
-For parallel calculations, you will need to specify the full path to the ORCA
-executable. This can be done by defining an ``OrcaProfile`` like the example below::
+Orca can be configured using the configfile like other calculators.
+If you need to override it for programmatic control of the orca
+command, you can manually create an ``OrcaProfile``::
 
   from ase.calculators.orca import OrcaProfile
 
-  MyOrcaProfile = OrcaProfile(["/full/path/to/my/orca"])
-  calc = ORCA(profile=MyOrcaProfile)
-
-.. highlight:: python
+  profile = OrcaProfile(command='/full/path/to/my/orca')
+  calc = ORCA(profile=profile)
 
 ORCA decides which sub-processes to parallelize via MPI by itself, so you'll
-almost always want a string in your ``orcablocks`` specifying the number of 
+almost always want a string in your ``orcablocks`` specifying the number of
 cores for the simulation, e.g.::
 
   from ase.calculators.orca import ORCA
 
-  calc = ORCA(profile=MyOrcaProfile, 
+  calc = ORCA(profile=MyOrcaProfile,
               orcasimpleinput='B3LYP def2-TZVP'
               orcablocks='%pal nprocs 16 end')
 
-for a B3LYP/def2-TZVP calculation on 16 cores. 
+for a B3LYP/def2-TZVP calculation on 16 cores.
 
 Class Definition
 ================

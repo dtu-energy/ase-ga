@@ -11,8 +11,8 @@ from ase.optimize import BFGS
 # XXXXXXXX this is mostly a copy of COCu111 !!!  Grrrr!
 
 
-@pytest.mark.optimize
-@pytest.mark.slow
+@pytest.mark.optimize()
+@pytest.mark.slow()
 def test_COCu111_2(testdir):
     logfile = "-"  # supresses
 

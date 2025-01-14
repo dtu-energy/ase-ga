@@ -5,9 +5,11 @@ from ase.ga import set_raw_score
 from ase.ga.data import DataConnection
 from ase.ga.offspring_creator import OperationSelector
 from ase.ga.population import RankFitnessPopulation
-from ase.ga.slab_operators import (CutSpliceSlabCrossover,
-                                   RandomCompositionMutation,
-                                   RandomSlabPermutation)
+from ase.ga.slab_operators import (
+    CutSpliceSlabCrossover,
+    RandomCompositionMutation,
+    RandomSlabPermutation,
+)
 
 # Connect to the database containing all candidates
 db = DataConnection('hull.db')

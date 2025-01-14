@@ -3,6 +3,7 @@ import pytest
 from numpy.testing import assert_allclose
 
 from ase.build import bulk
+from ase.calculators.fd import calculate_numerical_stress
 from ase.filters import FrechetCellFilter
 from ase.optimize import BFGS
 
@@ -16,7 +17,7 @@ def fixture_atoms():
     return atoms
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('lammpslib')
 def test_Pt_stress_cellopt(atoms, factory):
     """Test if the stresses and the optimized cell are as expected.
@@ -27,7 +28,7 @@ def test_Pt_stress_cellopt(atoms, factory):
     with factory.calc(lmpcmds=lmpcmds) as calc:
         atoms.calc = calc
         assert_allclose(atoms.get_stress(),
-                        calc.calculate_numerical_stress(atoms),
+                        calculate_numerical_stress(atoms),
                         atol=1e-4, rtol=1e-4)
 
         with BFGS(FrechetCellFilter(atoms)) as opt:
@@ -42,5 +43,5 @@ def test_Pt_stress_cellopt(atoms, factory):
         assert_allclose(np.asarray(atoms.cell), cell1_ref,
                         atol=3e-4, rtol=3e-4)
         assert_allclose(atoms.get_stress(),
-                        calc.calculate_numerical_stress(atoms),
+                        calculate_numerical_stress(atoms),
                         atol=1e-4, rtol=1e-4)

@@ -4,7 +4,7 @@ import pytest
 from ase.build import molecule
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('dftb')
 def test_H2O(factory):
     atoms = molecule('H2O')

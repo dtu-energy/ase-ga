@@ -3,8 +3,11 @@ import pytest
 
 from ase.lattice import FCC
 from ase.spacegroup import Spacegroup
-from ase.spacegroup.spacegroup import (parse_sitesym, parse_sitesym_element,
-                                       parse_sitesym_single)
+from ase.spacegroup.spacegroup import (
+    parse_sitesym,
+    parse_sitesym_element,
+    parse_sitesym_single,
+)
 
 
 def test_spacegroup_miscellaneous():

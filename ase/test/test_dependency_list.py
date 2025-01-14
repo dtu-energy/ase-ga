@@ -16,5 +16,5 @@ def test_format_dependency_builtin():
     # but this would typically occur depending on distro.
     #
     # See https://gitlab.com/ase/ase/-/issues/1005
-    name, path = format_dependency('math')
+    name, _path = format_dependency('math')
     assert name.startswith('math-')

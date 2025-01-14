@@ -7,7 +7,7 @@ from typing import Iterable, Iterator
 
 import ase.io
 from ase.db import connect
-from ase.db.core import convert_str_to_int_float_or_str
+from ase.db.core import convert_str_to_int_float_bool_or_str
 from ase.db.row import row2dct
 from ase.db.table import Table, all_columns
 from ase.utils import plural
@@ -40,7 +40,8 @@ def main(args):
     if args.add_key_value_pairs:
         for pair in args.add_key_value_pairs.split(','):
             key, value = pair.split('=')
-            add_key_value_pairs[key] = convert_str_to_int_float_or_str(value)
+            add_key_value_pairs[key] = \
+                convert_str_to_int_float_bool_or_str(value)
 
     if args.delete_keys:
         delete_keys = args.delete_keys.split(',')

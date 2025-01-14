@@ -7,22 +7,29 @@ from ase.ga.cutandsplicepairing import CutAndSplicePairing
 from ase.ga.offspring_creator import CombinationMutation
 from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.soft_mutation import SoftMutation
-from ase.ga.standardmutations import (PermutationMutation, RattleMutation,
-                                      RattleRotationalMutation,
-                                      RotationalMutation, StrainMutation)
+from ase.ga.standardmutations import (
+    PermutationMutation,
+    RattleMutation,
+    RattleRotationalMutation,
+    RotationalMutation,
+    StrainMutation,
+)
 from ase.ga.startgenerator import StartGenerator
-from ase.ga.utilities import (CellBounds, atoms_too_close,
-                              closest_distances_generator)
+from ase.ga.utilities import (
+    CellBounds,
+    atoms_too_close,
+    closest_distances_generator,
+)
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_bulk_operators(seed, tmp_path):
     # set up the random number generator
     rng = np.random.RandomState(seed)
 
     h2 = Atoms('H2', positions=[[0, 0, 0], [0, 0, 0.75]])
     blocks = [('H', 4), ('H2O', 3), (h2, 2)]  # the building blocks
-    volume = 40. * sum([x[1] for x in blocks])  # cell volume in angstrom^3
+    volume = 40. * sum(x[1] for x in blocks)
     splits = {(2,): 1, (1,): 1}  # cell splitting scheme
 
     stoichiometry = []
@@ -59,7 +66,7 @@ def test_bulk_operators(seed, tmp_path):
                                   cellbounds=cellbounds, use_tags=True,
                                   rng=rng)
 
-    a3, desc = pairing.get_new_individual([a1, a2])
+    a3, _desc = pairing.get_new_individual([a1, a2])
     cell = a3.get_cell()
     assert cellbounds.is_within_bounds(cell)
     assert not atoms_too_close(a3, blmin, use_tags=True)
@@ -87,7 +94,7 @@ def test_bulk_operators(seed, tmp_path):
         a = [a1, a2][i % 2]
         a3 = None
         while a3 is None:
-            a3, desc = mut.get_new_individual([a])
+            a3, _desc = mut.get_new_individual([a])
 
         cell = a3.get_cell()
         assert cellbounds.is_within_bounds(cell)

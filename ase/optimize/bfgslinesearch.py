@@ -37,24 +37,23 @@ class BFGSLineSearch(Optimizer):
         c2: float = 0.46,
         alpha: float = 10.0,
         stpmax: float = 50.0,
-        master: Optional[bool] = None,
-        force_consistent=Optimizer._deprecated,
+        **kwargs,
     ):
         """Optimize atomic positions in the BFGSLineSearch algorithm, which
         uses both forces and potential energy information.
 
-        Parameters:
-
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
-            Pickle file used to store hessian matrix. If set, file with
+        restart: str
+            JSON file used to store hessian matrix. If set, file with
             such a name will be searched and hessian matrix stored will
             be used, if the file exists.
 
-        trajectory: string
-            Pickle file used to store trajectory of atomic movement.
+        trajectory: str
+            Trajectory file used to store optimisation path.
 
         maxstep: float
             Used to set the maximum distance an atom can move per
@@ -64,9 +63,9 @@ class BFGSLineSearch(Optimizer):
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
 
         """
         if maxstep is None:
@@ -91,8 +90,7 @@ class BFGSLineSearch(Optimizer):
         self.no_update = False
         self.replay = False
 
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory,
-                           master, force_consistent=force_consistent)
+        Optimizer.__init__(self, atoms, restart, logfile, trajectory, **kwargs)
 
     def read(self):
         self.r0, self.g0, self.e0, self.task, self.H = self.load()
@@ -200,7 +198,7 @@ class BFGSLineSearch(Optimizer):
 
             r0 = None
             g0 = None
-            for i in range(0, len(traj) - 1):
+            for i in range(len(traj) - 1):
                 r = traj[i].get_positions().ravel()
                 g = - traj[i].get_forces().ravel() / self.alpha
                 self.update(r, g, r0, g0, self.p)

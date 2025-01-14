@@ -6,7 +6,7 @@ from ase.filters import Filter
 from ase.optimize import QuasiNewton
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_filter(testdir):
     """Test that the filter and trajectories are playing well together."""
 

@@ -30,7 +30,7 @@ def build():
     root.mkdir()
     os.chdir(root)
     cmds2 = ' && '.join(line.split('#')[0] for line in cmds.splitlines())
-    p = subprocess.run(cmds2, shell=True)
+    p = subprocess.run(cmds2, shell=True, check=False)
     if p.returncode == 0:
         status = 'ok'
     else:

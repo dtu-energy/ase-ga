@@ -7,12 +7,7 @@ Coding Conventions
 The code must be compatible with the oldest supported version of python
 as given on the :ref:`download_and_install` page.
 
-Please run :ref:`flake8 <stylecheck>` on your code.
-If flake8 is installed, you can run this unittest::
-
-  $ ase test flake8
-
-It will fail if there are too many flakes in total.
+Please run :ref:`ruff check <stylecheck>` on your code.
 
 The rules are almost identical
 to those used by the `Docutils project`_:
@@ -99,13 +94,14 @@ ASE follows the NumPy/SciPy convention for docstrings:
 
 .. _stylecheck:
 
-Run flake8 on your code
+Run ruff on your code
 =======================
 
-It's a good idea to run `flake8 <https://flake8.pycqa.org/>`_
+It's a good idea to run `ruff <https://docs.astral.sh/ruff/>`_
 on your code (or use a text editor that does it automatically)::
 
-    $ flake8 filename.py
+    $ ruff check --fix filename.py
+    $ ruff format filename.py
 
 .. _autopep8py:
 

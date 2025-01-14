@@ -29,8 +29,11 @@ from pathlib import Path
 import numpy as np
 
 from ase import Atoms
-from ase.calculators.singlepoint import (PropertyNotImplementedError,
-                                         SinglePointCalculator)
+from ase.calculators.singlepoint import (
+    PropertyNotImplementedError,
+    SinglePointCalculator,
+)
+
 # The system json module causes memory leaks!  Use ase's own.
 # import json
 from ase.io import jsonio
@@ -94,7 +97,7 @@ class BundleTrajectory:
         elif mode == 'w':
             self._open_write(atoms, backup, backend)
         elif mode == 'a':
-            self._open_append(atoms)
+            self._open_append(atoms, backend)
         else:
             raise ValueError('Unknown mode: ' + str(mode))
 
@@ -141,11 +144,13 @@ class BundleTrajectory:
         if atoms is None:
             atoms = self.atoms
 
+        # Handle NEB etc.  If atoms is just a normal Atoms object, it is used
+        # as-is.
         for image in atoms.iterimages():
             self._write_atoms(image)
 
     def _write_atoms(self, atoms):
-        # OK, it is a real atoms object.  Write it.
+        "Write a single atoms object to file."
         self._call_observers(self.pre_observers)
         self.log('Beginning to write frame ' + str(self.nframes))
         framedir = self._make_framedir(self.nframes)
@@ -337,7 +342,7 @@ class BundleTrajectory:
         data['constraint'] = smalldata['constraints']
         if self.subtype == 'split':
             self.backend.set_fragments(smalldata['fragments'])
-            self.atom_id, dummy = self.backend.read_split(framedir, 'ID')
+            self.atom_id, _dummy = self.backend.read_split(framedir, 'ID')
         else:
             self.atom_id = None
         atoms = Atoms(**data)
@@ -396,7 +401,7 @@ class BundleTrajectory:
         elif self.subtype == 'split':
             if self.datatypes[name] == 'once':
                 d, issplit = self.backend.read_split(f0, name)
-                atom_id, dummy = self.backend.read_split(f0, 'ID')
+                atom_id, _dummy = self.backend.read_split(f0, 'ID')
             else:
                 d, issplit = self.backend.read_split(f, name)
             if issplit:
@@ -409,6 +414,7 @@ class BundleTrajectory:
         return self.nframes
 
     def _open_log(self):
+        "Open the log file."
         if not (self.master or self.slavelog):
             return
         if self.master:
@@ -424,7 +430,15 @@ class BundleTrajectory:
             del self.logdata
 
     def _open_write(self, atoms, backup, backend):
-        "Open a bundle trajectory for writing."
+        """Open a bundle trajectory for writing.
+
+        Parameters:
+        atoms: Object to be written.
+        backup: (bool) Whether a backup is kept if file already exists.
+        backend: Which type of backend to use.
+
+        Note that the file name of the bundle is already stored as an attribute.
+        """
         self._set_backend(backend)
         self.logfile = None  # enable delayed logging
         self.atoms = atoms
@@ -500,11 +514,24 @@ class BundleTrajectory:
         self.backend.readpy2 = (self.pythonmajor == 2)
         self.state = 'read'
 
-    def _open_append(self, atoms):
+    def _open_append(self, atoms, backend):
+        """Open a trajectory for writing in append mode.
+
+        If there is no pre-existing bundle, it is just opened in write mode
+        instead.
+
+        Parameters:
+        atoms:  Object to be written.
+        backend:  The backend to be used if a new bundle is opened.  Ignored
+                  if we append to existing bundle, as the backend cannot be
+                  changed.
+
+        The filename is already stored as an attribute.
+        """
         if not os.path.exists(self.filename):
             # OK, no old bundle.  Open as for write instead.
             barrier()
-            self._open_write(atoms, False)
+            self._open_write(atoms, False, backend)
             return
         if not self.is_bundle(self.filename):
             raise OSError('Not a BundleTrajectory: ' + self.filename)
@@ -877,6 +904,9 @@ def read_bundletrajectory(filename, index=-1):
         frame).
     """
     traj = BundleTrajectory(filename, mode='r')
+    if isinstance(index, int):
+        yield traj[index]
+
     for i in range(*index.indices(len(traj))):
         yield traj[i]
 
@@ -953,17 +983,17 @@ def print_bundletrajectory_info(filename):
             else:
                 print('  Constraints are absent.')
         elif k == 'pbc':
-            print(f'  Periodic boundary conditions: {str(v)}')
+            print(f'  Periodic boundary conditions: {v!s}')
         elif k == 'natoms':
             print('  Number of atoms: %i' % (v,))
         elif hasattr(v, 'shape'):
-            print(f'  {k}: shape = {str(v.shape)}, type = {str(v.dtype)}')
+            print(f'  {k}: shape = {v.shape!s}, type = {v.dtype!s}')
             if k == 'cell':
                 print('        [[%12.6f, %12.6f, %12.6f],' % tuple(v[0]))
                 print('         [%12.6f, %12.6f, %12.6f],' % tuple(v[1]))
                 print('         [%12.6f, %12.6f, %12.6f]]' % tuple(v[2]))
         else:
-            print(f'  {k}: {str(v)}')
+            print(f'  {k}: {v!s}')
     # Read info from separate files.
     if metadata['subtype'] == 'split':
         nsplit = small['fragments']
@@ -974,14 +1004,9 @@ def print_bundletrajectory_info(filename):
             info = backend.read_info(frame, k, nsplit)
             infoline = f'  {k}: '
             for k, v in info.items():
-                infoline += f'{k} = {str(v)}, '
+                infoline += f'{k} = {v!s}, '
             infoline = infoline[:-2] + '.'  # Fix punctuation.
             print(infoline)
-
-
-class PickleBundleBackend:
-    # Leave placeholder class so importing asap3 won't crash.
-    pass
 
 
 def main():
@@ -991,7 +1016,7 @@ def main():
         'a.bundle [b.bundle ...]',
         description='Print information about '
         'the contents of one or more bundletrajectories.')
-    opts, args = parser.parse_args()
+    _opts, args = parser.parse_args()
     for name in args:
         print_bundletrajectory_info(name)
 

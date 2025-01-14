@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture()
 def excitingtools():
     """If we cannot import excitingtools we skip tests with this fixture."""
     return pytest.importorskip('excitingtools')

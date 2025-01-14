@@ -52,7 +52,7 @@ class NPTBerendsen(NVTBerendsen):
             The desired pressure, in bar (1 bar = 1e5 Pa).  Deprecated,
             use ``pressure_au`` instead.
 
-        pressure: float
+        pressure_au: float
             The desired pressure, in atomic units (eV/Å^3).
 
         taut: float

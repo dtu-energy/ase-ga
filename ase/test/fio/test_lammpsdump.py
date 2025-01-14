@@ -23,12 +23,12 @@ ref_positions = np.array([[0.5, 0.6, 0.7],
                           [0.45, 0.32, 0.67]])
 
 
-@pytest.fixture
+@pytest.fixture()
 def fmt():
     return ioformats['lammps-dump-text']
 
 
-@pytest.fixture
+@pytest.fixture()
 def lammpsdump():
     def factory(bounds="pp pp pp",
                 position_cols="x y z",
@@ -60,7 +60,7 @@ def lammpsdump():
     return factory
 
 
-@pytest.fixture
+@pytest.fixture()
 def lammpsdump_single_atom():
     def factory(bounds="pp pp pp",
                 position_cols="x y z",

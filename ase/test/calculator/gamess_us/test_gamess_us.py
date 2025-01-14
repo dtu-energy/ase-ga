@@ -2,10 +2,11 @@ import numpy as np
 import pytest
 
 from ase.build import molecule
+from ase.calculators.fd import calculate_numerical_forces
 from ase.calculators.gamess_us import GAMESSUS
 
 
-@pytest.fixture
+@pytest.fixture()
 def water():
     return molecule('H2O')
 
@@ -34,5 +35,5 @@ def test_gamess(water, kwargs, eref, grad, gamess_us_factory):
         assert abs(eref - e) < 1e-3
     if grad:
         f = water.get_forces()
-        f_numer = water.calc.calculate_numerical_forces(water, 1e-4)
+        f_numer = calculate_numerical_forces(water, 1e-4)
         np.testing.assert_allclose(f, f_numer, atol=1e-3, rtol=1e-3)

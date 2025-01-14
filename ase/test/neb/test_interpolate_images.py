@@ -6,24 +6,24 @@ from ase.constraints import FixAtoms
 from ase.mep import interpolate
 
 
-@pytest.fixture
+@pytest.fixture()
 def initial():
     return Atoms('H', positions=[(1, 0.1, 0.1)], cell=[
         [1, 0, 0], [0, 1, 0], [0, 0, 1]], pbc=True)
 
 
-@pytest.fixture
+@pytest.fixture()
 def final():
     return Atoms('H', positions=[(2, 0.2, 0.1)], cell=[
         [2, 0, 0], [0, 2, 0], [0, 0, 2]], pbc=True)
 
 
-@pytest.fixture
+@pytest.fixture()
 def average_pos(initial, final):
     return np.average([initial.positions, final.positions], axis=0)
 
 
-@pytest.fixture
+@pytest.fixture()
 def images(initial, final):
     images = [initial.copy()]
     images += [initial.copy()]
@@ -50,7 +50,7 @@ def test_interpolate_images_fixed(images, initial, average_pos):
         image.set_constraint(FixAtoms([0]))
 
     # test raising a RuntimeError here
-    with pytest.raises(RuntimeError, match=r"Constraint\(s\) in image number"):
+    with pytest.raises(RuntimeError, match=r"Constraints in image "):
         interpolate(images)
 
     interpolate(images, apply_constraint=True)

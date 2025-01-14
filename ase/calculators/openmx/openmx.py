@@ -27,9 +27,13 @@ import warnings
 
 import numpy as np
 
-from ase.calculators.calculator import (Calculator, FileIOCalculator,
-                                        all_changes, equal,
-                                        kptdensity2monkhorstpack)
+from ase.calculators.calculator import (
+    Calculator,
+    FileIOCalculator,
+    all_changes,
+    equal,
+    kptdensity2monkhorstpack,
+)
 from ase.calculators.openmx.default_settings import default_dictionary
 from ase.calculators.openmx.parameters import OpenMXParameters
 from ase.calculators.openmx.reader import get_file_name, read_openmx
@@ -285,14 +289,22 @@ class OpenMX(FileIOCalculator):
         pbs_Name = get_file_name('', self.label)
         files = [
             # prefix+'.out',#prefix+'.dat',#prefix+'.BAND*',
-            fileName + '.cif', fileName + '.dden.cube', fileName + \
-            '.ene', fileName + '.md', fileName + '.md2',
-            fileName + '.tden.cube', fileName + '.sden.cube', fileName + \
-            '.v0.cube', fileName + '.v1.cube',
-            fileName + '.vhart.cube', fileName + '.den0.cube', fileName + \
-            '.bulk.xyz', fileName + '.den1.cube',
-            fileName + '.xyz', pbs_Name + '.o' + \
-            str(queue_num), pbs_Name + '.e' + str(queue_num)
+            fileName + '.cif',
+            fileName + '.dden.cube',
+            fileName + '.ene',
+            fileName + '.md',
+            fileName + '.md2',
+            fileName + '.tden.cube',
+            fileName + '.sden.cube',
+            fileName + '.v0.cube',
+            fileName + '.v1.cube',
+            fileName + '.vhart.cube',
+            fileName + '.den0.cube',
+            fileName + '.bulk.xyz',
+            fileName + '.den1.cube',
+            fileName + '.xyz',
+            pbs_Name + '.o' + str(queue_num),
+            pbs_Name + '.e' + str(queue_num)
         ]
         for f in files:
             try:
@@ -397,7 +409,7 @@ class OpenMX(FileIOCalculator):
         version = None
         if label is None:
             label = self.label
-        for line in open(get_file_name('.out', label)):
+        for line in open(get_file_name('.log', label)):
             if line.find('Ver.') != -1:
                 version = line.split()[-1]
                 break
@@ -582,7 +594,7 @@ class OpenMX(FileIOCalculator):
         abc = cellpar[:3]
         angles = cellpar[3:]
         min_lv = min(abc)
-        if abc.ptp() < 0.01 * min_lv:
+        if np.ptp(abc) < 0.01 * min_lv:
             if abs(angles - 90).max() < 1:
                 return 'cubic'
             elif abs(angles - 60).max() < 1:

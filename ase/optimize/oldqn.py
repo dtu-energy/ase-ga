@@ -115,19 +115,21 @@ class GoodOldQuasiNewton(Optimizer):
         diagonal: float = 20.0,
         radius: Optional[float] = None,
         transitionstate: bool = False,
-        master: Optional[bool] = None,
+        **kwargs,
     ):
-        """Parameters:
+        """
 
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
+        restart: str
             File used to store hessian matrix. If set, file with
             such a name will be searched and hessian matrix stored will
             be used, if the file exists.
 
-        trajectory: string
+        trajectory: str
             File used to store trajectory of atomic movement.
 
         maxstep: float
@@ -139,12 +141,13 @@ class GoodOldQuasiNewton(Optimizer):
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
+
         """
 
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory, master)
+        Optimizer.__init__(self, atoms, restart, logfile, trajectory, **kwargs)
 
         self.eps = 1e-12
         self.hessianupdate = hessianupdate

@@ -3,8 +3,7 @@ import numpy as np
 from ase.build import bulk
 from ase.md import Langevin
 from ase.md.fix import FixRotation
-from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
-                                         Stationary)
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.units import fs
 from ase.utils import seterr
 

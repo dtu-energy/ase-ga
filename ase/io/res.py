@@ -295,11 +295,11 @@ def read_res(filename, index=-1):
 
 def write_res(filename, images, write_info=True,
               write_results=True, significant_figures=6):
-    """
+    r"""
     Write output in SHELX (.res) format
 
     To write multiple images, include a % format string in filename,
-    e.g. `file_%03d.res`.
+    e.g. `file\_\%03d.res`.
 
     Optionally include contents of Atoms.info dictionary if `write_info`
     is True, and/or results from attached calculator if `write_results`

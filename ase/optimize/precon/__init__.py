@@ -26,8 +26,17 @@ Optional dependencies
 from ase.optimize.ode import ODE12r
 from ase.optimize.precon.fire import PreconFIRE
 from ase.optimize.precon.lbfgs import PreconLBFGS
-from ase.optimize.precon.precon import (C1, FF, Exp, Exp_FF, Pfrommer, Precon,
-                                        PreconImages, SplineFit, make_precon)
+from ase.optimize.precon.precon import (
+    C1,
+    FF,
+    Exp,
+    Exp_FF,
+    Pfrommer,
+    Precon,
+    PreconImages,
+    SplineFit,
+    make_precon,
+)
 
 
 class PreconODE12r(ODE12r):

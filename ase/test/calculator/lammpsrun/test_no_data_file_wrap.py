@@ -3,7 +3,7 @@ import pytest
 from ase.atoms import Atoms
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('lammpsrun')
 def test_no_data_file_wrap(factory):
     """

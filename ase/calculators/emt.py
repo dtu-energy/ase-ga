@@ -4,9 +4,11 @@ from math import log, sqrt
 
 import numpy as np
 
-from ase.calculators.calculator import (Calculator,
-                                        PropertyNotImplementedError,
-                                        all_changes)
+from ase.calculators.calculator import (
+    Calculator,
+    PropertyNotImplementedError,
+    all_changes,
+)
 from ase.data import atomic_numbers, chemical_symbols
 from ase.neighborlist import NeighborList
 from ase.units import Bohr
@@ -138,10 +140,11 @@ class EMT(Calculator):
         """
         numbers = atoms.get_atomic_numbers()
         if self.parameters['asap_cutoff']:
-            relevant_pars = {}
-            for symb, p in parameters.items():
-                if atomic_numbers[symb] in numbers:
-                    relevant_pars[symb] = p
+            relevant_pars = {
+                symb: p
+                for symb, p in parameters.items()
+                if atomic_numbers[symb] in numbers
+            }
         else:
             relevant_pars = parameters
         maxseq = max(par[1] for par in relevant_pars.values()) * Bohr

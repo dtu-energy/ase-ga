@@ -2,6 +2,7 @@ import pytest
 from numpy.testing import assert_allclose
 
 from ase.build import molecule
+from ase.calculators.fd import calculate_numerical_forces
 
 
 @pytest.fixture()
@@ -48,9 +49,9 @@ def atoms():
                 grad={'root': 1},
             )
         )],
-        ['pspw', -465.1290581383751, False, True, dict()],
-        ['band', -465.1290611316276, False, True, dict()],
-        ['paw', -2065.6600649367365, False, True, dict()]
+        ['pspw', -465.1290581383751, False, True, {}],
+        ['band', -465.1290611316276, False, True, {}],
+        ['paw', -2065.6600649367365, False, True, {}]
     ]
 )
 def test_nwchem(factory, atoms, theory, eref, forces, pbc, kwargs):
@@ -62,5 +63,5 @@ def test_nwchem(factory, atoms, theory, eref, forces, pbc, kwargs):
     assert_allclose(atoms.get_potential_energy(), eref, atol=1e-4, rtol=1e-4)
     if forces:
         assert_allclose(atoms.get_forces(),
-                        calc.calculate_numerical_forces(atoms),
+                        calculate_numerical_forces(atoms),
                         atol=1e-4, rtol=1e-4)

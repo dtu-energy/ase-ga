@@ -85,6 +85,7 @@ class MPI:
 
     * MPI4Py
     * GPAW
+    * Asap
     * a dummy implementation for serial runs
 
     """
@@ -191,7 +192,7 @@ class MPI4PY:
         if self.rank == root:
             if np.isscalar(a):
                 return a
-            return
+            return None
         return self._returnval(a, b)
 
 
@@ -199,7 +200,7 @@ world = None
 
 # Check for special MPI-enabled Python interpreters:
 if '_gpaw' in sys.builtin_module_names:
-    # http://wiki.fysik.dtu.dk/gpaw
+    # http://gpaw.readthedocs.io
     import _gpaw
     world = _gpaw.Communicator()
 elif '_asap' in sys.builtin_module_names:

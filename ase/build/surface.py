@@ -12,7 +12,7 @@ import numpy as np
 
 from ase.atom import Atom
 from ase.atoms import Atoms
-from ase.data import reference_states, atomic_numbers
+from ase.data import atomic_numbers, reference_states
 from ase.lattice.cubic import FaceCenteredCubic
 
 
@@ -268,6 +268,13 @@ def add_vacuum(atoms, vacuum):
     atoms.set_cell(uc)
 
 
+def create_tags(size) -> np.ndarray:
+    """ Function to create layer tags. """
+    # tag atoms by layer
+    # create blocks of descending integers of length size[0]*size[1]
+    return np.arange(size[2], 0, -1).repeat(size[0] * size[1])
+
+
 def _surface(symbol, structure, face, size, a, c, vacuum, periodic,
              orthogonal=True):
     """Function to build often used surfaces.
@@ -296,11 +303,8 @@ def _surface(symbol, structure, face, size, a, c, vacuum, periodic,
 
     numbers = np.ones(size[0] * size[1] * size[2], int) * Z
 
-    tags = np.empty((size[2], size[1], size[0]), int)
-    tags[:] = np.arange(size[2], 0, -1).reshape((-1, 1, 1))
-
     slab = Atoms(numbers,
-                 tags=tags.ravel(),
+                 tags=create_tags(size),
                  pbc=(True, True, periodic),
                  cell=size)
 
@@ -531,8 +535,22 @@ def graphene(formula='C2', a=2.460, thickness=0.0,
 
 def _all_surface_functions():
     # Convenient for debugging.
-    d = {}
-    for func in [fcc100, fcc110, bcc100, bcc110, bcc111, fcc111, hcp0001,
-                 hcp10m10, diamond100, diamond111, fcc111, mx2, graphene]:
-        d[func.__name__] = func
+    d = {
+        func.__name__: func
+        for func in [
+            fcc100,
+            fcc110,
+            bcc100,
+            bcc110,
+            bcc111,
+            fcc111,
+            hcp0001,
+            hcp10m10,
+            diamond100,
+            diamond111,
+            fcc111,
+            mx2,
+            graphene,
+        ]
+    }
     return d

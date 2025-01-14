@@ -20,6 +20,13 @@ Listed in alphabetical order, for want of a better approach.
    and nanoparticles. ACAT also provides tools for structure generation 
    and global optimization of catalysts with and without adsorbates.
 
+ * `AGOX <https://gitlab.com/agox/agox/>`_:
+   The Atomistic Global Optimization X package contains a collection of 
+   tools for global optimization of atomic systems. The package allows 
+   running a variety of standard global optimization algorithms, such as random structure
+   search, basin-hopping in addition to machine-learning enhanced algorithms like 
+   GOFEE. Any ASE calculator can be used as the objective function for the optimization.
+
  * `atomicrex <https://atomicrex.org/>`_:
    atomicrex is a versatile tool for the construction of interatomic
    potential models. It includes a Python interface for integration
@@ -42,6 +49,12 @@ Listed in alphabetical order, for want of a better approach.
    package is useful for analysing properties of bond-breaking
    reactions, such as how much force is required to break a chemical
    bond.
+
+ * `DebyeCalculator <https://github.com/FrederikLizakJohansen/DebyeCalculator>`_:
+   A vectorised implementation of the Debye Scattering Equation on CPU and GPU to calculate the scattering intensity I(Q), the Total Scattering Structure
+   Function S(Q), the Reduced Total Scattering Function F(Q), or the Reduced Atomic Pair Distribution Function G(r) from an atomic structure. Use 
+   DebyeCalculator to simulate powder diffraction, total scattering with pair distribution function or small-angle scattering data of finite systems such as   
+   nanoparticles.
 
  * `effmass <https://github.com/lucydot/effmass/>`_:
    Calculates various definitions of effective mass from the electronic 
@@ -98,7 +111,7 @@ Listed in alphabetical order, for want of a better approach.
    A flexible platform for high-throughput, database-driven computational 
    materials science and quantum chemistry workflows built around ASE.
 
- * `SchNet Pack <https://github.com/Quantum-Accelerators/quacc>`_:
+ * `SchNet Pack <https://github.com/atomistic-machine-learning/schnetpack>`_:
    Deep Neural Networks for Atomistic Systems
 
  * `Sella <https://github.com/zadorlab/sella>`_:

@@ -66,9 +66,9 @@ def merge_intervals(intervals):
     merged_intervals = []
     for dimtype in dimtypes:
         relevant = [e for e in intervals if e.dimtype == dimtype]
-        combined_score = sum([e.score for e in relevant])
-        amin = min([e.a for e in relevant])
-        bmax = max([e.b for e in relevant])
+        combined_score = sum(e.score for e in relevant)
+        amin = min(e.a for e in relevant)
+        bmax = max(e.b for e in relevant)
         best = max(relevant, key=lambda x: x.score)
         merged = build_kinterval(amin, bmax, best.h, best.components,
                                  best.cdim, score=combined_score)

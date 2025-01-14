@@ -142,12 +142,11 @@ class Population:
         """ Returns a copy of the population as it where
         after generation gen"""
         if self.logfile is not None:
-            fd = open(self.logfile)
-            gens = {}
-            for line in fd:
-                _, no, popul = line.split(':')
-                gens[int(no)] = [int(i) for i in popul.split(',')]
-            fd.close()
+            with open(self.logfile) as fd:
+                gens = {}
+                for line in fd:
+                    _, no, popul = line.split(':')
+                    gens[int(no)] = [int(i) for i in popul.split(',')]
             return [c.copy() for c in self.all_cand[::-1]
                     if c.info['relax_id'] in gens[gen]]
 
@@ -304,11 +303,10 @@ class Population:
                     max_gen = max(gen_nums)
                 except KeyError:
                     max_gen = ' '
-                fd = open(self.logfile, 'a')
-                fd.write('{time}: {gen}: {pop}\n'.format(time=now(),
-                                                         pop=','.join(ids),
-                                                         gen=max_gen))
-                fd.close()
+                with open(self.logfile, 'a') as fd:
+                    fd.write('{time}: {gen}: {pop}\n'.format(time=now(),
+                                                             pop=','.join(ids),
+                                                             gen=max_gen))
 
     def is_uniform(self, func, min_std, pop=None):
         """Tests whether the current population is uniform or diverse.
@@ -649,11 +647,9 @@ class RankFitnessPopulation(Population):
                 ntr.sort(key=lambda x: x[1].info['key_value_pairs'][key],
                          reverse=True)
                 start_rank = -1
-                cor = 0
-                for on, cn in ntr:
+                for cor, (on, cn) in enumerate(ntr):
                     rank = start_rank - cor
                     rank_fit.append([on, cn, rank])
-                    cor += 1
         # The original order is reformed
         rank_fit.sort(key=itemgetter(0), reverse=False)
         return np.array(list(zip(*rank_fit))[2])

@@ -112,7 +112,7 @@ class DMol3(FileIOCalculator):
 
     def write_input(self, atoms, properties=None, system_changes=None):
 
-        if not (np.all(atoms.pbc) or not np.any(atoms.pbc)):
+        if not np.all(atoms.pbc) and np.any(atoms.pbc):
             raise RuntimeError('PBC must be all true or all false')
 
         self.clean()   # Remove files from old run
@@ -465,7 +465,7 @@ class DMol3(FileIOCalculator):
         for n, line in enumerate(lines):
             if line.startswith('Energy components'):
                 m = n + 1
-                while not lines[m].strip() == '':
+                while lines[m].strip() != '':
                     energies[lines[m].split('=')[0].strip()] = \
                         float(re.findall(
                             r"[-+]?\d*\.\d+|\d+", lines[m])[0]) * Hartree

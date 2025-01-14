@@ -6,8 +6,12 @@ from ase.build import bulk, molecule
 from ase.calculators.emt import EMT
 from ase.optimize import QuasiNewton
 from ase.phonons import Phonons
-from ase.thermochemistry import (CrystalThermo, HarmonicThermo, HinderedThermo,
-                                 IdealGasThermo)
+from ase.thermochemistry import (
+    CrystalThermo,
+    HarmonicThermo,
+    HinderedThermo,
+    IdealGasThermo,
+)
 from ase.vibrations import Vibrations
 
 
@@ -292,7 +296,9 @@ def test_crystal_thermo(asap3, testdir):
     ph.run()
 
     ph.read(acoustic=True)
-    phonon_energies, phonon_DOS = ph.dos(kpts=(4, 4, 4), npts=30, delta=5e-4)
+    dos = ph.get_dos(kpts=(4, 4, 4)).sample_grid(npts=30, width=5e-4)
+    phonon_energies = dos.get_energies()
+    phonon_DOS = dos.get_weights()
 
     thermo = CrystalThermo(
         phonon_energies=phonon_energies,

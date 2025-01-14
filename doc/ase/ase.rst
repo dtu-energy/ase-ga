@@ -48,7 +48,6 @@ Modules
    * :git:`Source code <>`
    * Presentation about ASE:
      `ase-talk.pdf <https://wiki.fysik.dtu.dk/ase-files/ase-talk.pdf>`__
-   * List of :ref:`removed features <removed_features>`
 
 .. toctree::
    :maxdepth: 2
@@ -88,5 +87,3 @@ Modules
    parallel
    atom
    transport/transport
-   calculators/qmmm
-   legacy

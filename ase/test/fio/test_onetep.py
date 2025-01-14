@@ -2028,14 +2028,14 @@ def test_onetep_input():
     assert cycled_atoms.get_cell().cellpar() == approx(original_cell.cellpar())
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_onetep_recursive_include_input(datadir):
     testfile_path = datadir / "onetep_include.dat"
     with pytest.raises(ValueError):
         read(testfile_path, format='onetep-in')
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_onetep_nested_include_input(datadir):
     testfile_path = datadir / "onetep_include_nested.dat"
     with pytest.raises(ValueError):

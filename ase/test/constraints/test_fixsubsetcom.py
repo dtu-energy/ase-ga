@@ -22,7 +22,7 @@ def fixture_atoms() -> Atoms:
     return atoms
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_center_of_mass_position(atoms: Atoms):
     """Test if the center of mass does not move."""
     indices = [3, 4, 5]
@@ -37,7 +37,7 @@ def test_center_of_mass_position(atoms: Atoms):
     assert max(cnew - cold) == pytest.approx(0.0, abs=1e-8)
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_center_of_mass_velocity(atoms: Atoms):
     """Test if the center-of-mass veloeicty is zero."""
     indices = [3, 4, 5]
@@ -53,7 +53,7 @@ def test_center_of_mass_velocity(atoms: Atoms):
     assert max(velocity_com) == pytest.approx(0.0, abs=1e-8)
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_center_of_mass_force(atoms: Atoms):
     """Test if the corrected forces are along the COM-preserving direction."""
     indices = [3, 4, 5]

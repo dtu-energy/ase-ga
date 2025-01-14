@@ -5,12 +5,9 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
+from matplotlib.axes import Axes
 
 from ase.utils.plotting import SimplePlottingAxes
-
-# This import is for the benefit of type-checking / mypy
-if False:
-    import matplotlib.axes
 
 # For now we will be strict about Info and say it has to be str->str. Perhaps
 # later we will allow other types that have reliable comparison operations.
@@ -150,10 +147,10 @@ class DOSData(metaclass=ABCMeta):
              xmax: float = None,
              width: float = 0.1,
              smearing: str = 'Gauss',
-             ax: 'matplotlib.axes.Axes' = None,
+             ax: Axes = None,
              show: bool = False,
              filename: str = None,
-             mplargs: dict = None) -> 'matplotlib.axes.Axes':
+             mplargs: dict = None) -> Axes:
         """Simple 1-D plot of DOS data, resampled onto a grid
 
         If the special key 'label' is present in self.info, this will be set
@@ -288,10 +285,10 @@ class RawDOSData(GeneralDOSData):
         return new_object
 
     def plot_deltas(self,
-                    ax: 'matplotlib.axes.Axes' = None,
+                    ax: Axes = None,
                     show: bool = False,
                     filename: str = None,
-                    mplargs: dict = None) -> 'matplotlib.axes.Axes':
+                    mplargs: dict = None) -> Axes:
         """Simple plot of sparse DOS data as a set of delta functions
 
         Items at the same x-value can overlap and will not be summed together
@@ -434,10 +431,10 @@ class GridDOSData(GeneralDOSData):
              xmax: float = None,
              width: float = None,
              smearing: str = 'Gauss',
-             ax: 'matplotlib.axes.Axes' = None,
+             ax: Axes = None,
              show: bool = False,
              filename: str = None,
-             mplargs: dict = None) -> 'matplotlib.axes.Axes':
+             mplargs: dict = None) -> Axes:
         """Simple 1-D plot of DOS data
 
         Data will be resampled onto a grid with `npts` points unless `npts` is

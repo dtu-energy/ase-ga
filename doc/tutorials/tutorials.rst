@@ -72,13 +72,6 @@ ASE database
 
    tut06_database/database
 
-Surface adsorption
-^^^^^^^^^^^^^^^^^^
-.. toctree::
-   :maxdepth: 1
-
-   db/db
-
 Molecular Dynamics
 ^^^^^^^^^^^^^^^^^^
 .. toctree::

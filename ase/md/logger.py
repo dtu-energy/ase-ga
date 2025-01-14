@@ -33,11 +33,12 @@ class MDLogger(IOContext):
         stress: bool = False,
         peratom: bool = False,
         mode: str = "a",
+        comm=world,
     ):
         self.dyn = weakref.proxy(dyn) if hasattr(dyn, "get_time") else None
         self.atoms = atoms
         global_natoms = atoms.get_global_number_of_atoms()
-        self.logfile = self.openfile(logfile, comm=world, mode=mode)
+        self.logfile = self.openfile(file=logfile, mode=mode, comm=comm)
         self.stress = stress
         self.peratom = peratom
         if self.dyn is not None:

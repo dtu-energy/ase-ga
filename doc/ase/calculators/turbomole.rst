@@ -92,13 +92,6 @@ calculator and associating it with an atoms object, e.g.:
     mol.calc = calc
     calc.initialize()
 
-Optionally the calculator will be associated with the atoms object in one step
-with constructing the calculator:
-
-.. code:: python
-
-    calc = Turbomole(atoms=mol, **params)
-
 
 
 
@@ -413,7 +406,8 @@ QM system:
     params = {'esp fit': 'kollman', 'multiplicity': 1}
     dimer = s22['Water_dimer']
     qm_mol = dimer[0:3]
-    calc = Turbomole(atoms=qm_mol, **params)
+    calc = Turbomole(**params)
+    qm_mol.calc = calc
     calc.embed(
         charges=[-0.76, 0.38,  0.38],
         positions=dimer.positions[3:6]

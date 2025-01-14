@@ -53,7 +53,7 @@ class TestKnownUnimodularMatrix():
     @pytest.mark.parametrize("pbc", [1, True, (1, 1, 1)])
     def test_pbc(self, pbc):
         lcell = self.lcell
-        rcell, op = minkowski_reduce(lcell, pbc=pbc)
+        rcell, _op = minkowski_reduce(lcell, pbc=pbc)
         assert_almost_equal(np.linalg.det(rcell), 1)
 
         rdet = np.linalg.det(rcell)
@@ -62,13 +62,13 @@ class TestKnownUnimodularMatrix():
 
     def test_0d(self):
         lcell = self.lcell
-        rcell, op = minkowski_reduce(lcell, pbc=[0, 0, 0])
+        rcell, _op = minkowski_reduce(lcell, pbc=[0, 0, 0])
         assert (rcell == lcell).all()    # 0D reduction does nothing
 
     @pytest.mark.parametrize("axis", range(3))
     def test_1d(self, axis):
         lcell = self.lcell
-        rcell, op = minkowski_reduce(lcell, pbc=np.roll([1, 0, 0], axis))
+        rcell, _op = minkowski_reduce(lcell, pbc=np.roll([1, 0, 0], axis))
         assert (rcell == lcell).all()    # 1D reduction does nothing
 
         zcell = np.zeros((3, 3))
@@ -80,7 +80,7 @@ class TestKnownUnimodularMatrix():
     def test_2d(self, axis):
         lcell = self.lcell
         pbc = np.roll([0, 1, 1], axis)
-        rcell, op = minkowski_reduce(lcell.astype(float), pbc=pbc)
+        rcell, _op = minkowski_reduce(lcell.astype(float), pbc=pbc)
         assert (rcell[axis] == lcell[axis]).all()
 
         zcell = np.copy(lcell)
@@ -91,5 +91,5 @@ class TestKnownUnimodularMatrix():
 
     def test_3d(self):
         lcell = self.lcell
-        rcell, op = minkowski_reduce(lcell)
+        rcell, _op = minkowski_reduce(lcell)
         assert_almost_equal(np.linalg.det(rcell), 1)

@@ -1,8 +1,11 @@
 """Read gpw-file from GPAW."""
 import ase.io.ulm as ulm
 from ase import Atoms
-from ase.calculators.singlepoint import (SinglePointDFTCalculator,
-                                         SinglePointKPoint, all_properties)
+from ase.calculators.singlepoint import (
+    SinglePointDFTCalculator,
+    SinglePointKPoint,
+    all_properties,
+)
 from ase.io.trajectory import read_atoms
 from ase.units import Bohr, Hartree
 
@@ -45,15 +48,12 @@ def read_gpw(filename):
 
     if kpts is not None:
         atoms.calc.kpts = []
-        spin = 0
-        for eps_kn, f_kn in zip(wfs.eigenvalues, wfs.occupations):
-            kpt = 0
-            for weight, eps_n, f_n in zip(kpts.weights, eps_kn, f_kn):
+        for spin, (eps_kn, f_kn) in enumerate(zip(wfs.eigenvalues,
+                                                  wfs.occupations)):
+            for kpt, (weight, eps_n, f_n) in enumerate(zip(kpts.weights,
+                                                           eps_kn, f_kn)):
                 atoms.calc.kpts.append(
                     SinglePointKPoint(weight, spin, kpt, eps_n, f_n))
-                kpt += 1
-            spin += 1
-
     reader.close()
 
     return atoms

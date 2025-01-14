@@ -27,16 +27,17 @@ class LBFGS(Optimizer):
         damping: float = 1.0,
         alpha: float = 70.0,
         use_line_search: bool = False,
-        master: Optional[bool] = None,
-        force_consistent=Optimizer._deprecated,
+        **kwargs,
     ):
-        """Parameters:
+        """
 
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
-            Pickle file used to store vectors for updating the inverse of
+        restart: str
+            JSON file used to store vectors for updating the inverse of
             Hessian matrix. If set, file with such a name will be searched
             and information stored will be used, if the file exists.
 
@@ -45,7 +46,7 @@ class LBFGS(Optimizer):
             Use '-' for stdout.
 
         trajectory: string
-            Pickle file used to store trajectory of atomic movement.
+            Trajectory file used to store optimisation path.
 
         maxstep: float
             How far is a single atom allowed to move. This is useful for DFT
@@ -66,13 +67,12 @@ class LBFGS(Optimizer):
             steps to converge might be less if a lower value is used. However,
             a lower value also means risk of instability.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
 
         """
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory, master,
-                           force_consistent=force_consistent)
+        Optimizer.__init__(self, atoms, restart, logfile, trajectory, **kwargs)
 
         if maxstep is not None:
             self.maxstep = maxstep
@@ -210,7 +210,7 @@ class LBFGS(Optimizer):
         f0 = None
         # The last element is not added, as we get that for free when taking
         # the first qn-step after the replay
-        for i in range(0, len(traj) - 1):
+        for i in range(len(traj) - 1):
             pos = traj[i].get_positions()
             forces = traj[i].get_forces()
             self.update(pos, forces, r0, f0)

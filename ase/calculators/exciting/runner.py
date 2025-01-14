@@ -77,7 +77,7 @@ class SimpleBinaryRunner:
         result = subprocess.run(execution_list,
                                 env=my_env,
                                 capture_output=True,
-                                cwd=self.directory)
+                                cwd=self.directory, check=False)
         total_time = time.time() - time_start
         return SubprocessRunResults(
             result.stdout, result.stderr, result.returncode, total_time)

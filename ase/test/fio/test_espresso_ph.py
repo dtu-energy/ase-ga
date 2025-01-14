@@ -1,10 +1,13 @@
 from io import StringIO
 
 import numpy as np
-from ase.io.espresso import (read_espresso_ph,
-                             read_fortran_namelist, write_espresso_ph)
 
-from ase.io.espresso import Namelist
+from ase.io.espresso import (
+    Namelist,
+    read_espresso_ph,
+    read_fortran_namelist,
+    write_espresso_ph,
+)
 
 
 def test_write_espresso_ph_single():
@@ -626,24 +629,22 @@ def test_read_espresso_ph_complex():
     results = read_espresso_ph(fd)
 
     assert len(results) == 3
-    assert (0, 0, 0) in results
-    assert np.unique(results[(0, 0, 0)]["freqs"]).shape[0] == 1
-    assert np.unique(results[(0, 0, 0)]["freqs"])[0] == 0.173268
-    assert len(results[(0, 0, 0)]["eqpoints"]) == 1
-    assert results[(0, 0, 0)]["atoms"].symbols == ["Al"]
+    assert results[1]["qpoint"] == (0, 0, 0)
+    assert np.unique(results[1]["freqs"]).shape[0] == 1
+    assert np.unique(results[1]["freqs"])[0] == 0.173268
+    assert len(results[1]["eqpoints"]) == 1
+    assert results[1]["atoms"].symbols == ["Al"]
 
-    assert (-0.25, 0.25, -0.25) in results
-    assert np.unique(results[(-0.25, 0.25, -0.25)]["freqs"]).shape[0] == 2
-    assert np.unique(results[(-0.25, 0.25, -0.25)]["freqs"])[1] == 6.338040
-    assert len(results[(-0.25, 0.25, -0.25)]["eqpoints"]) == 8
-    assert results[(-0.25, 0.25, -0.25)]["atoms"].symbols == ["Al"]
-    assert results[(0, 0, 0)]["qnum"] == 1
-    assert results[(-0.25, 0.25, -0.25)]["qnum"] == 2
+    assert results[2]["qpoint"] == (-0.25, 0.25, -0.25)
+    assert np.unique(results[2]["freqs"]).shape[0] == 2
+    assert np.unique(results[2]["freqs"])[1] == 6.338040
+    assert len(results[2]["eqpoints"]) == 8
+    assert results[2]["atoms"].symbols == ["Al"]
 
     for i in np.arange(0.005, 0.055, 0.005):
-        assert results[(-0.25, 0.25, -0.25)]["ep_data"][round(i, 3)]
+        assert results[2]["ep_data"][round(i, 3)]
 
-    assert results[(-0.25, 0.25, -0.25)]["ep_data"][0.005] == {
+    assert results[2]["ep_data"][0.005] == {
         "dos": 1.339210,
         "fermi": 8.321793,
         "lambdas": [0.0023, 0.0023, 0.0285],

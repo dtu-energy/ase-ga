@@ -6,7 +6,7 @@ from ase.io import write
 calc = pytest.mark.calculator
 
 
-@pytest.fixture
+@pytest.fixture()
 def calc_settings():
     """Some simple fast calculation settings"""
     return dict(xc='lda',

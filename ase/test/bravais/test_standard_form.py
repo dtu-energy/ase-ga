@@ -9,8 +9,11 @@ standard cell correctly.
 import numpy as np
 import pytest
 
-from ase.lattice import (all_variants, get_lattice_from_canonical_cell,
-                         identify_lattice)
+from ase.lattice import (
+    all_variants,
+    get_lattice_from_canonical_cell,
+    identify_lattice,
+)
 
 variants = [lat for lat in all_variants() if lat.ndim == 3]
 
@@ -33,8 +36,8 @@ def test_lattice(lat):
         # trigger an error in this test.
         return
 
-    stdcell, op = identify_lattice(cell, 1e-4)
+    stdcell, _op = identify_lattice(cell, 1e-4)
     check(stdcell)
-    rcell, op = cell.niggli_reduce()
-    stdcell, op = identify_lattice(rcell, 1e-4)
+    rcell, _op = cell.niggli_reduce()
+    stdcell, _op = identify_lattice(rcell, 1e-4)
     check(stdcell)

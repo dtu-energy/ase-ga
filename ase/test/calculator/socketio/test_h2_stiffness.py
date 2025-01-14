@@ -5,10 +5,6 @@ from ase.build import molecule
 
 
 def run(calc):
-    if hasattr(calc, "profile") and hasattr(calc.profile, "parallel"):
-        calc.profile.parallel = False
-        calc.profile.parallel_info = {}
-
     atoms = molecule('H2', vacuum=3.0)
     atoms.center(vacuum=4.0, axis=2)
     atoms.calc = calc
@@ -46,7 +42,7 @@ calc = pytest.mark.calculator
 
 
 @pytest.mark.filterwarnings('ignore:Subprocess exited')
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @calc('abinit')
 @calc('espresso', input_data={"system": {"ecutwfc": 30}})
 @calc('nwchem')

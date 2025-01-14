@@ -14,7 +14,7 @@ ref_stress = np.array([-0.22, -0.17, -0.17,
 calc = pytest.mark.calculator
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @calc('aims', compute_analytical_stress=True)
 @calc('gpaw', mode={'name': 'pw', 'ecut': 350}, txt=None)
 @calc('abinit', chksymtnons=0, ecut=350)

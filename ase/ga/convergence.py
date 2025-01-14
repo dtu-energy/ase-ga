@@ -64,8 +64,10 @@ class GenerationRepetitionConvergence(Convergence):
             return False
 
         cur_pop = self.pop.get_current_population()
-        newest = max([i.info['key_value_pairs']['generation']
-                      for i in cur_pop[:self.numindis]])
+        newest = max(
+            i.info['key_value_pairs']['generation']
+            for i in cur_pop[: self.numindis]
+        )
         if newest + self.numgens > cur_gen_num:
             return False
 

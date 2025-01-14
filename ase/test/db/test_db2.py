@@ -8,12 +8,10 @@ from ase.constraints import FixAtoms, FixBondLength
 from ase.db import connect
 from ase.io import read
 
-dbtypes = ['json', 'db', 'postgresql', 'mysql', 'mariadb']
 
-
-@pytest.mark.parametrize('dbtype', dbtypes)
-def test_db2(testdir, dbtype, get_db_name):
-    name = get_db_name(dbtype)
+@pytest.mark.parametrize('dbtype', ['json', 'db'])
+def test_db2(testdir, dbtype):
+    name = f'testase.{dbtype}'
 
     c = connect(name)
     print(name, c)
@@ -75,7 +73,13 @@ def test_db2(testdir, dbtype, get_db_name):
         c.write(ch4, foo=['bar', 2])  # not int, bool, float or str
 
     with pytest.raises(ValueError):
-        c.write(Atoms(), pi='3.14')  # number as a string
+        c.write(Atoms(), pi='3.14')  # float as a string
+
+    with pytest.raises(ValueError):
+        c.write(Atoms(), pi_rounded='3')  # int as a string
+
+    with pytest.raises(ValueError):
+        c.write(Atoms(), relaxed='False')  # bool as a string
 
     with pytest.raises(ValueError):
         c.write(Atoms(), fmax=0.0)  # reserved word

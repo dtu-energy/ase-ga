@@ -140,7 +140,7 @@ Their sum should give ``approximation='Albrecht'``.
 See more details in [1]_.
 
   
-.. _GPAW: https://wiki.fysik.dtu.dk/gpaw/
+.. _GPAW: https://gpaw.readthedocs.io/
   
 .. [1] :doi:`Ab-initio wave-length dependent Raman spectra: Placzek approximation and beyond <10.1021/acs.jctc.9b00584>`
 

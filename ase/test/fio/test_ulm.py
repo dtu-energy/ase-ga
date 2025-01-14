@@ -16,7 +16,7 @@ class A:
         return a
 
 
-@pytest.fixture
+@pytest.fixture()
 def ulmfile(tmp_path):
     path = tmp_path / 'a.ulm'
 

@@ -73,7 +73,7 @@ def _setup_images_global():
     return neb.images, i1, i2
 
 
-@pytest.fixture
+@pytest.fixture()
 def setup_images(_setup_images_global):
     images, i1, i2 = _setup_images_global
     new_images = [img.copy() for img in images]
@@ -102,7 +102,7 @@ def _ref_vacancy_global(_setup_images_global):
     return Ef_ref, dE_ref, saddle
 
 
-@pytest.fixture
+@pytest.fixture()
 def ref_vacancy(_ref_vacancy_global):
     Ef_ref, dE_ref, saddle = _ref_vacancy_global
     return Ef_ref, dE_ref, saddle.copy()
@@ -262,7 +262,7 @@ def test_integrate_forces(setup_images):
 
     neb = NEB(images)
     spline_points = 1000  # it is the default value
-    s, E, F = neb.integrate_forces(spline_points=spline_points)
+    _s, E, _F = neb.integrate_forces(spline_points=spline_points)
     # check the difference between initial and final images
     np.testing.assert_allclose(E[0] - E[-1],
                                forcefit.energies[0] - forcefit.energies[-1],

@@ -5,7 +5,7 @@ import pytest
 
 from ase.build import bulk
 from ase.calculators.calculator import compare_atoms
-from ase.io.vasp import read_vasp, write_vasp
+from ase.io.vasp import parse_poscar_scaling_factor, read_vasp, write_vasp
 
 
 @pytest.fixture(name="atoms")
@@ -34,6 +34,11 @@ def test_write_vasp5(atoms, filename, kwargs):
         lines = file.readlines()
     # Test the 5th line, which should be the symbols
     assert lines[5].strip().split() == list(atoms.symbols)
+
+
+def test_scaling_factor_line_with_comment() -> None:
+    """Test if the scaling-factor line with a comment can be parsed."""
+    assert parse_poscar_scaling_factor('1.00 ! scaling factor\n') == 1.0
 
 
 # The negative scaling factor -120 gives 2x2x2 expansion.

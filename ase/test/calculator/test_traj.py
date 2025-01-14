@@ -3,7 +3,6 @@ import pytest
 from ase.build import molecule
 from ase.io import read, write
 
-
 calc = pytest.mark.calculator
 
 

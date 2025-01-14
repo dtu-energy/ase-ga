@@ -269,7 +269,7 @@ class CRYSTAL(FileIOCalculator):
                 self.pcpot.crys_pcc = True
             else:
                 self.pcpot.manual_pc_correct()
-            e_coul, f_coul = self.pcpot.coulomb_corrections
+            e_coul, _f_coul = self.pcpot.coulomb_corrections
 
         energy = float(self.lines[index_energy].split()[pos_en]) * Hartree
         energy -= e_coul  # e_coul already in eV.
@@ -288,9 +288,9 @@ class CRYSTAL(FileIOCalculator):
             word = self.lines[j].split()
             # If GHOST atoms give problems, have a close look at this
             if len(word) == 5:
-                gradients.append([float(word[k + 2]) for k in range(0, 3)])
+                gradients.append([float(word[k + 2]) for k in range(3)])
             elif len(word) == 4:
-                gradients.append([float(word[k + 1]) for k in range(0, 3)])
+                gradients.append([float(word[k + 1]) for k in range(3)])
             else:
                 raise RuntimeError('Problem in reading forces')
 
@@ -409,7 +409,7 @@ class PointChargePotential:
             self.read_pc_corrections()
         else:
             self.manual_pc_correct()
-        e_coul, f_coul = self.coulomb_corrections
+        _e_coul, f_coul = self.coulomb_corrections
 
         external_forces = []
         for n, line in enumerate(lines):

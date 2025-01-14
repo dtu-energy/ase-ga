@@ -4,7 +4,7 @@ import pytest
 from ase.build import molecule
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     atoms = molecule('H2')
     atoms.positions -= atoms.positions[0]
@@ -56,9 +56,9 @@ def test_h2_bond(factory, atoms):
     E = np.array(E)
     F = np.array(F)
 
-    a, b, c = np.polyfit(X, E, 2)
+    a, b, _c = np.polyfit(X, E, 2)
     xmin = -b / (2.0 * a)
-    fa, fb = np.polyfit(X, F, 1)
+    fa, _fb = np.polyfit(X, F, 1)
 
     k_from_energy = 2 * a
     k_from_forces = -fa

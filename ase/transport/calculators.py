@@ -1,10 +1,16 @@
 import numpy as np
 from numpy import linalg
+from scipy.integrate import trapezoid
 
 from ase.transport.greenfunction import GreenFunction
 from ase.transport.selfenergy import BoxProbe, LeadSelfEnergy
-from ase.transport.tools import (cutcoupling, dagger, fermidistribution,
-                                 rotate_matrix, subdiagonalize)
+from ase.transport.tools import (
+    cutcoupling,
+    dagger,
+    fermidistribution,
+    rotate_matrix,
+    subdiagonalize,
+)
 from ase.units import kB
 
 
@@ -363,9 +369,9 @@ class TransportCalculator:
         fr = fermidistribution(E + bias / 2., kB * T)
 
         if spinpol:
-            return .5 * np.trapz((fl - fr) * T_e, x=E, axis=0)
+            return .5 * trapezoid((fl - fr) * T_e, x=E, axis=0)
         else:
-            return np.trapz((fl - fr) * T_e, x=E, axis=0)
+            return trapezoid((fl - fr) * T_e, x=E, axis=0)
 
     def get_transmission(self):
         self.initialize()

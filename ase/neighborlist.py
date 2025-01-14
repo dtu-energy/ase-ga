@@ -7,8 +7,13 @@ from scipy.spatial import cKDTree
 
 from ase.cell import Cell
 from ase.data import atomic_numbers, covalent_radii
-from ase.geometry import (complete_cell, find_mic, minkowski_reduce,
-                          wrap_positions)
+from ase.geometry import (
+    complete_cell,
+    find_mic,
+    minkowski_reduce,
+    wrap_positions,
+)
+from ase.utils import deprecated
 
 
 def natural_cutoffs(atoms, mult=1, **kwargs):
@@ -793,8 +798,6 @@ class NewPrimitiveNeighborList:
         self.bothways = bothways
         self.nupdates = 0
         self.use_scaled_positions = use_scaled_positions
-        self.nneighbors = 0
-        self.npbcneighbors = 0
 
     def update(self, pbc, cell, positions, numbers=None):
         """Make sure the list is up to date."""
@@ -904,8 +907,6 @@ class PrimitiveNeighborList:
         self.bothways = bothways
         self.nupdates = 0
         self.use_scaled_positions = use_scaled_positions
-        self.nneighbors = 0
-        self.npbcneighbors = 0
 
     def update(self, pbc, cell, coordinates):
         """Make sure the list is up to date.
@@ -942,10 +943,7 @@ class PrimitiveNeighborList:
             raise ValueError('Wrong number of cutoff radii: {} != {}'
                              .format(len(self.cutoffs), len(coordinates)))
 
-        if len(self.cutoffs) > 0:
-            rcmax = self.cutoffs.max()
-        else:
-            rcmax = 0.0
+        rcmax = self.cutoffs.max() if len(self.cutoffs) > 0 else 0.0
 
         if self.use_scaled_positions:
             positions0 = cell.cartesian_positions(coordinates)
@@ -956,60 +954,58 @@ class PrimitiveNeighborList:
         positions = wrap_positions(positions0, rcell, pbc=pbc, eps=0)
 
         natoms = len(positions)
-        self.nneighbors = 0
-        self.npbcneighbors = 0
-        self.neighbors = [np.empty(0, int) for a in range(natoms)]
-        self.displacements = [np.empty((0, 3), int) for a in range(natoms)]
         self.nupdates += 1
         if natoms == 0:
+            self.neighbors = []
+            self.displacements = []
             return
-
-        N = []
-        ircell = np.linalg.pinv(rcell)
-        for i in range(3):
-            if self.pbc[i]:
-                v = ircell[:, i]
-                h = 1 / np.linalg.norm(v)
-                n = int(2 * rcmax / h) + 1
-            else:
-                n = 0
-            N.append(n)
 
         tree = cKDTree(positions, copy_data=True)
         offsets = cell.scaled_positions(positions - positions0)
         offsets = offsets.round().astype(int)
 
-        for n1, n2, n3 in itertools.product(range(0, N[0] + 1),
+        N = _calc_expansion(rcell, pbc, rcmax)
+
+        neighbor_indices_a = [[] for _ in range(natoms)]
+        displacements_a = [[] for _ in range(natoms)]
+
+        for n1, n2, n3 in itertools.product(range(N[0] + 1),
                                             range(-N[1], N[1] + 1),
                                             range(-N[2], N[2] + 1)):
             if n1 == 0 and (n2 < 0 or n2 == 0 and n3 < 0):
                 continue
 
             displacement = (n1, n2, n3) @ rcell
-            for a in range(natoms):
+            shift0 = (n1, n2, n3) @ op
+            indices_all = tree.query_ball_point(
+                positions - displacement,
+                r=self.cutoffs + rcmax,
+            )
 
-                indices = tree.query_ball_point(positions[a] - displacement,
-                                                r=self.cutoffs[a] + rcmax)
-                if not len(indices):
+            for a in range(natoms):
+                indices = indices_all[a]
+
+                if not indices:
                     continue
 
                 indices = np.array(indices)
                 delta = positions[indices] + displacement - positions[a]
+                distances = np.sqrt(np.add.reduce(delta**2, axis=1))
                 cutoffs = self.cutoffs[indices] + self.cutoffs[a]
-                i = indices[np.linalg.norm(delta, axis=1) < cutoffs]
+                i = indices[distances < cutoffs]
                 if n1 == 0 and n2 == 0 and n3 == 0:
                     if self.self_interaction:
                         i = i[i >= a]
                     else:
                         i = i[i > a]
 
-                self.nneighbors += len(i)
-                self.neighbors[a] = np.concatenate((self.neighbors[a], i))
+                neighbor_indices_a[a].append(i)
 
-                disp = (n1, n2, n3) @ op + offsets[i] - offsets[a]
-                self.npbcneighbors += disp.any(1).sum()
-                self.displacements[a] = np.concatenate((self.displacements[a],
-                                                        disp))
+                disp = shift0 + offsets[i] - offsets[a]
+                displacements_a[a].append(disp)
+
+        self.neighbors = [np.concatenate(i) for i in neighbor_indices_a]
+        self.displacements = [np.concatenate(d) for d in displacements_a]
 
         if self.bothways:
             neighbors2 = [[] for a in range(natoms)]
@@ -1029,17 +1025,7 @@ class PrimitiveNeighborList:
                 self.displacements[a] = disp.astype(int).reshape((-1, 3))
 
         if self.sorted:
-            for a in range(natoms):
-                # sort first by neighbors and then offsets
-                keys = (
-                    self.displacements[a][:, 2],
-                    self.displacements[a][:, 1],
-                    self.displacements[a][:, 0],
-                    self.neighbors[a],
-                )
-                mask = np.lexsort(keys)
-                self.neighbors[a] = self.neighbors[a][mask]
-                self.displacements[a] = self.displacements[a][mask]
+            _sort_neighbors(self.neighbors, self.displacements)
 
     def get_neighbors(self, a):
         """Return neighbors of atom number a.
@@ -1067,6 +1053,36 @@ class PrimitiveNeighborList:
         bothways=True was used."""
 
         return self.neighbors[a], self.displacements[a]
+
+
+def _calc_expansion(rcell, pbc, rcmax):
+    r"""Calculate expansion to contain a sphere of radius `2.0 * rcmax`.
+
+    This function determines the minimum supercell (parallelepiped) that
+    contains a sphere of radius `2.0 * rcmax`. For this, `a_1` is projected
+    onto the unit vector perpendicular to `a_2 \times a_3` (i.e. the unit
+    vector along the direction `b_1`) to know how many `a_1`'s the supercell
+    takes to contain the sphere.
+    """
+    ircell = np.linalg.pinv(rcell)
+    vs = np.sqrt(np.add.reduce(ircell**2, axis=0))
+    ns = np.where(pbc, np.ceil(2.0 * rcmax * vs), 0.0)
+    return ns.astype(int)
+
+
+def _sort_neighbors(neighbors, offsets):
+    """Sort neighbors first by indices and then offsets."""
+    natoms = len(neighbors)
+    for a in range(natoms):
+        keys = (
+            offsets[a][:, 2],
+            offsets[a][:, 1],
+            offsets[a][:, 0],
+            neighbors[a]
+        )
+        mask = np.lexsort(keys)
+        neighbors[a] = neighbors[a][mask]
+        offsets[a] = offsets[a][mask]
 
 
 class NeighborList:
@@ -1146,11 +1162,31 @@ class NeighborList:
         return self.nl.nupdates
 
     @property
+    @deprecated(
+        'Use, e.g., `sum(_.size for _ in nl.neighbors)` '
+        'for `bothways=False` and `self_interaction=False`.'
+    )
     def nneighbors(self):
-        """Get number of neighbors."""
-        return self.nl.nneighbors
+        """Get number of neighbors.
+
+        .. deprecated:: 3.24.0
+        """
+        nneighbors = sum(indices.size for indices in self.nl.neighbors)
+        if self.nl.self_interaction:
+            nneighbors -= len(self.nl.neighbors)
+        return nneighbors // 2 if self.nl.bothways else nneighbors
 
     @property
+    @deprecated(
+        'Use, e.g., `sum(_.any(1).sum() for _ in nl.displacements)` '
+        'for `bothways=False` and `self_interaction=False`.'
+    )
     def npbcneighbors(self):
-        """Get number of pbc neighbors."""
-        return self.nl.npbcneighbors
+        """Get number of pbc neighbors.
+
+        .. deprecated:: 3.24.0
+        """
+        nneighbors = sum(
+            offsets.any(axis=1).sum() for offsets in self.nl.displacements
+        )  # sum up all neighbors that have non-zero supercell offsets
+        return nneighbors // 2 if self.nl.bothways else nneighbors

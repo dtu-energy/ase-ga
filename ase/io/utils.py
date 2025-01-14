@@ -320,3 +320,8 @@ def verify_dictionary(atoms, dictionary, dictionary_name):
         if key not in dictionary:
             raise ValueError('Missing the {} key in the `{}` dictionary.'
                              ''.format(key, dictionary_name))
+
+
+def segment_list(data, segment_size):
+    """Segments a list into sublists of a specified size."""
+    return [data[i:i + segment_size] for i in range(0, len(data), segment_size)]

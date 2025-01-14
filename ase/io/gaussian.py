@@ -13,7 +13,7 @@ from ase.calculators.singlepoint import SinglePointCalculator
 from ase.data import atomic_masses_iupac2016, chemical_symbols
 from ase.io import ParseError
 from ase.io.zmatrix import parse_zmatrix
-from ase.units import Bohr, Hartree
+from ase.units import Bohr, Debye, Hartree
 
 logger = logging.getLogger(__name__)
 
@@ -438,13 +438,20 @@ _re_method_basis = re.compile(
 # They will appear in this format if the Gaussian file has been generated
 # by ASE using a calculator with the basis and method keywords set.
 
-_re_chgmult = re.compile(r'^\s*[+-]?\d+(?:,\s*|\s+)[+-]?\d+\s*$')
+_re_chgmult = re.compile(r'^(\s*[+-]?\d+(?:,\s*|\s+)[+-]?\d+\s*){1,}$')
 # This is a bit more complex of a regex than we typically want, but it
 # can be difficult to determine whether a line contains the charge and
 # multiplicity, rather than just another route keyword. By making sure
-# that the line contains exactly two *integers*, separated by either
-# a comma (and possibly whitespace) or some amount of whitespace, we
+# that the line contains exactly an even number of *integers*, separated by
+# either a comma (and possibly whitespace) or some amount of whitespace, we
 # can be more confident that we've actually found the charge and multiplicity.
+# Note that in recent versions of Gaussian, the gjf file can contain fragments,
+# where you can give a charge and multiplicity to each fragment. This pattern
+# will allow ASE to read this line in for the charge and multiplicity, however
+# the _get_charge_mult method will only input the first two integers that
+# always gives the overall charge and multiplcity for the full chemical system.
+# The charge and multiplicity of the fragments will be ignored in the
+# _get_charge_mult method.
 
 _re_nuclear_props = re.compile(r'\(([^\)]+)\)')
 # Matches the nuclear properties, which are contained in parantheses.
@@ -611,9 +618,14 @@ def _get_charge_mult(chgmult_section):
         chgmult = chgmult_match.group(0).split()
         return {'charge': int(chgmult[0]), 'mult': int(chgmult[1])}
     except (IndexError, AttributeError):
-        raise ParseError("ERROR: Could not read the charge and multiplicity "
-                         "from the Gaussian input file. These must be 2 "
-                         "integers separated with whitespace or a comma.")
+        raise ParseError("ERROR: Could not read the charge and "
+                         "multiplicity from the Gaussian input "
+                         "file. There must be an even number of "
+                         "integers separated with whitespace or "
+                         "a comma, where the first two integers "
+                         "must be the overall charge and overall "
+                         "multiplicity of the chemical system, "
+                         "respectively.")
 
 
 def _get_nuclear_props(line):
@@ -666,7 +678,7 @@ def _get_cartesian_atom_coords(symbol, pos):
     if len(pos) < 3 or (pos[0] == '0' and symbol != 'TV'):
         # In this case, we have a z-matrix definition, so
         # no cartesian coords.
-        return
+        return None
     elif len(pos) > 3:
         raise ParseError("ERROR: Gaussian input file could "
                          "not be read as freeze codes are not"
@@ -701,7 +713,7 @@ def _read_zmatrix(zmatrix_contents, zmatrix_vars=None):
     (zmatrix_vars), and returns atom positions and symbols '''
     try:
         atoms = parse_zmatrix(zmatrix_contents, defs=zmatrix_vars)
-    except (ValueError, AssertionError) as e:
+    except (ValueError, RuntimeError) as e:
         raise ParseError("Failed to read Z-matrix from "
                          "Gaussian input file: ", e)
     except KeyError as e:
@@ -896,7 +908,7 @@ def _update_readiso_params(parameters, symbols):
     parameters = _delete_readiso_param(parameters)
     if parameters.get('isolist') is not None:
         if len(parameters['isolist']) < len(symbols):
-            for i in range(0, len(symbols) - len(parameters['isolist'])):
+            for _ in range(len(symbols) - len(parameters['isolist'])):
                 parameters['isolist'].append(None)
         if all(m is None for m in parameters['isolist']):
             parameters['isolist'] = None
@@ -1070,7 +1082,7 @@ class GaussianConfiguration:
                         label='Gaussian', directory='.', **self.parameters)
         return calc
 
-    @ staticmethod
+    @staticmethod
     def parse_gaussian_input(fd):
         '''Reads a gaussian input file into an atoms object and
         parameters dictionary.
@@ -1223,8 +1235,20 @@ def _compare_merge_configs(configs, new):
         if np.any(oldres[key] != newres[key]):
             configs.append(new)
             return
-    else:
-        oldres.update(newres)
+    oldres.update(newres)
+
+
+def _read_charges(fd):
+    fd.readline()
+    qs = []
+    ms = []
+    for line in fd:
+        if not line.strip()[0].isdigit():
+            break
+        qs.append(float(line.split()[2]))
+        if len(line.split()) > 3:
+            ms.append(float(line.split()[3]))
+    return {'charges': qs, 'magmoms': ms} if ms else {'charges': qs}
 
 
 def read_gaussian_out(fd, index=-1):
@@ -1232,8 +1256,7 @@ def read_gaussian_out(fd, index=-1):
     configs = []
     atoms = None
     energy = None
-    dipole = None
-    forces = None
+    results = {}
     orientation = None  # Orientation of the coordinates stored in atoms
     for line in fd:
         line = line.strip()
@@ -1255,18 +1278,16 @@ def read_gaussian_out(fd, index=-1):
                 #  which is the orientation for forces.
                 #  If there are forces and the orientation of atoms is not
                 #  the input coordinate system, warn the user
-                if orientation != "Input" and forces is not None:
+                if orientation != "Input" and 'forces' in results:
                     logger.warning('Configuration geometry is not in the input'
                                    f'orientation. It is {orientation}')
-                atoms.calc = SinglePointCalculator(
-                    atoms, energy=energy, dipole=dipole, forces=forces,
-                )
+                calc = SinglePointCalculator(atoms, energy=energy, **results)
+                atoms.calc = calc
                 _compare_merge_configs(configs, atoms)
             atoms = None
             orientation = line.split()[0]  # Store the orientation
             energy = None
-            dipole = None
-            forces = None
+            results = {}
 
             numbers = []
             positions = []
@@ -1311,6 +1332,24 @@ def read_gaussian_out(fd, index=-1):
             # CCSD(T) energy
             energy = float(line.split('=')[-1].strip().replace('D', 'e'))
             energy *= Hartree
+        elif (
+            line.startswith('Mulliken charges')
+            or line.startswith('Lowdin Atomic Charges')
+            or line.startswith('Hirshfeld charges, spin densities,')
+        ):
+            # Löwdin is printed after Mulliken and overwrites `charges`.
+            # Hirshfeld is printed after Mulliken and overwrites `charges`.
+            results.update(_read_charges(fd))
+        elif line.startswith('Dipole moment') and energy is not None:
+            # dipole moment in `l601.exe`, printed unless `Pop=None`
+            # Skipped if energy is not printed in the same section.
+            # This happens in the last geometry record when `opt` or `irc` is
+            # specified. In this case, the record is compared with the previous
+            # one in `_compare_merge_configs`, and there the dipole moment
+            # from `l601` conflicts with the previous record from `l716`.
+            line = fd.readline().strip()
+            dipole = np.array([float(_) for _ in line.split()[1:6:2]]) * Debye
+            results['dipole'] = dipole
         elif _re_l716.match(line):
             # Sometimes Gaussian will print "Rotating derivatives to
             # standard orientation" after the matched line (which looks like
@@ -1341,7 +1380,7 @@ def read_gaussian_out(fd, index=-1):
                 continue
             # this dipole moment is printed in atomic units, e-Bohr
             # ASE uses e-Angstrom for dipole moments.
-            dipole = np.array(dipole) * Bohr
+            results['dipole'] = np.array(dipole) * Bohr
         elif _re_forceblock.match(line):
             # skip 2 irrelevant lines
             fd.readline()
@@ -1352,10 +1391,8 @@ def read_gaussian_out(fd, index=-1):
                 if match is None:
                     break
                 forces.append(list(map(float, match.group(2, 3, 4))))
-            forces = np.array(forces) * Hartree / Bohr
+            results['forces'] = np.array(forces) * Hartree / Bohr
     if atoms is not None:
-        atoms.calc = SinglePointCalculator(
-            atoms, energy=energy, dipole=dipole, forces=forces,
-        )
+        atoms.calc = SinglePointCalculator(atoms, energy=energy, **results)
         _compare_merge_configs(configs, atoms)
     return configs[index]

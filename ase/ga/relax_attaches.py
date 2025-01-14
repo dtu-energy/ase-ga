@@ -34,8 +34,8 @@ class VariansBreak:
 
         m = sum(self.forces) / float(len(self.forces))
 
-        stdev = sqrt(sum([(c - m)**2 for c in self.forces]) /
-                     float(len(self.forces)))
+        stdev = sqrt(
+            (sum((c - m)**2 for c in self.forces) / float(len(self.forces))))
 
         if len(self.forces) >= self.N and stdev < self.min_stdev:
             self.dyn.converged = lambda x: True
@@ -74,7 +74,7 @@ class DivergenceBreak:
             x = np.array(range(len(self.energies)))
             y = np.array(self.energies)
             A = np.vstack([x, np.ones(len(x))]).T
-            slope, intersect = np.linalg.lstsq(A, y)[0]
+            slope, _intersect = np.linalg.lstsq(A, y)[0]
 
             if len(self.energies) >= self.N and slope > 0:
                 self.dyn.converged = lambda x: True

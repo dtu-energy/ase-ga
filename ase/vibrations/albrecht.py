@@ -5,8 +5,10 @@ import numpy as np
 
 import ase.units as u
 from ase.parallel import paropen, parprint
-from ase.vibrations.franck_condon import (FranckCondonOverlap,
-                                          FranckCondonRecursive)
+from ase.vibrations.franck_condon import (
+    FranckCondonOverlap,
+    FranckCondonRecursive,
+)
 from ase.vibrations.resonant_raman import ResonantRaman
 
 
@@ -39,7 +41,7 @@ class Albrecht(ResonantRaman):
         if approx in ['albrecht', 'albrecht b', 'albrecht c', 'albrecht bc']:
             if not self.overlap:
                 raise ValueError('Overlaps are needed')
-        elif not approx == 'albrecht a':
+        elif approx != 'albrecht a':
             raise ValueError('Please use "Albrecht" or "Albrecht A/B/C/BC"')
         self._approx = value
 
@@ -59,7 +61,7 @@ class Albrecht(ResonantRaman):
         ind_v = list(combinations_with_replacement(l_Q, 1))
 
         if self.combinations > 1:
-            if not self.combinations == 2:
+            if self.combinations != 2:
                 raise NotImplementedError
 
             for c in range(2, self.combinations + 1):
@@ -162,7 +164,7 @@ class Albrecht(ResonantRaman):
         omL = omega + 1j * gamma
         omS_Q = omL - self.om_Q
 
-        n_p, myp, exF_pr = self.init_parallel_excitations()
+        _n_p, myp, exF_pr = self.init_parallel_excitations()
         exF_pr = np.where(np.abs(exF_pr) > 1e-2, exF_pr, 0)
 
         m_Qcc = np.zeros((self.ndof, 3, 3), dtype=complex)
@@ -229,7 +231,7 @@ class Albrecht(ResonantRaman):
         n_ov[0] = self.n_vQ.max(axis=1)
         n_ov[1] = nvib_ov[1]
 
-        n_p, myp, exF_pr = self.init_parallel_excitations()
+        _n_p, myp, exF_pr = self.init_parallel_excitations()
 
         m_vcc = np.zeros((nv, 3, 3), dtype=complex)
         for p in myp:

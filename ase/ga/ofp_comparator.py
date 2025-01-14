@@ -136,9 +136,8 @@ class OFPComparator:
             except TypeError:
                 newkey = str(key)
             if isinstance(val, dict):
-                fingerprints_encoded[newkey] = {}
-                for key2, val2 in val.items():
-                    fingerprints_encoded[newkey][str(key2)] = val2
+                fingerprints_encoded[newkey] = {
+                    str(key2): val2 for key2, val2 in val.items()}
             else:
                 fingerprints_encoded[newkey] = val
         typedic_encoded = {}
@@ -158,9 +157,9 @@ class OFPComparator:
                 newkey = newkey[0]
 
             if isinstance(val, dict):
-                fingerprints_decoded[newkey] = {}
-                for key2, val2 in val.items():
-                    fingerprints_decoded[newkey][int(key2)] = np.array(val2)
+                fingerprints_decoded[newkey] = {
+                    int(key2): np.array(val2) for key2, val2 in val.items()
+                }
             else:
                 fingerprints_decoded[newkey] = np.array(val)
         typedic_decoded = {}
@@ -424,7 +423,7 @@ class OFPComparator:
         :doi:`10.1016/j.cpc.2010.06.007`"""
 
         # total number of atoms:
-        n_tot = sum([len(typedic[key]) for key in typedic])
+        n_tot = sum(len(typedic[key]) for key in typedic)
         inv_n_tot = 1. / n_tot
 
         local_orders = []
@@ -452,7 +451,7 @@ class OFPComparator:
             fp, typedic = self._take_fingerprints(a_top, individual=True)
             a.info[key] = self._json_encode(fp, typedic)
 
-        volume, pmin, pmax, qmin, qmax = self._get_volume(a_top)
+        volume, _pmin, _pmax, _qmin, _qmax = self._get_volume(a_top)
         return self._calculate_local_orders(fp, typedic, volume)
 
     def _cosine_distance(self, fp1, fp2, typedic):

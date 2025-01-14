@@ -7,7 +7,7 @@ from ase.calculators.gamess_us import GAMESSUS
 # Obtained from https://www.basissetexchange.org
 
 
-basis = dict()
+basis = {}
 
 basis['Na'] = """S   2
 1         0.4972000             -0.2753574
@@ -31,7 +31,7 @@ P   2
 P   1
 1         0.1819000              1.0000000"""
 
-ecp = dict()
+ecp = {}
 
 ecp['Na'] = """NA-ECP GEN    10    2
 5     ----- d-ul potential -----

@@ -391,6 +391,7 @@ def write_lammps_data(
     masses: bool = False,
     velocities: bool = False,
     units: str = 'metal',
+    bonds: bool = True,
     atom_style: str = 'atomic',
 ):
     """Write atomic structure data to a LAMMPS data file.
@@ -421,6 +422,9 @@ def write_lammps_data(
     units : str, optional
         `LAMMPS units <https://docs.lammps.org/units.html>`__,
         by default 'metal'
+    bonds : bool, optional
+        Whether the bonds are written or not. Bonds can only be written
+        for atom_style='full', by default True
     atom_style : {'atomic', 'charge', 'full'}, optional
         `LAMMPS atom style <https://docs.lammps.org/atom_style.html>`__,
         by default 'atomic'
@@ -454,6 +458,25 @@ def write_lammps_data(
         species = specorder
     n_atom_types = len(species)
     fd.write(f'{n_atom_types} atom types\n\n')
+
+    bonds_in = []
+    if (bonds and (atom_style == 'full') and
+            (atoms.arrays.get('bonds') is not None)):
+        n_bonds = 0
+        n_bond_types = 1
+        for i, bondsi in enumerate(atoms.arrays['bonds']):
+            if bondsi != '_':
+                for bond in bondsi.split(','):
+                    dummy1, dummy2 = bond.split('(')
+                    bond_type = int(dummy2.split(')')[0])
+                    at1 = int(i) + 1
+                    at2 = int(dummy1) + 1
+                    bonds_in.append((bond_type, at1, at2))
+                    n_bonds = n_bonds + 1
+                    if bond_type > n_bond_types:
+                        n_bond_types = bond_type
+        fd.write(f'{n_bonds} bonds\n')
+        fd.write(f'{n_bond_types} bond types\n\n')
 
     if prismobj is None:
         prismobj = Prism(atoms.get_cell(), reduce_cell=reduce_cell)
@@ -495,7 +518,7 @@ def write_lammps_data(
         for i, r in enumerate(pos):
             s = species.index(symbols[i]) + 1
             line = (
-                f'{i+1:>6} {s:>3}'
+                f'{i + 1:>6} {s:>3}'
                 f' {r[0]:23.17g} {r[1]:23.17g} {r[2]:23.17g}'
             )
             if write_image_flags:
@@ -511,7 +534,7 @@ def write_lammps_data(
         for i, (q, r) in enumerate(zip(charges, pos)):
             s = species.index(symbols[i]) + 1
             line = (
-                f'{i+1:>6} {s:>3} {q:>5}'
+                f'{i + 1:>6} {s:>3} {q:>5}'
                 f' {r[0]:23.17g} {r[1]:23.17g} {r[2]:23.17g}'
             )
             if write_image_flags:
@@ -530,7 +553,7 @@ def write_lammps_data(
                 raise TypeError(
                     f'If "atoms" object has "mol-id" array, then '
                     f'mol-id dtype must be subtype of np.integer, and '
-                    f'not {str(molecules.dtype):s}.')
+                    f'not {molecules.dtype!s:s}.')
             if (len(molecules) != len(atoms)) or (molecules.ndim != 1):
                 raise TypeError(
                     'If "atoms" object has "mol-id" array, then '
@@ -558,7 +581,7 @@ def write_lammps_data(
         for i, (m, q, r) in enumerate(zip(molecules, charges, pos)):
             s = species.index(symbols[i]) + 1
             line = (
-                f'{i+1:>6} {m:>3} {s:>3} {q:>5}'
+                f'{i + 1:>6} {m:>3} {s:>3} {q:>5}'
                 f' {r[0]:23.17g} {r[1]:23.17g} {r[2]:23.17g}'
             )
             if write_image_flags:
@@ -566,6 +589,13 @@ def write_lammps_data(
                 line += f' {img[0]:6d} {img[1]:6d} {img[2]:6d}'
             line += '\n'
             fd.write(line)
+        if bonds and (atoms.arrays.get('bonds') is not None):
+            fd.write('\nBonds\n\n')
+            for i in range(n_bonds):
+                bond_type = bonds_in[i][0]
+                at1 = bonds_in[i][1]
+                at2 = bonds_in[i][2]
+                fd.write(f'{i + 1:>3} {bond_type:>3} {at1:>3} {at2:>3}\n')
     else:
         raise ValueError(atom_style)
 
@@ -575,7 +605,7 @@ def write_lammps_data(
         # Convert velocity from ASE units to LAMMPS units
         vel = convert(vel, 'velocity', 'ASE', units)
         for i, v in enumerate(vel):
-            fd.write(f'{i+1:>6} {v[0]:23.17g} {v[1]:23.17g} {v[2]:23.17g}\n')
+            fd.write(f'{i + 1:>6} {v[0]:23.17g} {v[1]:23.17g} {v[2]:23.17g}\n')
 
     fd.flush()
 

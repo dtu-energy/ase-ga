@@ -39,7 +39,7 @@ EXP_FORMAT = '5.2e'
 def check_ichain(ichain, ediffg, iopt):
     ichain_dct = {}
     if ichain > 0:
-        ichain_dct['ibrion'] = 1
+        ichain_dct['ibrion'] = 3
         ichain_dct['potim'] = 0.0
         if iopt is None:
             warnings.warn(
@@ -54,7 +54,7 @@ def set_magmom(ispin, spinpol, atoms, magmom_input, sorting):
     """Helps to set the magmom tag in the INCAR file with correct formatting"""
     magmom_dct = {}
     if magmom_input is not None:
-        if not len(magmom_input) == len(atoms):
+        if len(magmom_input) != len(atoms):
             msg = ('Expected length of magmom tag to be'
                    ' {}, i.e. 1 value per atom, but got {}').format(
                 len(atoms), len(magmom_input))
@@ -353,6 +353,21 @@ float_keys = [
     'nc_k',  # Cavity turn-on density (VASPsol)
     'lambda_d_k',  # Debye screening length (VASPsol)
     'ediffsol',  # Tolerance for solvation convergence (VASPsol)
+    'soltemp',  # Solvent temperature for isol 2 in Vaspsol++
+    'a_k',  # Smoothing length for FFT for isol 2 in Vaspsol++
+    'r_cav',  # Offset for solute surface area for isol 2 in Vaspsol++
+    'epsilon_inf',  # Bulk optical dielectric for isol 2 in Vaspsol++
+    'n_mol',  # Solvent density for isol 2 in Vaspsol++
+    'p_mol',  # Solvent dipole moment for isol 2 in Vaspsol++
+    'r_solv',  # Solvent radius for isol 2 in Vaspsol++
+    'r_diel',  # Dielectric radius for isol 2 in Vaspsol++
+    'r_b',  # Bound charge smearing length for isol 2 in Vaspsol++
+    'c_molar',  # Electrolyte concentration for isol 2 in Vaspsol++
+    'zion',  # Electrolyte ion valency for isol 2 in Vaspsol++
+    'd_ion',  # Packing diameter of electrolyte ions for isol 2 in Vaspsol++
+    'r_ion',  # Ionic radius of electrolyte ions for isol 2 in Vaspsol++
+    'efermi_ref',  # Potential vs vacuum for isol 2 in Vaspsol++
+    'capacitance_init',  # Initial guess for isol 2 in Vaspsol++
     'deg_threshold',  # Degeneracy threshold
     'omegamin',  # Minimum frequency for dense freq. grid
     'omegamax',  # Maximum frequency for dense freq. grid
@@ -625,6 +640,7 @@ int_keys = [
     'ch_nedos',  # Number dielectric function calculation grid points for XAS
     'plevel',  # No timings for routines with "level" higher than this
     'qnl',  # Lanczos matrix size (instanton)
+    'isol',  # vaspsol++ flag 1 linear, 2 nonlinear
 ]
 
 bool_keys = [
@@ -681,6 +697,9 @@ bool_keys = [
     'lwannier90',  # Switches on the interface between VASP and WANNIER90
     'lsorbit',  # Enable spin-orbit coupling
     'lsol',  # turn on solvation for Vaspsol
+    'lnldiel',  # turn on nonlinear dielectric in Vaspsol++
+    'lnlion',  # turn on nonlinear ionic in Vaspsol++
+    'lsol_scf',  # turn on solvation in SCF cycle in Vaspsol++
     'lautoscale',  # automatically calculate inverse curvature for VTST LBFGS
     'interactive',  # Enables interactive calculation for VaspInteractive
     'lauger',  # Perform Auger calculation (Auger)
@@ -1275,31 +1294,55 @@ class GenerateVaspInput:
 
         if 'xc' in kwargs:
             self.set_xc_params(kwargs['xc'])
-        for key in kwargs:
+        for key, value in kwargs.items():
             if key in self.float_params:
-                self.float_params[key] = kwargs[key]
+                self.float_params[key] = value
             elif key in self.exp_params:
-                self.exp_params[key] = kwargs[key]
+                self.exp_params[key] = value
             elif key in self.string_params:
-                self.string_params[key] = kwargs[key]
+                self.string_params[key] = value
             elif key in self.int_params:
-                self.int_params[key] = kwargs[key]
+                self.int_params[key] = value
             elif key in self.bool_params:
-                self.bool_params[key] = kwargs[key]
+                self.bool_params[key] = value
             elif key in self.list_bool_params:
-                self.list_bool_params[key] = kwargs[key]
+                self.list_bool_params[key] = value
             elif key in self.list_int_params:
-                self.list_int_params[key] = kwargs[key]
+                self.list_int_params[key] = value
             elif key in self.list_float_params:
-                self.list_float_params[key] = kwargs[key]
+                self.list_float_params[key] = value
             elif key in self.special_params:
-                self.special_params[key] = kwargs[key]
+                self.special_params[key] = value
             elif key in self.dict_params:
-                self.dict_params[key] = kwargs[key]
+                self.dict_params[key] = value
             elif key in self.input_params:
-                self.input_params[key] = kwargs[key]
+                self.input_params[key] = value
+            elif isinstance(value, str):
+                self.string_params[key] = value
+            # `bool` is a subclass of `int` and should be checked earlier.
+            # https://docs.python.org/3/c-api/bool.html
+            elif isinstance(value, bool):
+                self.bool_params[key] = value
+            elif isinstance(value, int):
+                self.int_params[key] = value
+            elif isinstance(value, float):
+                self.float_params[key] = value
+            elif isinstance(value, list):
+                if len(value) == 0:
+                    msg = f'empty list is given for {key}'
+                    raise ValueError(msg)
+                if isinstance(value[0], bool):
+                    self.list_bool_params[key] = value
+                elif isinstance(value[0], int):
+                    self.list_int_params[key] = value
+                elif isinstance(value[0], float):
+                    self.list_float_params[key] = value
+                else:
+                    msg = f'cannot handle type of value for {key} = {value!r}'
+                    raise TypeError(msg)
             else:
-                raise TypeError('Parameter not defined: ' + key)
+                msg = f'cannot handle type of value for {key} = {value!r}'
+                raise TypeError(msg)
 
     def check_xc(self):
         """Make sure the calculator has functional & pseudopotentials set up
@@ -1586,12 +1629,13 @@ class GenerateVaspInput:
     def write_incar(self, atoms, directory='./', **kwargs):
         """Writes the INCAR file."""
         incar_params = {}
-        incar_header = \
-            'INCAR created by Atomic Simulation Environment'
+
         # float params
-        float_dct = dict((key, f'{val:{FLOAT_FORMAT}}') for key, val
-                         in self.float_params.items()
-                         if val is not None)
+        float_dct = {
+            key: f'{val:{FLOAT_FORMAT}}'
+            for key, val in self.float_params.items()
+            if val is not None
+        }
 
         if 'charge' in self.input_params and self.input_params[
                 'charge'] is not None:
@@ -1604,19 +1648,24 @@ class GenerateVaspInput:
         incar_params.update(float_dct)
 
         # exp params
-        exp_dct = dict(
-            (key, f'{val:{EXP_FORMAT}}') for key, val in self.exp_params.items()
-            if val is not None)
+        exp_dct = {
+            key: f'{val:{EXP_FORMAT}}'
+            for key, val in self.exp_params.items()
+            if val is not None
+        }
         incar_params.update(exp_dct)
 
         # string_params
-        string_dct = dict((key, val) for key, val in self.string_params.items()
-                          if val is not None)
+        string_dct = {
+            key: val for key, val in self.string_params.items() if val is not
+            None
+        }
         incar_params.update(string_dct)
 
         # int params
-        int_dct = dict((key, val) for key, val in self.int_params.items()
-                       if val is not None)
+        int_dct = {
+            key: val for key, val in self.int_params.items() if val is not None
+        }
         if 'ichain' in int_dct.keys():
             ichain_dict = check_ichain(
                 ichain=int_dct['ichain'],
@@ -1627,24 +1676,32 @@ class GenerateVaspInput:
         incar_params.update(int_dct)
 
         # list_bool_params
-        bool_dct = dict((key, val) for key, val in self.list_bool_params.items()
-                        if val is not None)
+        bool_dct = {
+            key: val
+            for key, val in self.list_bool_params.items()
+            if val is not None
+        }
         for key, val in bool_dct.items():
             bool_dct[key] = [_to_vasp_bool(x) for x in val]
         incar_params.update(bool_dct)
 
         # list_int_params
-        int_dct = dict((key, val) for key, val in self.list_int_params.items()
-                       if val is not None)
+        int_dct = {
+            key: val
+            for key, val in self.list_int_params.items()
+            if val is not None
+        }
         if 'ldaul' in int_dct.keys() and self.dict_params[
                 'ldau_luj'] is not None:
             del int_dct['ldaul']
         incar_params.update(int_dct)
 
         # list_float_params
-        float_dct = dict(
-            (key, val) for key, val in self.list_float_params.items()
-            if val is not None)
+        float_dct = {
+            key: val
+            for key, val in self.list_float_params.items()
+            if val is not None
+        }
         if 'ldauu' in float_dct.keys() and self.dict_params[
                 'ldau_luj'] is not None:
             del float_dct['ldauu']
@@ -1654,23 +1711,27 @@ class GenerateVaspInput:
         incar_params.update(float_dct)
 
         # bool params
-        bool_dct = dict(
-            (key, _to_vasp_bool(val)) for key, val in self.bool_params.items()
-            if val is not None)
+        bool_dct = {
+            key: _to_vasp_bool(val)
+            for key, val in self.bool_params.items()
+            if val is not None
+        }
         incar_params.update(bool_dct)
 
         # special params
-        special_dct = dict(
-            (key, val) for key, val in self.special_params.items()
-            if val is not None)
+        special_dct = {
+            key: val for key, val in self.special_params.items() if val is not
+            None
+        }
         if 'lreal' in special_dct.keys():
             if isinstance(special_dct['lreal'], bool):
                 special_dct['lreal'] = _to_vasp_bool(special_dct['lreal'])
         incar_params.update(special_dct)
 
         # dict params
-        dict_dct = dict((key, val) for key, val in self.dict_params.items()
-                        if val is not None)
+        dict_dct = {
+            key: val for key, val in self.dict_params.items() if val is not None
+        }
         if 'ldau_luj' in dict_dct.keys():
             ldau_dict = set_ldau(
                 ldau_param=self.bool_params['ldau'],
@@ -1696,15 +1757,14 @@ class GenerateVaspInput:
         # a custom key-value pair, as we cannot otherwise
         # reliably and easily identify such non-standard entries
 
-        cust_dict = dict(
-            (key, str(val) + '  # <Custom ASE key>') for key, val in
-            self.input_params['custom'].items()
-            if val is not None)
+        cust_dict = {
+            key: str(val) + '  # <Custom ASE key>'
+            for key, val in self.input_params['custom'].items()
+            if val is not None
+        }
         incar_params.update(cust_dict)
 
-        write_incar(directory=directory,
-                    parameters=incar_params,
-                    header=incar_header)
+        write_incar(directory=directory, parameters=incar_params)
 
     def write_kpoints(self, atoms=None, directory='./', **kwargs):
         """Writes the KPOINTS file."""
@@ -1803,10 +1863,14 @@ class GenerateVaspInput:
                     else:
                         self.int_params[key] = int(data[2])
                 elif key in bool_keys:
-                    if 'true' in data[2].lower():
+                    val_char = data[2].lower().replace('.', '', 1)
+                    if val_char.startswith('t'):
                         self.bool_params[key] = True
-                    elif 'false' in data[2].lower():
+                    elif val_char.startswith('f'):
                         self.bool_params[key] = False
+                    else:
+                        raise ValueError(f'Invalid value "{data[2]}" for bool '
+                                         f'key "{key}"')
 
                 elif key in list_bool_keys:
                     self.list_bool_params[key] = [
@@ -1829,7 +1893,7 @@ class GenerateVaspInput:
                             if data[i] == "*":
                                 b = lst.pop()
                                 i += 1
-                                for j in range(int(b)):
+                                for _ in range(int(b)):
                                     lst.append(float(data[i]))
                             else:
                                 lst.append(float(data[i]))
@@ -1844,53 +1908,37 @@ class GenerateVaspInput:
                         self.list_float_params[key] = [
                             float(x) for x in data[2:]
                         ]
-                # elif key in list_keys:
-                #     list = []
-                #     if key in ('dipol', 'eint', 'ferwe', 'ferdo',
-                #                'ropt', 'rwigs',
-                #                'ldauu', 'ldaul', 'ldauj', 'langevin_gamma'):
-                #         for a in data[2:]:
-                #             if a in ["!", "#"]:
-                #                 break
-                #             list.append(float(a))
-                #     elif key in ('iband', 'kpuse', 'random_seed'):
-                #         for a in data[2:]:
-                #             if a in ["!", "#"]:
-                #                 break
-                #             list.append(int(a))
-                #     self.list_params[key] = list
-                #     if key == 'magmom':
-                #         list = []
-                #         i = 2
-                #         while i < len(data):
-                #             if data[i] in ["#", "!"]:
-                #                 break
-                #             if data[i] == "*":
-                #                 b = list.pop()
-                #                 i += 1
-                #                 for j in range(int(b)):
-                #                     list.append(float(data[i]))
-                #             else:
-                #                 list.append(float(data[i]))
-                #             i += 1
-                #         self.list_params['magmom'] = list
-                #         list = np.array(list)
-                #         if self.atoms is not None:
-                #             self.atoms.set_initial_magnetic_moments(
-                #                 list[self.resort])
                 elif key in special_keys:
                     if key == 'lreal':
-                        if 'true' in data[2].lower():
-                            self.special_params[key] = True
-                        elif 'false' in data[2].lower():
-                            self.special_params[key] = False
+                        val_char = data[2].lower().replace('.', '', 1)
+                        if val_char.startswith('t'):
+                            self.bool_params[key] = True
+                        elif val_char.startswith('f'):
+                            self.bool_params[key] = False
                         else:
                             self.special_params[key] = data[2]
-            except KeyError:
-                raise OSError('Keyword "%s" in INCAR is'
-                              'not known by calculator.' % key)
-            except IndexError:
-                raise OSError(f'Value missing for keyword "{key}".')
+
+                # non-registered keys
+                elif data[2].lower() in {'t', 'true', '.true.'}:
+                    self.bool_params[key] = True
+                elif data[2].lower() in {'f', 'false', '.false.'}:
+                    self.bool_params[key] = False
+                elif data[2].isdigit():
+                    self.int_params[key] = int(data[2])
+                else:
+                    try:
+                        self.float_params[key] = float(data[2])
+                    except ValueError:
+                        self.string_params[key] = data[2]
+
+            except KeyError as exc:
+                raise KeyError(
+                    f'Keyword "{key}" in INCAR is not known by calculator.'
+                ) from exc
+            except IndexError as exc:
+                raise IndexError(
+                    f'Value missing for keyword "{key}".'
+                ) from exc
 
     def read_kpoints(self, filename):
         """Read kpoints file, typically named KPOINTS."""

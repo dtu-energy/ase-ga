@@ -14,6 +14,7 @@ import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as spline
 
 from ase.calculators.calculator import Calculator, all_changes
+from ase.data import chemical_symbols
 from ase.neighborlist import NeighborList
 from ase.units import Bohr, Hartree
 
@@ -317,6 +318,7 @@ End EAM Interface Documentation
             # eam form is just like an alloy form for one element
 
             self.Nelements = 1
+            self.elements = [chemical_symbols[int(data[0])]]
             self.Z = np.array([data[0]], dtype=int)
             self.mass = np.array([data[1]])
             self.a = np.array([data[2]])
@@ -329,18 +331,18 @@ End EAM Interface Documentation
             self.cutoff = float(data[8])
 
             n = 9 + self.nrho
-            self.embedded_data = np.array([np.float_(data[9:n])])
+            self.embedded_data = np.array([np.float64(data[9:n])])
 
             self.rphi_data = np.zeros([self.Nelements, self.Nelements,
                                        self.nr])
 
-            effective_charge = np.float_(data[n:n + self.nr])
+            effective_charge = np.float64(data[n:n + self.nr])
             # convert effective charges to rphi according to
             # http://lammps.sandia.gov/doc/pair_eam.html
             self.rphi_data[0, 0] = Bohr * Hartree * (effective_charge**2)
 
             self.density_data = np.array(
-                [np.float_(data[n + self.nr:n + 2 * self.nr])])
+                [np.float64(data[n + self.nr:n + 2 * self.nr])])
 
         elif self.form in ['alloy', 'adp']:
             self.header = lines[:3]
@@ -375,10 +377,10 @@ End EAM Interface Documentation
                 self.lattice.append(data[d + 3])
                 d += 4
 
-                self.embedded_data[elem] = np.float_(
+                self.embedded_data[elem] = np.float64(
                     data[d:(d + self.nrho)])
                 d += self.nrho
-                self.density_data[elem] = np.float_(data[d:(d + self.nr)])
+                self.density_data[elem] = np.float64(data[d:(d + self.nr)])
                 d += self.nr
 
             # reads in the r*phi data for each interaction between elements
@@ -387,7 +389,7 @@ End EAM Interface Documentation
 
             for i in range(self.Nelements):
                 for j in range(i + 1):
-                    self.rphi_data[j, i] = np.float_(data[d:(d + self.nr)])
+                    self.rphi_data[j, i] = np.float64(data[d:(d + self.nr)])
                     d += self.nr
 
         elif self.form == 'fs':
@@ -424,10 +426,10 @@ End EAM Interface Documentation
                 self.lattice.append(data[d + 3])
                 d += 4
 
-                self.embedded_data[elem] = np.float_(
+                self.embedded_data[elem] = np.float64(
                     data[d:(d + self.nrho)])
                 d += self.nrho
-                self.density_data[elem, :, :] = np.float_(
+                self.density_data[elem, :, :] = np.float64(
                     data[d:(d + self.nr * self.Nelements)]).reshape([
                         self.Nelements, self.nr])
                 d += self.nr * self.Nelements
@@ -438,7 +440,7 @@ End EAM Interface Documentation
 
             for i in range(self.Nelements):
                 for j in range(i + 1):
-                    self.rphi_data[j, i] = np.float_(data[d:(d + self.nr)])
+                    self.rphi_data[j, i] = np.float64(data[d:(d + self.nr)])
                     d += self.nr
 
         self.r = np.arange(0, self.nr) * self.dr

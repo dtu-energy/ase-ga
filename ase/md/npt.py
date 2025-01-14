@@ -1,5 +1,7 @@
 '''Constant pressure/stress and temperature dynamics.
 
+**This dynamics is not recommended due to stability problems.**
+
 Combined Nose-Hoover and Parrinello-Rahman dynamics, creating an NPT
 (or N,stress,T) ensemble.
 
@@ -280,7 +282,7 @@ class NPT(MolecularDynamics):
                 raise NotImplementedError(
                     "You have modified the atoms since the last timestep.")
 
-        for i in range(steps):
+        for _ in range(steps):
             self.step()
             self.nsteps += 1
             self.call_observers()
@@ -674,7 +676,7 @@ class NPT(MolecularDynamics):
 
         In a serial simulation, do nothing.
         """
-        pass  # This is a serial simulation object.  Do nothing.
+        # This is a serial simulation object.  Do nothing.
 
     def _getnatoms(self):
         """Get the number of atoms.

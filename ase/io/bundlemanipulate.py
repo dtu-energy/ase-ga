@@ -104,7 +104,7 @@ def copy_frames(inbundle, outbundle, start=0, end=None, step=1,
                 # First we read the ID's from frame 0 and N
                 assert 'ID_0.ulm' in firstnames and 'ID_0.ulm' in names
                 backend.nfrag = fragments0
-                f0_id, dummy = backend.read_split(
+                f0_id, _dummy = backend.read_split(
                     os.path.join(inbundle, "F0"), "ID"
                 )
                 backend.nfrag = fragments1
@@ -118,7 +118,7 @@ def copy_frames(inbundle, outbundle, start=0, end=None, step=1,
                         arrayname = name.split('_')[0]
                         print("    Reading", arrayname)
                         backend.nfrag = fragments0
-                        f0_data, dummy = backend.read_split(
+                        f0_data, _dummy = backend.read_split(
                             os.path.join(inbundle, "F0"), arrayname
                         )
                         # Sort data

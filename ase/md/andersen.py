@@ -45,10 +45,9 @@ class Andersen(MolecularDynamics):
             If True, the position and momentum of the center of mass is
             kept unperturbed.  Default: True.
 
-        rng: RNG object (optional)
-            Random number generator, by default numpy.random.  Must have a
-            random_sample method matching the signature of
-            numpy.random.random_sample.
+        rng: RNG object, default: ``numpy.random``
+            Random number generator. This must have the ``random`` method
+            with the same signature as ``numpy.random.random``.
 
         logfile: file object or str (optional)
             If *logfile* is a string, a file with that name will be opened.
@@ -97,8 +96,8 @@ class Andersen(MolecularDynamics):
         self.dt = timestep
 
     def boltzmann_random(self, width, size):
-        x = self.rng.random_sample(size=size)
-        y = self.rng.random_sample(size=size)
+        x = self.rng.random(size=size)
+        y = self.rng.random(size=size)
         z = width * cos(2 * pi * x) * (-2 * log(1 - y))**0.5
         return z
 
@@ -135,7 +134,7 @@ class Andersen(MolecularDynamics):
 
         # apply Andersen thermostat
         self.random_velocity = self.get_maxwell_boltzmann_velocities()
-        self.andersen_chance = self.rng.random_sample(size=self.v.shape)
+        self.andersen_chance = self.rng.random(size=self.v.shape)
         self.communicator.broadcast(self.random_velocity, 0)
         self.communicator.broadcast(self.andersen_chance, 0)
         self.v[self.andersen_chance <= self.andersen_prob] \

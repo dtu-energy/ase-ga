@@ -5,13 +5,17 @@ from ase.build.bulk import bulk
 from ase.build.molecule import molecule
 from ase.calculators.emt import EMT
 from ase.cluster import Icosahedron
-from ase.geometry.rdf import (CellTooSmall, VolumeNotDefined, get_rdf,
-                              get_volume_estimate)
+from ase.geometry.rdf import (
+    CellTooSmall,
+    VolumeNotDefined,
+    get_rdf,
+    get_volume_estimate,
+)
 from ase.lattice.compounds import L1_2
 from ase.optimize.fire import FIRE
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms_h2():
     return molecule('H2')
 

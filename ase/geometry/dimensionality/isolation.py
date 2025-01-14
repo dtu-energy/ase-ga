@@ -16,8 +16,10 @@ import numpy as np
 
 from ase import Atoms
 from ase.geometry.cell import complete_cell
-from ase.geometry.dimensionality import (analyze_dimensionality,
-                                         rank_determination)
+from ase.geometry.dimensionality import (
+    analyze_dimensionality,
+    rank_determination,
+)
 from ase.geometry.dimensionality.bond_generator import next_bond
 from ase.geometry.dimensionality.interval_analysis import merge_intervals
 

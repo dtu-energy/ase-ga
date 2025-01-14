@@ -1,7 +1,6 @@
 # creates: a1.png, a2.png, a3.png, cnt1.png, cnt2.png, gnr1.png, gnr2.png
+from ase.build import bulk, graphene_nanoribbon, nanotube
 from ase.io import write
-from ase.build import bulk
-from ase.build import nanotube, graphene_nanoribbon
 
 for i, a in enumerate(
     [bulk('Cu', 'fcc', a=3.6),

@@ -346,6 +346,9 @@ For the fcc structure, the numbers of neighbor sites and the
 distances of first several shells are
 
 .. math::
+
+   :wowrap:
+
    n^\mathrm{1NN} &= 12,           & \quad d^\mathrm{1NN} &= \beta s_{i} \\
    n^\mathrm{2NN} &= \phantom{0}6, & \quad d^\mathrm{2NN} &= \sqrt{2}\,d^\mathrm{1NN} \\
    n^\mathrm{3NN} &= 24,           & \quad d^\mathrm{3NN} &= \sqrt{3}\,d^\mathrm{1NN} \\

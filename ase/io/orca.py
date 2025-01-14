@@ -1,7 +1,7 @@
-import os
 import re
 from io import StringIO
 from pathlib import Path
+from typing import List, Optional
 
 import numpy as np
 
@@ -44,46 +44,110 @@ def write_orca(fd, atoms, params):
     fd.write(f"! {params['orcasimpleinput']} \n")
     fd.write(f"{params['orcablocks']} \n")
 
-    fd.write('*xyz')
-    fd.write(" %d" % params['charge'])
-    fd.write(" %d \n" % params['mult'])
-    for atom in atoms:
-        if atom.tag == 71:  # 71 is ascii G (Ghost)
-            symbol = atom.symbol + ' : '
-        else:
-            symbol = atom.symbol + '   '
-        fd.write(symbol +
-                 str(atom.position[0]) + ' ' +
-                 str(atom.position[1]) + ' ' +
-                 str(atom.position[2]) + '\n')
-    fd.write('*\n')
+    if 'coords' not in params['orcablocks']:
+        fd.write('*xyz')
+        fd.write(" %d" % params['charge'])
+        fd.write(" %d \n" % params['mult'])
+        for atom in atoms:
+            if atom.tag == 71:  # 71 is ascii G (Ghost)
+                symbol = atom.symbol + ' : '
+            else:
+                symbol = atom.symbol + '   '
+            fd.write(
+                symbol
+                + str(atom.position[0])
+                + " "
+                + str(atom.position[1])
+                + " "
+                + str(atom.position[2])
+                + "\n"
+            )
+        fd.write('*\n')
+
+
+def read_charge(lines: List[str]) -> Optional[float]:
+    """Read sum of atomic charges."""
+    charge = None
+    for line in lines:
+        if 'Sum of atomic charges' in line:
+            charge = float(line.split()[-1])
+    return charge
+
+
+def read_energy(lines: List[str]) -> Optional[float]:
+    """Read energy."""
+    energy = None
+    for line in lines:
+        if 'FINAL SINGLE POINT ENERGY' in line:
+            if "Wavefunction not fully converged" in line:
+                energy = float('nan')
+            else:
+                energy = float(line.split()[-1])
+    if energy is not None:
+        return energy * Hartree
+    return energy
+
+
+def read_center_of_mass(lines: List[str]) -> Optional[np.ndarray]:
+    """ Scan through text for the center of mass """
+    # Example:
+    # 'The origin for moment calculation is the CENTER OF MASS  =
+    # ( 0.002150, -0.296255  0.086315)'
+    # Note the missing comma in the output
+    com = None
+    for line in lines:
+        if 'The origin for moment calculation is the CENTER OF MASS' in line:
+            line = re.sub(r'[(),]', '', line)
+            com = np.array([float(_) for _ in line.split()[-3:]])
+    if com is not None:
+        return com * Bohr  # return the last match
+    return com
+
+
+def read_dipole(lines: List[str]) -> Optional[np.ndarray]:
+    """Read dipole moment.
+
+    Note that the read dipole moment is for the COM frame of reference.
+    """
+    dipole = None
+    for line in lines:
+        if 'Total Dipole Moment' in line:
+            dipole = np.array([float(_) for _ in line.split()[-3:]])
+    if dipole is not None:
+        return dipole * Bohr  # Return the last match
+    return dipole
 
 
 @reader
-def read_orca_energy(fd):
-    """Read Energy from ORCA output file."""
-    text = fd.read()
-    re_energy = re.compile(r"FINAL SINGLE POINT ENERGY.*\n")
-    re_not_converged = re.compile(r"Wavefunction not fully converged")
+def read_orca_output(fd):
+    """ From the ORCA output file: Read Energy and dipole moment
+    in the frame of reference of the center of mass "
+    """
+    lines = fd.readlines()
 
-    found_line = re_energy.finditer(text)
-    energy = float('nan')
-    for match in found_line:
-        if not re_not_converged.search(match.group()):
-            energy = float(match.group().split()[-1]) * Hartree
-    if np.isnan(energy):
-        raise RuntimeError('No energy')
-    else:
-        return energy
+    energy = read_energy(lines)
+    charge = read_charge(lines)
+    com = read_center_of_mass(lines)
+    dipole = read_dipole(lines)
+
+    results = {}
+    results['energy'] = energy
+    results['free_energy'] = energy
+
+    if com is not None and dipole is not None:
+        dipole = dipole + com * charge
+        results['dipole'] = dipole
+
+    return results
 
 
 @reader
-def read_orca_forces(fd):
-    """Read Forces from ORCA output file."""
+def read_orca_engrad(fd):
+    """Read Forces from ORCA .engrad file."""
     getgrad = False
     gradients = []
     tempgrad = []
-    for i, line in enumerate(fd):
+    for _, line in enumerate(fd):
         if line.find('# The current gradient') >= 0:
             getgrad = True
             gradients = []
@@ -103,16 +167,15 @@ def read_orca_forces(fd):
 
 
 def read_orca_outputs(directory, stdout_path):
+    stdout_path = Path(stdout_path)
     results = {}
-    energy = read_orca_energy(Path(stdout_path))
-    results['energy'] = energy
-    results['free_energy'] = energy
+    results.update(read_orca_output(stdout_path))
 
     # Does engrad always exist? - No!
     # Will there be other files -No -> We should just take engrad
     # as a direct argument.  Or maybe this function does not even need to
     # exist.
-    engrad_path = Path(stdout_path).with_suffix('.engrad')
-    if os.path.isfile(engrad_path):
-        results['forces'] = read_orca_forces(engrad_path)
+    engrad_path = stdout_path.with_suffix('.engrad')
+    if engrad_path.is_file():
+        results['forces'] = read_orca_engrad(engrad_path)
     return results

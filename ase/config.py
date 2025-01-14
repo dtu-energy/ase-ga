@@ -1,12 +1,11 @@
-import os
 import configparser
-from collections.abc import Mapping
-from pathlib import Path
+import os
 import shlex
 import warnings
+from collections.abc import Mapping
+from pathlib import Path
 
-from ase.calculators.names import names, builtin, templates
-
+from ase.calculators.names import builtin, names, templates
 
 ASE_CONFIG_FILE = Path.home() / ".config/ase/config.ini"
 
@@ -22,7 +21,8 @@ class Config(Mapping):
             return shlex.split(argv)
 
         self.parser = configparser.ConfigParser(
-            converters={"argv": argv_converter})
+            converters={"argv": argv_converter},
+            interpolation=configparser.ExtendedInterpolation())
         self.paths = []
 
     def _env(self):
@@ -111,7 +111,7 @@ class Config(Mapping):
             )
             print(msg)
 
-    def print_everything(self):
+    def print_header(self):
         print("Configuration")
         print("-------------")
         print()
@@ -120,15 +120,6 @@ class Config(Mapping):
 
         for path in self.paths:
             print(f"Loaded: {path}")
-
-        print()
-        for name, section in self.parser.items():
-            print(name)
-            if not section:
-                print("  (Nothing configured)")
-            for key, val in section.items():
-                print(f"  {key}: {val}")
-            print()
 
     def as_dict(self):
         return {key: dict(val) for key, val in self.parser.items()}

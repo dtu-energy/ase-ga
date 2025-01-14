@@ -167,10 +167,11 @@ def _get_reduced_indices(atoms: Atoms, tol: float = 1e-5) -> List[int]:
     :param atoms: ase Atoms object to reduce
     :param tol: ``float``, numeric tolerance for positional comparisons
     """
-    import spglib
+    from ase.spacegroup.symmetrize import spglib_get_symmetry_dataset
 
     # Create input for spglib
     spglib_cell = (atoms.get_cell(), atoms.get_scaled_positions(),
                    atoms.numbers)
-    symmetry_data = spglib.get_symmetry_dataset(spglib_cell, symprec=tol)
-    return list(set(symmetry_data['equivalent_atoms']))
+    symmetry_data = spglib_get_symmetry_dataset(spglib_cell,
+                                                symprec=tol)
+    return list(set(symmetry_data.equivalent_atoms))

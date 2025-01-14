@@ -8,7 +8,7 @@ from ase.md.switch_langevin import SwitchLangevin
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_langevin_switching():
     # params
     size = 6

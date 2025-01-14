@@ -1,8 +1,11 @@
 """Demonstrates molecular dynamics for isolated particles."""
 from ase import units
 from ase.cluster.cubic import FaceCenteredCubic
-from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
-                                         Stationary, ZeroRotation)
+from ase.md.velocitydistribution import (
+    MaxwellBoltzmannDistribution,
+    Stationary,
+    ZeroRotation,
+)
 from ase.md.verlet import VelocityVerlet
 from ase.optimize import QuasiNewton
 

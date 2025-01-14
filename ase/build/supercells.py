@@ -1,6 +1,9 @@
 """Helper functions for creating supercells."""
 
+import warnings
+
 import numpy as np
+
 from ase import Atoms
 
 
@@ -9,7 +12,8 @@ class SupercellError(Exception):
 
 
 def get_deviation_from_optimal_cell_shape(cell, target_shape="sc", norm=None):
-    r"""
+    r"""Calculate the deviation from the target cell shape.
+
     Calculates the deviation of the given cell metric from the ideal
     cell metric defining a certain shape. Specifically, the function
     evaluates the expression `\Delta = || Q \mathbf{h} -
@@ -19,27 +23,58 @@ def get_deviation_from_optimal_cell_shape(cell, target_shape="sc", norm=None):
     *target_shape*) represent simple cubic ('sc') or face-centered
     cubic ('fcc') cell shapes.
 
-    Parameters:
+    Replaced with code from the `doped` defect simulation package
+    (https://doped.readthedocs.io) to be rotationally invariant,
+    boosting performance.
 
-    cell: 2D array of floats
-        Metric given as a (3x3 matrix) of the input structure.
-    target_shape: str
+    Parameters
+    ----------
+    cell : (..., 3, 3) array_like
+        Metric given as a 3x3 matrix of the input structure.
+        Multiple cells can also be given as a higher-dimensional array.
+    target_shape : {'sc', 'fcc'}
         Desired supercell shape. Can be 'sc' for simple cubic or
         'fcc' for face-centered cubic.
-    norm: float
+    norm : float
         Specify the normalization factor. This is useful to avoid
         recomputing the normalization factor when computing the
         deviation for a series of P matrices.
 
-    """
+    Returns
+    -------
+    float or ndarray
+        Cell metric(s) (0 is perfect score)
 
-    if target_shape in ["sc", "simple-cubic"]:
-        target_metric = np.eye(3)
-    elif target_shape in ["fcc", "face-centered cubic"]:
-        target_metric = 0.5 * np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
-    if not norm:
-        norm = (np.linalg.det(cell) / np.linalg.det(target_metric))**(-1.0 / 3)
-    return np.linalg.norm(norm * cell - target_metric)
+    .. deprecated:: 3.24.0
+        `norm` is unused in ASE 3.24.0 and removed in ASE 3.25.0.
+
+    """
+    if norm is not None:
+        warnings.warn(
+            '`norm` is unused in ASE 3.24.0 and removed in ASE 3.25.0',
+            FutureWarning,
+        )
+
+    cell = np.asarray(cell)
+    cell_lengths = np.sqrt(np.add.reduce(cell**2, axis=-1))
+    eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
+
+    if target_shape == 'sc':
+        target_length = eff_cubic_length
+
+    elif target_shape == 'fcc':
+        # FCC is characterised by 60 degree angles & lattice vectors = 2**(1/6)
+        # times the eff cubic length:
+        target_length = eff_cubic_length * 2 ** (1 / 6)
+
+    else:
+        raise ValueError(target_shape)
+
+    inv_target_length = 1.0 / target_length
+
+    # rms difference to eff cubic/FCC length:
+    diffs = cell_lengths * inv_target_length[..., None] - 1.0
+    return np.sqrt(np.add.reduce(diffs**2, axis=-1))
 
 
 def find_optimal_cell_shape(
@@ -50,16 +85,24 @@ def find_optimal_cell_shape(
     upper_limit=2,
     verbose=False,
 ):
-    """Returns the transformation matrix that produces a supercell
+    """Obtain the optimal transformation matrix for a supercell of target size
+    and shape.
+
+    Returns the transformation matrix that produces a supercell
     corresponding to *target_size* unit cells with metric *cell* that
     most closely approximates the shape defined by *target_shape*.
+
+    Updated with code from the `doped` defect simulation package
+    (https://doped.readthedocs.io) to be rotationally invariant and
+    allow transformation matrices with negative determinants, boosting
+    performance.
 
     Parameters:
 
     cell: 2D array of floats
         Metric given as a (3x3 matrix) of the input structure.
     target_size: integer
-        Size of desired super cell in number of unit cells.
+        Size of desired supercell in number of unit cells.
     target_shape: str
         Desired supercell shape. Can be 'sc' for simple cubic or
         'fcc' for face-centered cubic.
@@ -71,24 +114,31 @@ def find_optimal_cell_shape(
         Set to True to obtain additional information regarding
         construction of transformation matrix.
 
+    Returns:
+        2D array of integers: Transformation matrix that produces the
+        optimal supercell.
     """
+    cell = np.asarray(cell)
 
     # Set up target metric
-    if target_shape in ["sc", "simple-cubic"]:
+    if target_shape == 'sc':
         target_metric = np.eye(3)
-    elif target_shape in ["fcc", "face-centered cubic"]:
+    elif target_shape == 'fcc':
         target_metric = 0.5 * np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]],
                                        dtype=float)
+    else:
+        raise ValueError(target_shape)
+
     if verbose:
         print("target metric (h_target):")
         print(target_metric)
 
     # Normalize cell metric to reduce computation time during looping
-    norm = (target_size * np.linalg.det(cell) /
-            np.linalg.det(target_metric))**(-1.0 / 3)
+    norm = (target_size * abs(np.linalg.det(cell)) /
+            np.linalg.det(target_metric)) ** (-1.0 / 3)
     norm_cell = norm * cell
     if verbose:
-        print("normalization factor (Q): %g" % norm)
+        print(f"normalization factor (Q): {norm:g}")
 
     # Approximate initial P matrix
     ideal_P = np.dot(target_metric, np.linalg.inv(norm_cell))
@@ -100,35 +150,50 @@ def find_optimal_cell_shape(
         print("closest integer transformation matrix (P_0):")
         print(starting_P)
 
-    # Prepare run.
-    from itertools import product
+    # Build a big matrix of all admissible integer matrix operations.
+    # (If this takes too much memory we could do blocking but there are
+    # too many for looping one by one.)
+    dimensions = [(upper_limit + 1) - lower_limit] * 9
+    operations = np.moveaxis(np.indices(dimensions), 0, -1).reshape(-1, 3, 3)
+    operations += lower_limit  # Each element runs from lower to upper limits.
+    operations += starting_P
+    determinants = np.linalg.det(operations)
 
-    best_score = 1e6
-    optimal_P = None
-    for dP in product(range(lower_limit, upper_limit + 1), repeat=9):
-        dP = np.array(dP, dtype=int).reshape(3, 3)
-        P = starting_P + dP
-        if int(np.around(np.linalg.det(P), 0)) != target_size:
-            continue
-        score = get_deviation_from_optimal_cell_shape(
-            np.dot(P, norm_cell), target_shape=target_shape, norm=1.0)
-        if score < best_score:
-            best_score = score
-            optimal_P = P
-
-    if optimal_P is None:
+    # screen supercells with the target size
+    good_indices = np.where(abs(determinants - target_size) < 1e-12)[0]
+    if not good_indices.size:
         print("Failed to find a transformation matrix.")
         return None
+    operations = operations[good_indices]
+
+    # evaluate derivations of the screened supercells
+    scores = get_deviation_from_optimal_cell_shape(
+        operations @ cell,
+        target_shape,
+    )
+    imin = np.argmin(scores)
+    best_score = scores[imin]
+
+    # screen candidates with the same best score
+    operations = operations[np.abs(scores - best_score) < 1e-6]
+
+    # select the one whose cell orientation is the closest to the target
+    # https://gitlab.com/ase/ase/-/merge_requests/3522
+    imin = np.argmin(np.add.reduce((operations - ideal_P)**2, axis=(-2, -1)))
+    optimal_P = operations[imin]
+
+    if np.linalg.det(optimal_P) <= 0:
+        optimal_P *= -1  # flip signs if negative determinant
 
     # Finalize.
     if verbose:
-        print("smallest score (|Q P h_p - h_target|_2): %f" % best_score)
+        print(f"smallest score (|Q P h_p - h_target|_2): {best_score:f}")
         print("optimal transformation matrix (P_opt):")
         print(optimal_P)
         print("supercell metric:")
         print(np.round(np.dot(optimal_P, cell), 4))
-        print("determinant of optimal transformation matrix: %g" %
-              np.linalg.det(optimal_P))
+        det = np.linalg.det(optimal_P)
+        print(f"determinant of optimal transformation matrix: {det:g}")
     return optimal_P
 
 

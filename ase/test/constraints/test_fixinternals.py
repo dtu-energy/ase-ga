@@ -43,10 +43,10 @@ def setup_fixinternals():
             dihedral_def, target_dihedral)
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_fixinternals():
-    (atoms, constr, bond_def, target_bond, angle_def, target_angle,
-     dihedral_def, target_dihedral) = setup_fixinternals()
+    (atoms, constr, bond_def, target_bond, angle_def, _target_angle,
+     dihedral_def, _target_dihedral) = setup_fixinternals()
 
     opt = BFGS(atoms)
 
@@ -98,7 +98,7 @@ def setup_combos():
     return atoms, constr, bondcombo_def, target_bondcombo,
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_combos():
     atoms, constr, bondcombo_def, target_bondcombo = setup_combos()
 
@@ -127,8 +127,8 @@ def test_combos():
 
 
 def test_index_shuffle():
-    (atoms, constr, bond_def, target_bond, angle_def, target_angle,
-     dihedral_def, target_dihedral) = setup_fixinternals()
+    (atoms, constr, _bond_def, _target_bond, _angle_def, _target_angle,
+     _dihedral_def, _target_dihedral) = setup_fixinternals()
 
     constr2 = copy.deepcopy(constr)
 
@@ -149,7 +149,7 @@ def test_index_shuffle():
 
 
 def test_combo_index_shuffle():
-    atoms, constr, bondcombo_def, target_bondcombo = setup_combos()
+    atoms, constr, _bondcombo_def, _target_bondcombo = setup_combos()
 
     # test no change, test constr.get_indices()
     answer = (1, 2, 3)
@@ -158,7 +158,7 @@ def test_combo_index_shuffle():
     assert all(a == b for a, b in zip(constr.get_indices(), answer))
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_zero_distance_error():
     """Zero distances cannot be fixed due to a singularity in the derivative.
     """
@@ -168,11 +168,11 @@ def test_zero_distance_error():
     atoms.set_constraint(constr)
     opt = BFGS(atoms)
     with pytest.raises(ZeroDivisionError):
-        for i in opt.irun():
+        for _ in opt.irun():
             atoms.get_distance(1, 2)
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_planar_angle_error():
     """Support for planar angles could be added in the future using
        dummy/ghost atoms. See issue #868."""
@@ -185,7 +185,7 @@ def test_planar_angle_error():
         opt.run()
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_undefined_dihedral_error():
     atoms = setup_atoms()
     pos = atoms.get_positions()

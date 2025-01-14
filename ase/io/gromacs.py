@@ -37,7 +37,7 @@ def read_gromacs(fd):
     sym2tag = {}
     tag = 0
     for line in (lines[2:-1]):
-        # print(line[0:5]+':'+line[5:11]+':'+line[11:15]+':'+line[15:20])
+        # print(line[0:5]+':'+line[5:10]+':'+line[10:15]+':'+line[15:20])
         # it is not a good idea to use the split method with gromacs input
         # since the fields are defined by a fixed column number. Therefore,
         # they may not be space between the fields
@@ -58,8 +58,9 @@ def read_gromacs(fd):
             if len(vxyz) > 0:
                 try:
                     velocities[iv] = float(vxyz)
-                except ValueError:
-                    raise ValueError("can not convert velocity to float")
+                except ValueError as exc:
+                    raise ValueError("can not convert velocity to float") \
+                        from exc
             else:
                 velocities = None
 
@@ -69,10 +70,10 @@ def read_gromacs(fd):
             gromacs_velocities.append(velocities)
 
         gromacs_residuenumbers.append(int(line[0:5]))
-        gromacs_residuenames.append(line[5:11].strip())
+        gromacs_residuenames.append(line[5:10].strip())
 
-        symbol_read = line[11:16].strip()[0:2]
-        if symbol_read not in sym2tag.keys():
+        symbol_read = line[10:15].strip()[0:2]
+        if symbol_read not in sym2tag:
             sym2tag[symbol_read] = tag
             tag += 1
 
@@ -89,7 +90,7 @@ def read_gromacs(fd):
             # the dummy symbol X
             symbols.append("X")
 
-        gromacs_atomtypes.append(line[11:16].strip())
+        gromacs_atomtypes.append(line[10:15].strip())
 
     line = lines[-1]
     atoms = Atoms(symbols, positions, tags=tags)
@@ -146,7 +147,7 @@ def write_gromacs(fileobj, atoms):
         gromacs_residuenames = atoms.get_array('residuenames')
     except KeyError:
         gromacs_residuenames = []
-        for idum in range(natoms):
+        for _ in range(natoms):
             gromacs_residuenames.append('1DUM')
     try:
         gromacs_atomtypes = atoms.get_array('atomtypes')
@@ -170,27 +171,26 @@ def write_gromacs(fileobj, atoms):
     # No "#" in the first line to prevent read error in VMD
     fileobj.write('A Gromacs structure file written by ASE \n')
     fileobj.write('%5d\n' % len(atoms))
-    count = 1
-
     # gromacs line see
     # manual.gromacs.org/documentation/current/user-guide/file-formats.html#gro
     # (EDH: link seems broken as of 2020-02-21)
     #    1WATER  OW1    1   0.126   1.624   1.679  0.1227 -0.0580  0.0434
-    for (resnb, resname, atomtype, xyz,
-         vxyz) in zip(residuenumbers, gromacs_residuenames,
-                      gromacs_atomtypes, pos, vel):
+    for count, (resnb, resname, atomtype,
+                xyz, vxyz) in enumerate(zip(residuenumbers,
+                                            gromacs_residuenames,
+                                            gromacs_atomtypes, pos, vel),
+                                        start=1):
 
         # THIS SHOULD BE THE CORRECT, PYTHON FORMATTING, EQUIVALENT TO THE
         # C FORMATTING GIVEN IN THE GROMACS DOCUMENTATION:
         # >>> %5d%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f <<<
         line = ("{:>5d}{:<5s}{:>5s}{:>5d}{:>8.3f}{:>8.3f}{:>8.3f}"
-                "{:>8.4f}{:>8.4f}{:>8.4f}\n"
-                .format(resnb, resname, atomtype, count,
-                        xyz[0], xyz[1], xyz[2], vxyz[0], vxyz[1], vxyz[2]))
+                "{:>8.4f}{:>8.4f}{:>8.4f}\n".format(resnb, resname, atomtype,
+                                                    count, xyz[0], xyz[1],
+                                                    xyz[2], vxyz[0], vxyz[1],
+                                                    vxyz[2]))
 
         fileobj.write(line)
-        count += 1
-
     # write box geometry
     if atoms.get_pbc().any():
         # gromacs manual (manual.gromacs.org/online/gro.html) says:
@@ -201,7 +201,8 @@ def write_gromacs(fileobj, atoms):
         # cell[0,1] cell[0,2] cell[1,0] v1(y) v1(z) v2(x) fv1[0 1 2]
         # cell[1,2] cell[2,0] cell[2,1] v2(z) v3(x) v3(y) fv2[0 1 2]
         grocell = atoms.cell.flat[[0, 4, 8, 1, 2, 3, 5, 6, 7]] * 0.1
-        fileobj.write(''.join([f'{x:10.5f}' for x in grocell]))
+        fileobj.write(''.join(['{:10.5f}'.format(x) for x in grocell]))
+        fileobj.write('\n')
     else:
         # When we do not have a cell, the cell is specified as an empty line
         fileobj.write("\n")

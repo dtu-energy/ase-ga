@@ -6,14 +6,14 @@ from ase.mep import NEB, idpp_interpolate
 
 # I think idpp uses an optimizer;
 # at the very least how an optimizer is called during this test
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_idpp(testdir):
     initial = molecule('C2H6')
     final = initial.copy()
     final.positions[2:5] = initial.positions[[3, 4, 2]]
 
     images = [initial]
-    for i in range(5):
+    for _ in range(5):
         images.append(initial.copy())
     images.append(final)
 

@@ -72,12 +72,12 @@ class ACE(FileIOCalculator):
             for section_name in section_sets:
                 repeat = kwargs['order'].count(section_name)
                 if section_name in self.default_parameters.keys():
-                    for i in range(repeat - 1):
+                    for _ in range(repeat - 1):
                         new_parameters[section_name] += deepcopy(
                             self.default_parameters[section_name])
                 else:
                     new_parameters[section_name] = []
-                    for i in range(repeat):
+                    for _ in range(repeat):
                         new_parameters[section_name].append({})
 
         # Update parameters
@@ -86,11 +86,9 @@ class ACE(FileIOCalculator):
                 if isinstance(kwargs[section], dict):
                     kwargs[section] = [kwargs[section]]
 
-                i = 0
-                for section_param in kwargs[section]:
+                for i, section_param in enumerate(kwargs[section]):
                     new_parameters[section][i] = update_parameter(
                         new_parameters[section][i], section_param)
-                    i += 1
         self.parameters = new_parameters
         return changed_parameters
 

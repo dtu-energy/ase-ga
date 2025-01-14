@@ -1,6 +1,9 @@
-from ase.data.pubchem import (pubchem_atoms_conformer_search,
-                              pubchem_atoms_search,
-                              pubchem_conformer_search, pubchem_search)
+from ase.data.pubchem import (
+    pubchem_atoms_conformer_search,
+    pubchem_atoms_search,
+    pubchem_conformer_search,
+    pubchem_search,
+)
 
 
 def test_pubchem():
@@ -19,7 +22,7 @@ def test_pubchem():
 
     # check conformer searching
     confs = pubchem_conformer_search('octane', mock_test=True)
-    for conf in confs:
+    for _ in confs:
         pass
     try:  # check that you can't pass in two args
         pubchem_search(name='octane', cid=222, mock_test=True)

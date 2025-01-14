@@ -14,27 +14,27 @@ import os
 import re
 import shutil
 import tempfile
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List
-from os.path import isfile, islink, join
 
 import numpy as np
 
 from ase import Atoms
-from ase.calculators.calculator import (
-    FileIOCalculator, Parameters, ReadError)
-from ase.calculators.siesta.import_functions import read_rho
+from ase.calculators.calculator import FileIOCalculator, Parameters, ReadError
+from ase.calculators.siesta.import_ion_xml import get_ion
 from ase.calculators.siesta.parameters import PAOBasisBlock, format_fdf
 from ase.data import atomic_numbers
 from ase.io.siesta import read_siesta_xv
 from ase.io.siesta_input import SiestaInput
-from ase.units import Bohr, Ry, eV
+from ase.units import Ry, eV
 from ase.utils import deprecated
 
 meV = 0.001 * eV
 
 
 def parse_siesta_version(output: bytes) -> str:
-    match = re.search(rb'Siesta Version\s*:\s*(\S+)', output)
+    match = re.search(rb'Version\s*:\s*(\S+)', output)
 
     if match is None:
         raise RuntimeError('Could not get Siesta version info from output '
@@ -73,76 +73,22 @@ def get_siesta_version(executable: str) -> str:
     return parse_siesta_version(output)
 
 
+def format_block(name, block):
+    lines = [f'%block {name}']
+    for row in block:
+        data = ' '.join(str(obj) for obj in row)
+        lines.append(f'    {data}')
+    lines.append(f'%endblock {name}')
+    return '\n'.join(lines)
+
+
 def bandpath2bandpoints(path):
-    lines = []
-    add = lines.append
-
-    add('BandLinesScale ReciprocalLatticeVectors\n')
-    add('%block BandPoints\n')
-    for kpt in path.kpts:
-        add('    {:18.15f} {:18.15f} {:18.15f}\n'.format(*kpt))
-    add('%endblock BandPoints')
-    return ''.join(lines)
-
-
-def read_bands_file(fd):
-    efermi = float(next(fd))
-    next(fd)  # Appears to be max/min energy.  Not important for us
-    header = next(fd)  # Array shape: nbands, nspins, nkpoints
-    nbands, nspins, nkpts = np.array(header.split()).astype(int)
-
-    # three fields for kpt coords, then all the energies
-    ntokens = nbands * nspins + 3
-
-    # Read energies for each kpoint:
-    data = []
-    for i in range(nkpts):
-        line = next(fd)
-        tokens = line.split()
-        while len(tokens) < ntokens:
-            # Multirow table.  Keep adding lines until the table ends,
-            # which should happen exactly when we have all the energies
-            # for this kpoint.
-            line = next(fd)
-            tokens += line.split()
-        assert len(tokens) == ntokens
-        values = np.array(tokens).astype(float)
-        data.append(values)
-
-    data = np.array(data)
-    assert len(data) == nkpts
-    kpts = data[:, :3]
-    energies = data[:, 3:]
-    energies = energies.reshape(nkpts, nspins, nbands)
-    assert energies.shape == (nkpts, nspins, nbands)
-    return kpts, energies, efermi
-
-
-def resolve_band_structure(path, kpts, energies, efermi):
-    """Convert input BandPath along with Siesta outputs into BS object."""
-    # Right now this function doesn't do much.
-    #
-    # Not sure how the output kpoints in the siesta.bands file are derived.
-    # They appear to be related to the lattice parameter.
-    #
-    # We should verify that they are consistent with our input path,
-    # but since their meaning is unclear, we can't quite do so.
-    #
-    # Also we should perhaps verify the cell.  If we had the cell, we
-    # could construct the bandpath from scratch (i.e., pure outputs).
-    from ase.spectrum.band_structure import BandStructure
-    ksn2e = energies
-    skn2e = np.swapaxes(ksn2e, 0, 1)
-    bs = BandStructure(path, skn2e, reference=efermi)
-    return bs
+    return '\n'.join([
+        'BandLinesScale ReciprocalLatticeVectors',
+        format_block('BandPoints', path.kpts)])
 
 
 class SiestaParameters(Parameters):
-    """Parameters class for the calculator.
-    Documented in BaseSiesta.__init__
-
-    """
-
     def __init__(
             self,
             label='siesta',
@@ -176,16 +122,6 @@ def _nonpolarized_alias(_: List, kwargs: Dict[str, Any]) -> bool:
 class Siesta(FileIOCalculator):
     """Calculator interface to the SIESTA code.
     """
-    # Siesta manual does not document many of the basis names.
-    # basis_specs.f has a ton of aliases for each.
-    # Let's just list one of each type then.
-    #
-    # Maybe we should be less picky about these keyword names.
-    allowed_basis_names = ['SZ', 'SZP',
-                           'DZ', 'DZP', 'DZP2',
-                           'TZ', 'TZP', 'TZP2', 'TZP3']
-    allowed_spins = ['non-polarized', 'collinear',
-                     'non-collinear', 'spin-orbit']
     allowed_xc = {
         'LDA': ['PZ', 'CA', 'PW92'],
         'GGA': ['PW91', 'PBE', 'revPBE', 'RPBE',
@@ -214,10 +150,11 @@ class Siesta(FileIOCalculator):
     accepts_bandpath_keyword = True
 
     fileio_rules = FileIOCalculator.ruleset(
+        configspec=dict(pseudo_path=None),
         stdin_name='{prefix}.fdf',
         stdout_name='{prefix}.out')
 
-    def __init__(self, command=None, profile=None, **kwargs):
+    def __init__(self, command=None, profile=None, directory='.', **kwargs):
         """ASE interface to the SIESTA code.
 
         Parameters:
@@ -282,6 +219,7 @@ class Siesta(FileIOCalculator):
             self,
             command=command,
             profile=profile,
+            directory=directory,
             **parameters)
 
     def __getitem__(self, key):
@@ -347,22 +285,6 @@ class Siesta(FileIOCalculator):
             if not (isinstance(value, (float, int)) and value > 0):
                 mess = "'{}' must be a positive number(in eV), \
                     got '{}'".format(arg, value)
-                raise ValueError(mess)
-
-        # Check the basis set input.
-        if 'basis_set' in kwargs:
-            basis_set = kwargs['basis_set']
-            allowed = self.allowed_basis_names
-            if not (isinstance(basis_set, PAOBasisBlock) or
-                    basis_set in allowed):
-                mess = f"Basis must be either {allowed}, got {basis_set}"
-                raise ValueError(mess)
-
-        # Check the spin input.
-        if 'spin' in kwargs:
-            spin = kwargs['spin']
-            if spin is not None and (spin.lower() not in self.allowed_spins):
-                mess = f"Spin must be {self.allowed_spins}, got '{spin}'"
                 raise ValueError(mess)
 
         # Check the functional input.
@@ -432,95 +354,65 @@ class Siesta(FileIOCalculator):
             - properties   : The properties which should be calculated.
             - system_changes : List of properties changed since last run.
         """
-        # Call base calculator.
-        FileIOCalculator.write_input(
-            self,
+
+        super().write_input(
             atoms=atoms,
             properties=properties,
             system_changes=system_changes)
 
-        if system_changes is None and properties is None:
-            return
-
         filename = self.getpath(ext='fdf')
 
-        # On any changes, remove all analysis files.
-        if system_changes is not None:
-            self.remove_analysis()
+        more_fdf_args = {}
 
-        # Start writing the file.
+        # Use the saved density matrix if only 'cell' and 'positions'
+        # have changed.
+        if (system_changes is None or
+            ('numbers' not in system_changes and
+             'initial_magmoms' not in system_changes and
+             'initial_charges' not in system_changes)):
+
+            more_fdf_args['DM.UseSaveDM'] = True
+
+        if 'density' in properties:
+            more_fdf_args['SaveRho'] = True
+
+        species, species_numbers = self.species(atoms)
+
+        pseudo_path = (self['pseudo_path']
+                       or self.profile.configvars.get('pseudo_path')
+                       or self.cfg.get('SIESTA_PP_PATH'))
+
+        if not pseudo_path:
+            raise Exception(
+                'Please configure pseudo_path or SIESTA_PP_PATH envvar')
+
+        species_info = SpeciesInfo(
+            atoms=atoms,
+            pseudo_path=Path(pseudo_path),
+            pseudo_qualifier=self.pseudo_qualifier(),
+            species=species)
+
+        writer = FDFWriter(
+            name=self.prefix,
+            xc=self['xc'],
+            spin=self['spin'],
+            mesh_cutoff=self['mesh_cutoff'],
+            energy_shift=self['energy_shift'],
+            fdf_user_args=self['fdf_arguments'],
+            more_fdf_args=more_fdf_args,
+            species_numbers=species_numbers,
+            atomic_coord_format=self['atomic_coord_format'].lower(),
+            kpts=self['kpts'],
+            bandpath=self['bandpath'],
+            species_info=species_info,
+        )
+
         with open(filename, 'w') as fd:
-            # Write system name and label.
-            fd.write(format_fdf('SystemName', self.prefix))
-            fd.write(format_fdf('SystemLabel', self.prefix))
-            fd.write("\n")
+            writer.write(fd)
 
-            # Write explicitly given options first to
-            # allow the user to override anything.
-            fdf_arguments = self['fdf_arguments']
-            keys = sorted(fdf_arguments.keys())
-            for key in keys:
-                fd.write(format_fdf(key, fdf_arguments[key]))
-
-            # Force siesta to return error on no convergence.
-            # as default consistent with ASE expectations.
-            if 'SCFMustConverge' not in fdf_arguments.keys():
-                fd.write(format_fdf('SCFMustConverge', True))
-            fd.write("\n")
-
-            # Write spin level.
-            fd.write(format_fdf('Spin     ', self['spin']))
-            # Spin backwards compatibility.
-            if self['spin'] == 'collinear':
-                fd.write(
-                    format_fdf(
-                        'SpinPolarized',
-                        (True,
-                         "# Backwards compatibility.")))
-            elif self['spin'] == 'non-collinear':
-                fd.write(
-                    format_fdf(
-                        'NonCollinearSpin',
-                        (True,
-                         "# Backwards compatibility.")))
-
-            # Write functional.
-            functional, authors = self['xc']
-            fd.write(format_fdf('XC.functional', functional))
-            fd.write(format_fdf('XC.authors', authors))
-            fd.write("\n")
-
-            # Write mesh cutoff and energy shift.
-            fd.write(format_fdf('MeshCutoff',
-                                (self['mesh_cutoff'], 'eV')))
-            fd.write(format_fdf('PAO.EnergyShift',
-                                (self['energy_shift'], 'eV')))
-            fd.write("\n")
-
-            # Write the minimal arg
-            self._write_species(fd, atoms)
-            self._write_structure(fd, atoms)
-
-            # Use the saved density matrix if only 'cell' and 'positions'
-            # have changed.
-            if (system_changes is None or
-                ('numbers' not in system_changes and
-                 'initial_magmoms' not in system_changes and
-                 'initial_charges' not in system_changes)):
-                fd.write(format_fdf('DM.UseSaveDM', True))
-
-            # Save density.
-            if 'density' in properties:
-                fd.write(format_fdf('SaveRho', True))
-
-            if self["kpts"] is not None:
-                kpts = np.array(self['kpts'])
-                SiestaInput.write_kpts(fd, kpts)
-
-            if self['bandpath'] is not None:
-                lines = bandpath2bandpoints(self['bandpath'])
-                fd.write(lines)
-                fd.write('\n')
+        writer.link_pseudos_into_directory(
+            symlink_pseudos=self['symlink_pseudos'],
+            directory=Path(self.directory))
 
     def read(self, filename):
         """Read structural parameters from file .XV file
@@ -529,9 +421,9 @@ class Siesta(FileIOCalculator):
         """
 
         fname = self.getpath(filename)
-        if not os.path.exists(fname):
+        if not fname.exists():
             raise ReadError(f"The restart file '{fname}' does not exist")
-        with open(fname) as fd:
+        with fname.open() as fd:
             self.atoms = read_siesta_xv(fd)
         self.read_results()
 
@@ -541,239 +433,7 @@ class Siesta(FileIOCalculator):
             fname = self.prefix
         if ext is not None:
             fname = f'{fname}.{ext}'
-        return os.path.join(self.directory, fname)
-
-    def remove_analysis(self):
-        """ Remove all analysis files"""
-        filename = self.getpath(ext='RHO')
-        if os.path.exists(filename):
-            os.remove(filename)
-
-    def _write_structure(self, fd, atoms):
-        """Translate the Atoms object to fdf-format.
-
-        Parameters
-        ----------
-        fd : IO
-            An open file object.
-        atoms: Atoms
-            An atoms object.
-        """
-        cell = atoms.cell
-        fd.write('\n')
-
-        if cell.rank in [1, 2]:
-            raise ValueError('Expected 3D unit cell or no unit cell.  You may '
-                             'wish to add vacuum along some directions.')
-
-        # Write lattice vectors
-        if np.any(cell):
-            fd.write(format_fdf('LatticeConstant', '1.0 Ang'))
-            fd.write('%block LatticeVectors\n')
-            for i in range(3):
-                for j in range(3):
-                    s = ('    %.15f' % cell[i, j]).rjust(16) + ' '
-                    fd.write(s)
-                fd.write('\n')
-            fd.write('%endblock LatticeVectors\n')
-            fd.write('\n')
-
-        self._write_atomic_coordinates(fd, atoms)
-
-        # Write magnetic moments.
-        magmoms = atoms.get_initial_magnetic_moments()
-
-        # The DM.InitSpin block must be written to initialize to
-        # no spin. SIESTA default is FM initialization, if the
-        # block is not written, but  we must conform to the
-        # atoms object.
-        if magmoms is not None:
-            if len(magmoms) == 0:
-                fd.write('#Empty block forces ASE initialization.\n')
-
-            fd.write('%block DM.InitSpin\n')
-            if len(magmoms) != 0 and isinstance(magmoms[0], np.ndarray):
-                for n, M in enumerate(magmoms):
-                    if M[0] != 0:
-                        fd.write(
-                            '    %d %.14f %.14f %.14f \n' %
-                            (n + 1, M[0], M[1], M[2]))
-            elif len(magmoms) != 0 and isinstance(magmoms[0], float):
-                for n, M in enumerate(magmoms):
-                    if M != 0:
-                        fd.write('    %d %.14f \n' % (n + 1, M))
-            fd.write('%endblock DM.InitSpin\n')
-            fd.write('\n')
-
-    def _write_atomic_coordinates(self, fd, atoms: Atoms):
-        """Write atomic coordinates.
-
-        Parameters
-        ----------
-        fd : IO
-            An open file object.
-        atoms : Atoms
-            An atoms object.
-        """
-        af = self.parameters["atomic_coord_format"].lower()
-        species, species_numbers = self.species(atoms)
-        if af == 'xyz':
-            self._write_atomic_coordinates_xyz(fd, atoms, species_numbers)
-        elif af == 'zmatrix':
-            self._write_atomic_coordinates_zmatrix(fd, atoms, species_numbers)
-        else:
-            raise RuntimeError(f'Unknown atomic_coord_format: {af}')
-
-    def _write_atomic_coordinates_xyz(self, fd, atoms: Atoms, species_numbers):
-        """Write atomic coordinates.
-
-        Parameters
-        ----------
-        fd : IO
-            An open file object.
-        atoms : Atoms
-            An atoms object.
-        """
-        fd.write('\n')
-        fd.write('AtomicCoordinatesFormat  Ang\n')
-        fd.write('%block AtomicCoordinatesAndAtomicSpecies\n')
-        for atom, number in zip(atoms, species_numbers):
-            xyz = atom.position
-            line = ('    %.9f' % xyz[0]).rjust(16) + ' '
-            line += ('    %.9f' % xyz[1]).rjust(16) + ' '
-            line += ('    %.9f' % xyz[2]).rjust(16) + ' '
-            line += str(number) + '\n'
-            fd.write(line)
-        fd.write('%endblock AtomicCoordinatesAndAtomicSpecies\n')
-        fd.write('\n')
-
-        origin = tuple(-atoms.get_celldisp().flatten())
-        if any(origin):
-            fd.write('%block AtomicCoordinatesOrigin\n')
-            fd.write('     %.4f  %.4f  %.4f\n' % origin)
-            fd.write('%endblock AtomicCoordinatesOrigin\n')
-            fd.write('\n')
-
-    def _write_atomic_coordinates_zmatrix(
-            self, fd, atoms: Atoms, species_numbers):
-        """Write atomic coordinates in Z-matrix format.
-
-        Parameters
-        ----------
-        fd : IO
-            An open file object.
-        atoms : Atoms
-            An atoms object.
-        """
-        fd.write('\n')
-        fd.write('ZM.UnitsLength   Ang\n')
-        fd.write('%block Zmatrix\n')
-        fd.write('  cartesian\n')
-        fstr = "{:5d}" + "{:20.10f}" * 3 + "{:3d}" * 3 + "{:7d} {:s}\n"
-        a2constr = SiestaInput.make_xyz_constraints(atoms)
-        a2p, a2s = atoms.get_positions(), atoms.get_chemical_symbols()
-        for ia, (sp, xyz, ccc, sym) in enumerate(zip(species_numbers,
-                                                     a2p,
-                                                     a2constr,
-                                                     a2s)):
-            fd.write(fstr.format(
-                sp, xyz[0], xyz[1], xyz[2], ccc[0],
-                ccc[1], ccc[2], ia + 1, sym))
-        fd.write('%endblock Zmatrix\n')
-
-        origin = tuple(-atoms.get_celldisp().flatten())
-        if any(origin):
-            fd.write('%block AtomicCoordinatesOrigin\n')
-            fd.write('     %.4f  %.4f  %.4f\n' % origin)
-            fd.write('%endblock AtomicCoordinatesOrigin\n')
-            fd.write('\n')
-
-    def _write_species(self, fd, atoms):
-        """Write input related the different species.
-
-        Parameters:
-            - f:     An open file object.
-            - atoms: An atoms object.
-        """
-        species, species_numbers = self.species(atoms)
-
-        if self['pseudo_path'] is not None:
-            pseudo_path = self['pseudo_path']
-        elif 'SIESTA_PP_PATH' in self.cfg:
-            pseudo_path = self.cfg['SIESTA_PP_PATH']
-        else:
-            mess = "Please set the environment variable 'SIESTA_PP_PATH'"
-            raise Exception(mess)
-
-        fd.write(format_fdf('NumberOfSpecies', len(species)))
-        fd.write(format_fdf('NumberOfAtoms', len(atoms)))
-
-        pao_basis = []
-        chemical_labels = []
-        basis_sizes = []
-        synth_blocks = []
-        for species_number, spec in enumerate(species):
-            species_number += 1
-            symbol = spec['symbol']
-            atomic_number = atomic_numbers[symbol]
-
-            if spec['pseudopotential'] is None:
-                if self.pseudo_qualifier() == '':
-                    label = symbol
-                    pseudopotential = label + '.psf'
-                else:
-                    label = '.'.join([symbol, self.pseudo_qualifier()])
-                    pseudopotential = label + '.psf'
-            else:
-                pseudopotential = spec['pseudopotential']
-                label = os.path.basename(pseudopotential)
-                label = '.'.join(label.split('.')[:-1])
-
-            if not os.path.isabs(pseudopotential):
-                pseudopotential = join(pseudo_path, pseudopotential)
-
-            if not os.path.exists(pseudopotential):
-                mess = f"Pseudopotential '{pseudopotential}' not found"
-                raise RuntimeError(mess)
-
-            name = os.path.basename(pseudopotential)
-            name = name.split('.')
-            name.insert(-1, str(species_number))
-            if spec['ghost']:
-                name.insert(-1, 'ghost')
-                atomic_number = -atomic_number
-
-            name = '.'.join(name)
-            pseudo_targetpath = self.getpath(name)
-
-            if join(os.getcwd(), name) != pseudopotential:
-                if islink(pseudo_targetpath) or isfile(pseudo_targetpath):
-                    os.remove(pseudo_targetpath)
-                symlink_pseudos = self['symlink_pseudos']
-
-                if symlink_pseudos is None:
-                    symlink_pseudos = not os.name == 'nt'
-
-                if symlink_pseudos:
-                    os.symlink(pseudopotential, pseudo_targetpath)
-                else:
-                    shutil.copy(pseudopotential, pseudo_targetpath)
-
-            if len(synth_blocks) > 0:
-                fd.write(format_fdf('SyntheticAtoms', list(synth_blocks)))
-
-            label = '.'.join(np.array(name.split('.'))[:-1])
-            string = '    %d %d %s' % (species_number, atomic_number, label)
-            chemical_labels.append(string)
-            if isinstance(spec['basis_set'], PAOBasisBlock):
-                pao_basis.append(spec['basis_set'].script(label))
-            else:
-                basis_sizes.append(("    " + label, spec['basis_set']))
-        fd.write(format_fdf('ChemicalSpecieslabel', chemical_labels))
-        fd.write('\n')
-        fd.write(format_fdf('PAO.Basis', pao_basis))
-        fd.write(format_fdf('PAO.BasisSizes', basis_sizes))
-        fd.write('\n')
+        return Path(self.directory) / fname
 
     def pseudo_qualifier(self):
         """Get the extra string used in the middle of the pseudopotential.
@@ -787,58 +447,24 @@ class Siesta(FileIOCalculator):
             return self['pseudo_qualifier']
 
     def read_results(self):
-        """Read the results.
-        """
-        self.read_number_of_grid_points()
-        self.read_energy()
-        self.read_forces_stress()
-        self.read_eigenvalues()
-        self.read_kpoints()
-        self.read_dipole()
-        self.read_pseudo_density()
-        self.read_hsx()
-        self.read_dim()
-        if self.results['hsx'] is not None:
-            self.read_pld(self.results['hsx'].norbitals,
-                          len(self.atoms))
-            self.atoms.cell = self.results['pld'].cell * Bohr
-        else:
-            self.results['pld'] = None
+        """Read the results."""
+        from ase.io.siesta_output import OutputReader
+        reader = OutputReader(prefix=self.prefix,
+                              directory=Path(self.directory),
+                              bandpath=self['bandpath'])
+        results = reader.read_results()
+        self.results.update(results)
 
-        self.read_wfsx()
-        self.read_ion(self.atoms)
-
-        self.read_bands()
-
-    def read_bands(self):
-        bandpath = self['bandpath']
-        if bandpath is None:
-            return
-
-        if len(bandpath.kpts) < 1:
-            return
-
-        fname = self.getpath(ext='bands')
-        with open(fname) as fd:
-            kpts, energies, efermi = read_bands_file(fd)
-        bs = resolve_band_structure(bandpath, kpts, energies, efermi)
-        self.results['bandstructure'] = bs
-
-    def band_structure(self):
-        return self.results['bandstructure']
+        self.results['ion'] = self.read_ion(self.atoms)
 
     def read_ion(self, atoms):
         """
         Read the ion.xml file of each specie
         """
-        from ase.calculators.siesta.import_ion_xml import get_ion
+        species, _species_numbers = self.species(atoms)
 
-        species, species_numbers = self.species(atoms)
-
-        self.results['ion'] = {}
-        for species_number, spec in enumerate(species):
-            species_number += 1
-
+        ion_results = {}
+        for species_number, spec in enumerate(species, start=1):
             symbol = spec['symbol']
             atomic_number = atomic_numbers[symbol]
 
@@ -846,252 +472,338 @@ class Siesta(FileIOCalculator):
                 if self.pseudo_qualifier() == '':
                     label = symbol
                 else:
-                    label = '.'.join([symbol, self.pseudo_qualifier()])
+                    label = f"{symbol}.{self.pseudo_qualifier()}"
                 pseudopotential = self.getpath(label, 'psf')
             else:
-                pseudopotential = spec['pseudopotential']
-                label = os.path.basename(pseudopotential)
-                label = '.'.join(label.split('.')[:-1])
+                pseudopotential = Path(spec['pseudopotential'])
+                label = pseudopotential.stem
 
-            name = os.path.basename(pseudopotential)
-            name = name.split('.')
-            name.insert(-1, str(species_number))
+            name = f"{label}.{species_number}"
             if spec['ghost']:
-                name.insert(-1, 'ghost')
+                name = f"{name}.ghost"
                 atomic_number = -atomic_number
-            name = '.'.join(name)
 
-            label = '.'.join(np.array(name.split('.'))[:-1])
+            if name not in ion_results:
+                fname = self.getpath(name, 'ion.xml')
+                if fname.is_file():
+                    ion_results[name] = get_ion(str(fname))
 
-            if label not in self.results['ion']:
-                fname = self.getpath(label, 'ion.xml')
-                if os.path.isfile(fname):
-                    self.results['ion'][label] = get_ion(fname)
+        return ion_results
 
-    def read_hsx(self):
-        """
-        Read the siesta HSX file.
-        return a namedtuple with the following arguments:
-        'norbitals', 'norbitals_sc', 'nspin', 'nonzero',
-        'is_gamma', 'sc_orb2uc_orb', 'row2nnzero', 'sparse_ind2column',
-        'H_sparse', 'S_sparse', 'aB2RaB_sparse', 'total_elec_charge', 'temp'
-        """
-        from ase.calculators.siesta.import_functions import readHSX
-
-        filename = self.getpath(ext='HSX')
-        if isfile(filename):
-            self.results['hsx'] = readHSX(filename)
-        else:
-            self.results['hsx'] = None
-
-    def read_dim(self):
-        """
-        Read the siesta DIM file
-        Retrun a namedtuple with the following arguments:
-        'natoms_sc', 'norbitals_sc', 'norbitals', 'nspin',
-        'nnonzero', 'natoms_interacting'
-        """
-        from ase.calculators.siesta.import_functions import readDIM
-
-        filename = self.getpath(ext='DIM')
-        if isfile(filename):
-            self.results['dim'] = readDIM(filename)
-        else:
-            self.results['dim'] = None
-
-    def read_pld(self, norb, natms):
-        """
-        Read the siesta PLD file
-        Return a namedtuple with the following arguments:
-        'max_rcut', 'orb2ao', 'orb2uorb', 'orb2occ', 'atm2sp',
-        'atm2shift', 'coord_sc', 'cell', 'nunit_cells'
-        """
-        from ase.calculators.siesta.import_functions import readPLD
-
-        filename = self.getpath(ext='PLD')
-        if isfile(filename):
-            self.results['pld'] = readPLD(filename, norb, natms)
-        else:
-            self.results['pld'] = None
-
-    def read_wfsx(self):
-        """
-        Read the siesta WFSX file
-        Return a namedtuple with the following arguments:
-        """
-        from ase.calculators.siesta.import_functions import readWFSX
-
-        fname_woext = os.path.join(self.directory, self.prefix)
-
-        if isfile(fname_woext + '.WFSX'):
-            filename = fname_woext + '.WFSX'
-            self.results['wfsx'] = readWFSX(filename)
-        elif isfile(fname_woext + '.fullBZ.WFSX'):
-            filename = fname_woext + '.fullBZ.WFSX'
-            readWFSX(filename)
-            self.results['wfsx'] = readWFSX(filename)
-        else:
-            self.results['wfsx'] = None
-
-    def read_pseudo_density(self):
-        """Read the density if it is there."""
-        filename = self.getpath(ext='RHO')
-        if isfile(filename):
-            self.results['density'] = read_rho(filename)
-
-    def read_number_of_grid_points(self):
-        """Read number of grid points from SIESTA's text-output file. """
-
-        fname = self.getpath(ext='out')
-        with open(fname) as fd:
-            for line in fd:
-                line = line.strip().lower()
-                if line.startswith('initmesh: mesh ='):
-                    n_points = [int(word) for word in line.split()[3:8:2]]
-                    self.results['n_grid_point'] = n_points
-                    break
-            else:
-                raise RuntimeError
-
-    def read_energy(self):
-        """Read energy from SIESTA's text-output file.
-        """
-        fname = self.getpath(ext='out')
-        with open(fname) as fd:
-            text = fd.read().lower()
-
-        assert 'final energy' in text
-        lines = iter(text.split('\n'))
-
-        # Get the energy and free energy the last time it appears
-        for line in lines:
-            has_energy = line.startswith('siesta: etot    =')
-            if has_energy:
-                self.results['energy'] = float(line.split()[-1])
-                line = next(lines)
-                self.results['free_energy'] = float(line.split()[-1])
-
-        if ('energy' not in self.results or
-                'free_energy' not in self.results):
-            raise RuntimeError
-
-    def read_forces_stress(self):
-        """Read the forces and stress from the FORCE_STRESS file.
-        """
-        fname = self.getpath('FORCE_STRESS')
-        with open(fname) as fd:
-            lines = fd.readlines()
-
-        stress_lines = lines[1:4]
-        stress = np.empty((3, 3))
-        for i in range(3):
-            line = stress_lines[i].strip().split(' ')
-            line = [s for s in line if len(s) > 0]
-            stress[i] = [float(s) for s in line]
-
-        self.results['stress'] = np.array(
-            [stress[0, 0], stress[1, 1], stress[2, 2],
-             stress[1, 2], stress[0, 2], stress[0, 1]])
-
-        self.results['stress'] *= Ry / Bohr**3
-
-        start = 5
-        self.results['forces'] = np.zeros((len(lines) - start, 3), float)
-        for i in range(start, len(lines)):
-            line = [s for s in lines[i].strip().split(' ') if len(s) > 0]
-            self.results['forces'][i - start] = [float(s) for s in line[2:5]]
-
-        self.results['forces'] *= Ry / Bohr
-
-    def read_eigenvalues(self):
-        """ A robust procedure using the suggestion by Federico Marchesin """
-
-        file_name = self.getpath(ext='EIG')
-        try:
-            with open(file_name) as fd:
-                self.results['fermi_energy'] = float(fd.readline())
-                n, num_hamilton_dim, nkp = map(int, fd.readline().split())
-                _ee = np.split(
-                    np.array(fd.read().split()).astype(float), nkp)
-        except OSError:
-            return 1
-
-        n_spin = 1 if num_hamilton_dim > 2 else num_hamilton_dim
-        ksn2e = np.delete(_ee, 0, 1).reshape([nkp, n_spin, n])
-
-        eig_array = np.empty((n_spin, nkp, n))
-        eig_array[:] = np.inf
-
-        for k, sn2e in enumerate(ksn2e):
-            for s, n2e in enumerate(sn2e):
-                eig_array[s, k, :] = n2e
-
-        assert np.isfinite(eig_array).all()
-
-        self.results['eigenvalues'] = eig_array
-        return 0
-
-    def read_kpoints(self):
-        """ Reader of the .KP files """
-
-        fname = self.getpath(ext='KP')
-        try:
-            with open(fname) as fd:
-                nkp = int(next(fd))
-                kpoints = np.empty((nkp, 3))
-                kweights = np.empty(nkp)
-
-                for i in range(nkp):
-                    line = next(fd)
-                    tokens = line.split()
-                    numbers = np.array(tokens[1:]).astype(float)
-                    kpoints[i] = numbers[:3]
-                    kweights[i] = numbers[3]
-
-        except (OSError):
-            return 1
-
-        self.results['kpoints'] = kpoints
-        self.results['kweights'] = kweights
-
-        return 0
-
-    def read_dipole(self):
-        """Read dipole moment. """
-        dipole = np.zeros([1, 3])
-        with open(self.getpath(ext='out')) as fd:
-            for line in fd:
-                if line.rfind('Electric dipole (Debye)') > -1:
-                    dipole = np.array([float(f) for f in line.split()[5:8]])
-        # debye to e*Ang
-        self.results['dipole'] = dipole * 0.2081943482534
+    def band_structure(self):
+        return self.results['bandstructure']
 
     def get_fermi_level(self):
         return self.results['fermi_energy']
 
     def get_k_point_weights(self):
-        return self.results['kweights']
+        return self.results['kpoint_weights']
 
     def get_ibz_k_points(self):
         return self.results['kpoints']
 
+    def get_eigenvalues(self, kpt=0, spin=0):
+        return self.results['eigenvalues'][spin, kpt]
 
-class Siesta3_2(Siesta):
-    @deprecated(
-        "The Siesta3_2 calculator class will no longer be supported. "
-        "Use 'ase.calculators.siesta.Siesta instead. "
-        "If using the ASE interface with SIESTA 3.2 you must explicitly "
-        "include the keywords 'SpinPolarized', 'NonCollinearSpin' and "
-        "'SpinOrbit' if needed.",
-        FutureWarning
-    )
-    def __init__(self, *args, **kwargs):
-        """
-        .. deprecated: 3.18.2
-            The Siesta3_2 calculator class will no longer be supported.
-            Use :class:`~ase.calculators.siesta.Siesta` instead.
-            If using the ASE interface with SIESTA 3.2 you must explicitly
-            include the keywords 'SpinPolarized', 'NonCollinearSpin' and
-            'SpinOrbit' if needed.
-        """
-        Siesta.__init__(self, *args, **kwargs)
+    def get_number_of_spins(self):
+        return self.results['eigenvalues'].shape[0]
+
+
+def generate_atomic_coordinates(atoms: Atoms, species_numbers,
+                                atomic_coord_format: str):
+    """Write atomic coordinates.
+
+    Parameters
+    ----------
+    fd : IO
+        An open file object.
+    atoms : Atoms
+        An atoms object.
+    """
+    if atomic_coord_format == 'xyz':
+        return generate_atomic_coordinates_xyz(atoms, species_numbers)
+    elif atomic_coord_format == 'zmatrix':
+        return generate_atomic_coordinates_zmatrix(atoms, species_numbers)
+    else:
+        raise RuntimeError(
+            f'Unknown atomic_coord_format: {atomic_coord_format}')
+
+
+def generate_atomic_coordinates_zmatrix(atoms: Atoms, species_numbers):
+    """Write atomic coordinates in Z-matrix format.
+
+    Parameters
+    ----------
+    fd : IO
+        An open file object.
+    atoms : Atoms
+        An atoms object.
+    """
+    yield '\n'
+    yield var('ZM.UnitsLength', 'Ang')
+    yield '%block Zmatrix\n'
+    yield '  cartesian\n'
+
+    fstr = "{:5d}" + "{:20.10f}" * 3 + "{:3d}" * 3 + "{:7d} {:s}\n"
+    a2constr = SiestaInput.make_xyz_constraints(atoms)
+    a2p, a2s = atoms.get_positions(), atoms.symbols
+    for ia, (sp, xyz, ccc, sym) in enumerate(
+            zip(species_numbers, a2p, a2constr, a2s)):
+        yield fstr.format(
+            sp, xyz[0], xyz[1], xyz[2], ccc[0],
+            ccc[1], ccc[2], ia + 1, sym)
+    yield '%endblock Zmatrix\n'
+
+    # origin = tuple(-atoms.get_celldisp().flatten())
+    # yield block('AtomicCoordinatesOrigin', [origin])
+
+
+def generate_atomic_coordinates_xyz(atoms: Atoms, species_numbers):
+    """Write atomic coordinates.
+
+    Parameters
+    ----------
+    fd : IO
+        An open file object.
+    atoms : Atoms
+        An atoms object.
+    """
+    yield '\n'
+    yield var('AtomicCoordinatesFormat', 'Ang')
+    yield block('AtomicCoordinatesAndAtomicSpecies',
+                [[*atom.position, number]
+                 for atom, number in zip(atoms, species_numbers)])
+    yield '\n'
+
+    # origin = tuple(-atoms.get_celldisp().flatten())
+    # yield block('AtomicCoordinatesOrigin', [origin])
+
+
+@dataclass
+class SpeciesInfo:
+    atoms: Atoms
+    pseudo_path: Path
+    pseudo_qualifier: str
+    species: dict  # actually a kind of Parameters object, should refactor
+
+    def __post_init__(self):
+        pao_basis = []
+        chemical_labels = []
+        basis_sizes = []
+        file_instructions = []
+
+        for species_number, spec in enumerate(self.species, start=1):
+            symbol = spec['symbol']
+            atomic_number = atomic_numbers[symbol]
+
+            if spec['pseudopotential'] is None:
+                if self.pseudo_qualifier == '':
+                    label = symbol
+                else:
+                    label = f"{symbol}.{self.pseudo_qualifier}"
+                src_path = self.pseudo_path / f"{label}.psf"
+            else:
+                src_path = Path(spec['pseudopotential'])
+
+            if not src_path.is_absolute():
+                src_path = self.pseudo_path / src_path
+            if not src_path.exists():
+                src_path = self.pseudo_path / f"{symbol}.psml"
+
+            name = src_path.name
+            name = name.split('.')
+            name.insert(-1, str(species_number))
+            if spec['ghost']:
+                name.insert(-1, 'ghost')
+                atomic_number = -atomic_number
+
+            name = '.'.join(name)
+
+            instr = FileInstruction(src_path, name)
+            file_instructions.append(instr)
+
+            label = '.'.join(np.array(name.split('.'))[:-1])
+            pseudo_name = ''
+            if src_path.suffix != '.psf':
+                pseudo_name = f'{label}{src_path.suffix}'
+            string = '    %d %d %s %s' % (species_number, atomic_number, label,
+                                          pseudo_name)
+            chemical_labels.append(string)
+            if isinstance(spec['basis_set'], PAOBasisBlock):
+                pao_basis.append(spec['basis_set'].script(label))
+            else:
+                basis_sizes.append(("    " + label, spec['basis_set']))
+
+        self.file_instructions = file_instructions
+        self.chemical_labels = chemical_labels
+        self.pao_basis = pao_basis
+        self.basis_sizes = basis_sizes
+
+    def generate_text(self):
+        yield var('NumberOfSpecies', len(self.species))
+        yield var('NumberOfAtoms', len(self.atoms))
+
+        yield var('ChemicalSpecieslabel', self.chemical_labels)
+        yield '\n'
+        yield var('PAO.Basis', self.pao_basis)
+        yield var('PAO.BasisSizes', self.basis_sizes)
+        yield '\n'
+
+
+@dataclass
+class FileInstruction:
+    src_path: Path
+    targetname: str
+
+    def copy_to(self, directory):
+        self._link(shutil.copy, directory)
+
+    def symlink_to(self, directory):
+        self._link(os.symlink, directory)
+
+    def _link(self, file_operation, directory):
+        dst_path = directory / self.targetname
+        if self.src_path == dst_path:
+            return
+
+        dst_path.unlink(missing_ok=True)
+        file_operation(self.src_path, dst_path)
+
+
+@dataclass
+class FDFWriter:
+    name: str
+    xc: str
+    fdf_user_args: dict
+    more_fdf_args: dict
+    mesh_cutoff: float
+    energy_shift: float
+    spin: str
+    species_numbers: object  # ?
+    atomic_coord_format: str
+    kpts: object  # ?
+    bandpath: object  # ?
+    species_info: object
+
+    def write(self, fd):
+        for chunk in self.generate_text():
+            fd.write(chunk)
+
+    def generate_text(self):
+        yield var('SystemName', self.name)
+        yield var('SystemLabel', self.name)
+        yield "\n"
+
+        # Write explicitly given options first to
+        # allow the user to override anything.
+        fdf_arguments = self.fdf_user_args
+        for key in sorted(fdf_arguments):
+            yield var(key, fdf_arguments[key])
+
+        # Force siesta to return error on no convergence.
+        # as default consistent with ASE expectations.
+        if 'SCFMustConverge' not in fdf_arguments:
+            yield var('SCFMustConverge', True)
+        yield '\n'
+
+        yield var('Spin', self.spin)
+        # Spin backwards compatibility.
+        if self.spin == 'collinear':
+            key = 'SpinPolarized'
+        elif self.spin == 'non-collinear':
+            key = 'NonCollinearSpin'
+        else:
+            key = None
+
+        if key is not None:
+            yield var(key, (True, '# Backwards compatibility.'))
+
+        # Write functional.
+        functional, authors = self.xc
+        yield var('XC.functional', functional)
+        yield var('XC.authors', authors)
+        yield '\n'
+
+        # Write mesh cutoff and energy shift.
+        yield var('MeshCutoff', (self.mesh_cutoff, 'eV'))
+        yield var('PAO.EnergyShift', (self.energy_shift, 'eV'))
+        yield '\n'
+
+        yield from self.species_info.generate_text()
+        yield from self.generate_atoms_text(self.species_info.atoms)
+
+        for key, value in self.more_fdf_args.items():
+            yield var(key, value)
+
+        if self.kpts is not None:
+            kpts = np.array(self.kpts)
+            yield from SiestaInput.generate_kpts(kpts)
+
+        if self.bandpath is not None:
+            lines = bandpath2bandpoints(self.bandpath)
+            assert isinstance(lines, str)  # rename this variable?
+            yield lines
+            yield '\n'
+
+    def generate_atoms_text(self, atoms: Atoms):
+        """Translate the Atoms object to fdf-format."""
+
+        cell = atoms.cell
+        yield '\n'
+
+        if cell.rank in [1, 2]:
+            raise ValueError('Expected 3D unit cell or no unit cell.  You may '
+                             'wish to add vacuum along some directions.')
+
+        if np.any(cell):
+            yield var('LatticeConstant', '1.0 Ang')
+            yield block('LatticeVectors', cell)
+
+        yield from generate_atomic_coordinates(
+            atoms, self.species_numbers, self.atomic_coord_format)
+
+        # Write magnetic moments.
+        magmoms = atoms.get_initial_magnetic_moments()
+
+        # The DM.InitSpin block must be written to initialize to
+        # no spin. SIESTA default is FM initialization, if the
+        # block is not written, but  we must conform to the
+        # atoms object.
+        if len(magmoms) == 0:
+            yield '#Empty block forces ASE initialization.\n'
+
+        yield '%block DM.InitSpin\n'
+        if len(magmoms) != 0 and isinstance(magmoms[0], np.ndarray):
+            for n, M in enumerate(magmoms):
+                if M[0] != 0:
+                    yield ('    %d %.14f %.14f %.14f \n'
+                           % (n + 1, M[0], M[1], M[2]))
+        elif len(magmoms) != 0 and isinstance(magmoms[0], float):
+            for n, M in enumerate(magmoms):
+                if M != 0:
+                    yield '    %d %.14f \n' % (n + 1, M)
+        yield '%endblock DM.InitSpin\n'
+        yield '\n'
+
+    def link_pseudos_into_directory(self, *, symlink_pseudos=None, directory):
+        if symlink_pseudos is None:
+            symlink_pseudos = os.name != 'nt'
+
+        for instruction in self.species_info.file_instructions:
+            if symlink_pseudos:
+                instruction.symlink_to(directory)
+            else:
+                instruction.copy_to(directory)
+
+
+# Utilities for generating bits of strings.
+#
+# We are re-aliasing format_fdf and format_block in the anticipation
+# that they may change, or we might move this onto a Formatter object
+# which applies consistent spacings etc.
+def var(key, value):
+    return format_fdf(key, value)
+
+
+def block(name, data):
+    return format_block(name, data)

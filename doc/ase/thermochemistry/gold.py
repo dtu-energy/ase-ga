@@ -19,10 +19,15 @@ potentialenergy = atoms.get_potential_energy()
 # Phonon analysis
 N = 5
 ph = Phonons(atoms, calc, supercell=(N, N, N), delta=0.05)
-ph.run()
-ph.read(acoustic=True)
-phonon_energies, phonon_DOS = ph.dos(kpts=(40, 40, 40), npts=3000,
-                                     delta=5e-4)
+try:
+    ph.run()
+    ph.read(acoustic=True)
+finally:
+    ph.clean()
+dos = ph.get_dos(kpts=(40, 40, 40)).sample_grid(npts=3000, width=5e-4, xmin=0.0)
+phonon_energies = dos.get_energies()
+phonon_DOS = dos.get_weights()
+
 
 # Calculate the Helmholtz free energy
 thermo = CrystalThermo(phonon_energies=phonon_energies,

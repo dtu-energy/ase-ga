@@ -252,16 +252,17 @@ only some of them have a calculator attached::
 Create the NEB object with ``NEB(images, parallel=True)``.
 For a complete example using GPAW_, see here_.
 
-.. _GPAW: https://wiki.fysik.dtu.dk/gpaw
-.. _gpaw-python: https://wiki.fysik.dtu.dk/gpaw/documentation/manual.html#parallel-calculations
-.. _here: https://wiki.fysik.dtu.dk/gpaw/tutorials/neb/neb.html
+.. _GPAW: https://gpaw.readthedocs.io/
+.. _gpaw-python: https://gpaw.readthedocs.io/documentation/parallel_runs/parallel_runs.html
+.. _here: https://gpaw.readthedocs.io/tutorialsexercises/moleculardynamics/neb/neb.html
+
 
 Using Shared Calculators
 ========================
 
 Some calculators may parallelize well outside of ASE, or constructing them
 consumes resources, for this purpose the user can allow the usage of shared
-calculators with the `allow_shared_calculator` parameter of NEB.
+calculators with the ``allow_shared_calculator`` parameter of NEB.
 
 
 .. _nebtools:

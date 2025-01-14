@@ -21,12 +21,20 @@ import os
 import re
 import sys
 import warnings
-from pathlib import Path, PurePath
-from typing import (IO, Any, Dict, Iterable, List, Optional, Sequence, Tuple,
-                    Union)
-
-from importlib.metadata import entry_points
 from importlib import import_module
+from importlib.metadata import entry_points
+from pathlib import Path, PurePath
+from typing import (
+    IO,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 from ase.atoms import Atoms
 from ase.parallel import parallel_function, parallel_generator
@@ -128,7 +136,7 @@ class IOFormat:
         return self.can_write and 'append' in writefunc.__code__.co_varnames
 
     def __repr__(self) -> str:
-        tokens = [f'{name}={repr(value)}'
+        tokens = [f'{name}={value!r}'
                   for name, value in vars(self).items()]
         return 'IOFormat({})'.format(', '.join(tokens))
 
@@ -582,7 +590,7 @@ def open_with_compression(filename: str, mode: str = 'r') -> IO:
     elif mode == 'a':
         mode = 'at'
 
-    root, compression = get_compression(filename)
+    _root, compression = get_compression(filename)
 
     if compression == 'gz':
         import gzip
@@ -747,7 +755,7 @@ def _write(filename, fd, format, io, images, parallel=None, append=False,
 def read(
         filename: NameOrFile,
         index: Any = None,
-        format: str = None,
+        format: Optional[str] = None,
         parallel: bool = True,
         do_not_split_by_at_sign: bool = False,
         **kwargs
@@ -942,7 +950,7 @@ def filetype(
             return 'mysql'
 
         # strip any compression extensions that can be read
-        root, compression = get_compression(filename)
+        root, _compression = get_compression(filename)
         basename = os.path.basename(root)
 
         if '.' in basename:

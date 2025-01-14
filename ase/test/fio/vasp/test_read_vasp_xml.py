@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from ase.constraints import FixAtoms, FixScaled
 from ase.io import read
 from ase.units import GPa
 
@@ -343,3 +344,27 @@ def test_vasp_parameters(vasprun, calculation):
                      ('isym', 0), ('symprec', 1e-05)])
 
     assert atoms.calc.parameters == expected_parameters
+
+
+def test_constraints(vasprun):
+    """Test if constraints are parsed correctly."""
+    selective = [
+        '  <varray name="selective"  type="logical" >\n',
+        '   <v type="logical" >  T  T  F </v>\n',
+        '   <v type="logical" >  F  F  F </v>\n',
+        '  </varray>\n',
+    ]
+
+    # insert the selective block before the last </structure>
+    tmp = vasprun.splitlines(keepends=True)
+    tmp[-1:-1] = selective
+    vasprun = ''.join(tmp)
+
+    atoms = read(StringIO(vasprun), index=-1, format='vasp-xml')
+
+    assert isinstance(atoms.constraints[0], FixScaled)
+    assert np.all(atoms.constraints[0].index == [0])
+    assert np.all(atoms.constraints[0].mask == [False, False, True])
+
+    assert isinstance(atoms.constraints[1], FixAtoms)
+    assert np.all(atoms.constraints[1].index == [1])

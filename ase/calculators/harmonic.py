@@ -3,9 +3,13 @@ from numpy.linalg import eigh, norm, pinv
 from scipy.linalg import lstsq  # performs better than numpy.linalg.lstsq
 
 from ase import units
-from ase.calculators.calculator import (BaseCalculator, CalculationFailed,
-                                        Calculator, CalculatorSetupError,
-                                        all_changes)
+from ase.calculators.calculator import (
+    BaseCalculator,
+    CalculationFailed,
+    Calculator,
+    CalculatorSetupError,
+    all_changes,
+)
 
 
 class HarmonicCalculator(BaseCalculator):
@@ -219,9 +223,9 @@ class HarmonicForceField:
         hessian_x = 0.5 * (hessian_x + hessian_x.T)  # guarantee symmetry
         w, v = eigh(hessian_x)  # rot. and trans. degrees of freedom are removed
         w[np.abs(w) < self.parameters['zero_thresh']] = 0.0  # noise-cancelling
-        w[(0.0 < w) &  # substitute small eigenvalues by lower limit
-          (w < self.parameters['hessian_limit'])] = \
-            self.parameters['hessian_limit']
+        w[(w > 0.0) & (w < self.parameters['hessian_limit'])] = self.parameters[
+            'hessian_limit'
+        ]
         # reconstruct Hessian from new eigenvalues and preserved eigenvectors
         hessian_x = v @ np.diagflat(w) @ v.T  # v.T == inv(v) due to symmetry
         self._hessian_x = 0.5 * (hessian_x + hessian_x.T)  # guarantee symmetry

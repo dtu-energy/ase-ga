@@ -8,8 +8,14 @@ from ase import Atoms
 from ase.build import molecule
 from ase.calculators.calculator import compare_atoms
 from ase.io.bytes import parse_atoms, to_bytes
-from ase.io.cif import (CIFLoop, NoStructureData, parse_cif, parse_loop,
-                        read_cif, write_cif)
+from ase.io.cif import (
+    CIFLoop,
+    NoStructureData,
+    parse_cif,
+    parse_loop,
+    read_cif,
+    write_cif,
+)
 
 
 def parse_string(string):
@@ -276,11 +282,8 @@ def test_cif():
     elements = np.unique(atoms_leg.get_atomic_numbers())
     for n in (11, 17, 53):
         assert n in elements
-    try:
-        atoms_leg.info['occupancy']
-        raise AssertionError
-    except KeyError:
-        pass
+
+    assert 'occupancy' not in atoms_leg.info
 
     cif_file = io.StringIO(content)
     # new behavior is to still not read the K atoms, but build info
@@ -368,7 +371,7 @@ def test_cif_icsd():
     assert 'occupancy' in atoms.info
 
 
-@pytest.fixture
+@pytest.fixture()
 def cif_atoms():
     cif_file = io.StringIO(content)
     return read_cif(cif_file)
@@ -491,7 +494,7 @@ _symmetry_space_group_name_H-M         'R-3m'
     assert spg.setting == ref_setting
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     return Atoms('CO', cell=[2., 3., 4., 50., 60., 70.], pbc=True,
                  scaled_positions=[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
@@ -603,3 +606,23 @@ def test_cif_with_empty_symmetries_loop():
     assert str(atoms.symbols) == 'Cu8'
     assert atoms.cell.lengths() == pytest.approx(5.1053)
     assert atoms.cell.angles() == pytest.approx(60)
+
+
+def test_cif_with_strings_for_integers():
+    # Test that even if spacegroup is given as '42' with ticks, we can
+    # still convert it to integer and thus actual Spacegroup.
+
+    buf = """\
+data_cif
+_cell_length_a               1
+_cell_length_b               1
+_cell_length_c               1
+_cell_angle_alpha            90
+_cell_angle_beta             90
+_cell_angle_gamma            90
+_symmetry_space_group_H-M        'P1'
+_symmetry_Int_Tables_number      '42'
+"""
+
+    block = parse_string(buf)[0]
+    assert block.get_spacegroup(subtrans_included=True).no == 42

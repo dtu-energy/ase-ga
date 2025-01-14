@@ -1,7 +1,15 @@
 import pytest
 
-from ase.build import (bcc111, bcc111_root, fcc111, fcc111_root, hcp0001,
-                       hcp0001_root, root_surface, root_surface_analysis)
+from ase.build import (
+    bcc111,
+    bcc111_root,
+    fcc111,
+    fcc111_root,
+    hcp0001,
+    hcp0001_root,
+    root_surface,
+    root_surface_analysis,
+)
 
 
 def test_root_surf():

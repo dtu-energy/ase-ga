@@ -10,24 +10,30 @@ Webpage: http://wiki.fysik.dtu.dk/ase
 Requirements
 ------------
 
-* Python_ 3.8 or later
+* Python_ 3.9 or later
 * NumPy_ (base N-dimensional array package)
 * SciPy_ (library for scientific computing)
+* Matplotlib_ (2D Plotting)
 
 Optional:
 
-
-* For ASE's GUI: Matplotlib_ (2D Plotting)
-* tkinter (for ase.gui)
-* Flask (for ase.db web-interface)
-
+* Flask_ (for ase.db web-interface)
+* spglib_ (for symmetry operations)
 
 Installation
 ------------
 
-Add ``~/ase`` to your $PYTHONPATH environment variable and add
-``~/ase/bin`` to $PATH (assuming ``~/ase`` is where your ASE folder is).
+To install the latest release:
 
+::
+
+  pip install ase
+
+To install the development version:
+
+::
+
+  pip install git+https://gitlab.com/ase/ase.git
 
 Testing
 -------
@@ -89,6 +95,8 @@ This example requires NWChem to be installed.
 .. _NumPy: http://docs.scipy.org/doc/numpy/reference/
 .. _SciPy: http://docs.scipy.org/doc/scipy/reference/
 .. _Matplotlib: http://matplotlib.org/
+.. _flask: https://pypi.org/project/Flask/
+.. _spglib: https://github.com/spglib/spglib
 .. _ase-users: https://listserv.fysik.dtu.dk/mailman/listinfo/ase-users
 .. _Matrix: https://matrix.to/#/!JEiuNJLuxedbohAOuH:matrix.org
 .. _Element: https://app.element.io/#/room/#ase:matrix.org

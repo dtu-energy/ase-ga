@@ -70,13 +70,9 @@ commands = {
          '-o', '--output', '-g', '--graph', '-t', '--terminal',
          '--interpolate', '-b', '--bonds', '-s', '--scale'],
     'info':
-        ['-v', '--verbose', '--formats', '--config', '--calculators'],
+        ['--files', '-v', '--verbose', '--formats', '--calculators'],
     'nebplot':
         ['--nimages', '--share-x', '--share-y'],
-    'nomad-get':
-        [],
-    'nomad-upload':
-        ['-t', '--token', '-n', '--no-save-token', '-0', '--dry-run'],
     'reciprocal':
         [],
     'run':
@@ -136,13 +132,6 @@ def complete(word, previous, line, point):
                 words.append(path)
 
     return words
-
-
-if sys.version_info[0] == 2:
-    import warnings
-    warnings.warn('Command-line completion running with python2.  '
-                  'Your ASE autocompletion setup is probably outdated.  '
-                  'Please consider rerunning \'ase completion\'.')
 
 
 def main():

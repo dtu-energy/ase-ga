@@ -4,13 +4,15 @@ from typing import List, Tuple, Union
 import numpy as np
 
 from ase.atoms import Atoms
-from ase.calculators.singlepoint import (SinglePointDFTCalculator,
-                                         SinglePointKPoint)
+from ase.calculators.singlepoint import (
+    SinglePointDFTCalculator,
+    SinglePointKPoint,
+)
 
 
 def index_startswith(lines: List[str], string: str) -> int:
     for i, line in enumerate(lines):
-        if line.startswith(string):
+        if line.strip().startswith(string):
             return i
     raise ValueError
 
@@ -51,6 +53,14 @@ def read_stresses(lines: List[str],
 def read_gpaw_out(fileobj, index):  # -> Union[Atoms, List[Atoms]]:
     """Read text output from GPAW calculation."""
     lines = [line.lower() for line in fileobj.readlines()]
+
+    # read charge
+    try:
+        ii = index_startswith(lines, 'total charge:')
+    except ValueError:
+        q = None
+    else:
+        q = float(lines[ii].split()[2])
 
     blocks = []
     i1 = 0
@@ -149,11 +159,11 @@ def read_gpaw_out(fileobj, index):  # -> Union[Atoms, List[Atoms]]:
         # read Eigenvalues and occupations
         ii1 = ii2 = 1e32
         try:
-            ii1 = index_startswith(lines, ' band   eigenvalues  occupancy')
+            ii1 = index_startswith(lines, 'band   eigenvalues  occupancy')
         except ValueError:
             pass
         try:
-            ii2 = index_startswith(lines, ' band  eigenvalues  occupancy')
+            ii2 = index_startswith(lines, 'band  eigenvalues  occupancy')
         except ValueError:
             pass
         ii = min(ii1, ii2)
@@ -175,13 +185,6 @@ def read_gpaw_out(fileobj, index):  # -> Union[Atoms, List[Atoms]]:
                 kpts.append(SinglePointKPoint(1, 1, 0))
                 kpts[1].eps_n = vals[3]
                 kpts[1].f_n = vals[4]
-        # read charge
-        try:
-            ii = index_startswith(lines, 'total charge:')
-        except ValueError:
-            q = None
-        else:
-            q = float(lines[ii].split()[2])
         # read dipole moment
         try:
             ii = index_startswith(lines, 'dipole moment:')
@@ -200,7 +203,11 @@ def read_gpaw_out(fileobj, index):  # -> Union[Atoms, List[Atoms]]:
         else:
             magmoms = []
             for j in range(ii + 1, ii + 1 + len(atoms)):
-                magmom = lines[j].split()[-1].rstrip(')')
+                line = lines[j]
+                if '#' in line:  # new GPAW format
+                    magmom = line.split()[-4].split(']')[0]
+                else:
+                    magmom = line.split()[-1].rstrip(')')
                 magmoms.append(float(magmom))
 
         try:

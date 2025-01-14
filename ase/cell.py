@@ -117,7 +117,7 @@ class Cell:
         """
         from ase.lattice import identify_lattice
         pbc = self.mask() & pbc2pbc(pbc)
-        lat, op = identify_lattice(self, eps=eps, pbc=pbc)
+        lat, _op = identify_lattice(self, eps=eps, pbc=pbc)
         return lat
 
     def bandpath(
@@ -227,11 +227,8 @@ class Cell:
         """Return an array with the three angles alpha, beta, and gamma."""
         return self.cellpar()[3:].copy()
 
-    def __array__(self, dtype=float):
-        if dtype != float:
-            raise ValueError('Cannot convert cell to array of type {}'
-                             .format(dtype))
-        return self.array
+    def __array__(self, dtype=None, copy=False):
+        return np.array(self.array, dtype=dtype, copy=copy)
 
     def __bool__(self):
         return bool(self.any())  # need to convert from np.bool_

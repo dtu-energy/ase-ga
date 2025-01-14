@@ -1,10 +1,12 @@
-from typing import IO, Optional, Union
-import numpy as np
 import time
-from ase.optimize import BFGS
-from ase.optimize.optimize import Dynamics
+from typing import IO, Optional, Union
+
+import numpy as np
+
 from ase import Atoms
 from ase.geometry import cell_to_cellpar
+from ase.optimize import BFGS
+from ase.optimize.optimize import Dynamics
 from ase.units import GPa
 
 
@@ -59,19 +61,21 @@ class CellAwareBFGS(BFGS):
         restart: Optional[str] = None,
         logfile: Union[IO, str] = '-',
         trajectory: Optional[str] = None,
+        append_trajectory: bool = False,
         maxstep: Optional[float] = None,
-        master: Optional[bool] = None,
         bulk_modulus: Optional[float] = 145 * GPa,
         poisson_ratio: Optional[float] = 0.3,
         alpha: Optional[float] = None,
         long_output: Optional[bool] = False,
+        **kwargs,
     ):
         self.bulk_modulus = bulk_modulus
         self.poisson_ratio = poisson_ratio
         self.long_output = long_output
         BFGS.__init__(self, atoms=atoms, restart=restart, logfile=logfile,
-                      trajectory=trajectory, maxstep=maxstep, master=master,
-                      alpha=alpha)
+                      trajectory=trajectory, maxstep=maxstep,
+                      alpha=alpha, append_trajectory=append_trajectory,
+                      **kwargs)
         assert not isinstance(atoms, Atoms)
         if hasattr(atoms, 'exp_cell_factor'):
             assert atoms.exp_cell_factor == 1.0
@@ -90,7 +94,7 @@ class CellAwareBFGS(BFGS):
     def converged(self, forces=None):
         if forces is None:
             forces = self.atoms.atoms.get_forces()
-        stress = self.atoms.atoms.get_stress()
+        stress = self.atoms.atoms.get_stress(voigt=False) * self.atoms.mask
         return np.max(np.sum(forces**2, axis=1))**0.5 < self.fmax and \
             np.max(np.abs(stress)) < self.smax
 
@@ -108,7 +112,8 @@ class CellAwareBFGS(BFGS):
         fmax = (forces ** 2).sum(axis=1).max() ** 0.5
         e = self.optimizable.get_potential_energy()
         T = time.localtime()
-        smax = abs(self.atoms.atoms.get_stress()).max()
+        smax = abs(self.atoms.atoms.get_stress(voigt=False) *
+                   self.atoms.mask).max()
         volume = self.atoms.atoms.cell.volume
         if self.logfile is not None:
             name = self.__class__.__name__

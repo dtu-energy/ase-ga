@@ -92,8 +92,7 @@ ABC calculator example
 
 The constructor will look like this::
 
-  ABC(restart=None, ignore_bad_restart=False, label=None,
-      atoms=None, **kwargs)
+  ABC(restart=None, ignore_bad_restart=False, label=None,**kwargs)
 
 A calculator should be able to prefix all output files with a given
 label or run the calculation in a directory with a specified name.
@@ -149,20 +148,6 @@ If we do:
 -0.7
 
 then the :file:`si.abc` will be overwritten or maybe appended to.
-
-An alternative way to connect atoms and calculator:
-
->>> atoms = ...
->>> calc = ABC(restart='si.abc', label='si.abc', atoms=atoms)
->>> atoms.get_potential_energy()
--0.7
-
-This will automatically attach the calculator to the atoms and the
-atoms will be updated form the file.  If you add
-``ignore_bad_restart=True``, you will be able to use the same
-script to do the initial calculation where :file:`si.abc` does not
-exist and following calculations where atoms may have been moved
-around by an optimization algorithm.
 
 The command used to start the ABC code can be given in an environment
 variable called ``ASE_ABC_COMMAND`` or as a ``command``

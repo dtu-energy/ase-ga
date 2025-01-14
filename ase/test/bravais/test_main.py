@@ -5,9 +5,7 @@ from ase.build import bulk, fcc111
 from ase.cell import Cell
 from ase.lattice import bravais_lattices
 
-bravais = {}
-for name in bravais_lattices:
-    bravais[name.lower()] = bravais_lattices[name]
+bravais = {name.lower(): bravais_lattices[name] for name in bravais_lattices}
 
 
 def check_single(name, cell, pbc=(True, True, True)):

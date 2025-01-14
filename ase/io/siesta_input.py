@@ -26,15 +26,15 @@ class SiestaInput:
         return False
 
     @classmethod
-    def write_kpts(cls, fd, kpts):
+    def generate_kpts(cls, kpts):
         """Write kpts.
 
         Parameters:
             - f : Open filename.
         """
-        fd.write('\n')
-        fd.write('#KPoint grid\n')
-        fd.write('%block kgrid_Monkhorst_Pack\n')
+        yield '\n'
+        yield '#KPoint grid\n'
+        yield '%block kgrid_Monkhorst_Pack\n'
 
         for i in range(3):
             s = ''
@@ -51,35 +51,35 @@ class SiestaInput:
                     write_this = 0
                 s += f'     {write_this:d}  '
             s += f'{displace:1.1f}\n'
-            fd.write(s)
-        fd.write('%endblock kgrid_Monkhorst_Pack\n')
-        fd.write('\n')
+            yield s
+        yield '%endblock kgrid_Monkhorst_Pack\n'
+        yield '\n'
 
     @classmethod
     def get_species(cls, atoms, species, basis_set):
         from ase.calculators.siesta.parameters import Species
+
         # For each element use default species from the species input, or set
         # up a default species  from the general default parameters.
-        symbols = np.array(atoms.get_chemical_symbols())
         tags = atoms.get_tags()
         default_species = [
             s for s in species
-            if (s['tag'] is None) and s['symbol'] in symbols]
+            if (s['tag'] is None) and s['symbol'] in atoms.symbols]
         default_symbols = [s['symbol'] for s in default_species]
-        for symbol in symbols:
+        for symbol in atoms.symbols:
             if symbol not in default_symbols:
                 spec = Species(symbol=symbol,
                                basis_set=basis_set,
                                tag=None)
                 default_species.append(spec)
                 default_symbols.append(symbol)
-        assert len(default_species) == len(np.unique(symbols))
+        assert len(default_species) == len(set(atoms.symbols))
 
         # Set default species as the first species.
         species_numbers = np.zeros(len(atoms), int)
         i = 1
         for spec in default_species:
-            mask = symbols == spec['symbol']
+            mask = atoms.symbols == spec['symbol']
             species_numbers[mask] = i
             i += 1
 
@@ -87,11 +87,11 @@ class SiestaInput:
         non_default_species = [s for s in species if s['tag'] is not None]
         for spec in non_default_species:
             mask1 = tags == spec['tag']
-            mask2 = symbols == spec['symbol']
+            mask2 = atoms.symbols == spec['symbol']
             mask = np.logical_and(mask1, mask2)
             if sum(mask) > 0:
                 species_numbers[mask] = i
-                i += 1
+            i += 1
         all_species = default_species + non_default_species
 
         return all_species, species_numbers
@@ -126,5 +126,5 @@ class SiestaInput:
             elif isinstance(const, FixCartesian):
                 moved[const.get_indices()] = 1 - const.mask.astype(int)
             else:
-                warnings.warn(f'Constraint {str(const)} is ignored')
+                warnings.warn(f'Constraint {const!s} is ignored')
         return moved

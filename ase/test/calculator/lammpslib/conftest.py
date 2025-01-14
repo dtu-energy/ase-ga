@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture()
 def calc_params_NiH():
     calc_params = {}
     calc_params["lmpcmds"] = [
@@ -14,7 +14,7 @@ def calc_params_NiH():
     return calc_params
 
 
-@pytest.fixture
+@pytest.fixture()
 def dimer_params():
     dimer_params = {}
     a = 2.0

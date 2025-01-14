@@ -463,7 +463,7 @@ class Phonons(Displacement):
 
         # Symmetrize force constants
         if symmetrize:
-            for i in range(symmetrize):
+            for _ in range(symmetrize):
                 # Symmetrize
                 C_N = self.symmetrize(C_N)
                 # Restore acoustic sum-rule
@@ -582,6 +582,9 @@ class Phonons(Displacement):
         `band_structure` method of the `Phonons` class. The method can
         optionally calculate and return phonon modes.
 
+        Frequencies and modes are in units of eV and 1/sqrt(amu),
+        respectively.
+
         Parameters:
 
         path : BandPath object
@@ -601,11 +604,16 @@ class Phonons(Displacement):
         Returns:
 
         BandStructure or tuple of (BandStructure, ndarray)
-            If `modes` is False, returns a `BandStructure` object
-            containing the phonon band structure. If `modes` is True,
+            If ``modes`` is False, returns a ``BandStructure`` object
+            containing the phonon band structure. If ``modes`` is True,
             returns a tuple, where the first element is the
-            `BandStructure` object and the second element is an ndarray
+            ``BandStructure`` object and the second element is an ndarray
             of phonon modes.
+
+            If modes are returned, the array is of shape
+            (k-point, bands, atoms, 3) and the norm-squared of the mode
+            is `1 / m_{eff}`, where `m_{eff}` is the effective mass of the
+            mode.
 
         Example:
 
@@ -659,7 +667,7 @@ class Phonons(Displacement):
         eigenvalues (squared frequency), the corresponding negative frequency
         is returned.
 
-        Frequencies and modes are in units of eV and Ang/sqrt(amu),
+        Frequencies and modes are in units of eV and 1/sqrt(amu),
         respectively.
 
         Parameters:
@@ -678,6 +686,11 @@ class Phonons(Displacement):
         verbose: bool
             Print warnings when imaginary frequncies are detected.
 
+        Returns:
+
+        If modes=False: Array of energies
+
+        If modes=True: Tuple of two arrays with energies and modes.
         """
 
         assert self.D_N is not None
@@ -698,7 +711,6 @@ class Phonons(Displacement):
         vol = abs(la.det(self.atoms.cell)) / units.Bohr**3
 
         for q_c in path_kc:
-
             # Add non-analytic part
             if born:
                 # q-vector in cartesian coordinates
@@ -726,7 +738,8 @@ class Phonons(Displacement):
             if modes:
                 omega2_l, u_xl = la.eigh(D_q, UPLO='U')
                 # Sort eigenmodes according to eigenvalues (see below) and
-                # multiply with mass prefactor
+                # multiply with mass prefactor.  This gives the eigenmode
+                # (which is now not normalized!) with units 1/sqrt(amu).
                 u_lx = (self.m_inv_x[:, np.newaxis] *
                         u_xl[:, omega2_l.argsort()]).T.copy()
                 u_kl.append(u_lx.reshape((-1, len(self.indices), 3)))
@@ -761,30 +774,66 @@ class Phonons(Displacement):
 
         return omega_kl
 
-    def get_dos(self, kpts=(10, 10, 10), npts=1000, delta=1e-3, indices=None):
+    def get_dos(self, kpts=(10, 10, 10), indices=None, verbose=True):
+        """Return a phonon density of states.
+
+        Parameters:
+
+        kpts: tuple
+            Shape of Monkhorst-Pack grid for sampling the Brillouin zone.
+        indices: list
+            If indices is not None, the amplitude-weighted atomic-partial
+            DOS for the specified atoms will be calculated.
+        verbose: bool
+            Print warnings when imaginary frequncies are detected.
+
+        Returns:
+            A RawDOSData object containing the density of states.
+        """
         from ase.spectrum.dosdata import RawDOSData
 
         # dos = self.dos(kpts, npts, delta, indices)
         kpts_kc = monkhorst_pack(kpts)
-        omega_w = self.band_structure(kpts_kc).ravel()
-        dos = RawDOSData(omega_w, np.ones_like(omega_w))
+        if indices is None:
+            # Return the total DOS
+            omega_w = self.band_structure(kpts_kc, verbose=verbose)
+            assert omega_w.ndim == 2
+            n_kpt = omega_w.shape[0]
+            omega_w = omega_w.ravel()
+            dos = RawDOSData(omega_w, np.ones_like(omega_w) / n_kpt)
+        else:
+            # Return a partial DOS
+            omegas, amplitudes = self.band_structure(kpts_kc,
+                                                     modes=True,
+                                                     verbose=verbose)
+            # omegas.shape = (k-points, bands)
+            # amplitudes.shape = (k-points, bands, atoms, 3)
+            ampl_sq = (np.abs(amplitudes)**2).sum(axis=3)
+            assert ampl_sq.ndim == 3
+            assert ampl_sq.shape == omegas.shape + (len(self.indices),)
+            weights = ampl_sq[:, :, indices].sum(axis=2) / ampl_sq.sum(axis=2)
+            dos = RawDOSData(omegas.ravel(), weights.ravel() / omegas.shape[0])
         return dos
 
-    def dos(self, kpts=(10, 10, 10), npts=1000, delta=1e-3, indices=None):
+    @deprecated('Please use Phonons.get_dos() instead of Phonons.dos().')
+    def dos(self, kpts=(10, 10, 10), npts=1000, delta=1e-3):
         """Calculate phonon dos as a function of energy.
 
         Parameters:
 
-        qpts: tuple
+        kpts: tuple
             Shape of Monkhorst-Pack grid for sampling the Brillouin zone.
         npts: int
             Number of energy points.
         delta: float
             Broadening of Lorentzian line-shape in eV.
-        indices: list
-            If indices is not None, the atomic-partial dos for the specified
-            atoms will be calculated.
 
+        Returns:
+            Tuple of (frequencies, dos).  The frequencies are in units of eV.
+
+        .. deprecated:: 3.23.1
+            Please use the ``.get_dos()`` method instead, it returns a proper
+            RawDOSData object.
         """
 
         # Monkhorst-Pack grid
@@ -812,7 +861,7 @@ class Phonons(Displacement):
 
         Parameters:
 
-        q_c: ndarray
+        q_c: ndarray of shape (3,)
             q-vector of the modes.
         branches: int or list
             Branch index of modes.
@@ -830,6 +879,8 @@ class Phonons(Displacement):
         center: bool
             Center atoms in unit cell if True (default: False).
 
+        To exaggerate the amplitudes for better visualization, multiply
+        kT by the square of the desired factor.
         """
 
         if isinstance(branches, int):
@@ -856,13 +907,20 @@ class Phonons(Displacement):
         phase_N = np.exp(2.j * pi * np.dot(q_c, R_cN))
         phase_Na = phase_N.repeat(len(self.atoms))
 
+        hbar = units._hbar * units.J * units.second
         for lval in branch_l:
 
             omega = omega_l[0, lval]
             u_av = u_l[0, lval]
+            assert u_av.ndim == 2
 
-            # Mean displacement of a classical oscillator at temperature T
-            u_av *= sqrt(kT) / abs(omega)
+            # For a classical harmonic oscillator, <x^2> = k T / m omega^2
+            # and <x^2> = 1/2 u^2 where u is the amplitude and m is the
+            # effective mass of the mode.
+            # The reciprocal mass is already included in the normalization
+            # of the modes.  The variable omega is actually hbar*omega (it
+            # is in eV, not reciprocal ASE time units).
+            u_av *= hbar * sqrt(2 * kT) / abs(omega)
 
             mode_av = np.zeros((len(self.atoms), 3), dtype=complex)
             # Insert slice with atomic displacements for the included atoms

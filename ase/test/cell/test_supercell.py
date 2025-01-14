@@ -8,7 +8,7 @@ from ase.lattice import BCC, FCC
 a = 4.1
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     atoms = bulk("Au", a=a)
     return atoms

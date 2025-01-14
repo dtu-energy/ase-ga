@@ -1,7 +1,7 @@
 """Test write_input"""
 import numpy as np
-
 import pytest
+
 from ase import Atoms
 from ase.calculators.siesta.parameters import PAOBasisBlock, Species
 
@@ -25,21 +25,25 @@ def fixture_atoms_ch4():
     return Atoms('CH4', positions)
 
 
-def test_simple(siesta_factory, atoms_h):
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator('siesta')
+def test_simple(factory, atoms_h):
     """Test simple fdf-argument case."""
-    siesta = siesta_factory.calc(
+    siesta = factory.calc(
         label='test_label',
         fdf_arguments={'DM.Tolerance': 1e-3})
     atoms_h.calc = siesta
     siesta.write_input(atoms_h, properties=['energy'])
     with open('test_label.fdf', encoding='utf-8') as fd:
         lines = fd.readlines()
-    assert any([line.split() == ['DM.Tolerance', '0.001'] for line in lines])
+    assert any(line.split() == ['DM.Tolerance', '0.001'] for line in lines)
 
 
-def test_complex(siesta_factory, atoms_h):
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator('siesta')
+def test_complex(factory, atoms_h):
     """Test (slightly) more complex case of setting fdf-arguments."""
-    siesta = siesta_factory.calc(
+    siesta = factory.calc(
         label='test_label',
         mesh_cutoff=3000,
         fdf_arguments={
@@ -55,9 +59,11 @@ def test_complex(siesta_factory, atoms_h):
     assert 'ON.eta\t5\tRy\n' in lines
 
 
-def test_set_fdf_arguments(siesta_factory, atoms_h):
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator('siesta')
+def test_set_fdf_arguments(factory, atoms_h):
     """Test setting fdf-arguments after initiation."""
-    siesta = siesta_factory.calc(
+    siesta = factory.calc(
         label='test_label',
         mesh_cutoff=3000,
         fdf_arguments={
@@ -74,13 +80,15 @@ def test_set_fdf_arguments(siesta_factory, atoms_h):
     assert 'ON.eta\t2\tRy\n' in lines
 
 
-def test_species(siesta_factory, atoms_ch4):
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator('siesta')
+def test_species(factory, atoms_ch4):
     """Test initiation using Species."""
-    siesta = siesta_factory.calc()
+    siesta = factory.calc()
     species, numbers = siesta.species(atoms_ch4)
     assert all(numbers == np.array([1, 2, 2, 2, 2]))
 
-    siesta = siesta_factory.calc(species=[Species(symbol='C', tag=1)])
+    siesta = factory.calc(species=[Species(symbol='C', tag=1)])
     species, numbers = siesta.species(atoms_ch4)
     assert all(numbers == np.array([1, 2, 2, 2, 2]))
 
@@ -88,29 +96,35 @@ def test_species(siesta_factory, atoms_ch4):
     species, numbers = siesta.species(atoms_ch4)
     assert all(numbers == np.array([1, 2, 2, 2, 2]))
 
-    siesta = siesta_factory.calc(
+    siesta = factory.calc(
         species=[
+            Species(symbol='C', tag=-1),
             Species(
                 symbol='H',
                 tag=1,
-                basis_set='SZ')])
-    species, numbers = siesta.species(atoms_ch4)
-    assert all(numbers == np.array([1, 2, 2, 3, 2]))
+                basis_set='SZ',
+                pseudopotential='somepseudo')])
 
-    siesta = siesta_factory.calc(label='test_label', species=species)
+    species, numbers = siesta.species(atoms_ch4)
+    assert all(numbers == np.array([1, 2, 2, 4, 2]))
+
+    siesta = factory.calc(label='test_label', species=species)
     siesta.write_input(atoms_ch4, properties=['energy'])
     with open('test_label.fdf', encoding='utf-8') as fd:
         lines = fd.readlines()
+
     lines = [line.split() for line in lines]
     assert ['1', '6', 'C.lda.1'] in lines
     assert ['2', '1', 'H.lda.2'] in lines
-    assert ['3', '1', 'H.lda.3'] in lines
+    assert ['4', '1', 'H.4', 'H.4.psml'] in lines
     assert ['C.lda.1', 'DZP'] in lines
     assert ['H.lda.2', 'DZP'] in lines
-    assert ['H.lda.3', 'SZ'] in lines
+    assert ['H.4', 'SZ'] in lines
 
 
-def test_pao_block(siesta_factory, atoms_ch4):
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator('siesta')
+def test_pao_block(factory, atoms_ch4):
     """Test if PAO block can be given as species."""
     c_basis = """2 nodes 1.00
     0 1 S 0.20 P 1 0.20 6.00
@@ -121,7 +135,7 @@ def test_pao_block(siesta_factory, atoms_ch4):
     1.00 0.95"""
     basis_set = PAOBasisBlock(c_basis)
     species = Species(symbol='C', basis_set=basis_set)
-    siesta = siesta_factory.calc(label='test_label', species=[species])
+    siesta = factory.calc(label='test_label', species=[species])
     siesta.write_input(atoms_ch4, properties=['energy'])
     with open('test_label.fdf', encoding='utf-8') as fd:
         lines = fd.readlines()

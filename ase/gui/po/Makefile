@@ -20,7 +20,7 @@
 # they are automatically included when you run install.
 
 # List of files calling gettext.
-TRANSLATIONFILES=../add.py ../celleditor.py ../colors.py ../constraints.py ../graphs.py ../gui.py ../images.py ../modify.py ../movie.py ../nanoparticle.py ../nanotube.py ../quickinfo.py ../render.py ../repeat.py ../rotate.py ../save.py ../settings.py ../status.py ../surfaceslab.py ../ui.py ../widgets.py
+TRANSLATIONFILES=../add.py ../celleditor.py ../colors.py ../constraints.py ../graphs.py ../gui.py ../images.py ../modify.py ../movie.py ../nanoparticle.py ../nanotube.py ../quickinfo.py ../render.py ../repeat.py ../rotate.py ../save.py ../settings.py ../status.py ../surfaceslab.py ../ui.py ../view.py ../widgets.py
 
 #TRANSLATIONFILES=../ag.py ../calculator.py ../colors.py ../constraints.py ../crystal.py ../debug.py ../dft.py ../energyforces.py ../execute.py ../graphs.py ../gtkexcepthook.py ../gui.py ../minimize.py ../movie.py ../nanoparticle.py ../nanotube.py ../progress.py ../pybutton.py ../quickinfo.py ../render.py ../repeat.py ../rotate.py ../scaling.py ../settings.py ../setupwindow.py ../simulation.py ../status.py ../surfaceslab.py ../widgets.py
 #TRANSLATIONFILES=../*.py

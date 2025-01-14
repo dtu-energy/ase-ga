@@ -21,8 +21,7 @@ atoms = o2 + h2_1 + h2_2
 
 # 1fs = 41.3 au
 # 1000K = 0.0031668 au
-calculator_NVE = Dftb(atoms=atoms,
-                      label='h2o',
+calculator_NVE = Dftb(label='h2o',
                       Hamiltonian_MaxAngularMomentum_='',
                       Hamiltonian_MaxAngularMomentum_O='p',
                       Hamiltonian_MaxAngularMomentum_H='s',
@@ -38,8 +37,7 @@ calculator_NVE = Dftb(atoms=atoms,
 
 # 1fs = 41.3 au
 # 1000K = 0.0031668 au
-calculator_NVT = Dftb(atoms=atoms,
-                      label='h2o',
+calculator_NVT = Dftb(label='h2o',
                       Hamiltonian_MaxAngularMomentum_='',
                       Hamiltonian_MaxAngularMomentum_O='p',
                       Hamiltonian_MaxAngularMomentum_H='s',

@@ -15,7 +15,7 @@ from ase.md.verlet import VelocityVerlet
 from ase.optimize import BFGS
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     return molecule('H2', vacuum=2.0)
 
@@ -153,3 +153,18 @@ def test_context(cp2k_factory, atoms):
         atoms.get_potential_energy()
         child = calc._shell._child
     assert child.poll() == 0
+
+
+@pytest.mark.xfail()  # Will pass with the 2024.2 version of CP2K
+def test_set_pos_file(cp2k_factory, atoms):
+    """Test passing coordinates via file rather than stdin
+
+    This will pass when testing against a new version of CP2K.
+    When that happens, remove the `xfail` decorator
+    and change 2024.X in `cp2k.py` to the new version number. -wardlt
+    """
+
+    with cp2k_factory.calc(label='test_H2_GOPT', print_level='LOW',
+                           set_pos_file=True) as calc:
+        atoms.calc = calc
+        atoms.get_potential_energy()

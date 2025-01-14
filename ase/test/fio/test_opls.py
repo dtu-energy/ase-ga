@@ -12,12 +12,12 @@ import pytest
 from ase.io.opls import OPLSff, OPLSStructure
 
 
-@pytest.fixture
+@pytest.fixture()
 def opls_structure_file_name(datadir):
     return datadir / "opls_structure_ext.xyz"
 
 
-@pytest.fixture
+@pytest.fixture()
 def opls_force_field_file_name(datadir):
     """Need to define OPLS parameters for each species in order to be able to
     write a lammps input file"""

@@ -34,16 +34,11 @@ def test_dos():
     ref1 = 2 * (2 * energies)**-0.5
 
     mask = np.bitwise_and(energies > 0.02, energies < 0.1)
-    dims = 1
-    for dos, ref in [(dos1, ref1), (dos2, ref2), (dos3, ref3)]:
+    for dims, (dos, ref) in enumerate([(dos1, ref1), (dos2, ref2),
+                                       (dos3, ref3)],
+                                      start=1):
         error = abs(1 - dos / ref)[mask].max()
         norm = dos.sum() * (energies[1] - energies[0])
         print(dims, norm, error)
         assert error < 0.2, error
         assert abs(norm - 1) < 0.11**dims, norm
-        if 0:
-            import matplotlib.pyplot as plt
-            plt.plot(energies, dos)
-            plt.plot(energies, ref)
-            plt.show()
-        dims += 1

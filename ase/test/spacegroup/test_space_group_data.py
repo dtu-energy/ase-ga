@@ -3,8 +3,12 @@ import pytest
 from numpy.testing import assert_allclose
 
 import ase.lattice
-from ase.spacegroup import (Spacegroup, get_bravais_class, get_point_group,
-                            polar_space_group)
+from ase.spacegroup import (
+    Spacegroup,
+    get_bravais_class,
+    get_point_group,
+    polar_space_group,
+)
 from ase.spacegroup.spacegroup import SpacegroupNotFoundError
 
 TOL = 1E-10

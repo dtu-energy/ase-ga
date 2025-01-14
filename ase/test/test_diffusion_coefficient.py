@@ -16,7 +16,7 @@ def test_atom():
     # He atom
 
     he = Atoms('He', positions=[(0, 0, 0)])
-    traj_he = [he.copy() for i in range(2)]
+    traj_he = [he.copy() for _ in range(2)]
     traj_he[1].set_positions([(1, 1, 1)])
 
     dc_he = DiffusionCoefficient(traj_he, timestep)
@@ -28,7 +28,7 @@ def test_atom():
 
 def test_co_molecule():
     co = Atoms('CO', positions=[(0, 0, 0), (0, 0, 1)])
-    traj_co = [co.copy() for i in range(2)]
+    traj_co = [co.copy() for _ in range(2)]
     traj_co[1].set_positions([(-1, -1, -1), (-1, -1, 0)])
 
     dc_co = DiffusionCoefficient(traj_co, timestep, molecule=False)

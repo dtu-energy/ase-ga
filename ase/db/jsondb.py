@@ -78,8 +78,8 @@ class JSONDatabase(Database):
             if self.filename is not sys.stdin:
                 self.filename.seek(0)
 
-        if not isinstance(bigdct, dict) or not ('ids' in bigdct
-                                                or 1 in bigdct):
+        if not isinstance(bigdct, dict) or ('ids' not in bigdct and 1 not in
+                                            bigdct):
             from ase.io.formats import UnknownFileTypeError
             raise UnknownFileTypeError('Does not resemble ASE JSON database')
 
@@ -122,7 +122,7 @@ class JSONDatabase(Database):
         self._write_json(bigdct, myids, nextid)
 
     def _get_row(self, id):
-        bigdct, ids, nextid = self._read_json()
+        bigdct, ids, _nextid = self._read_json()
         if id is None:
             assert len(ids) == 1
             id = ids[0]
@@ -166,7 +166,7 @@ class JSONDatabase(Database):
             return
 
         try:
-            bigdct, ids, nextid = self._read_json()
+            bigdct, ids, _nextid = self._read_json()
         except OSError:
             return
 
@@ -205,7 +205,7 @@ class JSONDatabase(Database):
     @property
     def metadata(self):
         if self._metadata is None:
-            bigdct, myids, nextid = self._read_json()
+            bigdct, _myids, _nextid = self._read_json()
             self._metadata = bigdct.get('metadata', {})
         return self._metadata.copy()
 
@@ -217,7 +217,7 @@ class JSONDatabase(Database):
 
     def get_all_key_names(self):
         keys = set()
-        bigdct, ids, nextid = self._read_json()
+        bigdct, ids, _nextid = self._read_json()
         for id in ids:
             dct = bigdct[id]
             kvp = dct.get('key_value_pairs')

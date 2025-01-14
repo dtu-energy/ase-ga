@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ase-3.5.2\n"
 "Report-Msgid-Bugs-To: ase-users@listserv.fysik.dtu.dk\n"
-"POT-Creation-Date: 2022-03-23 10:41+0100\n"
-"PO-Revision-Date: 2022-03-23 10:43+0100\n"
+"POT-Creation-Date: 2024-10-23 20:47-0400\n"
+"PO-Revision-Date: 2024-10-23 20:51-0400\n"
 "Last-Translator: Ask Hjorth Larsen <asklarsen@gmail.com>\n"
 "Language-Team: Danish <dansk@dansk-gruppen.dk>\n"
 "Language: da\n"
@@ -55,7 +55,7 @@ msgstr ""
 msgid "Check positions"
 msgstr "Kontrollér position"
 
-#: ../add.py:59 ../nanoparticle.py:265
+#: ../add.py:59 ../nanoparticle.py:264
 msgid "Add"
 msgstr "Tilføj"
 
@@ -81,86 +81,86 @@ msgstr ""
 "indstillingen Kontrollér position for at tilsidesætte denne advarsel."
 
 #. TRANSLATORS: This is a title of a window.
-#: ../celleditor.py:48
+#: ../celleditor.py:49
 msgid "Cell Editor"
 msgstr "Celleredigering"
 
-#: ../celleditor.py:52
+#: ../celleditor.py:53
 msgid "A:"
 msgstr "A:"
 
-#: ../celleditor.py:52
+#: ../celleditor.py:53
 msgid "||A||:"
 msgstr "||A||:"
 
-#: ../celleditor.py:53 ../celleditor.py:55 ../celleditor.py:57
+#: ../celleditor.py:54 ../celleditor.py:56 ../celleditor.py:58
 msgid "periodic:"
 msgstr "periodisk:"
 
-#: ../celleditor.py:54
+#: ../celleditor.py:55
 msgid "B:"
 msgstr "B:"
 
-#: ../celleditor.py:54
+#: ../celleditor.py:55
 msgid "||B||:"
 msgstr "||B||:"
 
-#: ../celleditor.py:56
+#: ../celleditor.py:57
 msgid "C:"
 msgstr "C:"
 
-#: ../celleditor.py:56
+#: ../celleditor.py:57
 msgid "||C||:"
 msgstr "||C||:"
 
-#: ../celleditor.py:58
+#: ../celleditor.py:59
 msgid "∠BC:"
 msgstr "∠BC:"
 
-#: ../celleditor.py:58
+#: ../celleditor.py:59
 msgid "∠AC:"
 msgstr "∠AC:"
 
-#: ../celleditor.py:59
+#: ../celleditor.py:60
 msgid "∠AB:"
 msgstr "∠AB:"
 
-#: ../celleditor.py:60
+#: ../celleditor.py:61
 msgid "Scale atoms with cell:"
 msgstr "Skalér atomer med celle:"
 
-#: ../celleditor.py:61
+#: ../celleditor.py:62
 msgid "Apply Vectors"
 msgstr "Anvend vektorer"
 
-#: ../celleditor.py:62
+#: ../celleditor.py:63
 msgid "Apply Magnitudes"
 msgstr "Anvend længder"
 
-#: ../celleditor.py:63
+#: ../celleditor.py:64
 msgid "Apply Angles"
 msgstr "Anvend vinkler"
 
-#: ../celleditor.py:64
+#: ../celleditor.py:65
 msgid ""
 "Pressing 〈Enter〉 as you enter values will automatically apply correctly"
 msgstr ""
 "Tryk 〈Enter〉 mens du indtaster værdier for automatisk at anvende disse"
 
 #. TRANSLATORS: verb
-#: ../celleditor.py:67
+#: ../celleditor.py:68
 msgid "Center"
 msgstr "Centrér"
 
-#: ../celleditor.py:68
+#: ../celleditor.py:69
 msgid "Wrap"
 msgstr "Ombryd"
 
-#: ../celleditor.py:69
+#: ../celleditor.py:70
 msgid "Vacuum:"
 msgstr "Vakuum:"
 
-#: ../celleditor.py:70
+#: ../celleditor.py:71
 msgid "Apply Vacuum"
 msgstr "Anvend vakuum"
 
@@ -221,7 +221,7 @@ msgstr "maks:"
 msgid "Constraints"
 msgstr "Begrænsninger"
 
-#: ../constraints.py:8 ../settings.py:13
+#: ../constraints.py:8 ../settings.py:12
 msgid "Fix"
 msgstr "Fasthold"
 
@@ -233,7 +233,7 @@ msgstr "markerede atomer"
 msgid "Release"
 msgstr "Frigiv"
 
-#: ../constraints.py:12 ../settings.py:17
+#: ../constraints.py:12 ../settings.py:16
 msgid "Clear all constraints"
 msgstr "Ryd alle begrænsninger"
 
@@ -655,81 +655,83 @@ msgid "Webpage ..."
 msgstr "Webside …"
 
 #. Host window will never be shown
-#: ../images.py:262
+#: ../images.py:259
 msgid "Constraints discarded"
 msgstr "Begrænsninger fjernet"
 
-#: ../images.py:263
+#: ../images.py:260
 msgid "Constraints other than FixAtoms have been discarded."
 msgstr "Begrænsninger på nær FixAtoms er blevet fjernet."
 
-#: ../modify.py:18
+#: ../modify.py:20
 msgid "No atoms selected!"
 msgstr "Ingen atomer markeret!"
 
-#: ../modify.py:21
+#: ../modify.py:23
 msgid "Modify"
 msgstr "Ændr"
 
-#: ../modify.py:24
+#: ../modify.py:26
 msgid "Change element"
 msgstr "Skift grundstof"
 
-#: ../modify.py:27
+#: ../modify.py:29
 msgid "Tag"
 msgstr "Mærke"
 
-#: ../modify.py:29
+#: ../modify.py:31
 msgid "Moment"
 msgstr "Moment"
 
-#: ../movie.py:9
+#: ../movie.py:10
 msgid "Movie"
 msgstr "Film"
 
-#: ../movie.py:10
+#: ../movie.py:11
 msgid "Image number:"
 msgstr "Billednummer:"
 
-#: ../movie.py:16
+#: ../movie.py:17
 msgid "First"
 msgstr "Første"
 
-#: ../movie.py:17
+#: ../movie.py:18
 msgid "Back"
 msgstr "Tilbage"
 
-#: ../movie.py:18
+#: ../movie.py:19
 msgid "Forward"
 msgstr "Fremad"
 
-#: ../movie.py:19
+#: ../movie.py:20
 msgid "Last"
 msgstr "Sidste"
 
-#: ../movie.py:21
+#: ../movie.py:22
 msgid "Play"
 msgstr "Afspil"
 
-#: ../movie.py:22
+#: ../movie.py:23
 msgid "Stop"
 msgstr "Stop"
 
 #. TRANSLATORS: This function plays an animation forwards and backwards
 #. alternatingly, e.g. for displaying vibrational movement
-#: ../movie.py:26
+#: ../movie.py:27
 msgid "Rock"
 msgstr "Pendul"
 
-#: ../movie.py:39
+#: ../movie.py:40
 msgid " Frame rate: "
 msgstr " Billedrate: "
 
-#: ../movie.py:39
+#: ../movie.py:40
 msgid " Skip frames: "
 msgstr " Overspring billeder: "
 
-#: ../nanoparticle.py:21
+#. Delayed imports:
+#. ase.cluster.data
+#: ../nanoparticle.py:20
 msgid ""
 "Create a nanoparticle either by specifying the number of layers, or using "
 "the\n"
@@ -745,7 +747,7 @@ msgstr ""
 "ADVARSEL: Wulffkonstruktion fungerer i øjeblikket kun med kubiske "
 "krystaller!\n"
 
-#: ../nanoparticle.py:28
+#: ../nanoparticle.py:27
 #, python-brace-format
 msgid ""
 "\n"
@@ -805,178 +807,178 @@ msgstr ""
 "{111}-familien og så (001) retningen, der tilsidesætter værdien givet til\n"
 "selve familien af retninger.\n"
 
-#: ../nanoparticle.py:88
+#: ../nanoparticle.py:87
 msgid "Face centered cubic (fcc)"
 msgstr "Face centered cubic (fcc)"
 
-#: ../nanoparticle.py:89
+#: ../nanoparticle.py:88
 msgid "Body centered cubic (bcc)"
 msgstr "Body centered cubic (bcc)"
 
-#: ../nanoparticle.py:90
+#: ../nanoparticle.py:89
 msgid "Simple cubic (sc)"
 msgstr "Simpel kubisk (sc)"
 
-#: ../nanoparticle.py:91
+#: ../nanoparticle.py:90
 msgid "Hexagonal closed-packed (hcp)"
 msgstr "Heksagonal tætpakket (hcp)"
 
-#: ../nanoparticle.py:92
+#: ../nanoparticle.py:91
 msgid "Graphite"
 msgstr "Grafit"
 
-#: ../nanoparticle.py:137
+#: ../nanoparticle.py:136
 msgid "Nanoparticle"
 msgstr "Nanopartikel"
 
-#: ../nanoparticle.py:141
+#: ../nanoparticle.py:140
 msgid "Get structure"
 msgstr "Hent struktur"
 
-#: ../nanoparticle.py:156 ../surfaceslab.py:68
+#: ../nanoparticle.py:155 ../surfaceslab.py:68
 msgid "Structure:"
 msgstr "Struktur:"
 
-#: ../nanoparticle.py:160
+#: ../nanoparticle.py:159
 msgid "Lattice constant:  a ="
 msgstr "Gitterkonstant:  a ="
 
-#: ../nanoparticle.py:164
+#: ../nanoparticle.py:163
 msgid "Layer specification"
 msgstr "Lagspecifikation"
 
-#: ../nanoparticle.py:164
+#: ../nanoparticle.py:163
 msgid "Wulff construction"
 msgstr "Wulffkonstruktion"
 
-#: ../nanoparticle.py:167
+#: ../nanoparticle.py:166
 msgid "Method: "
 msgstr "Metode: "
 
-#: ../nanoparticle.py:175
+#: ../nanoparticle.py:174
 msgid "Add new direction:"
 msgstr "Tilføj ny retning:"
 
 #. Information
-#: ../nanoparticle.py:181
+#: ../nanoparticle.py:180
 msgid "Information about the created cluster:"
 msgstr "Information om den konstruerede klynge:"
 
-#: ../nanoparticle.py:182
+#: ../nanoparticle.py:181
 msgid "Number of atoms: "
 msgstr "Antal atomer: "
 
-#: ../nanoparticle.py:184
+#: ../nanoparticle.py:183
 msgid "   Approx. diameter: "
 msgstr "   Diameter omtrent: "
 
-#: ../nanoparticle.py:193
+#: ../nanoparticle.py:192
 msgid "Automatic Apply"
 msgstr "Anvend automatisk"
 
-#: ../nanoparticle.py:196 ../nanotube.py:49
+#: ../nanoparticle.py:195 ../nanotube.py:49
 msgid "Creating a nanoparticle."
 msgstr "Konstruktion af nanopartikel."
 
-#: ../nanoparticle.py:198 ../nanotube.py:50 ../surfaceslab.py:81
+#: ../nanoparticle.py:197 ../nanotube.py:50 ../surfaceslab.py:81
 msgid "Apply"
 msgstr "Anvend"
 
-#: ../nanoparticle.py:199 ../nanotube.py:51 ../surfaceslab.py:82
+#: ../nanoparticle.py:198 ../nanotube.py:51 ../surfaceslab.py:82
 msgid "OK"
 msgstr "OK"
 
-#: ../nanoparticle.py:228
+#: ../nanoparticle.py:227
 msgid "Up"
 msgstr "Op"
 
-#: ../nanoparticle.py:229
+#: ../nanoparticle.py:228
 msgid "Down"
 msgstr "Ned"
 
-#: ../nanoparticle.py:230
+#: ../nanoparticle.py:229
 msgid "Delete"
 msgstr "Slet"
 
-#: ../nanoparticle.py:272
+#: ../nanoparticle.py:271
 msgid "Number of atoms"
 msgstr "Antal atomer"
 
-#: ../nanoparticle.py:272
+#: ../nanoparticle.py:271
 msgid "Diameter"
 msgstr "Diameter"
 
-#: ../nanoparticle.py:280
+#: ../nanoparticle.py:279
 msgid "above  "
 msgstr "over  "
 
-#: ../nanoparticle.py:280
+#: ../nanoparticle.py:279
 msgid "below  "
 msgstr "under  "
 
-#: ../nanoparticle.py:280
+#: ../nanoparticle.py:279
 msgid "closest  "
 msgstr "tættest på  "
 
-#: ../nanoparticle.py:283
+#: ../nanoparticle.py:282
 msgid "Smaller"
 msgstr "Mindre"
 
-#: ../nanoparticle.py:284
+#: ../nanoparticle.py:283
 msgid "Larger"
 msgstr "Større"
 
-#: ../nanoparticle.py:285
+#: ../nanoparticle.py:284
 msgid "Choose size using:"
 msgstr "Vælg størrelse med:"
 
-#: ../nanoparticle.py:287
+#: ../nanoparticle.py:286
 msgid "atoms"
 msgstr "atomer"
 
-#: ../nanoparticle.py:288
+#: ../nanoparticle.py:287
 msgid "Å³"
 msgstr "Å³"
 
-#: ../nanoparticle.py:290
+#: ../nanoparticle.py:289
 msgid "Rounding: If exact size is not possible, choose the size:"
 msgstr "Afrunding: Hvis eksakt størrelse ikke kan opnås, så vælg størrelsen:"
 
-#: ../nanoparticle.py:318
+#: ../nanoparticle.py:317
 msgid "Surface energies (as energy/area, NOT per atom):"
 msgstr "Overfladeenergier (som energi/areal, IKKE per atom):"
 
-#: ../nanoparticle.py:320
+#: ../nanoparticle.py:319
 msgid "Number of layers:"
 msgstr "Antal lag:"
 
-#: ../nanoparticle.py:348
+#: ../nanoparticle.py:347
 msgid "At least one index must be non-zero"
 msgstr "Mindst et indeks skal være forskelligt fra nul"
 
-#: ../nanoparticle.py:351
+#: ../nanoparticle.py:350
 msgid "Invalid hexagonal indices"
 msgstr "Ugyldige heksagonale indeks"
 
-#: ../nanoparticle.py:416
+#: ../nanoparticle.py:415
 msgid "Unsupported or unknown structure"
 msgstr "Uunderstøttet eller ukendt struktur"
 
-#: ../nanoparticle.py:417
+#: ../nanoparticle.py:416
 #, python-brace-format
 msgid "Element = {0}, structure = {1}"
 msgstr "Grundstof = {0}, struktur = {1}"
 
-#: ../nanoparticle.py:531 ../nanotube.py:82 ../surfaceslab.py:221
+#: ../nanoparticle.py:530 ../nanotube.py:82 ../surfaceslab.py:221
 msgid "No valid atoms."
 msgstr "Ingen gyldige atomer."
 
-#: ../nanoparticle.py:532 ../nanotube.py:83 ../surfaceslab.py:222
-#: ../widgets.py:95
+#: ../nanoparticle.py:531 ../nanotube.py:83 ../surfaceslab.py:222
+#: ../widgets.py:93
 msgid "You have not (yet) specified a consistent set of parameters."
 msgstr "Du har (endnu) ikke angivet konsistente parametre."
 
-#: ../nanotube.py:11
+#: ../nanotube.py:10
 msgid ""
 "Set up a Carbon nanotube by specifying the (n,m) roll-up vector.\n"
 "Please note that m <= n.\n"
@@ -990,7 +992,7 @@ msgstr ""
 "Nanorør af andre grundstoffer kan bygges ved at angive hvilket grundstof,\n"
 "samt bindingslængde."
 
-#: ../nanotube.py:24
+#: ../nanotube.py:23
 #, python-brace-format
 msgid ""
 "{natoms} atoms, diameter: {diameter:.3f} Å, total length: {total_length:.3f} "
@@ -1019,68 +1021,68 @@ msgstr "Vælg oprulningsvektor (n,m) og rørlængde:"
 msgid "Length:"
 msgstr "Længde:"
 
-#: ../quickinfo.py:27
+#: ../quickinfo.py:28
 msgid "This frame has no atoms."
 msgstr "Dette billede har ingen atomer."
 
-#: ../quickinfo.py:32
+#: ../quickinfo.py:33
 msgid "Single image loaded."
 msgstr "Enkelt billede indlæst."
 
-#: ../quickinfo.py:34
+#: ../quickinfo.py:35
 msgid "Image {} loaded (0–{})."
 msgstr "Billede {} indlæst (0–{})."
 
-#: ../quickinfo.py:36
+#: ../quickinfo.py:37
 msgid "Number of atoms: {}"
 msgstr "Antal atomer: {}"
 
-#: ../quickinfo.py:46
+#: ../quickinfo.py:47
 msgid "Unit cell [Å]:"
 msgstr "Enhedscelle [Å]:"
 
-#: ../quickinfo.py:48
+#: ../quickinfo.py:49
 msgid "no"
 msgstr "nej"
 
-#: ../quickinfo.py:48
+#: ../quickinfo.py:49
 msgid "yes"
 msgstr "ja"
 
 #. TRANSLATORS: This has the form Periodic: no, no, yes
-#: ../quickinfo.py:51
+#: ../quickinfo.py:52
 msgid "Periodic: {}, {}, {}"
 msgstr "Periodisk: {}, {}, {}"
 
-#: ../quickinfo.py:56
+#: ../quickinfo.py:57
 msgid "Lengths [Å]: {:.3f}, {:.3f}, {:.3f}"
 msgstr "Længder [Å]: {:.3f}, {:.3f}, {:.3f}"
 
-#: ../quickinfo.py:57
+#: ../quickinfo.py:58
 msgid "Angles: {:.1f}°, {:.1f}°, {:.1f}°"
 msgstr "Vinkler: {:.1f}°, {:.1f}°, {:.1f}°"
 
-#: ../quickinfo.py:60
+#: ../quickinfo.py:61
 msgid "Volume: {:.3f} Å³"
 msgstr "Volumen: {:.3f} Å³"
 
-#: ../quickinfo.py:66
+#: ../quickinfo.py:67
 msgid "Unit cell is fixed."
 msgstr "Enhedscelle fastholdes."
 
-#: ../quickinfo.py:68
+#: ../quickinfo.py:69
 msgid "Unit cell varies."
 msgstr "Enhedscelle varierer."
 
-#: ../quickinfo.py:74
+#: ../quickinfo.py:75
 msgid "Could not recognize the lattice type"
 msgstr "Kunne ikke genkende gittertype"
 
-#: ../quickinfo.py:76
+#: ../quickinfo.py:77
 msgid "Unexpected error determining lattice type"
 msgstr "Uventet fejl ved bestemmelse af gittertype"
 
-#: ../quickinfo.py:78
+#: ../quickinfo.py:79
 msgid ""
 "Reduced Bravais lattice:\n"
 "{}"
@@ -1088,106 +1090,106 @@ msgstr ""
 "Reduceret Bravaisgitter:\n"
 "{}"
 
-#: ../quickinfo.py:106
+#: ../quickinfo.py:107
 msgid "Calculator: {} (cached)"
 msgstr "Beregner: {} (gemt)"
 
-#: ../quickinfo.py:108
+#: ../quickinfo.py:109
 msgid "Calculator: {} (attached)"
 msgstr "Beregner: {} (tilknyttet)"
 
-#: ../quickinfo.py:115
+#: ../quickinfo.py:116
 msgid "Energy: {:.3f} eV"
 msgstr "Energi: {:.3f} eV"
 
-#: ../quickinfo.py:120
+#: ../quickinfo.py:121
 msgid "Max force: {:.3f} eV/Å"
 msgstr "Maks. kraft: {:.3f} eV/Å"
 
-#: ../quickinfo.py:124
+#: ../quickinfo.py:125
 msgid "Magmom: {:.3f} µ"
 msgstr "Magmom: {:.3f} µ"
 
 # gemmer et billede af atomerne
-#: ../render.py:17
+#: ../render.py:20
 msgid "Render current view in povray ... "
 msgstr "Tegn nuværende struktur i povray …"
 
-#: ../render.py:18
+#: ../render.py:21
 #, python-format
 msgid "Rendering %d atoms."
 msgstr "Tegner %d atomer."
 
-#: ../render.py:23
+#: ../render.py:26
 msgid "Size"
 msgstr "Størrelse"
 
-#: ../render.py:28
+#: ../render.py:31
 msgid "Line width"
 msgstr "Linjebredde"
 
-#: ../render.py:29
+#: ../render.py:32
 msgid "Ångström"
 msgstr "Ångström"
 
-#: ../render.py:31
+#: ../render.py:34
 msgid "Render constraints"
 msgstr "Tegn begrænsninger"
 
-#: ../render.py:32
+#: ../render.py:35
 msgid "Render unit cell"
 msgstr "Tegn _enhedscelle"
 
-#: ../render.py:38
+#: ../render.py:41
 msgid "Output basename: "
 msgstr "Basisnavn for output: "
 
-#: ../render.py:40
+#: ../render.py:43
 msgid "POVRAY executable"
 msgstr "POVRAY-programfil"
 
-#: ../render.py:42
+#: ../render.py:45
 msgid "Output filename: "
 msgstr "Outputfilnavn: "
 
-#: ../render.py:47
+#: ../render.py:50
 msgid "Atomic texture set:"
 msgstr "Atomtekstursæt:"
 
-#: ../render.py:54
+#: ../render.py:57
 msgid "Camera type: "
 msgstr "Kameratype: "
 
-#: ../render.py:55
+#: ../render.py:58
 msgid "Camera distance"
 msgstr "Kameraafstand"
 
 #. render current frame/all frames
-#: ../render.py:58
+#: ../render.py:61
 msgid "Render current frame"
 msgstr "Tegn det aktuelle billede"
 
-#: ../render.py:59
+#: ../render.py:62
 msgid "Render all frames"
 msgstr "Tegn alle billeder"
 
-#: ../render.py:64
+#: ../render.py:67
 msgid "Run povray"
 msgstr "Kør povray"
 
-#: ../render.py:65
+#: ../render.py:68
 msgid "Keep povray files"
 msgstr "Behold povray-filer"
 
-#: ../render.py:66
+#: ../render.py:69
 msgid "Show output window"
 msgstr "Vis outputvindue"
 
-#: ../render.py:67
+#: ../render.py:70
 msgid "Transparent background"
 msgstr "Gennemsigtig baggrund"
 
-#: ../render.py:71
+#: ../render.py:74
 msgid "Render"
 msgstr "Tegn"
 
@@ -1203,19 +1205,19 @@ msgstr "Gentag atomer:"
 msgid "Set unit cell"
 msgstr "Angiv enhedscelle"
 
-#: ../rotate.py:12
+#: ../rotate.py:11
 msgid "Rotate"
 msgstr "Rotér"
 
-#: ../rotate.py:13
+#: ../rotate.py:12
 msgid "Rotation angles:"
 msgstr "Rotationsvinkler:"
 
-#: ../rotate.py:17
+#: ../rotate.py:16
 msgid "Update"
 msgstr "Opdatér"
 
-#: ../rotate.py:18
+#: ../rotate.py:17
 msgid ""
 "Note:\n"
 "You can rotate freely\n"
@@ -1227,7 +1229,7 @@ msgstr ""
 "musen ved at holde\n"
 "musetast 2 nede."
 
-#: ../save.py:12
+#: ../save.py:15
 msgid ""
 "Append name with \"@n\" in order to write image\n"
 "number \"n\" instead of the current image. Append\n"
@@ -1246,86 +1248,84 @@ msgstr ""
 "to\n"
 "sidste."
 
-#: ../save.py:24
+#: ../save.py:27
 msgid "Save ..."
 msgstr "Gem …"
 
-#: ../save.py:82 ../ui.py:33
+#: ../save.py:85 ../ui.py:32
 msgid "Error"
 msgstr "Fejl"
 
-#: ../settings.py:9
+#: ../settings.py:8
 msgid "Settings"
 msgstr "Indstillinger"
 
 #. Constraints
-#: ../settings.py:12
+#: ../settings.py:11
 msgid "Constraints:"
 msgstr "Begrænsninger:"
 
-#: ../settings.py:15
+#: ../settings.py:14
 msgid "release"
 msgstr "frigiv"
 
-#: ../settings.py:16 ../settings.py:24
+#: ../settings.py:15 ../settings.py:23
 msgid " selected atoms"
 msgstr " markerede atomer"
 
 #. Visibility
-#: ../settings.py:20
+#: ../settings.py:19
 msgid "Visibility:"
 msgstr "Synlighed:"
 
-#: ../settings.py:21
+#: ../settings.py:20
 msgid "Hide"
 msgstr "Skjul"
 
-#: ../settings.py:23
+#: ../settings.py:22
 msgid "show"
 msgstr "vis"
 
-#: ../settings.py:25
+#: ../settings.py:24
 msgid "View all atoms"
 msgstr "Vis alle atomer"
 
 #. Miscellaneous
-#: ../settings.py:28
+#: ../settings.py:27
 msgid "Miscellaneous:"
 msgstr "Diverse:"
 
-#: ../settings.py:31
+#: ../settings.py:30
 msgid "Scale atomic radii:"
 msgstr "Skalér atomradier:"
 
-#: ../settings.py:38
+#: ../settings.py:37
 msgid "Scale force vectors:"
 msgstr "Skalér kraftvektorer:"
 
-#: ../settings.py:45
+#: ../settings.py:44
 msgid "Scale velocity vectors:"
 msgstr "Skalér hastighedsvektorer:"
 
-#: ../status.py:50
+#: ../status.py:80
 #, python-format
 msgid " tag=%(tag)s"
 msgstr " mærke=%(tag)s"
 
 #. TRANSLATORS: mom refers to magnetic moment
-#: ../status.py:54
-#, python-brace-format
-msgid " mom={0:1.2f}"
-msgstr " mom={0:1.2f}"
+#: ../status.py:84
+msgid " mom={:1.2f}"
+msgstr " mom={:1.2f}"
 
-#: ../status.py:58
-#, python-brace-format
-msgid " q={0:1.2f}"
-msgstr " q={0:1.2f}"
+#: ../status.py:88
+msgid " q={:1.2f}"
+msgstr " q={:1.2f}"
 
-#: ../status.py:93
+#: ../status.py:126
 msgid "dihedral"
 msgstr "dihedral"
 
-#: ../surfaceslab.py:10
+#: ../surfaceslab.py:9
 msgid ""
 "  Use this dialog to create surface slabs.  Select the element by\n"
 "writing the chemical symbol or the atomic number in the box.  Then\n"
@@ -1347,65 +1347,65 @@ msgstr ""
 "du slå gitterkonstanten op. Ellers skal du angive den selv."
 
 #. Name, structure, orthogonal, function
-#: ../surfaceslab.py:22
+#: ../surfaceslab.py:21
 msgid "FCC(100)"
 msgstr "FCC(100)"
 
-#: ../surfaceslab.py:22 ../surfaceslab.py:23 ../surfaceslab.py:24
-#: ../surfaceslab.py:25
+#: ../surfaceslab.py:21 ../surfaceslab.py:22 ../surfaceslab.py:23
+#: ../surfaceslab.py:24
 msgid "fcc"
 msgstr "fcc"
 
-#: ../surfaceslab.py:23
+#: ../surfaceslab.py:22
 msgid "FCC(110)"
 msgstr "FCC(110)"
 
-#: ../surfaceslab.py:24 ../surfaceslab.py:171
+#: ../surfaceslab.py:23 ../surfaceslab.py:171
 msgid "FCC(111)"
 msgstr "FCC(111)"
 
-#: ../surfaceslab.py:25 ../surfaceslab.py:174
+#: ../surfaceslab.py:24 ../surfaceslab.py:174
 msgid "FCC(211)"
 msgstr "FCC(211)"
 
-#: ../surfaceslab.py:26
+#: ../surfaceslab.py:25
 msgid "BCC(100)"
 msgstr "BCC(100)"
 
-#: ../surfaceslab.py:26 ../surfaceslab.py:27 ../surfaceslab.py:28
+#: ../surfaceslab.py:25 ../surfaceslab.py:26 ../surfaceslab.py:27
 msgid "bcc"
 msgstr "bcc"
 
-#: ../surfaceslab.py:27 ../surfaceslab.py:168
+#: ../surfaceslab.py:26 ../surfaceslab.py:168
 msgid "BCC(110)"
 msgstr "BCC(110)"
 
-#: ../surfaceslab.py:28 ../surfaceslab.py:165
+#: ../surfaceslab.py:27 ../surfaceslab.py:165
 msgid "BCC(111)"
 msgstr "BCC(111)"
 
-#: ../surfaceslab.py:29 ../surfaceslab.py:178
+#: ../surfaceslab.py:28 ../surfaceslab.py:178
 msgid "HCP(0001)"
 msgstr "HCP(0001)"
 
-#: ../surfaceslab.py:29 ../surfaceslab.py:30 ../surfaceslab.py:132
+#: ../surfaceslab.py:28 ../surfaceslab.py:29 ../surfaceslab.py:132
 #: ../surfaceslab.py:188
 msgid "hcp"
 msgstr "hcp"
 
-#: ../surfaceslab.py:30 ../surfaceslab.py:181
+#: ../surfaceslab.py:29 ../surfaceslab.py:181
 msgid "HCP(10-10)"
 msgstr "HCP(10–10)"
 
-#: ../surfaceslab.py:31
+#: ../surfaceslab.py:30
 msgid "DIAMOND(100)"
 msgstr "DIAMANT(100)"
 
-#: ../surfaceslab.py:31 ../surfaceslab.py:32
+#: ../surfaceslab.py:30 ../surfaceslab.py:31
 msgid "diamond"
 msgstr "diamant"
 
-#: ../surfaceslab.py:32
+#: ../surfaceslab.py:31
 msgid "DIAMOND(111)"
 msgstr "DIAMANT(111)"
 
@@ -1488,64 +1488,71 @@ msgid_plural "{symbol} {surf} surface with {natoms} atoms.{vacuum}"
 msgstr[0] "{symbol} {surf}-overflade med {natoms} atom.{vacuum}"
 msgstr[1] "{symbol} {surf}-overflade med {natoms} atomer.{vacuum}"
 
-#: ../ui.py:40
+#: ../ui.py:39
 msgid "Version"
 msgstr "Version"
 
-#: ../ui.py:41
+#: ../ui.py:40
 msgid "Web-page"
 msgstr "Webside"
 
-#: ../ui.py:42
+#: ../ui.py:41
 msgid "About"
 msgstr "Om"
 
-#: ../ui.py:48 ../ui.py:52 ../widgets.py:14
+#: ../ui.py:47 ../ui.py:51 ../widgets.py:12
 msgid "Help"
 msgstr "Hjælp"
 
-#: ../ui.py:559
+#: ../ui.py:560
 msgid "Open ..."
 msgstr "Åbn …"
 
-#: ../ui.py:566
+#: ../ui.py:567
 msgid "Automatic"
 msgstr "Automatisk"
 
-#: ../ui.py:584
+#: ../ui.py:585
 msgid "Choose parser:"
 msgstr "Vælg fortolker:"
 
-#: ../ui.py:590
+#: ../ui.py:591
 msgid "Read error"
 msgstr "Læsefejl"
 
-#: ../ui.py:591
-msgid "Could not read {}: {}"
-msgstr "Kunne ikke læse {}: {}"
+#: ../ui.py:592
+#, python-brace-format
+msgid "Could not read {filename}: {err}"
+msgstr "Kunne ikke læse {filename}: {err}"
 
-#: ../widgets.py:12
+#: ../view.py:130
+msgid "one image loaded"
+msgid_plural "{} images loaded"
+msgstr[0] "et billede indlæst"
+msgstr[1] "{} billeder indlæst"
+
+#: ../widgets.py:10
 msgid "Element:"
 msgstr "Grundstof:"
 
-#: ../widgets.py:26
+#: ../widgets.py:24
 msgid "Enter a chemical symbol or the atomic number."
 msgstr "Indtast kemisk symbol eller atomnummer."
 
 #. Title of a popup window
-#: ../widgets.py:28
+#: ../widgets.py:26
 msgid "Info"
 msgstr "Info"
 
-#: ../widgets.py:58
+#: ../widgets.py:56
 msgid "No element specified!"
 msgstr "Intet grundstof angivet!"
 
-#: ../widgets.py:77
+#: ../widgets.py:75
 msgid "ERROR: Invalid element!"
 msgstr "FEJL: ugyldigt grundstof!"
 
-#: ../widgets.py:94
+#: ../widgets.py:92
 msgid "No Python code"
 msgstr "Ingen Pythonkode"
 

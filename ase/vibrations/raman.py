@@ -37,7 +37,7 @@ class RamanCalculatorBase(IOContext):
 
         self.exext = exext
 
-        self.txt = self.openfile(txt, comm)
+        self.txt = self.openfile(file=txt, comm=comm)
         self.verbose = verbose
 
         self.comm = comm
@@ -103,7 +103,7 @@ class RamanBase(AtomicDisplacements, IOContext):
             self.exname = exname
         self.exext = exext
 
-        self.txt = self.openfile(txt, comm)
+        self.txt = self.openfile(file=txt, comm=comm)
         self.verbose = verbose
 
         self.comm = comm
@@ -275,7 +275,7 @@ class RamanData(RamanBase):
     def summary(self, log='-'):
         """Print summary for given omega [eV]"""
         with IOContext() as io:
-            log = io.openfile(log, comm=self.comm, mode='a')
+            log = io.openfile(file=log, mode='a', comm=self.comm)
             return self._summary(log)
 
     def _summary(self, log):

@@ -8,11 +8,12 @@ import numpy as np
 import pytest
 
 from ase.build import bulk
+from ase.calculators.fd import calculate_numerical_stress
 from ase.filters import UnitCellFilter
 from ase.optimize import MDMin
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 def test_cp2k_stress(cp2k_factory):
     """Adopted from ase/test/stress.py"""
 
@@ -70,7 +71,7 @@ def test_cp2k_stress(cp2k_factory):
 
     # Verify analytical stress tensor against numerical value
     s_analytical = a.get_stress()
-    s_numerical = a.calc.calculate_numerical_stress(a, 1e-5)
+    s_numerical = calculate_numerical_stress(a, 1e-5)
     s_p_err = 100 * (s_numerical - s_analytical) / s_numerical
 
     print("Analytical stress:\n", s_analytical)

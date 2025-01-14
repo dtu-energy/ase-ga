@@ -1,8 +1,10 @@
 import numpy as np
 import pytest
 
-from ase.geometry.bravais_type_engine import (generate_niggli_op_table,
-                                              niggli_op_table)
+from ase.geometry.bravais_type_engine import (
+    generate_niggli_op_table,
+    niggli_op_table,
+)
 
 
 def lattice_names():

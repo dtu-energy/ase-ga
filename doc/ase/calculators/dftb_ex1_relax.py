@@ -4,8 +4,7 @@ from ase.io import write
 from ase.optimize import QuasiNewton
 
 atoms = molecule('H2O')
-calc = Dftb(atoms=atoms,
-            label='h2o',
+calc = Dftb(label='h2o',
             Hamiltonian_MaxAngularMomentum_='',
             Hamiltonian_MaxAngularMomentum_O='p',
             Hamiltonian_MaxAngularMomentum_H='s',

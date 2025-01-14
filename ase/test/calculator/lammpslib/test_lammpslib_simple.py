@@ -7,19 +7,19 @@ from ase.build import bulk
 from ase.md.verlet import VelocityVerlet
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms_fcc_Ni_with_H_at_center():
     atoms = bulk("Ni", cubic=True)
     atoms += Atom("H", position=atoms.cell.diagonal() / 2)
     return atoms
 
 
-@pytest.fixture
+@pytest.fixture()
 def lammps_data_file_Fe(datadir):
     return datadir / "lammpslib_simple_input.data"
 
 
-@pytest.fixture
+@pytest.fixture()
 def calc_params_Fe(lammps_data_file_Fe):
     calc_params = {}
     calc_params["lammps_header"] = [
@@ -43,7 +43,7 @@ def calc_params_Fe(lammps_data_file_Fe):
     return calc_params
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms_Fe(lammps_data_file_Fe):
     return ase.io.read(
         lammps_data_file_Fe,
@@ -53,7 +53,7 @@ def atoms_Fe(lammps_data_file_Fe):
     )
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator("lammpslib")
 def test_lammpslib_simple(
     factory,
@@ -130,7 +130,7 @@ def test_lammpslib_simple(
 
 
 @pytest.mark.parametrize("keep_alive", [False, True])
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator("lammpslib")
 def test_read_data(
     factory,
@@ -156,3 +156,52 @@ def test_read_data(
         dyn.run(10)
         energy = atoms_Fe.get_potential_energy()
         assert energy == pytest.approx(312.4315854721744, rel=1e-4)
+
+
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator('lammpslib')
+def test_charges_atomic(
+    factory,
+    calc_params_NiH: dict,
+    atoms_fcc_Ni_with_H_at_center: Atoms,
+):
+    """Test charges for `atom_style atomic`.
+
+    Since `atom_style atomic` does not include atomic charges, LAMMPS raises
+    an error "Cannot set attribute charge for atom style atomic" if we set a
+    command like 'set atom 1 charge 1.0'.
+    The above command must therefore be set only when `atom_style` include
+    atomic charges, and otherwise the command should be skipped.
+    This test checks if the skipping is properly done.
+    """
+    atoms = atoms_fcc_Ni_with_H_at_center
+    atoms.set_initial_charges(len(atoms) * [1.0])
+    atoms.calc = factory.calc(**calc_params_NiH)
+    atoms.get_potential_energy()
+
+
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator('lammpslib')
+def test_charges_full(
+    factory,
+    calc_params_Fe: dict,
+    atoms_Fe: Atoms,
+):
+    """Test charges for `atom_style full`.
+
+    Test if
+
+    1. Setting initial charges triggers a new calculation.
+    2. The energy with charges is different from the energy without charges.
+
+    """
+    calc = factory.calc(**calc_params_Fe)
+    atoms_Fe.calc = calc
+
+    energy_without_charges = atoms_Fe.get_potential_energy()
+
+    atoms_Fe.set_initial_charges(len(atoms_Fe) * [1.0])
+
+    energy_with_charges = atoms_Fe.get_potential_energy()
+
+    assert energy_with_charges != pytest.approx(energy_without_charges)

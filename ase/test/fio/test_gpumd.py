@@ -12,7 +12,7 @@ from ase.build import bulk
 from ase.io.gpumd import load_xyz_input_gpumd
 
 
-@pytest.fixture
+@pytest.fixture()
 def gpumd_input_text():
     """This file is parsed correctly by GPUMD, since it is included
     among the examples distributed with the package, i.e.
@@ -37,7 +37,7 @@ def gpumd_input_text():
     1 8.91989 -1.32745 44.8546 12.011 0.00351112 -0.00690595 0.040041 15 1 """
 
 
-@pytest.fixture
+@pytest.fixture()
 def rocksalt():
     return bulk('NiO', 'rocksalt', 4.813, cubic=True)
 

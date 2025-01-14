@@ -326,7 +326,7 @@ class FranckCondon:
         E = freq / 8065.5
         f_n = [[] * i for i in range(n)]
 
-        for j in range(0, n):
+        for j in range(n):
             f_n[j] = np.exp(-E * j / (kB * T))
 
         # partition function

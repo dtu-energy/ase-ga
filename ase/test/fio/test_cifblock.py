@@ -39,7 +39,7 @@ def test_cifloop_roundtrip():
     assert dct['_eggs'] == [1, 2, 3]
 
 
-@pytest.fixture
+@pytest.fixture()
 def cifblock():
     return CIFBlock('hello', {'_cifkey': 42})
 

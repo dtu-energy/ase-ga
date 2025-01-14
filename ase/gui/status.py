@@ -1,3 +1,4 @@
+import warnings
 from math import acos, pi, sqrt
 
 import numpy as np
@@ -6,7 +7,6 @@ from ase.data import atomic_names as names
 from ase.data import chemical_symbols as symbols
 from ase.gui.i18n import _
 from ase.gui.utils import get_magmoms
-import warnings
 
 
 def formula(Z):
@@ -87,8 +87,8 @@ class Status:  # Status is used as a mixin in GUI
             if charges.any():
                 text += _(' q={:1.2f}'.format(
                     charges[indices][0]))
-            haveit = ['numbers', 'positions', 'forces', 'momenta',
-                      'initial_charges', 'initial_magmoms']
+            haveit = {'numbers', 'positions', 'forces', 'momenta',
+                      'initial_charges', 'initial_magmoms', 'tags'}
             for key in atoms.arrays:
                 if key not in haveit:
                     val = atoms.get_array(key)[indices[0]]

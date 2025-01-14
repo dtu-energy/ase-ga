@@ -4,8 +4,12 @@ import numpy as np
 
 import ase.units as units
 from ase import Atoms
-from ase.calculators.qmmm import (EIQMMM, LJInteractions,
-                                  LJInteractionsGeneral, SimpleQMMM)
+from ase.calculators.qmmm import (
+    EIQMMM,
+    LJInteractions,
+    LJInteractionsGeneral,
+    SimpleQMMM,
+)
 from ase.calculators.tip3p import TIP3P, angleHOH, epsilon0, rOH, sigma0
 from ase.constraints import FixInternals
 from ase.optimize import GPMin

@@ -1,6 +1,6 @@
 import pytest
 
-from ase.calculators.genericfileio import CalculatorTemplate, BaseProfile
+from ase.calculators.genericfileio import BaseProfile, CalculatorTemplate
 
 
 @pytest.fixture(autouse=True)
@@ -9,15 +9,10 @@ def _calculator_tests_always_use_testdir(testdir):
 
 
 class DummyProfile(BaseProfile):
-
-    def __init__(self, exc, **kwargs):
-        super().__init__(**kwargs)
-        self.exc = exc
-
     def get_calculator_command(self, inputfile):
         if not inputfile:
-            return [self.exc]
-        return [self.exc, inputfile]
+            return []
+        return [inputfile]
 
     def version(self):
         return "0.0.0"
@@ -44,6 +39,6 @@ class DummyTemplate(CalculatorTemplate):
         pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def dummy_template():
     return DummyTemplate()

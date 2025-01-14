@@ -1,7 +1,7 @@
 import re
 import warnings
 from copy import deepcopy
-from os.path import basename, dirname, isfile
+from os.path import dirname, isfile
 from pathlib import Path
 
 import numpy as np
@@ -394,35 +394,30 @@ def write_onetep_in(
     else:
         raise TypeError("ngwf_radius can only be float|list|dict")
 
-    pp_files = keywords.get("pseudo_path", pseudo_path)
-    pp_files = pp_files.replace("'", "")
-    pp_files = pp_files.replace('"', "")
+    pp_files = re.sub("'|\"", "", keywords.get("pseudo_path", pseudo_path))
     pp_files = Path(pp_files).glob("*")
-    pp_files = [i for i in sorted(pp_files) if i.is_file()]
-    pp_is_manual = keywords.get("species_pot", False)
-    common_suffix = [".usp", ".recpot", ".upf", ".paw", ".psp", ".pspnc"]
+    pp_files = [i for i in pp_files if i.is_file()]
+
     if pseudo_suffix:
         common_suffix = [pseudo_suffix]
-    # Transform to list
-    if pp_is_manual:
+    else:
+        common_suffix = [".usp", ".recpot", ".upf", ".paw", ".psp", ".pspnc"]
+
+    if keywords.get("species_pot", False):
         pp_list = keywords["species_pot"]
     elif isinstance(pseudopotentials, dict):
         pp_list = []
         for idx, el in enumerate(u_species):
-            try:
-                pp_list.append(el + " " + pseudopotentials[el])
-            except KeyError:
+            if el in pseudopotentials:
+                pp_list.append(f"{el} {pseudopotentials[el]}")
+            else:
                 for i in pp_files:
-                    if elements[idx] in basename(i)[:2]:
-                        for j in common_suffix:
-                            if basename(i).endswith(j):
-                                pp_list.append(el + " " + basename(i))
-                # pp_maybe = attempt_to_find_pp(elements[idx])
-                # if pp_maybe:
-                #    pp_list.append(el + ' ' + pp_maybe)
-                # else:
-                #    warnings.warn('No pseudopotential found for element {}'
-                #                  .format(el))
+                    reg_el_candidate = re.split(r"[-_.:= ]+", i.stem)[0]
+                    if (
+                        elements[idx] == reg_el_candidate.title()
+                        and i.suffix.lower() in common_suffix
+                    ):
+                        pp_list.append(f"{el} {i.name}")
     else:
         raise TypeError("pseudopotentials object can only be dict")
 

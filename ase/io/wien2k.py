@@ -67,14 +67,14 @@ def read_struct(fd, ase=True):
         iline += 1
         neq[iat] = int(pip[iline][15:17])
         iline += 1
-        for ieq in range(1, int(neq[iat])):
+        for _ in range(1, int(neq[iat])):
             pos = np.append(pos, np.array([[float(pip[iline][12:22]),
                                             float(pip[iline][25:35]),
                                             float(pip[iline][38:48])]]),
                             axis=0)
             indif += 1
             iline += 1
-        for i in range(indif - indifini):
+        for _ in range(indif - indifini):
             atomtype.append(pip[iline][0:2].replace(' ', ''))
             rmt.append(float(pip[iline][43:48]))
         iline += 4

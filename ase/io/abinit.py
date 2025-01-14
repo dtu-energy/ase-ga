@@ -307,7 +307,6 @@ def read_stress(fd):
             # Not a real value error.  What should we raise?
             raise ValueError('Line {!r} does not match stress pattern {!r}'
                              .format(line, pat))
-        s1, s2 = m.group(1, 2)
         stress[i] = float(m.group(1))
         stress[i + 3] = float(m.group(2))
     unit = Hartree / Bohr**3
@@ -470,7 +469,7 @@ def read_eigenvalues_for_one_spin(fd, nkpts):
     kpoint_coords = []
 
     eig_kn = []
-    for ikpt in range(nkpts):
+    for _ in range(nkpts):
         header = next(fd)
         nbands, weight, kvector = match_kpt_header(header)
         kpoint_coords.append(kvector)

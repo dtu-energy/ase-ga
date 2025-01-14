@@ -1,10 +1,10 @@
 import copy
-from dataclasses import dataclass
 import os
+import shlex
 import subprocess
 import warnings
-
 from abc import abstractmethod
+from dataclasses import dataclass, field
 from math import pi, sqrt
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
@@ -15,7 +15,7 @@ from ase.calculators.abc import GetPropertiesMixin
 from ase.cell import Cell
 from ase.config import cfg as _cfg
 from ase.outputs import Properties, all_outputs
-from ase.utils import jsonable
+from ase.utils import deprecated, jsonable
 
 from .names import names
 
@@ -894,19 +894,27 @@ class Calculator(BaseCalculator):
                 )
                 raise RuntimeError(msg) from e
 
+    @deprecated('Please use `ase.calculators.fd.FiniteDifferenceCalculator`.')
     def calculate_numerical_forces(self, atoms, d=0.001):
         """Calculate numerical forces using finite difference.
 
-        All atoms will be displaced by +d and -d in all directions."""
-        from ase.calculators.test import numeric_forces
+        All atoms will be displaced by +d and -d in all directions.
 
-        return numeric_forces(atoms, d=d)
+        .. deprecated:: 3.24.0
+        """
+        from ase.calculators.fd import calculate_numerical_forces
 
+        return calculate_numerical_forces(atoms, eps=d)
+
+    @deprecated('Please use `ase.calculators.fd.FiniteDifferenceCalculator`.')
     def calculate_numerical_stress(self, atoms, d=1e-6, voigt=True):
-        """Calculate numerical stress using finite difference."""
-        from ase.calculators.test import numeric_stress
+        """Calculate numerical stress using finite difference.
 
-        return numeric_stress(atoms, d=d, voigt=voigt)
+        .. deprecated:: 3.24.0
+        """
+        from ase.calculators.fd import calculate_numerical_stress
+
+        return calculate_numerical_stress(atoms, eps=d, voigt=voigt)
 
     def _deprecated_get_spin_polarized(self):
         msg = (
@@ -932,22 +940,21 @@ class Calculator(BaseCalculator):
 
 
 class OldShellProfile:
-    def __init__(self, name, command, prefix):
-        self.name = name
+    def __init__(self, command):
         self.command = command
-        self.prefix = prefix
+        self.configvars = {}
 
     def execute(self, calc):
         if self.command is None:
             raise EnvironmentError(
                 'Please set ${} environment variable '.format(
-                    'ASE_' + self.name.upper() + '_COMMAND'
+                    'ASE_' + self.calc.upper() + '_COMMAND'
                 )
                 + 'or supply the command keyword'
             )
         command = self.command
         if 'PREFIX' in command:
-            command = command.replace('PREFIX', self.prefix)
+            command = command.replace('PREFIX', calc.prefix)
 
         try:
             proc = subprocess.Popen(command, shell=True, cwd=calc.directory)
@@ -966,7 +973,7 @@ class OldShellProfile:
             msg = (
                 'Calculator "{}" failed with command "{}" failed in '
                 '{} with error code {}'.format(
-                    self.name, command, path, errorcode
+                    calc.name, command, path, errorcode
                 )
             )
             raise CalculationFailed(msg)
@@ -985,23 +992,57 @@ class FileIORules:
     stdin_name: Optional[str] = None
     stdout_name: Optional[str] = None
 
+    configspec: Dict[str, Any] = field(default_factory=dict)
 
-class ArgvProfile:
-    def __init__(self, name, argv):
-        self.name = name
-        self.argv = argv
+    def load_config(self, section):
+        dct = {}
+        for key, value in self.configspec.items():
+            if key in section:
+                value = section[key]
+            dct[key] = value
+        return dct
+
+
+class BadConfiguration(Exception):
+    pass
+
+
+def _validate_command(command: str) -> str:
+    # We like to store commands as strings (and call shlex.split() later),
+    # but we also like to validate them early.  This will error out if
+    # command contains syntax problems and will also normalize e.g.
+    # multiple spaces:
+    try:
+        return shlex.join(shlex.split(command))
+    except ValueError as err:
+        raise BadConfiguration('Cannot parse command string') from err
+
+
+@dataclass
+class StandardProfile:
+    command: str
+    configvars: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        self.command = _validate_command(self.command)
 
     def execute(self, calc):
         try:
             self._call(calc, subprocess.check_call)
         except subprocess.CalledProcessError as err:
             directory = Path(calc.directory).resolve()
-            msg = (f'Calculator {self.name} failed with args {err.args} '
+            msg = (f'Calculator {calc.name} failed with args {err.args} '
                    f'in directory {directory}')
             raise CalculationFailed(msg) from err
 
     def execute_nonblocking(self, calc):
         return self._call(calc, subprocess.Popen)
+
+    @property
+    def _split_command(self):
+        # XXX Unduplicate common stuff between StandardProfile and
+        # that of GenericFileIO
+        return shlex.split(self.command)
 
     def _call(self, calc, subprocess_function):
         from contextlib import ExitStack
@@ -1022,7 +1063,7 @@ class ArgvProfile:
             stdout_fd = _maybe_open(fileio_rules.stdout_name, 'wb')
             stdin_fd = _maybe_open(fileio_rules.stdin_name, 'rb')
 
-            argv = [*self.argv, *fileio_rules.extend_argv]
+            argv = [*self._split_command, *fileio_rules.extend_argv]
             argv = [arg.format(prefix=calc.prefix) for arg in argv]
             return subprocess_function(
                 argv, cwd=directory,
@@ -1032,6 +1073,9 @@ class ArgvProfile:
 
 class FileIOCalculator(Calculator):
     """Base class for calculators that write/read input/output files."""
+
+    # Static specification of rules for this calculator:
+    fileio_rules: Optional[FileIORules] = None
 
     # command: Optional[str] = None
     # 'Command used to start calculation'
@@ -1085,32 +1129,45 @@ class FileIOCalculator(Calculator):
 
     @classmethod
     def load_argv_profile(cls, cfg, section_name):
-        import shlex
         # Helper method to load configuration.
         # This is used by the tests, do not rely on this as it will change.
-        section = cfg.parser[section_name]
-        argv = shlex.split(section['command'])
-        return ArgvProfile(section_name, argv)
+        try:
+            section = cfg.parser[section_name]
+        except KeyError:
+            raise BadConfiguration(f'No {section_name!r} section')
+
+        if cls.fileio_rules is not None:
+            configvars = cls.fileio_rules.load_config(section)
+        else:
+            configvars = {}
+
+        try:
+            command = section['command']
+        except KeyError:
+            raise BadConfiguration(
+                f'No command field in {section_name!r} section')
+
+        return StandardProfile(command, configvars)
 
     def _initialize_profile(self, command):
         if command is None:
             name = 'ASE_' + self.name.upper() + '_COMMAND'
             command = self.cfg.get(name)
 
+        if command is None and self.name in self.cfg.parser:
+            return self.load_argv_profile(self.cfg, self.name)
+
         if command is None:
             # XXX issue a FutureWarning if this causes the command
             # to no longer be None
             command = self._legacy_default_command
-
-        if command is None and self.name in self.cfg.parser:
-            return self.load_argv_profile(self.cfg, self.name)
 
         if command is None:
             raise EnvironmentError(
                 f'No configuration of {self.name}.  '
                 f'Missing section [{self.name}] in configuration')
 
-        return OldShellProfile(self.name, command, self.prefix)
+        return OldShellProfile(command)
 
     def calculate(
         self, atoms=None, properties=['energy'], system_changes=all_changes

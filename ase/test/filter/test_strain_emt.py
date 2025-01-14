@@ -6,7 +6,7 @@ from ase.filters import StrainFilter
 from ase.optimize.mdmin import MDMin
 
 
-@pytest.mark.optimize
+@pytest.mark.optimize()
 def test_strain_emt():
     cu = bulk('Cu', 'fcc', a=3.6)
     cu.calc = EMT()

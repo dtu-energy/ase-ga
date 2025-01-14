@@ -10,8 +10,10 @@ from ase.calculators.calculator import compare_atoms
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
 from ase.io import read, write
-from ase.io.bundletrajectory import (BundleTrajectory,
-                                     print_bundletrajectory_info)
+from ase.io.bundletrajectory import (
+    BundleTrajectory,
+    print_bundletrajectory_info,
+)
 from ase.io.pickletrajectory import PickleTrajectory
 
 trajname = 'pickletraj.traj'
@@ -22,7 +24,7 @@ def test_raises():
         PickleTrajectory(trajname, 'w')
 
 
-@pytest.fixture
+@pytest.fixture()
 def images():
     atoms = bulk('Ti') * (1, 2, 1)
     atoms.symbols = 'Au'
@@ -54,7 +56,7 @@ def read_images(filename):
         return list(traj)
 
 
-@pytest.fixture
+@pytest.fixture()
 def trajfile(images):
     ptraj = PickleTrajectory(trajname, 'w', _warn=False)
     for image in images:
@@ -116,7 +118,7 @@ def test_old_trajectory_conversion_utility(images, trajfile):
     assert_images_equal(images, new_images)
 
 
-@pytest.fixture
+@pytest.fixture()
 def bundletraj(images):
     fname = 'traj.bundle'
     write(fname, images, format='bundletrajectory')

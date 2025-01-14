@@ -5,9 +5,11 @@ from ase.atoms import Atoms
 from ase.build import bulk
 from ase.calculators.calculator import all_changes
 from ase.calculators.lj import LennardJones
+from ase.constraints import FixSymmetry
 from ase.filters import FrechetCellFilter, UnitCellFilter
+from ase.md.verlet import VelocityVerlet
 from ase.optimize.precon.lbfgs import PreconLBFGS
-from ase.spacegroup.symmetrize import FixSymmetry, check_symmetry, is_subgroup
+from ase.spacegroup.symmetrize import check_symmetry, is_subgroup
 
 spglib = pytest.importorskip('spglib')
 
@@ -73,6 +75,33 @@ def symmetrized_optimisation(at_init, filter):
     return di, df
 
 
+def test_as_dict():
+    atoms = bulk("Cu")
+    atoms.set_constraint(FixSymmetry(atoms))
+    assert atoms.constraints[0].todict() == {
+        'name': 'FixSymmetry',
+        'kwargs': {
+            'atoms': bulk('Cu'),
+            'symprec': 0.01,
+            'adjust_positions': True,
+            'adjust_cell': True,
+            'verbose': False,
+        },
+    }
+
+
+def test_fail_md():
+    atoms = bulk("Cu")
+    atoms.set_constraint(FixSymmetry(atoms))
+
+    atoms.calc = LennardJones()
+    # This will not fail if the user has no logfile specified
+    # a little bit weird...
+    with pytest.raises(NotImplementedError):
+        dyn = VelocityVerlet(atoms, timestep=1.0, logfile="-")
+        dyn.run(5)
+
+
 @pytest.fixture(params=[UnitCellFilter, FrechetCellFilter])
 def filter(request):
     return request.param
@@ -81,45 +110,41 @@ def filter(request):
 @pytest.mark.filterwarnings('ignore:ASE Atoms-like input is deprecated')
 @pytest.mark.filterwarnings('ignore:Armijo linesearch failed')
 def test_no_symmetrization(filter):
-    print("NO SYM")
-    at_init, at_rot = setup_cell()
+    at_init, _at_rot = setup_cell()
     at_unsym = at_init.copy()
     di, df = symmetrized_optimisation(at_unsym, filter)
-    assert di["number"] == 229 and not is_subgroup(sub_data=di, sup_data=df)
+    assert di.number == 229 and not is_subgroup(sub_data=di, sup_data=df)
 
 
 @pytest.mark.filterwarnings('ignore:ASE Atoms-like input is deprecated')
 @pytest.mark.filterwarnings('ignore:Armijo linesearch failed')
 def test_no_sym_rotated(filter):
-    print("NO SYM ROT")
-    at_init, at_rot = setup_cell()
+    _at_init, at_rot = setup_cell()
     at_unsym_rot = at_rot.copy()
     di, df = symmetrized_optimisation(at_unsym_rot, filter)
-    assert di["number"] == 229 and not is_subgroup(sub_data=di, sup_data=df)
+    assert di.number == 229 and not is_subgroup(sub_data=di, sup_data=df)
 
 
 @pytest.mark.filterwarnings('ignore:ASE Atoms-like input is deprecated')
 @pytest.mark.filterwarnings('ignore:Armijo linesearch failed')
 def test_sym_adj_cell(filter):
-    print("SYM POS+CELL")
-    at_init, at_rot = setup_cell()
+    at_init, _at_rot = setup_cell()
     at_sym_3 = at_init.copy()
     at_sym_3.set_constraint(
         FixSymmetry(at_sym_3, adjust_positions=True, adjust_cell=True))
     di, df = symmetrized_optimisation(at_sym_3, filter)
-    assert di["number"] == 229 and is_subgroup(sub_data=di, sup_data=df)
+    assert di.number == 229 and is_subgroup(sub_data=di, sup_data=df)
 
 
 @pytest.mark.filterwarnings('ignore:ASE Atoms-like input is deprecated')
 @pytest.mark.filterwarnings('ignore:Armijo linesearch failed')
 def test_sym_rot_adj_cell(filter):
-    print("SYM POS+CELL ROT")
-    at_init, at_rot = setup_cell()
+    at_init, _at_rot = setup_cell()
     at_sym_3_rot = at_init.copy()
     at_sym_3_rot.set_constraint(
         FixSymmetry(at_sym_3_rot, adjust_positions=True, adjust_cell=True))
     di, df = symmetrized_optimisation(at_sym_3_rot, filter)
-    assert di["number"] == 229 and is_subgroup(sub_data=di, sup_data=df)
+    assert di.number == 229 and is_subgroup(sub_data=di, sup_data=df)
 
 
 @pytest.mark.filterwarnings('ignore:ASE Atoms-like input is deprecated')

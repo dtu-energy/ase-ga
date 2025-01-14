@@ -24,4 +24,4 @@ def test_hookean_pbc():
     e3 = a.get_potential_energy()
 
     assert abs(e1 - e2) < 1e-8
-    assert not abs(e1 - e3) < 1e-8
+    assert abs(e1 - e3) >= 1e-8

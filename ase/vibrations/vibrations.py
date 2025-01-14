@@ -4,18 +4,18 @@ import sys
 from collections import namedtuple
 from math import log, pi, sqrt
 from pathlib import Path
+from typing import Iterator, Tuple
 
 import numpy as np
 
 import ase.io
 import ase.units as units
+from ase.atoms import Atoms
+from ase.constraints import FixAtoms
 from ase.parallel import paropen, world
 from ase.utils.filecache import get_json_cache
 
 from .data import VibrationsData
-from ase.atoms import Atoms
-
-from typing import Tuple, Iterator
 
 
 class AtomicDisplacements:
@@ -153,7 +153,12 @@ class Vibrations(AtomicDisplacements):
         self.atoms = atoms
         self.calc = atoms.calc
         if indices is None:
-            indices = range(len(atoms))
+            fixed_indices = []
+            for constr in atoms.constraints:
+                if isinstance(constr, FixAtoms):
+                    fixed_indices.extend(constr.get_indices())
+            fixed_indices = list(set(fixed_indices))
+            indices = [i for i in range(len(atoms)) if i not in fixed_indices]
         if len(indices) != len(set(indices)):
             raise ValueError(
                 'one (or more) indices included more than once')
@@ -449,7 +454,7 @@ Please remove them and recalculate or run \
 
     def get_zero_point_energy(self, freq=None):
         if freq:
-            raise NotImplementedError()
+            raise NotImplementedError
         return self.get_vibrations().get_zero_point_energy()
 
     def get_mode(self, n):

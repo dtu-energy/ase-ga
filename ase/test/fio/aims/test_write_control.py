@@ -16,7 +16,7 @@ import ase.calculators.aims
 import ase.io.aims
 
 
-@pytest.fixture
+@pytest.fixture()
 def parameters_dict():
     """Creates a parameters dictionary used to configure Aims simulation."""
     return {
@@ -52,13 +52,13 @@ def write_control_to_string(ase_atoms_obj, parameters):
     return string_output.getvalue()
 
 
-@pytest.fixture
+@pytest.fixture()
 def bulk_au():
     """Create an ASE.Atoms bulk object of Gold."""
     return ase.build.bulk("Au")
 
 
-@pytest.fixture
+@pytest.fixture()
 def bulk_aucl():
     """Create an ASE AuCl Atoms object"""
     return ase.build.bulk("AuCl",
@@ -187,7 +187,7 @@ AIMS_CL_SPECIES_LIGHT = """\
 """
 
 
-@pytest.fixture
+@pytest.fixture()
 def aims_species_dir_light(tmp_path):
     """Create temporary directory to store species files."""
     species_dir_light = tmp_path / "light"
