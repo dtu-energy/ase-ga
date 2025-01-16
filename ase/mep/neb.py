@@ -268,9 +268,6 @@ class NEBOptimizable(Optimizable):
     def get_potential_energy(self):
         return self.neb.get_potential_energy()
 
-    def is_neb(self):
-        return True
-
     def get_positions(self):
         return self.neb.get_positions()
 
