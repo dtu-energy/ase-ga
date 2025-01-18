@@ -24,6 +24,7 @@ from ase.io.espresso import (
     write_espresso_in,
     write_fortran_namelist,
 )
+from ase.units import create_units
 
 # This file is parsed correctly by pw.x, even though things are
 # scattered all over the place with some namelist edge cases
@@ -282,6 +283,253 @@ End final coordinates
 
 """
 
+pw_output_cell = """
+     Program PWSCF v.7.4 starts on 30Dec2024 at 16:10:39
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =       7.2558  a.u.
+     unit-cell volume          =     270.1072 (a.u.)^3
+     number of atoms/cell      =            2
+     number of atomic types    =            1
+     number of electrons       =         8.00
+     number of Kohn-Sham states=            8
+     kinetic-energy cutoff     =      30.0000  Ry
+     charge density cutoff     =     240.0000  Ry
+     scf convergence threshold =      1.0E-08
+     mixing beta               =       0.3500
+     number of iterations used =            8  local-TF  mixing
+     energy convergence thresh.=      1.0E+00
+     force convergence thresh. =      1.0E-03
+     press convergence thresh. =      1.5E+02
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     nstep                     =           50
+
+
+     celldm(1)=   7.255773  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (   0.000000   0.707107   0.707107 )
+               a(2) = (   0.707107   0.000000   0.707107 )
+               a(3) = (   0.707107   0.707107   0.000000 )
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = ( -0.707107  0.707107  0.707107 )
+               b(2) = (  0.707107 -0.707107  0.707107 )
+               b(3) = (  0.707107  0.707107 -0.707107 )
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1        Si     tau(   1) = (   0.0000000   0.0000000   0.0000000  )
+         2        Si     tau(   2) = (   0.3535534   0.3535534   0.3535534  )
+
+     number of k points=     1  Gaussian smearing, width (Ry)=  0.0010
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   2.0000000
+
+
+     End of self-consistent calculation
+
+          k = 0.0000 0.0000 0.0000 (   375 PWs)   bands (ev):
+
+    -4.9573   7.1990   7.1990   7.1991   9.4854   9.4854   9.4854  10.6559
+
+     the Fermi energy is     8.8063 ev
+
+!    total energy              =     -21.58743321 Ry
+     estimated scf accuracy    <          1.5E-09 Ry
+     smearing contrib. (-TS)   =      -0.00000000 Ry
+     internal energy E=F+TS    =     -21.58743321 Ry
+
+     The total energy is F=E-TS. E is the sum of the following terms:
+     one-electron contribution =       6.13011013 Ry
+     hartree contribution      =       1.69362248 Ry
+     xc contribution           =     -12.61222208 Ry
+     ewald contribution        =     -16.79894374 Ry
+
+     convergence has been achieved in  11 iterations
+
+     Forces acting on atoms (cartesian axes, Ry/au):
+
+     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000
+     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000
+
+     Total force =     0.000000     Total SCF correction =     0.000007
+
+
+     Computing stress (Cartesian axis) and pressure
+
+          total   stress  (Ry/bohr**3)                   (kbar)     P=      433
+   0.00294455  -0.00000000  -0.00000000          433.16       -0.00       -0.00
+  -0.00000000   0.00294455  -0.00000000           -0.00      433.16       -0.00
+  -0.00000000  -0.00000000   0.00294455           -0.00       -0.00      433.16
+
+
+     BFGS Geometry Optimization
+     Energy error            =      1.6E-01 Ry
+     Gradient error          =      0.0E+00 Ry/Bohr
+     Cell gradient error     =      4.3E+02 kbar
+
+     number of scf cycles    =   1
+     number of bfgs steps    =   0
+
+     enthalpy           new  =     -21.5874332073 Ry
+
+     new trust radius        =       0.2419674028 bohr
+     new conv_thr            =       0.0000000100 Ry
+
+     new unit-cell volume =    334.25681 a.u.^3 (    49.53175 Ang^3 )
+     density =      1.88308 g/cm^3
+
+CELL_PARAMETERS (angstrom)
+  -0.000000000   2.914861274   2.914861274
+   2.914861274  -0.000000000   2.914861274
+   2.914861274   2.914861274  -0.000000000
+
+ATOMIC_POSITIONS (angstrom)
+Si               0.0000000000        0.0000000000        0.0000000000
+Si               1.4574306371        1.4574306371        1.4574306371
+
+     End of self-consistent calculation
+
+          k = 0.0000 0.0000 0.0000 (   375 PWs)   bands (ev):
+
+    -5.7174   5.0283   5.0283   5.0283   6.2048   7.2660   7.2660   7.2660
+
+     the Fermi energy is     5.7451 ev
+
+!    total energy              =     -21.70179088 Ry
+     estimated scf accuracy    <          3.1E-09 Ry
+     smearing contrib. (-TS)   =      -0.00000000 Ry
+     internal energy E=F+TS    =     -21.70179088 Ry
+
+     The total energy is F=E-TS. E is the sum of the following terms:
+     one-electron contribution =       4.44939949 Ry
+     hartree contribution      =       1.82078558 Ry
+     xc contribution           =     -12.32487369 Ry
+     ewald contribution        =     -15.64710226 Ry
+
+     convergence has been achieved in   7 iterations
+
+     Forces acting on atoms (cartesian axes, Ry/au):
+
+     atom    1 type  1   force =     0.00000000    0.00000000   -0.00000000
+     atom    2 type  1   force =     0.00000000    0.00000000   -0.00000000
+
+     Total force =     0.000000     Total SCF correction =     0.000001
+
+
+     Computing stress (Cartesian axis) and pressure
+
+          total   stress  (Ry/bohr**3)                   (kbar)     P=      133
+   0.00090960   0.00000000   0.00000000          133.81        0.00        0.00
+  -0.00000000   0.00090960   0.00000000           -0.00      133.81        0.00
+   0.00000000   0.00000000   0.00090960            0.00        0.00      133.81
+
+     Energy error            =      1.1E-01 Ry
+     Gradient error          =      1.0E-23 Ry/Bohr
+     Cell gradient error     =      1.3E+02 kbar
+
+     bfgs converged in   2 scf cycles and   1 bfgs steps
+     (criteria: energy <  1.0E+00 Ry, force <  1.0E-03 Ry/Bohr, cell <  1.5E+02
+
+     End of BFGS Geometry Optimization
+
+     Final enthalpy           =     -21.7017908769 Ry
+
+     File XXX/tmp-quacc-2024-12-30-15-09-59-202291-63636/pwscf.bfgs deleted, as
+Begin final coordinates
+     new unit-cell volume =    334.25681 a.u.^3 (    49.53175 Ang^3 )
+     density =      1.88308 g/cm^3
+
+CELL_PARAMETERS (angstrom)
+  -0.000000000   2.914861274   2.914861274
+   2.914861274  -0.000000000   2.914861274
+   2.914861274   2.914861274  -0.000000000
+
+ATOMIC_POSITIONS (angstrom)
+Si               0.0000000000        0.0000000000        0.0000000000
+Si               1.4574306371        1.4574306371        1.4574306371
+End final coordinates
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =       7.2558  a.u.
+     unit-cell volume          =     334.2568 (a.u.)^3
+     number of atoms/cell      =            2
+     number of atomic types    =            1
+     number of electrons       =         8.00
+     number of Kohn-Sham states=            8
+     kinetic-energy cutoff     =      30.0000  Ry
+     charge density cutoff     =     240.0000  Ry
+     scf convergence threshold =      1.0E-08
+     mixing beta               =       0.3500
+     number of iterations used =            8  local-TF  mixing
+     press convergence thresh. =      1.5E+02
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+
+     celldm(1)=   7.255773  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (  -0.000000   0.759160   0.759160 )
+               a(2) = (   0.759160  -0.000000   0.759160 )
+               a(3) = (   0.759160   0.759160  -0.000000 )
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = ( -0.658623  0.658623  0.658623 )
+               b(2) = (  0.658623 -0.658623  0.658623 )
+               b(3) = (  0.658623  0.658623 -0.658623 )
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1        Si     tau(   1) = (   0.0000000   0.0000000   0.0000000  )
+         2        Si     tau(   2) = (   0.3795798   0.3795798   0.3795798  )
+
+     number of k points=     1  Gaussian smearing, width (Ry)=  0.0010
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   2.0000000
+
+     End of self-consistent calculation
+
+          k = 0.0000 0.0000 0.0000 (   471 PWs)   bands (ev):
+
+    -5.7176   5.0274   5.0274   5.0274   6.2042   7.2647   7.2647   7.2647
+
+     the Fermi energy is     5.7439 ev
+
+!    total energy              =     -21.70223615 Ry
+     estimated scf accuracy    <          4.9E-10 Ry
+     smearing contrib. (-TS)   =      -0.00000000 Ry
+     internal energy E=F+TS    =     -21.70223615 Ry
+
+     The total energy is F=E-TS. E is the sum of the following terms:
+     one-electron contribution =       4.44893174 Ry
+     hartree contribution      =       1.82082186 Ry
+     xc contribution           =     -12.32488755 Ry
+     ewald contribution        =     -15.64710220 Ry
+
+     convergence has been achieved in   9 iterations
+
+     Forces acting on atoms (cartesian axes, Ry/au):
+
+     atom    1 type  1   force =     0.00000000    0.00000000    0.00000000
+     atom    2 type  1   force =     0.00000000    0.00000000    0.00000000
+
+     Total force =     0.000000     Total SCF correction =     0.000002
+
+
+     Computing stress (Cartesian axis) and pressure
+
+          total   stress  (Ry/bohr**3)                   (kbar)     P=      134
+   0.00091401  -0.00000000  -0.00000000          134.46       -0.00       -0.00
+  -0.00000000   0.00091401  -0.00000000           -0.00      134.46       -0.00
+  -0.00000000  -0.00000000   0.00091401           -0.00       -0.00      134.46
+ """
+
 
 def test_pw_input():
     """Read pw input file."""
@@ -319,6 +567,31 @@ def test_pw_output():
     pw_output_traj = ase.io.read('pw_output.pwo', index=':')
     assert len(pw_output_traj) == 2
     assert pw_output_traj[1].get_volume() > pw_output_traj[0].get_volume()
+
+
+def test_pw_output_cell():
+    """Read pw output file with cell optimization."""
+    with open('pw_output.pwo', 'w') as pw_output_f:
+        pw_output_f.write(pw_output_cell)
+
+    pw_output_traj = ase.io.read('pw_output.pwo', index=':')
+    assert len(pw_output_traj) == 3
+
+    units = create_units('2006')
+    expected_first_cell = units["Bohr"] * 7.255773 * np.array(
+        [[0.000000, 0.707107, 0.707107],
+         [0.707107, 0.000000, 0.707107],
+         [0.707107, 0.707107, 0.000000]]
+    )
+
+    expected_second_cell = np.array(
+        [[-0.000000, 2.914861274, 2.914861274],
+         [2.914861274, -0.000000, 2.914861274],
+         [2.914861274, 2.914861274, -0.000000]]
+    )
+
+    assert np.allclose(pw_output_traj[0].cell, expected_first_cell)
+    assert np.allclose(pw_output_traj[1].cell, expected_second_cell)
 
 
 def test_pw_parse_line():
