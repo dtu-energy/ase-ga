@@ -285,9 +285,9 @@ class IsotropicMTKNPT(MolecularDynamics):
                 "Current implementation does not support constraints"
             )
 
-        num_atoms_global = self.atoms.get_global_number_of_atoms()
+        self._num_atoms_global = self.atoms.get_global_number_of_atoms()
         self._thermostat = NoseHooverChainThermostat(
-            num_atoms_global=num_atoms_global,
+            num_atoms_global=self._num_atoms_global,
             masses=self.masses,
             temperature_K=temperature_K,
             tdamp=tdamp,
@@ -295,7 +295,7 @@ class IsotropicMTKNPT(MolecularDynamics):
             tloop=tloop,
         )
         self._barostat = IsotropicMTKBarostat(
-            num_atoms_global=num_atoms_global,
+            num_atoms_global=self._num_atoms_global,
             masses=self.masses,
             temperature_K=temperature_K,
             pdamp=pdamp,
@@ -377,7 +377,8 @@ class IsotropicMTKNPT(MolecularDynamics):
 
     def _integrate_p(self, delta: float) -> None:
         """Integrate exp(i * L_2 * delta)"""
-        x = (1 + 1 / len(self.atoms)) * self._p_eps * delta / self._barostat.W
+        x = (1 + 1 / self._num_atoms_global) * self._p_eps * delta \
+                / self._barostat.W
         forces = self._get_forces()
         self._p = self._p * np.exp(-x) + delta * forces * exprel(-x)
 
@@ -391,7 +392,7 @@ class IsotropicMTKNPT(MolecularDynamics):
         volume = self._get_volume()
         G = (
             3 * volume * (pressure - self._pressure_au)
-            + np.sum(self._p**2 / self.masses) / len(self.atoms)
+            + np.sum(self._p**2 / self.masses) / self._num_atoms_global
         )
         self._p_eps += delta * G
 
