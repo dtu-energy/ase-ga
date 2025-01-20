@@ -423,7 +423,7 @@ class IsotropicMTKBarostat:
 
         assert pchain >= 1
         self._R = np.zeros(self._pchain)
-        self._R[0] = self._kT * self._pdamp**2
+        self._R[0] = 9 * self._kT * self._pdamp**2
         self._R[1:] = self._kT * self._pdamp**2
 
         self._xi = np.zeros(self._pchain)  # barostat coordinates
