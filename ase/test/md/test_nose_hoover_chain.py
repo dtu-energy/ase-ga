@@ -135,7 +135,7 @@ def test_isotropic_mtk_npt(asap3, hcp_Cu: Atoms, tchain: int, pchain: int):
         atoms,
         timestep=timestep,
         temperature_K=temperature_K,
-        pressure_GPa=10.0,
+        pressure_au=10.0 * ase.units.GPa,
         tdamp=100 * timestep,
         pdamp=1000 * timestep,
         tchain=tchain,

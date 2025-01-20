@@ -235,7 +235,7 @@ class IsotropicMTKNPT(MolecularDynamics):
         atoms: Atoms,
         timestep: float,
         temperature_K: float,
-        pressure_GPa: float,
+        pressure_au: float,
         tdamp: float,
         pdamp: float,
         tchain: int = 3,
@@ -253,8 +253,8 @@ class IsotropicMTKNPT(MolecularDynamics):
             The time step in ASE time units.
         temperature_K: float
             The target temperature in K.
-        pressure_GPa: float
-            The external pressure in GPa.
+        pressure_au: float
+            The external pressure in eV/Ang^3.
         tdamp: float
             The characteristic time scale for the thermostat in ASE time units.
             Typically, it is set to 100 times of `timestep`.
@@ -304,7 +304,7 @@ class IsotropicMTKNPT(MolecularDynamics):
         )
 
         self._temperature_K = temperature_K
-        self._pressure_GPa = pressure_GPa
+        self._pressure_au = pressure_au
 
         self._kT = ase.units.kB * self._temperature_K
         self._volume0 = self.atoms.get_volume()
@@ -343,7 +343,7 @@ class IsotropicMTKNPT(MolecularDynamics):
             + self._thermostat.get_thermostat_energy()
             + self._barostat.get_barostat_energy()
             + self._p_eps * self._p_eps / (2 * self._barostat.W)
-            + self._pressure_GPa * ase.units.GPa * self._get_volume()
+            + self._pressure_au * self._get_volume()
         )
         return float(conserved_energy)
 
@@ -390,7 +390,7 @@ class IsotropicMTKNPT(MolecularDynamics):
         pressure = self._get_pressure()
         volume = self._get_volume()
         G = (
-            3 * volume * (pressure - self._pressure_GPa * ase.units.GPa)
+            3 * volume * (pressure - self._pressure_au)
             + np.sum(self._p**2 / self.masses) / len(self.atoms)
         )
         self._p_eps += delta * G
