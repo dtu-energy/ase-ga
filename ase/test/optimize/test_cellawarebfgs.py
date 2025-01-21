@@ -31,11 +31,11 @@ def test_rattle_supercell_old():
     assert nsteps != nsteps2
 
 
-def relax(atoms):
+def relax(atoms, **kwargs):
     atoms.calc = EMT()
     relax = CellAwareBFGS(FrechetCellFilter(atoms, exp_cell_factor=1.0),
                           alpha=70, long_output=True)
-    relax.run(fmax=0.005, smax=0.00005)
+    relax.run(fmax=0.005, smax=0.00005, **kwargs)
     return relax.nsteps
 
 
@@ -51,6 +51,25 @@ def test_rattle_supercell():
     atoms *= (2, 1, 1)
     nsteps2 = relax(atoms.copy())
     assert nsteps == nsteps2
+
+
+def test_restart():
+    """
+
+       Make sure that we can split relaxation in two stages and relax the
+       structure in the same number of steps.
+    """
+    atoms = bulk('Au')
+    atoms *= (2, 1, 1)
+    atoms.rattle(0.05)
+    # Perform full_relaxation
+    nsteps = relax(atoms.copy())
+    # Perform relaxation in steps
+    partially_relaxed_atoms = atoms.copy()
+    nsteps1 = relax(partially_relaxed_atoms, steps=5)
+    assert nsteps1 == 5
+    nsteps2 = relax(partially_relaxed_atoms)
+    assert nsteps == nsteps1 + nsteps2
 
 
 @pytest.mark.parametrize('filt', [FrechetCellFilter, UnitCellFilter])
