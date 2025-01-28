@@ -1,9 +1,7 @@
 """Helper functions for creating supercells."""
 
 import warnings
-
 import numpy as np
-
 from ase import Atoms
 
 
@@ -11,7 +9,106 @@ class SupercellError(Exception):
     """Use if construction of supercell fails"""
 
 
-def get_deviation_from_optimal_cell_shape(cell, target_shape="sc", norm=None):
+def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
+                                       amin=10.0, scale=10.0):
+    r"""
+    Calculates the deviation of the given cell metric from the simple cubic
+    cell metric. The five defining equations for the 6 independent
+    lattice parameters (a,b,c,alpha,gamma,beta) are evaluated for the score.
+
+    (a > amin)
+    b = a
+    c = a
+    alpha = 90 deg
+    beta  = 90 deg
+    gamma = 90 deg
+
+    Parameters
+    ----------
+    cell : (..., 3, 3) array_like
+        Metric given as a 3x3 matrix of the input structure.
+        Multiple cells can also be given as a higher-dimensional array.
+    target_shape : {'sc'}
+        Desired supercell shape. Currently only 'sc' for simple cubic.
+    amin : float
+        minimum lattice parameter
+    scale : float
+        coupling parameter between length and angle constraints
+
+    Returns
+    -------
+    float or ndarray
+        Cell metric(s) (0 is perfect score)
+
+    """
+
+    if target_shape in ["sc", "simple-cubic"]:
+        cell_lengths = np.sqrt(np.add.reduce(cell**2, axis=-1))
+        inv_lengths = 1./cell_lengths
+        cosab = (np.add.reduce(cell[..., 0, :] * cell[..., 1, :], axis=-1)
+                 * inv_lengths[..., 0] * inv_lengths[..., 1])
+        cosac = (np.add.reduce(cell[..., 0, :] * cell[..., 2, :], axis=-1)
+                 * inv_lengths[..., 0] * inv_lengths[..., 2])
+        cosbc = (np.add.reduce(cell[..., 1, :] * cell[..., 2, :], axis=-1)
+                 * inv_lengths[..., 1] * inv_lengths[..., 2])
+
+        if amin > 0.0:
+            inv_lmin = np.max(inv_lengths, axis=-1)
+            ratio_amin = amin*inv_lmin
+            # avoid ratio_amin < 1.0 for large lmin
+            ratio_amin[ratio_amin < 1.0] = 1.0
+        else:
+            ratio_amin = 1.0
+
+        ratio_ab = cell_lengths[..., 1] * inv_lengths[..., 0]
+        ratio_ac = cell_lengths[..., 2] * inv_lengths[..., 0]
+
+        scores = (ratio_ab - 1.0)**2 + (ratio_ac - 1.0)**2 + (ratio_amin - 1.0)
+        scores += scale*(cosab**2 + cosac**2 + cosbc**2)
+
+    else:
+        # not implemented
+        msg = "Cellpar score not implemented cells other than sc"
+        raise SupercellError(msg)
+
+    return scores
+
+
+def get_deviation_from_optimal_cell_shape(cell, target_shape="sc"):
+    r"""
+    Calculates the deviation of the given cell metric from the cubic
+    cell metric.
+
+    Parameters
+    ----------
+    cell : (..., 3, 3) array_like
+        Metric given as a 3x3 matrix of the input structure.
+        Multiple cells can also be given as a higher-dimensional array.
+    target_shape : {'sc'}
+        Desired supercell shape. Currently only 'sc' for simple cubic.
+
+    Returns
+    -------
+    float or ndarray
+        Cell metric(s) (0 is perfect score)
+
+    """
+
+    if target_shape in ["sc", "simple-cubic"]:
+        target_metric = np.eye(3)
+    elif target_shape in ["fcc", "face-centered cubic"]:
+        target_metric = 0.5 * np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+
+    det_target_metric = np.linalg.det(target_metric)
+    norm = (np.linalg.det(cell) / det_target_metric)**(-1.0 / 3)
+
+    score = np.linalg.norm(norm[..., None, None] * cell
+                           - target_metric[None, ...], axis=(1, 2))
+
+    return score
+
+
+def get_deviation_from_optimal_cell_length(cell, target_shape="sc", norm=None):
     r"""Calculate the deviation from the target cell shape.
 
     Calculates the deviation of the given cell metric from the ideal
@@ -160,20 +257,22 @@ def find_optimal_cell_shape(
     determinants = np.linalg.det(operations)
 
     # screen supercells with the target size
-    good_indices = np.where(abs(determinants - target_size) < 1e-12)[0]
+    # good_indices = np.where(abs(determinants - target_size) < 1e-12)[0]
+    good_indices = np.where((np.abs(determinants) < target_size)
+                            & (np.abs(determinants) > 1))[0]
     if not good_indices.size:
         print("Failed to find a transformation matrix.")
         return None
     operations = operations[good_indices]
 
     # evaluate derivations of the screened supercells
-    scores = get_deviation_from_optimal_cell_shape(
+    scores = get_deviation_from_optimal_cellpar(
         operations @ cell,
         target_shape,
     )
+
     imin = np.argmin(scores)
     best_score = scores[imin]
-
     # screen candidates with the same best score
     operations = operations[np.abs(scores - best_score) < 1e-6]
 
@@ -194,6 +293,7 @@ def find_optimal_cell_shape(
         print(np.round(np.dot(optimal_P, cell), 4))
         det = np.linalg.det(optimal_P)
         print(f"determinant of optimal transformation matrix: {det:g}")
+
     return optimal_P
 
 
