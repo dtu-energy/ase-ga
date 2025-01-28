@@ -8,7 +8,7 @@ from ase.build import bulk
 from ase.build.supercells import (
     find_optimal_cell_shape,
     get_deviation_from_optimal_cell_length,
-    # get_deviation_from_optimal_cell_shape,
+    get_deviation_from_optimal_cell_shape,
     get_deviation_from_optimal_cellpar,
     make_supercell,
 )

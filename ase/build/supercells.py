@@ -9,6 +9,11 @@ class SupercellError(Exception):
     """Use if construction of supercell fails"""
 
 
+score_functions = ['get_deviation_from_optimal_cellpar',
+                   'get_deviation_from_optimal_cell_shape',
+                   'get_deviation_from_optimal_cell_length']
+
+
 def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
                                        amin=0.0, scale=10.0):
     r"""
@@ -76,7 +81,7 @@ def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
     return scores
 
 
-def get_deviation_from_optimal_cell_shape(cell, target_shape="sc"):
+def get_deviation_from_optimal_cell_shape(cell, target_shape="sc", amin=0.0):
     r"""
     Calculates the deviation of the given cell metric from the cubic
     cell metric.
@@ -112,7 +117,7 @@ def get_deviation_from_optimal_cell_shape(cell, target_shape="sc"):
     return score
 
 
-def get_deviation_from_optimal_cell_length(cell, target_shape="sc", norm=None):
+def get_deviation_from_optimal_cell_length(cell, target_shape="sc", amin=0.0):
     r"""Calculate the deviation from the target cell shape.
 
     Calculates the deviation of the given cell metric from the ideal
@@ -150,11 +155,6 @@ def get_deviation_from_optimal_cell_length(cell, target_shape="sc", norm=None):
         `norm` is unused in ASE 3.24.0 and removed in ASE 3.25.0.
 
     """
-    if norm is not None:
-        warnings.warn(
-            '`norm` is unused in ASE 3.24.0 and removed in ASE 3.25.0',
-            FutureWarning,
-        )
 
     cell = np.asarray(cell)
     cell_lengths = np.sqrt(np.add.reduce(cell**2, axis=-1))
@@ -184,6 +184,8 @@ def find_optimal_cell_shape(
     target_shape,
     lower_limit=-2,
     upper_limit=2,
+    score_func='get_deviation_from_optimal_cellpar',
+    amin=0.0,
     verbose=False,
 ):
     """Obtain the optimal transformation matrix for a supercell of target size
@@ -276,10 +278,18 @@ def find_optimal_cell_shape(
 
     # evaluate derivations of the screened supercells
     if target_shape == 'sc':
+        if score_func in score_functions:
+            get_deviation_score = globals()[score_func]
+        else:
+            msg = (f'Score func {score_func} not implemented.'
+                   + f'Please select from {score_functions}.')
+            raise SupercellError(msg)
+
         # currently optimal_cellpar only implemented for sc
-        scores = get_deviation_from_optimal_cellpar(
+        scores = get_deviation_score(
             operations @ cell,
             target_shape,
+            amin = amin
         )
     else:
         scores = get_deviation_from_optimal_cell_shape(
@@ -291,6 +301,10 @@ def find_optimal_cell_shape(
     best_score = scores[imin]
     # screen candidates with the same best score
     operations = operations[np.abs(scores - best_score) < 1e-6]
+
+    if not operations.size:
+        print("Failed to find a transformation matrix.")
+        return None
 
     # select the one whose cell orientation is the closest to the target
     # https://gitlab.com/ase/ase/-/merge_requests/3522
