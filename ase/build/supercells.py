@@ -10,7 +10,7 @@ class SupercellError(Exception):
 
 
 def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
-                                       amin=10.0, scale=10.0):
+                                       amin=0.0, scale=10.0):
     r"""
     Calculates the deviation of the given cell metric from the simple cubic
     cell metric. The five defining equations for the 6 independent
@@ -42,9 +42,11 @@ def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
 
     """
 
+    cell = np.asarray(cell)
+
     if target_shape in ["sc", "simple-cubic"]:
         cell_lengths = np.sqrt(np.add.reduce(cell**2, axis=-1))
-        inv_lengths = 1./cell_lengths
+        inv_lengths = 1. / cell_lengths
         cosab = (np.add.reduce(cell[..., 0, :] * cell[..., 1, :], axis=-1)
                  * inv_lengths[..., 0] * inv_lengths[..., 1])
         cosac = (np.add.reduce(cell[..., 0, :] * cell[..., 2, :], axis=-1)
@@ -54,7 +56,7 @@ def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
 
         if amin > 0.0:
             inv_lmin = np.max(inv_lengths, axis=-1)
-            ratio_amin = amin*inv_lmin
+            ratio_amin = amin * inv_lmin
             # avoid ratio_amin < 1.0 for large lmin
             ratio_amin[ratio_amin < 1.0] = 1.0
         else:
@@ -64,7 +66,7 @@ def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
         ratio_ac = cell_lengths[..., 2] * inv_lengths[..., 0]
 
         scores = (ratio_ab - 1.0)**2 + (ratio_ac - 1.0)**2 + (ratio_amin - 1.0)
-        scores += scale*(cosab**2 + cosac**2 + cosbc**2)
+        scores += scale * (cosab**2 + cosac**2 + cosbc**2)
 
     else:
         # not implemented
@@ -93,6 +95,8 @@ def get_deviation_from_optimal_cell_shape(cell, target_shape="sc"):
         Cell metric(s) (0 is perfect score)
 
     """
+
+    cell = np.asarray(cell)
 
     if target_shape in ["sc", "simple-cubic"]:
         target_metric = np.eye(3)
@@ -257,19 +261,31 @@ def find_optimal_cell_shape(
     determinants = np.linalg.det(operations)
 
     # screen supercells with the target size
-    # good_indices = np.where(abs(determinants - target_size) < 1e-12)[0]
-    good_indices = np.where((np.abs(determinants) < target_size)
-                            & (np.abs(determinants) > 1))[0]
+    if target_shape == 'sc':
+        # but do not through away good candidates if they have smaller cell
+        # assume that the score has minimum length criterium: here only for sc
+        good_indices = np.where((np.abs(determinants) < target_size)
+                                & (np.abs(determinants) > 1))[0]
+    else:
+        good_indices = np.where(abs(determinants - target_size) < 1e-12)[0]
+
     if not good_indices.size:
         print("Failed to find a transformation matrix.")
         return None
     operations = operations[good_indices]
 
     # evaluate derivations of the screened supercells
-    scores = get_deviation_from_optimal_cellpar(
-        operations @ cell,
-        target_shape,
-    )
+    if target_shape == 'sc':
+        # currently optimal_cellpar only implemented for sc
+        scores = get_deviation_from_optimal_cellpar(
+            operations @ cell,
+            target_shape,
+        )
+    else:
+        scores = get_deviation_from_optimal_cell_shape(
+            operations @ cell,
+            target_shape,
+        )
 
     imin = np.argmin(scores)
     best_score = scores[imin]
