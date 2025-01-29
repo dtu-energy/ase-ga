@@ -58,7 +58,7 @@ class MorsePotential(Calculator):
                           'rcut2': 2.7}
     nolabel = True
 
-    def __init__(self, **kwargs):
+    def __init__(self, neighbor_list=ase_neighbor_list, **kwargs):
         r"""
 
         The pairwise energy between atoms *i* and *j* is given by
@@ -97,7 +97,7 @@ class MorsePotential(Calculator):
         The default values are chosen to be similar as Lennard-Jones.
 
         """
-        self.neighbor_list = kwargs.pop('neighbor_list', ase_neighbor_list)
+        self.neighbor_list = neighbor_list
         Calculator.__init__(self, **kwargs)
 
     def calculate(self, atoms=None, properties=['energy'],
