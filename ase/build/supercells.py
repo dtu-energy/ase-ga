@@ -256,26 +256,18 @@ def find_optimal_cell_shape(
     operations = operations[good_indices]
 
     # evaluate derivations of the screened supercells
-    if target_shape == 'sc':
-        if score_func in score_functions:
-            get_deviation_score = globals()[score_func]
-        else:
-            msg = (f'Score func {score_func} not implemented.'
-                   + f'Please select from {score_functions}.')
-            raise SupercellError(msg)
-
-        # currently optimal_cellpar only implemented for sc
-        scores = get_deviation_score(
-            operations @ cell,
-            target_shape,
-            **score_kwargs
-        )
+    if score_func in score_functions:
+        get_deviation_score = globals()[score_func]
     else:
-        scores = get_deviation_from_optimal_cell_length(
-            operations @ cell,
-            target_shape,
-            **score_kwargs
-        )
+        msg = (f'Score func {score_func} not implemented.'
+               + f'Please select from {score_functions}.')
+        raise SupercellError(msg)
+
+    scores = get_deviation_score(
+        operations @ cell,
+        target_shape,
+        **score_kwargs
+    )
 
     imin = np.argmin(scores)
     best_score = scores[imin]
