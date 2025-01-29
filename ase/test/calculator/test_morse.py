@@ -1,6 +1,5 @@
-import pytest
-
 import numpy as np
+import pytest
 from scipy.optimize import check_grad
 
 from ase import Atoms
