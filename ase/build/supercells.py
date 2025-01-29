@@ -1,6 +1,5 @@
 """Helper functions for creating supercells."""
 
-import warnings
 import numpy as np
 from ase import Atoms
 
@@ -9,21 +8,23 @@ class SupercellError(Exception):
     """Use if construction of supercell fails"""
 
 
-score_functions = ['get_deviation_from_optimal_cellpar',
-                   'get_deviation_from_optimal_cell_shape',
+score_functions = ['get_deviation_from_optimal_cell_shape',
                    'get_deviation_from_optimal_cell_length']
 
 
-def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
-                                       amin=0.0, scale=10.0):
+def get_deviation_from_optimal_cell_shape(cell,
+                                          target_shape="sc",
+                                          target_length=None,
+                                          angle_scale=10.0):
     r"""
     Calculates the deviation of the given cell metric from the simple cubic
-    cell metric. The five defining equations for the 6 independent
+    cell metric. The six defining equations for the 6 independent
     lattice parameters (a,b,c,alpha,gamma,beta) are evaluated for the score.
+    Where the target length a0 can be given as an optional argument.
 
-    (a > amin)
-    b = a
-    c = a
+    a = a0
+    b = a0
+    c = a0
     alpha = 90 deg
     beta  = 90 deg
     gamma = 90 deg
@@ -33,11 +34,11 @@ def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
     cell : (..., 3, 3) array_like
         Metric given as a 3x3 matrix of the input structure.
         Multiple cells can also be given as a higher-dimensional array.
-    target_shape : {'sc'}
-        Desired supercell shape. Currently only 'sc' for simple cubic.
-    amin : float
-        minimum lattice parameter
-    scale : float
+    target_shape : {'sc', 'fcc'}
+        Desired supercell shape.
+    target_length : float
+        Desired effective cubic cell length.
+    angle_scale : float
         coupling parameter between length and angle constraints
 
     Returns
@@ -48,76 +49,47 @@ def get_deviation_from_optimal_cellpar(cell, target_shape="sc",
     """
 
     cell = np.asarray(cell)
+    cell_lengths = np.sqrt(np.add.reduce(cell**2, axis=-1))
 
-    if target_shape in ["sc", "simple-cubic"]:
-        cell_lengths = np.sqrt(np.add.reduce(cell**2, axis=-1))
-        inv_lengths = 1. / cell_lengths
-        cosab = (np.add.reduce(cell[..., 0, :] * cell[..., 1, :], axis=-1)
-                 * inv_lengths[..., 0] * inv_lengths[..., 1])
-        cosac = (np.add.reduce(cell[..., 0, :] * cell[..., 2, :], axis=-1)
-                 * inv_lengths[..., 0] * inv_lengths[..., 2])
-        cosbc = (np.add.reduce(cell[..., 1, :] * cell[..., 2, :], axis=-1)
-                 * inv_lengths[..., 1] * inv_lengths[..., 2])
+    eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
+    if target_length is not None:
+        eff_cubic_length = target_length * np.ones_like(eff_cubic_length)
 
-        if amin > 0.0:
-            inv_lmin = np.max(inv_lengths, axis=-1)
-            ratio_amin = amin * inv_lmin
-            # avoid ratio_amin < 1.0 for large lmin
-            ratio_amin[ratio_amin < 1.0] = 1.0
-        else:
-            ratio_amin = 1.0
+    if target_shape == 'sc':
+        target_len = eff_cubic_length
+        target_cos = 0.0  # cos(+-pi/2) = 0.0
 
-        ratio_ab = cell_lengths[..., 1] * inv_lengths[..., 0]
-        ratio_ac = cell_lengths[..., 2] * inv_lengths[..., 0]
-
-        scores = (ratio_ab - 1.0)**2 + (ratio_ac - 1.0)**2 + (ratio_amin - 1.0)
-        scores += scale * (cosab**2 + cosac**2 + cosbc**2)
+    elif target_shape == 'fcc':
+        # FCC is characterised by 60 degree angles & lattice vectors = 2**(1/6)
+        # times the eff cubic length:
+        target_len = eff_cubic_length * 2 ** (1 / 6)
+        target_cos = 0.5  # cos(+-pi/3) = 0.5
 
     else:
-        # not implemented
-        msg = "Cellpar score not implemented cells other than sc"
-        raise SupercellError(msg)
+        raise ValueError(target_shape)
+
+    inv_lengths = 1. / cell_lengths
+    cosab = (np.add.reduce(cell[..., 0, :] * cell[..., 1, :], axis=-1)
+             * inv_lengths[..., 0] * inv_lengths[..., 1])
+    cosac = (np.add.reduce(cell[..., 0, :] * cell[..., 2, :], axis=-1)
+             * inv_lengths[..., 0] * inv_lengths[..., 2])
+    cosbc = (np.add.reduce(cell[..., 1, :] * cell[..., 2, :], axis=-1)
+             * inv_lengths[..., 1] * inv_lengths[..., 2])
+
+    len_diffs = target_len[..., None] * inv_lengths[..., :] - 1.0
+    len_score = np.add.reduce(len_diffs**2, axis=-1)
+    ang_score = ((cosab - target_cos)**2
+                 + (cosac - target_cos)**2
+                 + (cosbc - target_cos)**2)
+    scores = np.sqrt(len_score) + angle_scale * np.sqrt(ang_score)
 
     return scores
 
 
-def get_deviation_from_optimal_cell_shape(cell, target_shape="sc", amin=0.0):
-    r"""
-    Calculates the deviation of the given cell metric from the cubic
-    cell metric.
-
-    Parameters
-    ----------
-    cell : (..., 3, 3) array_like
-        Metric given as a 3x3 matrix of the input structure.
-        Multiple cells can also be given as a higher-dimensional array.
-    target_shape : {'sc'}
-        Desired supercell shape. Currently only 'sc' for simple cubic.
-
-    Returns
-    -------
-    float or ndarray
-        Cell metric(s) (0 is perfect score)
-
-    """
-
-    cell = np.asarray(cell)
-
-    if target_shape in ["sc", "simple-cubic"]:
-        target_metric = np.eye(3)
-    elif target_shape in ["fcc", "face-centered cubic"]:
-        target_metric = 0.5 * np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
-
-    det_target_metric = np.linalg.det(target_metric)
-    norm = (np.linalg.det(cell) / det_target_metric)**(-1.0 / 3)
-
-    score = np.linalg.norm(norm[..., None, None] * cell
-                           - target_metric[None, ...], axis=(1, 2))
-
-    return score
-
-
-def get_deviation_from_optimal_cell_length(cell, target_shape="sc", amin=0.0):
+def get_deviation_from_optimal_cell_length(cell,
+                                           target_shape="sc",
+                                           target_length=None,
+                                           angle_scale=None):
     r"""Calculate the deviation from the target cell shape.
 
     Calculates the deviation of the given cell metric from the ideal
@@ -141,10 +113,11 @@ def get_deviation_from_optimal_cell_length(cell, target_shape="sc", amin=0.0):
     target_shape : {'sc', 'fcc'}
         Desired supercell shape. Can be 'sc' for simple cubic or
         'fcc' for face-centered cubic.
-    norm : float
-        Specify the normalization factor. This is useful to avoid
-        recomputing the normalization factor when computing the
-        deviation for a series of P matrices.
+    target_length : float
+        Desired effective cubic cell length.
+    angle_scale : None
+        Dummy argument for compatibility with
+        get_deviation_from_optimal_cell_shape
 
     Returns
     -------
@@ -158,24 +131,29 @@ def get_deviation_from_optimal_cell_length(cell, target_shape="sc", amin=0.0):
 
     cell = np.asarray(cell)
     cell_lengths = np.sqrt(np.add.reduce(cell**2, axis=-1))
+
     eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
+    if target_length is not None:
+        eff_cubic_length = target_length * np.ones_like(eff_cubic_length)
 
     if target_shape == 'sc':
-        target_length = eff_cubic_length
+        target_len = eff_cubic_length
 
     elif target_shape == 'fcc':
         # FCC is characterised by 60 degree angles & lattice vectors = 2**(1/6)
         # times the eff cubic length:
-        target_length = eff_cubic_length * 2 ** (1 / 6)
+        target_len = eff_cubic_length * 2 ** (1 / 6)
 
     else:
         raise ValueError(target_shape)
 
-    inv_target_length = 1.0 / target_length
+    inv_target_len = 1.0 / target_len
 
     # rms difference to eff cubic/FCC length:
-    diffs = cell_lengths * inv_target_length[..., None] - 1.0
-    return np.sqrt(np.add.reduce(diffs**2, axis=-1))
+    diffs = cell_lengths * inv_target_len[..., None] - 1.0
+    scores = np.sqrt(np.add.reduce(diffs**2, axis=-1))
+
+    return scores
 
 
 def find_optimal_cell_shape(
@@ -184,8 +162,9 @@ def find_optimal_cell_shape(
     target_shape,
     lower_limit=-2,
     upper_limit=2,
-    score_func='get_deviation_from_optimal_cellpar',
-    amin=0.0,
+    minimal_size=False,
+    score_func='get_deviation_from_optimal_cell_length',
+    score_kwargs={'angle_scale': 10.0},
     verbose=False,
 ):
     """Obtain the optimal transformation matrix for a supercell of target size
@@ -263,7 +242,7 @@ def find_optimal_cell_shape(
     determinants = np.linalg.det(operations)
 
     # screen supercells with the target size
-    if target_shape == 'sc':
+    if minimal_size:
         # but do not through away good candidates if they have smaller cell
         # assume that the score has minimum length criterium: here only for sc
         good_indices = np.where((np.abs(determinants) < target_size)
@@ -289,12 +268,13 @@ def find_optimal_cell_shape(
         scores = get_deviation_score(
             operations @ cell,
             target_shape,
-            amin = amin
+            **score_kwargs
         )
     else:
-        scores = get_deviation_from_optimal_cell_shape(
+        scores = get_deviation_from_optimal_cell_length(
             operations @ cell,
             target_shape,
+            **score_kwargs
         )
 
     imin = np.argmin(scores)
@@ -309,6 +289,7 @@ def find_optimal_cell_shape(
     # select the one whose cell orientation is the closest to the target
     # https://gitlab.com/ase/ase/-/merge_requests/3522
     imin = np.argmin(np.add.reduce((operations - ideal_P)**2, axis=(-2, -1)))
+
     optimal_P = operations[imin]
 
     if np.linalg.det(optimal_P) <= 0:
