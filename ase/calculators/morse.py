@@ -89,7 +89,8 @@ class MorsePotential(Calculator):
         rcut2 : float, default 2.7
             Distance ending a smooth cutoff normalized by ``r0``.
         neighbor_list : callable, optional
-            neighbor_list function compatible with ase.neighborlist.neighbor_list
+            neighbor_list function compatible with
+            ase.neighborlist.neighbor_list
 
         Notes
         -----
