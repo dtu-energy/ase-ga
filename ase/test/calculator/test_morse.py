@@ -61,5 +61,6 @@ def fake_neighbor_list(*args, **kwargs):
 def test_override_neighbor_list():
     with pytest.raises(RuntimeError, match='test_neighbor_list'):
         atoms = bulk('Cu', cubic=True)
-        atoms.calc = MorsePotential(A=4.0, epsilon=1.0, r0=2.55, neighbor_list=fake_neighbor_list)
+        atoms.calc = MorsePotential(A=4.0, epsilon=1.0, r0=2.55,
+                                    neighbor_list=fake_neighbor_list)
         _ = atoms.get_potential_energy()
