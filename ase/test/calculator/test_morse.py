@@ -1,3 +1,5 @@
+import pytest
+
 import numpy as np
 from scipy.optimize import check_grad
 
@@ -50,3 +52,14 @@ def test_forces_and_stress():
     stress = atoms.get_stress()
     numerical_stress = calculate_numerical_stress(atoms, eps=1e-5)
     np.testing.assert_allclose(stress, numerical_stress, atol=1e-5)
+
+
+def fake_neighbor_list(*args, **kwargs):
+    raise RuntimeError('test_neighbor_list')
+
+
+def test_override_neighbor_list():
+    with pytest.raises(RuntimeError, match='test_neighbor_list'):
+        atoms = bulk('Cu', cubic=True)
+        atoms.calc = MorsePotential(A=4.0, epsilon=1.0, r0=2.55, neighbor_list=fake_neighbor_list)
+        _ = atoms.get_potential_energy()
