@@ -495,10 +495,13 @@ xz and yz are the tilt of the lattice vectors, all to be edited.
         )
         self.results['free_energy'] = self.results['energy']
 
-        ids = self.lmp.numpy.extract_atom("id")
-        # if ids doesn't match atoms then data is MPI distributed, which
-        # we can't handle
-        assert len(ids) == len(atoms)
+        # check for MPI active as per
+        world_size = self.lmp.extract_setting('world_size')
+        if world_size != 1:
+            raise RuntimeError('Unsupported MPI active as indicated by '
+                               f'world_size == {world_size} != 1')
+        # select just n_local which we assume is equal to len(atoms)
+        ids = self.lmp.numpy.extract_atom("id")[0:len(atoms)]
         self.results["energies"] = convert(
             self.lmp.numpy.extract_compute('pe_peratom',
                                            self.LMP_STYLE_ATOM,
