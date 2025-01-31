@@ -495,7 +495,7 @@ xz and yz are the tilt of the lattice vectors, all to be edited.
         )
         self.results['free_energy'] = self.results['energy']
 
-        # check for MPI active as per
+        # check for MPI active as per https://matsci.org/t/lammps-ids-in-python/60509/5
         world_size = self.lmp.extract_setting('world_size')
         if world_size != 1:
             raise RuntimeError('Unsupported MPI active as indicated by '
