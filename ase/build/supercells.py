@@ -9,7 +9,8 @@ class SupercellError(Exception):
 
 
 score_functions = ['get_deviation_from_optimal_cell_shape',
-                   'get_deviation_from_optimal_cell_length']
+                   'get_deviation_from_optimal_cell_length',
+                   'get_deviation_from_optimal_cellpar']
 
 
 def get_deviation_from_optimal_cell_shape(cell,
@@ -39,6 +40,7 @@ def get_deviation_from_optimal_cell_shape(cell,
     """
 
     cell = np.asarray(cell)
+
     single = False
     if len(cell.shape) < 3:
         single = True
@@ -68,6 +70,8 @@ def get_deviation_from_optimal_cell_shape(cell,
     # and metric -> M_mkl
     # M_mkl = (sum_j C_mkj * C_mlj) / leff**2
     metric = np.einsum('mkj,mlj->mkl', cell, cell)
+    # XXX problem: we favor small lengths to much
+    # for the diagonals (= lengths ratio) we should have the inverse
     normed = metric / target_len[:, None, None] ** 2
 
     # offdiagonal ~ cos angle -> score = np.abs(cos angle - cos target_angle)
