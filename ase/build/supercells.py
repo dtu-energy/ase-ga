@@ -15,7 +15,75 @@ score_functions = ['get_deviation_from_optimal_cell_shape',
 def get_deviation_from_optimal_cell_shape(cell,
                                           target_shape="sc",
                                           target_length=None,
-                                          angle_scale=10.0):
+                                          angle_scale=None):
+    r"""
+    Calculates the deviation of the given cell from the target   cell metric.
+
+    Parameters
+    ----------
+    cell : (..., 3, 3) array_like
+        Metric given as a 3x3 matrix of the input structure.
+        Multiple cells can also be given as a higher-dimensional array.
+    target_shape : {'sc', 'fcc'}
+        Desired supercell shape.
+    target_length : float
+        Desired effective cubic cell length.
+    angle_scale : float
+        coupling parameter between length and angle constraints
+
+    Returns
+    -------
+    float or ndarray
+        Cell metric(s) (0 is perfect score)
+
+    """
+
+    cell = np.asarray(cell)
+    single = False
+    if len(cell.shape) < 3:
+        single = True
+        # append leading dimension
+        cell = cell[None, ...]
+
+    eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
+    if target_length is not None:
+        eff_cubic_length = target_length * np.ones_like(eff_cubic_length)
+
+    if target_shape == 'sc':
+        target_len = eff_cubic_length
+        target_cos = 0.0  # cos(+-pi/2) = 0.0
+        # the target metric is np.eye(3)
+        target_metric = np.eye(3)
+    elif target_shape == 'fcc':
+        # FCC is characterised by 60 degree angles & lattice vectors = 2**(1/6)
+        # times the eff cubic length:
+        target_len = eff_cubic_length * 2 ** (1 / 6)
+        target_cos = 0.5  # cos(+-pi/3) = 0.5
+        target_metric = np.eye(3) + target_cos * (np.ones(3, 3) - np.eye(3))
+    else:
+        raise ValueError(target_shape)
+
+    # calculate cell @ cell.T for (N,3,3)
+    # with cell  -> C_mij
+    # and metric -> M_mkl
+    # M_mkl = (sum_j C_mkj * C_mlj) / leff**2
+    metric = np.einsum('mkj,mlj->mkl', cell, cell)
+    normed = metric / target_len[:, None, None] ** 2
+
+    # offdiagonal ~ cos angle -> score = np.abs(cos angle - cos target_angle)
+    scores = np.add.reduce(np.abs(normed - target_metric[None, ...]),
+                           axis=(1, 2))
+
+    if single:
+        return scores[0]
+    else:
+        return scores
+
+
+def get_deviation_from_optimal_cellpar(cell,
+                                       target_shape="sc",
+                                       target_length=None,
+                                       angle_scale=10.0):
     r"""
     Calculates the deviation of the given cell metric from the simple cubic
     cell metric. The six defining equations for the 6 independent
