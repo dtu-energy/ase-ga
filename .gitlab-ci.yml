@@ -151,13 +151,22 @@ bleeding-edge:
 
 doc:
   image: registry.gitlab.com/ase/ase:ase-main
-  script:
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache-doc"
+  before_script:
+    - pip install scriv
     - pip install --no-deps .[docs]
     - ase info
     - which sphinx-build
     - cd $CI_PROJECT_DIR/doc
+  script:
+    - scriv collect --keep || echo Not compiling changelog then  # Avoid error
     - python -m ase.utils.sphinx run # test scripts
     - sphinx-build -W . build
+  cache:
+    paths:
+      - $PIP_CACHE_DIR
+    key: $CI_PROJECT_ID
   artifacts:
     paths:
       - $CI_PROJECT_DIR/doc/build/
@@ -165,8 +174,10 @@ doc:
 
 distribution-package:
   image: registry.gitlab.com/ase/ase:ase-main
-  script:
+  before_script:
     - mkdir dist
+    - pip install setuptools
+  script:
     - python setup.py sdist | tee dist/setup_sdist.log
     - python setup.py bdist_wheel | tee dist/setup_bdist_wheel.log
     - pip install dist/ase-*.tar.gz
@@ -199,13 +210,21 @@ pages:
     - master
 
 lint:
-  image: registry.gitlab.com/ase/ase:ase-paperwork
+  image: python:3.12.4-alpine
+  before_script:
+    - pip install .[lint]
+    - pip freeze
   script:
-    - cd $CI_PROJECT_DIR
     - mypy --version
     - mypy --color-output -p ase
     - python -We:invalid -m compileall -f -q ase/
     - ruff check
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
+  cache:
+    paths:
+      - $PIP_CACHE_DIR
+    key: $CI_PROJECT_ID
 
 coverage-combine:
   image: registry.gitlab.com/ase/ase:ase-paperwork

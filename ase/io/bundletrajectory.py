@@ -342,7 +342,7 @@ class BundleTrajectory:
         data['constraint'] = smalldata['constraints']
         if self.subtype == 'split':
             self.backend.set_fragments(smalldata['fragments'])
-            self.atom_id, dummy = self.backend.read_split(framedir, 'ID')
+            self.atom_id, _dummy = self.backend.read_split(framedir, 'ID')
         else:
             self.atom_id = None
         atoms = Atoms(**data)
@@ -401,7 +401,7 @@ class BundleTrajectory:
         elif self.subtype == 'split':
             if self.datatypes[name] == 'once':
                 d, issplit = self.backend.read_split(f0, name)
-                atom_id, dummy = self.backend.read_split(f0, 'ID')
+                atom_id, _dummy = self.backend.read_split(f0, 'ID')
             else:
                 d, issplit = self.backend.read_split(f, name)
             if issplit:
@@ -1016,7 +1016,7 @@ def main():
         'a.bundle [b.bundle ...]',
         description='Print information about '
         'the contents of one or more bundletrajectories.')
-    opts, args = parser.parse_args()
+    _opts, args = parser.parse_args()
     for name in args:
         print_bundletrajectory_info(name)
 

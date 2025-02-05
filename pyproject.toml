@@ -41,6 +41,7 @@ ase = 'ase.cli.main:main'
 docs = ['sphinx', 'sphinx_rtd_theme', 'pillow']
 test = ['pytest>=7.0.0', 'pytest-xdist>=2.1.0']
 spglib = ['spglib>=1.9']
+lint = ['mypy', 'ruff', 'coverage', 'types-docutils', 'types-PyMySQL', 'flake8']
 
 [tool.setuptools.package-data]
 ase = [
@@ -97,7 +98,6 @@ select = [
     "I"   # isort
 ]
 ignore = [
-    "F841",  # unused-variable
     "E741",  # ambiguous-variable-name
     "W505",  # doc-line-too-long
 ]
@@ -112,3 +112,17 @@ convention = "numpy"
 [tool.ruff.lint.isort]
 known-first-party = ["ase"]
 
+[tool.scriv]
+output_file = "doc/changelog.rst"
+insert_marker = "scriv-auto-changelog-start"
+end_marker = "scriv-auto-changelog-end"
+categories = [
+    "I/O",
+    "Calculators",
+    "Optimizers",
+    "Molecular dynamics",
+    "GUI",
+    "Development",
+    "Other changes",
+    "Bugfixes"
+]

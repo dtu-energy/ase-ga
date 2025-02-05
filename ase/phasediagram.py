@@ -328,7 +328,7 @@ class Pourbaix:
         return a, compositions, text
 
     def colorfunction(self, U, pH, colors):
-        coefs, energy = self.decompose(U, pH, verbose=False)
+        coefs, _energy = self.decompose(U, pH, verbose=False)
         indices = tuple(sorted(np.where(abs(coefs) > 1e-3)[0]))
         color = colors.get(indices)
         if color is None:
@@ -477,7 +477,7 @@ class PhaseDiagram:
         coefs = []
         results = []
         for coef, s in zip(scaledcoefs, indices):
-            count, e, name, natoms = self.references[s]
+            _count, e, name, natoms = self.references[s]
             coef *= N / natoms
             coefs.append(coef)
             results.append((name, coef, e))

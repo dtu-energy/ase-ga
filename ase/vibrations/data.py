@@ -127,7 +127,8 @@ class VibrationsData:
                 range(
                     len(atoms))),
             const_indices).astype(int)
-        return indices.tolist()
+        # TODO: use numpy.typing to resolve this error.
+        return indices.tolist()  # type: ignore[return-value]
 
     @staticmethod
     def indices_from_mask(mask: Union[Sequence[bool], np.ndarray]
@@ -153,7 +154,8 @@ class VibrationsData:
             indices of True elements
 
         """
-        return np.where(mask)[0].tolist()
+        # TODO: use numpy.typing to resolve this error.
+        return np.where(mask)[0].tolist()  # type: ignore[return-value]
 
     @staticmethod
     def _check_dimensions(atoms: Atoms,

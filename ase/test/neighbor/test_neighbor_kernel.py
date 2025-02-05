@@ -180,7 +180,7 @@ def test_neighbor_kernel():
                     "ijdDS", atoms, atoms.numbers * 0.2 + 0.5)
                 c = np.bincount(i, minlength=len(atoms))
                 atoms2 = atoms.repeat((p1 + 1, p2 + 1, p3 + 1))
-                i2, j2, d2, D2, S2 = neighbor_list(
+                i2, j2, d2, _D2, _S2 = neighbor_list(
                     "ijdDS", atoms2, atoms2.numbers * 0.2 + 0.5)
                 c2 = np.bincount(i2, minlength=len(atoms))
                 c2.shape = (-1, nat)

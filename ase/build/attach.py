@@ -56,7 +56,7 @@ def attach(atoms1, atoms2, distance, direction=(1, 0, 0),
     assert len(direction) == 3
     dist2 = distance**2
 
-    i1, i2, dv_c = nearest(atoms, atoms2, atoms.cell, atoms.pbc)
+    _i1, _i2, dv_c = nearest(atoms, atoms2, atoms.cell, atoms.pbc)
 
     for _ in range(maxiter):
         dv2 = (dv_c**2).sum()
@@ -70,7 +70,7 @@ def attach(atoms1, atoms2, distance, direction=(1, 0, 0),
 
         # we need to move
         atoms2.translate(direction * move)
-        i1, i2, dv_c = nearest(atoms, atoms2, atoms.cell, atoms.pbc)
+        _i1, _i2, dv_c = nearest(atoms, atoms2, atoms.cell, atoms.pbc)
 
     raise RuntimeError('attach did not converge')
 

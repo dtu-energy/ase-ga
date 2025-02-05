@@ -44,7 +44,7 @@ def test_cutandsplicepairing(seed):
 
     pairing = CutAndSplicePairing(slab, n_top, blmin, rng=rng)
 
-    c3, desc = pairing.get_new_individual([c1, c2])
+    c3, _desc = pairing.get_new_individual([c1, c2])
 
     # verify that the stoichiometry is preserved
     assert np.all(c3.numbers == c1.numbers)

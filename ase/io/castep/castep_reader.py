@@ -484,7 +484,8 @@ def _read_stress(out: io.TextIOBase):
     results['stress'] = results['stress'].reshape(9)[[0, 4, 8, 5, 2, 1]]
     line = out.readline()
     if "Pressure:" in line:
-        results['pressure'] = float(line.split()[-2]) * units.GPa  # type: ignore[assignment]
+        results['pressure'] = float(
+            line.split()[-2]) * units.GPa  # type: ignore[assignment]
     return results
 
 

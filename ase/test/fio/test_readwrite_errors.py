@@ -65,7 +65,7 @@ def test_parse_filename_bad_slice():
     # parse filename with malformed @-slice
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
-        filename, index = parse_filename('path.to/filename@s:4')
+        filename, _index = parse_filename('path.to/filename@s:4')
         assert filename == 'path.to/filename'
         assert len(w) == 1
         assert 'Can not parse index' in str(w[-1].message)

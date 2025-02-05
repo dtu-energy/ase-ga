@@ -796,8 +796,11 @@ class Phonons(Displacement):
         kpts_kc = monkhorst_pack(kpts)
         if indices is None:
             # Return the total DOS
-            omega_w = self.band_structure(kpts_kc, verbose=verbose).ravel()
-            dos = RawDOSData(omega_w, np.ones_like(omega_w))
+            omega_w = self.band_structure(kpts_kc, verbose=verbose)
+            assert omega_w.ndim == 2
+            n_kpt = omega_w.shape[0]
+            omega_w = omega_w.ravel()
+            dos = RawDOSData(omega_w, np.ones_like(omega_w) / n_kpt)
         else:
             # Return a partial DOS
             omegas, amplitudes = self.band_structure(kpts_kc,
@@ -809,7 +812,7 @@ class Phonons(Displacement):
             assert ampl_sq.ndim == 3
             assert ampl_sq.shape == omegas.shape + (len(self.indices),)
             weights = ampl_sq[:, :, indices].sum(axis=2) / ampl_sq.sum(axis=2)
-            dos = RawDOSData(omegas.ravel(), weights.ravel())
+            dos = RawDOSData(omegas.ravel(), weights.ravel() / omegas.shape[0])
         return dos
 
     @deprecated('Please use Phonons.get_dos() instead of Phonons.dos().')

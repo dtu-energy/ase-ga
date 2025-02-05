@@ -349,7 +349,7 @@ def read_lammps_dump_binary(
     # depending on the chosen compilation flag lammps uses either normal
     # integers or long long for its id or timestep numbering
     # !TODO: tags are cast to double -> missing/double ids (add check?)
-    tagformat, bigformat = dict(
+    _tagformat, bigformat = dict(
         SMALLSMALL=("i", "i"), SMALLBIG=("i", "q"), BIGBIG=("q", "q")
     )[intformat]
 
@@ -399,7 +399,7 @@ def read_lammps_dump_binary(
                 # TODO: Use the endianness of the dump file in subsequent
                 #       read_variables rather than just assuming it will match
                 #       that of the host
-                endian, = read_variables("=i")
+                read_variables("=i")
 
                 # Read revision number (integer)
                 revision, = read_variables("=i")
@@ -407,7 +407,7 @@ def read_lammps_dump_binary(
                 # Finally, read the actual timestep (bigint)
                 ntimestep, = read_variables("=" + bigformat)
 
-            n_atoms, triclinic = read_variables("=" + bigformat + "i")
+            _n_atoms, triclinic = read_variables("=" + bigformat + "i")
             boundary = read_variables("=6i")
             diagdisp = read_variables("=6d")
             if triclinic != 0:
@@ -432,7 +432,7 @@ def read_lammps_dump_binary(
                 flag, = read_variables("=c")
                 if flag != b'\x00':
                     # Flag was non-empty string
-                    time, = read_variables("=d")
+                    read_variables("=d")
 
                 # Length of column string
                 columns_str_len, = read_variables("=i")

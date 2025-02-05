@@ -2,6 +2,7 @@
 import time
 import warnings
 from collections.abc import Callable
+from functools import cached_property
 from math import sqrt
 from os.path import isfile
 from typing import IO, Any, Dict, List, Optional, Tuple, Union
@@ -10,7 +11,7 @@ from ase import Atoms
 from ase.calculators.calculator import PropertyNotImplementedError
 from ase.filters import UnitCellFilter
 from ase.parallel import world
-from ase.utils import IOContext, lazyproperty
+from ase.utils import IOContext
 from ase.utils.abc import Optimizable
 
 DEFAULT_MAX_STEPS = 100_000_000
@@ -33,7 +34,7 @@ class OptimizableAtoms(Optimizable):
     def get_forces(self):
         return self.atoms.get_forces()
 
-    @lazyproperty
+    @cached_property
     def _use_force_consistent_energy(self):
         # This boolean is in principle invalidated if the
         # calculator changes.  This can lead to weird things

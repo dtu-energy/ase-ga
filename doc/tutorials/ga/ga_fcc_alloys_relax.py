@@ -40,7 +40,7 @@ def relax(input_atoms, ref_db):
         energies.append(atoms.get_potential_energy())
 
     eos = EquationOfState(volumes, energies)
-    v1, ef, B = eos.fit()
+    v1, ef, _B = eos.fit()
     latticeconstant = v1**(1. / 3)
 
     # Calculate the heat of formation by subtracting ef with ei

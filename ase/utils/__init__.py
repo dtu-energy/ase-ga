@@ -458,8 +458,8 @@ def irotate(rotation, initial=np.identity(3)):
     """Determine x, y, z rotation angles from rotation matrix."""
     a = np.dot(initial, rotation)
     cx, sx, rx = givens(a[2, 2], a[1, 2])
-    cy, sy, ry = givens(rx, a[0, 2])
-    cz, sz, rz = givens(cx * a[1, 1] - sx * a[2, 1],
+    cy, sy, _ry = givens(rx, a[0, 2])
+    cz, sz, _rz = givens(cx * a[1, 1] - sx * a[2, 1],
                         cy * a[0, 1] - sy * (sx * a[1, 1] + cx * a[2, 1]))
     x = degrees(atan2(sx, cx))
     y = degrees(atan2(-sy, cy))
@@ -651,6 +651,7 @@ def experimental(func):
     return expfunc
 
 
+@deprecated('use functools.cached_property instead')
 def lazymethod(meth):
     """Decorator for lazy evaluation and caching of data.
 
@@ -664,7 +665,10 @@ def lazymethod(meth):
 
     The method body is only executed first time thing() is called, and
     its return value is stored.  Subsequent calls return the cached
-    value."""
+    value.
+
+    .. deprecated:: 3.25.0
+    """
     name = meth.__name__
 
     @functools.wraps(meth)
@@ -695,13 +699,17 @@ def warn_legacy(feature_name):
         FutureWarning)
 
 
+@deprecated('use functools.cached_property instead')
 def lazyproperty(meth):
-    """Decorator like lazymethod, but making item available as a property."""
+    """Decorator like lazymethod, but making item available as a property.
+
+    .. deprecated:: 3.25.0
+    """
     return property(lazymethod(meth))
 
 
 class IOContext:
-    @lazyproperty
+    @functools.cached_property
     def _exitstack(self):
         return ExitStack()
 

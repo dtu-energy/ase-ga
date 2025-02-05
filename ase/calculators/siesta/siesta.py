@@ -461,7 +461,7 @@ class Siesta(FileIOCalculator):
         """
         Read the ion.xml file of each specie
         """
-        species, species_numbers = self.species(atoms)
+        species, _species_numbers = self.species(atoms)
 
         ion_results = {}
         for species_number, spec in enumerate(species, start=1):

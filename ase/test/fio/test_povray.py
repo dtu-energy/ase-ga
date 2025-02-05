@@ -85,7 +85,7 @@ def test_compute_isosurface(isosurface_things):
 
 
 def test_render_isosurface(testdir, isosurface_things, povray_executable):
-    cell, center_cell_position, isosurf = isosurface_things
+    cell, _center_cell_position, isosurf = isosurface_things
 
     atoms = Atoms(
         'H3',

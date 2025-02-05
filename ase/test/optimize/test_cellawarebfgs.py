@@ -11,10 +11,9 @@ from ase.units import GPa
 
 
 def test_rattle_supercell_old():
-    """
-       The default len(atoms) to exp_cell_factor acts as a preconditioner
-       and therefore makes the repeat unit cell of rattled atoms to converge
-       in different number of steps.
+    """The default len(atoms) to exp_cell_factor acts as a preconditioner
+    and therefore makes the repeat unit cell of rattled atoms to converge
+    in different number of steps.
     """
     def relax(atoms):
         atoms.calc = EMT()
@@ -40,9 +39,8 @@ def relax(atoms):
 
 
 def test_rattle_supercell():
-    """
-       Make sure that relaxing a rattled cell converges in the same number
-       of iterations than a corresponding supercell with CellAwareBFGS.
+    """Make sure that relaxing a rattled cell converges in the same number
+    of iterations than a corresponding supercell with CellAwareBFGS.
     """
     atoms = bulk('Au')
     atoms *= (2, 1, 1)
@@ -53,12 +51,30 @@ def test_rattle_supercell():
     assert nsteps == nsteps2
 
 
+def test_two_stage_relaxation():
+    """Make sure that we can split relaxation in two stages and relax the
+    structure in the same number of steps.
+    """
+    atoms = bulk('Au')
+    atoms *= (2, 1, 1)
+    atoms.rattle(0.05)
+    # Perform full_relaxation
+    nsteps = relax(atoms.copy())
+    # Perform relaxation in steps
+    atoms.calc = EMT()
+    optimizer = CellAwareBFGS(FrechetCellFilter(atoms, exp_cell_factor=1.0),
+                              alpha=70, long_output=True)
+    optimizer.run(fmax=0.005, smax=0.00005, steps=5)
+    assert optimizer.nsteps == 5
+    optimizer.run(fmax=0.005, smax=0.00005)
+    assert nsteps == optimizer.nsteps
+
+
 @pytest.mark.parametrize('filt', [FrechetCellFilter, UnitCellFilter])
 def test_cellaware_bfgs_2d(filt):
-    """
-       Make sure that the mask works with CellAwareBFGS
-       by requiring that cell vectors on suppressed col and row remain
-       unchanged.
+    """Make sure that the mask works with CellAwareBFGS
+    by requiring that cell vectors on suppressed col and row remain
+    unchanged.
     """
     atoms = fcc110('Au', size=(2, 2, 3), vacuum=4)
     orig_cell = atoms.cell.copy()
@@ -78,9 +94,8 @@ def test_cellaware_bfgs_2d(filt):
 
 
 def test_cellaware_bfgs():
-    """
-       Make sure that a supercell relaxes in same number of steps as the
-       unit cell with CellAwareBFGS.
+    """Make sure that a supercell relaxes in same number of steps as the
+    unit cell with CellAwareBFGS.
     """
     steps = []
     for scale in [1, 2]:
@@ -95,14 +110,13 @@ def test_cellaware_bfgs():
 
 
 def test_elasticity_tensor():
-    """
-       Calculate the exact elasticity tensor. Create an optimizer with
-       that exact hessian, and deform it slightly and verify that within
-       the quadratic reqion, it only takes one step to get back.
+    """Calculate the exact elasticity tensor. Create an optimizer with
+    that exact hessian, and deform it slightly and verify that within
+    the quadratic reqion, it only takes one step to get back.
 
-       Also verify, that we really set rotation_supression eigenvalues
-       to alpha, and that CellAwareBFGS can approximatily build that exact
-       Hessian within 10% tolerance.
+    Also verify, that we really set rotation_supression eigenvalues
+    to alpha, and that CellAwareBFGS can approximatily build that exact
+    Hessian within 10% tolerance.
     """
     atoms = bulk('Au')
     atoms *= 2

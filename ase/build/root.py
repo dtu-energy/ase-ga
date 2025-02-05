@@ -112,7 +112,7 @@ def _root_surface_analysis(primitive_slab, root, eps=1e-8):
 
     # Setup parameters for cell searching
     logeps = int(-log10(eps))
-    xscale, cell_vectors = _root_cell_normalization(primitive_slab)
+    _xscale, cell_vectors = _root_cell_normalization(primitive_slab)
 
     # Allocate grid for cell search search
     points = np.indices((root + 1, root + 1)).T.reshape(-1, 2)
@@ -163,7 +163,7 @@ def root_surface(primitive_slab, root, eps=1e-8):
     xscale, cell_vectors = _root_cell_normalization(primitive_slab)
 
     # Do root surface analysis
-    cell_points, root_point, roots = _root_surface_analysis(
+    cell_points, root_point, _roots = _root_surface_analysis(
         primitive_slab, root, eps=eps)
 
     # Find new cell

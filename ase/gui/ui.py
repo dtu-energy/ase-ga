@@ -1,4 +1,5 @@
 # type: ignore
+import platform
 import re
 import sys
 import tkinter as tk
@@ -54,12 +55,15 @@ def helpwindow(text):
 
 
 def set_windowtype(win, wmtype):
-    # only on X11
-    # WM_TYPE, for possible settings see
-    # https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45623487848608
-    # you want dialog, normal or utility most likely
-    if win._windowingsystem == "x11":
-        win.wm_attributes('-type', wmtype)
+    # introduced tweak to fix GUI on WSL, https://gitlab.com/ase/ase/-/issues/1511
+    if (platform.platform().find('WSL') and
+    platform.platform().find('microsoft')) != -1:
+        # only on X11, but not on WSL
+        # WM_TYPE, for possible settings see
+        # https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45623487848608
+        # you want dialog, normal or utility most likely
+        if win._windowingsystem == "x11":
+            win.wm_attributes('-type', wmtype)
 
 
 class BaseWindow:

@@ -1,7 +1,7 @@
 import numpy as np
 
 from ase.calculators.calculator import Calculator, all_changes
-from ase.neighborlist import neighbor_list
+from ase.neighborlist import neighbor_list as ase_neighbor_list
 from ase.stress import full_3x3_to_voigt_6_stress
 
 
@@ -58,7 +58,7 @@ class MorsePotential(Calculator):
                           'rcut2': 2.7}
     nolabel = True
 
-    def __init__(self, **kwargs):
+    def __init__(self, neighbor_list=ase_neighbor_list, **kwargs):
         r"""
 
         The pairwise energy between atoms *i* and *j* is given by
@@ -88,12 +88,16 @@ class MorsePotential(Calculator):
             Distance starting a smooth cutoff normalized by ``r0``.
         rcut2 : float, default 2.7
             Distance ending a smooth cutoff normalized by ``r0``.
+        neighbor_list : callable, optional
+            neighbor_list function compatible with
+            ase.neighborlist.neighbor_list
 
         Notes
         -----
         The default values are chosen to be similar as Lennard-Jones.
 
         """
+        self.neighbor_list = neighbor_list
         Calculator.__init__(self, **kwargs)
 
     def calculate(self, atoms=None, properties=['energy'],
@@ -109,7 +113,7 @@ class MorsePotential(Calculator):
 
         forces = np.zeros((number_of_atoms, 3))
 
-        i, j, d, D = neighbor_list('ijdD', atoms, rcut2)
+        i, _j, d, D = self.neighbor_list('ijdD', atoms, rcut2)
         dhat = (D / d[:, None]).T
 
         expf = np.exp(rho0 * (1.0 - d / r0))

@@ -32,7 +32,7 @@ def read_gromos(fileobj):
         if (read_box and ('END' in line)):
             read_box = False
         if read_pos:
-            symbol, dummy, x, y, z = line.split()[2:7]
+            symbol, _dummy, x, y, z = line.split()[2:7]
             tmp_pos.append((10 * float(x), 10 * float(y), 10 * float(z)))
             if (len(symbol) != 2):
                 symbols.append(symbol[0].lower().capitalize())

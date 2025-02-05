@@ -5,29 +5,14 @@ import math
 import numpy as np
 
 from ase import units
-from ase.md.md import MolecularDynamics
-from ase.parallel import world
+from ase.md.verlet import VelocityVerlet
 
 
-class Bussi(MolecularDynamics):
+class Bussi(VelocityVerlet):
     """Bussi stochastic velocity rescaling (NVT) molecular dynamics.
-    Based on the paper from Bussi et al. (https://arxiv.org/abs/0803.4060)
 
-    Parameters
-    ----------
-    atoms : Atoms
-        The atoms object.
-    timestep : float
-        The time step in ASE time units.
-    temperature_K : float
-        The desired temperature, in Kelvin.
-    taut : float
-        Time constant for Bussi temperature coupling in ASE time units.
-    rng : numpy.random, optional
-        Random number generator.
-    **md_kwargs : dict, optional
-        Additional arguments passed to :class:~ase.md.md.MolecularDynamics
-        base class.
+    Based on the paper from Bussi et al., J. Chem. Phys. 126, 014101 (2007)
+    (also available from https://arxiv.org/abs/0803.4060).
     """
 
     def __init__(
@@ -36,19 +21,34 @@ class Bussi(MolecularDynamics):
         timestep,
         temperature_K,
         taut,
-        rng=np.random,
-        **md_kwargs,
+        rng=None,
+        **kwargs,
     ):
-        super().__init__(
-            atoms,
-            timestep,
-            **md_kwargs,
-        )
+        """
+        Parameters
+        ----------
+        atoms : Atoms
+            The atoms object.
+        timestep : float
+            The time step in ASE time units.
+        temperature_K : float
+            The desired temperature, in Kelvin.
+        taut : float
+            Time constant for Bussi temperature coupling in ASE time units.
+        rng : RNG object, optional
+            Random number generator, by default numpy.random.
+        **kwargs : dict, optional
+            Additional arguments are passed to
+            :class:~ase.md.md.MolecularDynamics base class.
+        """
+        super().__init__(atoms, timestep, **kwargs)
 
         self.temp = temperature_K * units.kB
         self.taut = taut
-        self.communicator = world
-        self.rng = rng
+        if rng is None:
+            self.rng = np.random
+        else:
+            self.rng = rng
 
         self.ndof = self.atoms.get_number_of_degrees_of_freedom()
 
@@ -89,7 +89,11 @@ class Bussi(MolecularDynamics):
         )
 
         # R1 in Eq. (A7)
-        normal_noise = self.rng.standard_normal()
+        noisearray = self.rng.standard_normal(size=(1,))
+        # ASE mpi interfaces can only broadcast arrays, not scalars
+        self.comm.broadcast(noisearray, 0)
+        normal_noise = noisearray[0]
+
         # \sum_{i=2}^{Nf} R_i^2 in Eq. (A7)
         # 2 * standard_gamma(n / 2) is equal to chisquare(n)
         sum_of_noises = 2.0 * self.rng.standard_gamma(0.5 * (self.ndof - 1))
@@ -104,22 +108,5 @@ class Bussi(MolecularDynamics):
 
     def step(self, forces=None):
         """Move one timestep forward using Bussi NVT molecular dynamics."""
-        if forces is None:
-            forces = self.atoms.get_forces(md=True)
-
         self.scale_velocities()
-
-        self.atoms.set_momenta(
-            self.atoms.get_momenta() + 0.5 * self.dt * forces
-        )
-        momenta = self.atoms.get_momenta()
-
-        self.atoms.set_positions(
-            self.atoms.positions + self.dt * momenta / self._masses
-        )
-
-        forces = self.atoms.get_forces(md=True)
-
-        self.atoms.set_momenta(momenta + 0.5 * self.dt * forces)
-
-        return forces
+        return super().step(forces)

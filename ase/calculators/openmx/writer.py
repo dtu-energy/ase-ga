@@ -95,7 +95,7 @@ def parameters_to_keywords(label=None, atoms=None, parameters=None,
         'atoms_unitvectors', 'band_dispersion', 'band_nkpath',
         'band_kpath']
 
-    directory, prefix = os.path.split(label)
+    _directory, prefix = os.path.split(label)
     curdir = os.path.join(os.getcwd(), prefix)
     counterparts = {
         'system_currentdirectory': curdir,

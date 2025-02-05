@@ -4,17 +4,40 @@
 Release notes
 =============
 
+A comprehensive list of changes can be found in the :ref:`changelog`.
+
 Git master branch
 =================
 
 :git:`master <>`.
 
-* Added :class:`ase.calculators.fd.FiniteDifferenceCalculator` (:mr:`3509`)
-* Improved :func:`~ase.build.find_optimal_cell_shape` to be rotationally
-  invariant (:mr:`3404`)
-* Added :class:`ase.md.bussi.Bussi` (:mr:`3350`)
-* Moved Postgres, MariaDB and MySQL backends to separare project:
-  https://gitlav.com/ase/ase-db-backends.
+Version 3.24.0
+==============
+
+28 December 2024: :git:`3.24.0 <../3.24.0>`
+
+Requirements
+------------
+
+* The minimum supported Python version has increased to 3.9 (:mr:`3473`)
+
+Breaking changes
+----------------
+
+* The ``master`` parameter to each Optimizer is now passed via ``**kwargs`` and so becomes keyword-only. (:mr:`3424`)
+* Removed legacy ``read_cell`` and ``write_cell`` functions from ase.io.castep. (:mr:`3435`)
+* Removed deprecated ``force_consistent`` option from Optimizer (:mr:`3424`)
+* :class:`ase.spectrum.band_structure.BandStructurePlot`: the ``plot_with_colors()`` has been removed and its features merged into the ``plot()`` method.
+
+Highlights
+----------
+
+* Major improvements to :func:`~ase.build.find_optimal_cell_shape`: improve target metric; ensure rotationally invariant results; avoid negative determinants; improved performance via vectorisation (:mr:`3404`, :mr:`3441`, :mr:`3474`). The ``norm`` argument to :func:`ase.build.supercells.get_deviation_from_optimal_cell_shape` is now deprecated.
+* Added new FiniteDifferenceCalculator which wraps other calculator for finite-difference forces and strains (:mr:`3509`)
+* Added two new MD thermostats: :class:`ase.md.bussi.Bussi` (:mr:`3350`) and :class:`ase.md.nosef_hoover_chain.NoseHooverChainNVT` (:mr:`3508`)
+* Added atom-projected partial phonon dos to :func:`ase.phonons.Phonons.get_dos` (:mr:`3460`)
+* New module :mod:`ase.pourbaix` written to replace
+  :class:`ase.phasediagram.Pourbaix` (:mr:`3280`), with improved energy definition and visualisation
 
 
 Version 3.23.0
@@ -1999,3 +2022,8 @@ Version 3.4.1
 =============
 
 11 August 2010: :git:`3.4.1 <../3.4.1>`.
+
+
+.. toctree::
+
+  changelog.rst

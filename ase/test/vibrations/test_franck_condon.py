@@ -121,7 +121,7 @@ def test_ch4_all(forces_a, relaxed, vibname):
     ndof = 3 * len(relaxed)
 
     # by symmetry only one frequency has a non-vanishing contribution
-    HR_a, f_a = fc.get_Huang_Rhys_factors(forces_a)
+    HR_a, _f_a = fc.get_Huang_Rhys_factors(forces_a)
     assert len(HR_a) == ndof
     assert HR_a[:-1] == pytest.approx(0, abs=1e-10)
     assert HR_a[-1] == pytest.approx(0.859989171)

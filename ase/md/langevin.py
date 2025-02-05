@@ -169,13 +169,17 @@ class Langevin(MolecularDynamics):
 
         # To keep the center of mass stationary, we have to calculate
         # the random perturbations to the positions and the momenta,
-        # and make sure that they sum to zero.
+        # and make sure that they sum to zero.  This perturbs the
+        # temperature slightly, and we have to correct.
         self.rnd_pos = self.c5 * eta
         self.rnd_vel = self.c3 * xi - self.c4 * eta
         if self.fix_com:
+            factor = np.sqrt(natoms / (natoms - 1.0))
             self.rnd_pos -= self.rnd_pos.sum(axis=0) / natoms
             self.rnd_vel -= (self.rnd_vel *
                              self.masses).sum(axis=0) / (self.masses * natoms)
+            self.rnd_pos *= factor
+            self.rnd_vel *= factor
 
         # First halfstep in the velocity.
         self.v += (self.c1 * forces / self.masses - self.c2 * self.v +

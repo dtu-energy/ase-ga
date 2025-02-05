@@ -104,15 +104,11 @@ def test_wrap_Si(Si):
     """write fractional coords and check if structure was preserved"""
     Si.positions[0, 0] -= 0.015625
     Si.write(file, format=format, scaled=True, wrap=True)
-
     new_atoms = read(file)
 
-    try:
-        assert np.allclose(Si.positions, new_atoms.positions)
-        raise ValueError("Wrapped atoms not passed to new geometry.in file")
-    except AssertionError:
-        Si.wrap()
-        assert np.allclose(Si.positions, new_atoms.positions)
+    assert not np.allclose(Si.positions, new_atoms.positions)
+    Si.wrap()
+    assert np.allclose(Si.positions, new_atoms.positions)
 
 
 def test_constraints_Si(Si):

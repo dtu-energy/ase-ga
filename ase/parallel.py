@@ -85,6 +85,7 @@ class MPI:
 
     * MPI4Py
     * GPAW
+    * Asap
     * a dummy implementation for serial runs
 
     """

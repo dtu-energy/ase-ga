@@ -3,6 +3,7 @@ import threading
 import time
 import warnings
 from abc import ABC, abstractmethod
+from functools import cached_property
 
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
@@ -18,7 +19,7 @@ from ase.optimize.ode import ode12r
 from ase.optimize.optimize import DEFAULT_MAX_STEPS, Optimizer
 from ase.optimize.precon import Precon, PreconImages
 from ase.optimize.sciopt import OptimizerConvergenceError
-from ase.utils import deprecated, lazyproperty
+from ase.utils import deprecated
 from ase.utils.abc import Optimizable
 from ase.utils.forcecurve import fit_images
 
@@ -38,11 +39,11 @@ class Spring:
         mic, _ = find_mic(pos2 - pos1, self.atoms1.cell, self.atoms1.pbc)
         return mic
 
-    @lazyproperty
+    @cached_property
     def t(self):
         return self._find_mic()
 
-    @lazyproperty
+    @cached_property
     def nt(self):
         return np.linalg.norm(self.t)
 
@@ -58,7 +59,7 @@ class NEBState:
                       self.energies[i], self.energies[i + 1],
                       self.neb.k[i])
 
-    @lazyproperty
+    @cached_property
     def imax(self):
         return 1 + np.argsort(self.energies[1:-1])[-1]
 
@@ -66,7 +67,7 @@ class NEBState:
     def emax(self):
         return self.energies[self.imax]
 
-    @lazyproperty
+    @cached_property
     def eqlength(self):
         images = self.images
         beeline = (images[self.neb.nimages - 1].get_positions() -
@@ -74,7 +75,7 @@ class NEBState:
         beelinelength = np.linalg.norm(beeline)
         return beelinelength / (self.neb.nimages - 1)
 
-    @lazyproperty
+    @cached_property
     def nimages(self):
         return len(self.images)
 
@@ -1063,16 +1064,14 @@ def interpolate(images, mic=False, interpolate_cell=False,
                 unconstrained_image.set_positions(new_pos,
                                                   apply_constraint=False)
                 images[i].set_positions(new_pos, apply_constraint=True)
-                try:
-                    np.testing.assert_allclose(unconstrained_image.positions,
-                                               images[i].positions)
-                except AssertionError:
-                    raise RuntimeError(f"Constraint(s) in image number {i} \n"
+                if not np.allclose(unconstrained_image.positions,
+                                   images[i].positions):
+                    raise RuntimeError(f"Constraints in image {i}\n"
                                        "affect the interpolation results.\n"
-                                       "Please specify if you want to \n"
-                                       "apply or ignore the constraints \n"
-                                       "during the interpolation \n"
-                                       "with apply_constraint argument.")
+                                       "Please specify if you want to\n"
+                                       "apply or ignore the constraints\n"
+                                       "during the interpolation\n"
+                                       "with the apply_constraint argument.")
             else:
                 images[i].set_positions(new_pos,
                                         apply_constraint=apply_constraint)

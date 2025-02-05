@@ -10,6 +10,13 @@ header = """
  |___|_|
 """
 
+densities = """
+Densities:
+  Coarse grid: 32*32*32 grid
+  Fine grid: 64*64*64 grid
+  Total Charge: 1.000000
+"""
+
 atoms = """
 Reference energy: -26313.685229
 
@@ -37,6 +44,14 @@ Free energy:    -10.229926
 Extrapolated:   -10.038965
 """
 
+orbitals = """
+ Band  Eigenvalues  Occupancy
+    0     -6.19111    2.00000
+    1      2.15616    0.33333
+    2      2.15616    0.33333
+    3      2.15616    0.33333
+"""
+
 forces = """
 Forces in eV/Ang:
   0 Al    0.00000    0.00000   -0.00000
@@ -49,7 +64,8 @@ Stress tensor:
      0.000000     0.000000     0.000000"""
 
 # Three configurations.  Only 1. and 3. has forces.
-text = header + atoms + forces + atoms + atoms + forces + stress
+text = (header + densities + atoms + orbitals + forces +
+        atoms + atoms + forces + stress)
 
 
 def test_gpaw_output():
@@ -61,3 +77,8 @@ def test_gpaw_output():
     fd = io.StringIO(text)
     configs = read(fd, index=':', format='gpaw-out')
     assert len(configs) == 3
+
+    for config in configs:
+        assert config.get_initial_charges().sum() == 1
+
+    assert len(configs[0].calc.get_eigenvalues()) == 4

@@ -1,4 +1,5 @@
 """Filters"""
+from functools import cached_property
 from itertools import product
 from warnings import warn
 
@@ -6,7 +7,7 @@ import numpy as np
 
 from ase.calculators.calculator import PropertyNotImplementedError
 from ase.stress import full_3x3_to_voigt_6_stress, voigt_6_to_full_3x3_stress
-from ase.utils import deprecated, lazyproperty
+from ase.utils import deprecated
 from ase.utils.abc import Optimizable
 
 __all__ = [
@@ -28,7 +29,7 @@ class OptimizableFilter(Optimizable):
     def get_forces(self):
         return self.filterobj.get_forces()
 
-    @lazyproperty
+    @cached_property
     def _use_force_consistent_energy(self):
         # This boolean is in principle invalidated if the
         # calculator changes.  This can lead to weird things

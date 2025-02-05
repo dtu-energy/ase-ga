@@ -54,9 +54,7 @@ def _write_amber_coordinates(atoms, fout):
     factor = units.fs * 1000 / velocities.scale_factor
     velocities[:] = atoms.get_velocities() * factor
 
-    cell_angular = fout.createVariable('cell_angular', 'c',
-                                       ('cell_angular', 'label'))
-    cell_angular = ['alpha', 'beta', 'gamma']
+    fout.createVariable('cell_angular', 'c', ('cell_angular', 'label'))
 
     cell_spatial = fout.createVariable('cell_spatial', 'c', ('cell_spatial',))
     cell_spatial[:] = ['a', 'b', 'c']

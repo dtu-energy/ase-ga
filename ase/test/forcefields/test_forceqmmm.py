@@ -267,7 +267,7 @@ def test_rescaled_calculator():
     v_mm, E_mm = zip(*[strain(bulk_at, e, mm_calc) for e in eps])
 
     eos_mm = EquationOfState(v_mm, E_mm)
-    v0_mm, E0_mm, B_mm = eos_mm.fit()
+    v0_mm, _E0_mm, B_mm = eos_mm.fit()
     B_mm /= GPa
     a0_mm = v0_mm ** (1.0 / 3.0)
 
@@ -276,7 +276,7 @@ def test_rescaled_calculator():
     v_mm_r, E_mm_r = zip(*[strain(bulk_at, e, mm_r) for e in eps])
 
     eos_mm_r = EquationOfState(v_mm_r, E_mm_r)
-    v0_mm_r, E0_mm_r, B_mm_r = eos_mm_r.fit()
+    v0_mm_r, _E0_mm_r, B_mm_r = eos_mm_r.fit()
     B_mm_r /= GPa
     a0_mm_r = v0_mm_r ** (1.0 / 3)
 

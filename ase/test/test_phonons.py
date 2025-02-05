@@ -116,7 +116,7 @@ def test_frequencies_amplitudes(testdir):
     # Make chain of Cu-O atoms
     pos = np.array(
         [[0, 0, 0],
-        [d0, 0, 0]]
+         [d0, 0, 0]]
     )
     atoms = Atoms(
         symbols='CuO',
@@ -253,7 +253,7 @@ def test_partial_dos(testdir):
     # Calculating phonons
     N = 3
     ph = Phonons(atoms, calc, supercell=(N, N, N),
-                    delta=0.005, name='phonon_ZnS')
+                 delta=0.005, name='phonon_ZnS')
     ph.run()
     assert ph.check_eq_forces()[1] < 1e-9, "System is not at equilibrium"
     # Read forces and assemble the dynamical matrix

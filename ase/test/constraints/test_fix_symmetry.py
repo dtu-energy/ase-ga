@@ -110,7 +110,7 @@ def filter(request):
 @pytest.mark.filterwarnings('ignore:ASE Atoms-like input is deprecated')
 @pytest.mark.filterwarnings('ignore:Armijo linesearch failed')
 def test_no_symmetrization(filter):
-    at_init, at_rot = setup_cell()
+    at_init, _at_rot = setup_cell()
     at_unsym = at_init.copy()
     di, df = symmetrized_optimisation(at_unsym, filter)
     assert di.number == 229 and not is_subgroup(sub_data=di, sup_data=df)
@@ -119,7 +119,7 @@ def test_no_symmetrization(filter):
 @pytest.mark.filterwarnings('ignore:ASE Atoms-like input is deprecated')
 @pytest.mark.filterwarnings('ignore:Armijo linesearch failed')
 def test_no_sym_rotated(filter):
-    at_init, at_rot = setup_cell()
+    _at_init, at_rot = setup_cell()
     at_unsym_rot = at_rot.copy()
     di, df = symmetrized_optimisation(at_unsym_rot, filter)
     assert di.number == 229 and not is_subgroup(sub_data=di, sup_data=df)
@@ -128,7 +128,7 @@ def test_no_sym_rotated(filter):
 @pytest.mark.filterwarnings('ignore:ASE Atoms-like input is deprecated')
 @pytest.mark.filterwarnings('ignore:Armijo linesearch failed')
 def test_sym_adj_cell(filter):
-    at_init, at_rot = setup_cell()
+    at_init, _at_rot = setup_cell()
     at_sym_3 = at_init.copy()
     at_sym_3.set_constraint(
         FixSymmetry(at_sym_3, adjust_positions=True, adjust_cell=True))
@@ -139,7 +139,7 @@ def test_sym_adj_cell(filter):
 @pytest.mark.filterwarnings('ignore:ASE Atoms-like input is deprecated')
 @pytest.mark.filterwarnings('ignore:Armijo linesearch failed')
 def test_sym_rot_adj_cell(filter):
-    at_init, at_rot = setup_cell()
+    at_init, _at_rot = setup_cell()
     at_sym_3_rot = at_init.copy()
     at_sym_3_rot.set_constraint(
         FixSymmetry(at_sym_3_rot, adjust_positions=True, adjust_cell=True))

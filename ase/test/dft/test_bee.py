@@ -37,7 +37,7 @@ def test_bee(xc, testdir):
 
     # From a file:
     ens.write(f'{xc}.bee')
-    e, de, contribs, seed, xc = readbee(f'{xc}.bee', all=True)
+    e, de, contribs, _seed, xc = readbee(f'{xc}.bee', all=True)
     assert e + de == pytest.approx(energies, abs=1e-12)
     e2000 = ensemble(e, contribs, xc)
     assert e2000.shape == (2000,)

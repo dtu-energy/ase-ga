@@ -526,7 +526,7 @@ class SocketClient:
                     self.protocol.sendmsg(self.state)
                 elif msg == 'POSDATA':
                     assert self.state == 'READY'
-                    cell, icell, positions = self.protocol.recvposdata()
+                    cell, _icell, positions = self.protocol.recvposdata()
                     atoms.cell[:] = cell
                     atoms.positions[:] = positions
 

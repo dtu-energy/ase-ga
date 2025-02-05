@@ -207,7 +207,7 @@ def test_rmc6f_write_output_column_format():
     arrays['ref_cell'] = np.zeros((7, 3), int)
     arrays['scaled_positions'] = lat_positions / lat
 
-    ncols, dtype_obj, fmt = rmc6f._write_output_column_format(cols, arrays)
+    ncols, _dtype_obj, fmt = rmc6f._write_output_column_format(cols, arrays)
 
     target_ncols = [1, 1, 3, 1, 3]
     target_fmt = "%8d %s%14.6f %14.6f %14.6f %8d %8d %8d %8d \n"

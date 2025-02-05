@@ -1,5 +1,7 @@
 '''Constant pressure/stress and temperature dynamics.
 
+**This dynamics is not recommended due to stability problems.**
+
 Combined Nose-Hoover and Parrinello-Rahman dynamics, creating an NPT
 (or N,stress,T) ensemble.
 

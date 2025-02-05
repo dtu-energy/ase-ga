@@ -15,7 +15,7 @@ from ase.units import Bohr, Ha
 def execute_command(args):
     """execute commands like sdg, eiger"""
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, encoding='ASCII')
-    stdout, stderr = proc.communicate()
+    stdout, _stderr = proc.communicate()
     return stdout
 
 

@@ -1,8 +1,7 @@
-from typing import Optional
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 
 
 class SimplePlottingAxes:
@@ -13,7 +12,7 @@ class SimplePlottingAxes:
         self.ax = ax
         self.show = show
         self.filename = filename
-        self.figure: Optional[Figure] = None
+        self.figure: Any = None  # Don't know about Figure/SubFigure etc
 
     def __enter__(self) -> Axes:
         if self.ax is None:

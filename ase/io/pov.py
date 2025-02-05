@@ -670,7 +670,7 @@ class POVRAYIsosurface:
         self.density_grid = density_grid
         self.spacing = tuple(1.0 / np.array(self.density_grid.shape))
 
-        scaled_verts, faces, normals, values = self.compute_mesh(
+        scaled_verts, faces, _normals, _values = self.compute_mesh(
             self.density_grid,
             self.cut_off,
             self.spacing,

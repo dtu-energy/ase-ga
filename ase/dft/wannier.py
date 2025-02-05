@@ -38,7 +38,7 @@ def lowdin(U, S=None):
        orthonormal matrix, but is more robust.
     """
 
-    L, s, R = np.linalg.svd(U, full_matrices=False)
+    L, _s, R = np.linalg.svd(U, full_matrices=False)
     U[:] = L @ R
 
 

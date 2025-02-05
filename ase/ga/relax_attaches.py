@@ -74,7 +74,7 @@ class DivergenceBreak:
             x = np.array(range(len(self.energies)))
             y = np.array(self.energies)
             A = np.vstack([x, np.ones(len(x))]).T
-            slope, intersect = np.linalg.lstsq(A, y)[0]
+            slope, _intersect = np.linalg.lstsq(A, y)[0]
 
             if len(self.energies) >= self.N and slope > 0:
                 self.dyn.converged = lambda x: True

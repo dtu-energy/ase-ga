@@ -327,7 +327,7 @@ class PreconLBFGS(Optimizer):
                 #    alternatively: we can adjust the rotation_factors
                 #    out using some extrapolation tricks?
                 ls = LineSearchArmijo(self.func, c1=self.c1, tol=1e-14)
-                step, func_val, no_update = ls.run(
+                step, func_val, _no_update = ls.run(
                     r, self.p, a_min=self.a_min,
                     func_start=e,
                     func_prime_start=g,

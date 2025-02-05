@@ -136,7 +136,7 @@ class AddAtoms:
         atoms = self.gui.atoms
         if len(atoms) and self.picky.value:
             from ase.geometry import get_distances
-            disps, dists = get_distances(atoms.positions,
+            _disps, dists = get_distances(atoms.positions,
                                          newatoms.positions)
             mindist = dists.min()
             if mindist < 0.5:
