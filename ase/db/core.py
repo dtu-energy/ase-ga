@@ -206,6 +206,7 @@ def connect(
     use_lock_file=True,
     append=True,
     serial=False,
+    **db_kwargs,
 ):
     """Create connection to database.
 
@@ -220,6 +221,8 @@ def connect(
         You can turn this off if you know what you are doing ...
     append: bool
         Use append=False to start a new database.
+    db_kwargs: dict
+        Optional extra kwargs to pass on to the underlying db
     """
 
     if isinstance(name, PurePath):
@@ -240,7 +243,7 @@ def connect(
                 raise ValueError('No file extension or database type given')
 
     if type is None:
-        return Database()
+        return Database(**db_kwargs)
 
     if not append and world.rank == 0:
         if isinstance(name, str) and os.path.isfile(name):
@@ -252,27 +255,29 @@ def connect(
     if type == 'json':
         from ase.db.jsondb import JSONDatabase
 
-        return JSONDatabase(name, use_lock_file=use_lock_file, serial=serial)
+        return JSONDatabase(
+            name, use_lock_file=use_lock_file, serial=serial, **db_kwargs
+        )
     if type == 'db':
         from ase.db.sqlite import SQLite3Database
 
         return SQLite3Database(
-            name, create_indices, use_lock_file, serial=serial
+            name, create_indices, use_lock_file, serial=serial, **db_kwargs
         )
     if type == 'postgresql':
         from ase_db_backends.postgresql import PostgreSQLDatabase
 
-        return PostgreSQLDatabase(name)
+        return PostgreSQLDatabase(name, **db_kwargs)
 
     if type == 'mysql':
         from ase_db_backends.mysql import MySQLDatabase
 
-        return MySQLDatabase(name)
+        return MySQLDatabase(name, **db_kwargs)
 
     if type == 'aselmdb':
         from ase_db_backends.aselmdb import LMDBDatabase
 
-        return LMDBDatabase(name)
+        return LMDBDatabase(name, **db_kwargs)
 
     raise ValueError('Unknown database type: ' + type)
 
