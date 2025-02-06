@@ -5,6 +5,7 @@ import operator
 import os
 import re
 import warnings
+from pathlib import Path
 from time import time
 from typing import Any, Dict, List
 
@@ -225,7 +226,7 @@ def connect(
         Optional extra kwargs to pass on to the underlying db
     """
 
-    if isinstance(name, PurePath):
+    if isinstance(name, PurePath) or isinstance(name, Path):
         name = str(name)
 
     if type == 'extract_from_name':
