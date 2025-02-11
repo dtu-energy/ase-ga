@@ -250,16 +250,22 @@ def read_vasp(filename='CONTCAR'):
         if selective_dynamics:
             selective_flags[atom] = [_ == 'F' for _ in ac[3:6]]
 
+    fdpos = fd.tell()
     ac_type = fd.readline()
     # Check if velocities are present
     cartesian_v = False
     if ac_type:
         cartesian_v = ac_type[0].lower() == 'c' or ac_type[0].lower() == 'k'
-        atoms_vel = np.empty((tot_natoms, 3))
+
     if cartesian_v:
+        atoms_vel = np.empty((tot_natoms, 3))
         for atom in range(tot_natoms):
             ac = fd.readline().split()
             atoms_vel[atom] = (float(ac[0]), float(ac[1]), float(ac[2]))
+    else:
+        # reset file pointer because reading other stuff (CHGCAR)
+        # may depend on this
+        fd.seek(fdpos)
 
     atoms = Atoms(symbols=atom_symbols, cell=cell, pbc=True)
     if cartesian:
