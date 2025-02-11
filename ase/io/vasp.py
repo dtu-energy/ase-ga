@@ -16,6 +16,7 @@ from ase.io.formats import string2index
 from ase.io.utils import ImageIterator
 from ase.symbols import Symbols
 from ase.utils import reader, writer
+from ase.units import Ang, fs
 
 from .vasp_parsers import vasp_outcar_parsers as vop
 
@@ -277,6 +278,8 @@ def read_vasp(filename='CONTCAR'):
         set_constraints(atoms, selective_flags)
 
     if cartesian_v:
+        # unit conversion from Angstrom/fs to ASE units
+        atoms_vel = atoms_vel * (Ang / fs)
         atoms.set_velocities(atoms_vel)
 
     return atoms
@@ -869,10 +872,11 @@ def write_vasp(
         fd.write('\n')
 
     # if velocities in atoms object write velocities
-    if atoms.get_velocities() is not None:
+    if atoms.has('momenta'):
         cform = 3 * ' {:19.16f}' + '\n'
         fd.write('Cartesian\n')
-        vel = atoms.get_velocities()
+        # unit conversion to Angstrom / fs
+        vel = atoms.get_velocities() / (Ang / fs)
         for vatom in vel:
             fd.write(cform.format(*vatom))
 
