@@ -249,6 +249,18 @@ def read_vasp(filename='CONTCAR'):
         atoms_pos[atom] = [float(_) for _ in ac[0:3]]
         if selective_dynamics:
             selective_flags[atom] = [_ == 'F' for _ in ac[3:6]]
+
+    ac_type = fd.readline()
+    # Check if velocities are present
+    cartesian_v = False
+    if ac_type:
+        cartesian_v = ac_type[0].lower() == 'c' or ac_type[0].lower() == 'k'
+        atoms_vel = np.empty((tot_natoms, 3))
+    if cartesian_v:
+        for atom in range(tot_natoms):
+            ac = fd.readline().split()
+            atoms_vel[atom] = (float(ac[0]), float(ac[1]), float(ac[2]))
+
     atoms = Atoms(symbols=atom_symbols, cell=cell, pbc=True)
     if cartesian:
         atoms_pos *= scale
@@ -257,6 +269,10 @@ def read_vasp(filename='CONTCAR'):
         atoms.set_scaled_positions(atoms_pos)
     if selective_dynamics:
         set_constraints(atoms, selective_flags)
+
+    if cartesian_v:
+        atoms.set_velocities(atoms_vel)
+
     return atoms
 
 
@@ -845,6 +861,14 @@ def write_vasp(
             flags = ['F' if flag else 'T' for flag in sflags[iatom]]
             fd.write(''.join([f'{f:>4s}' for f in flags]))
         fd.write('\n')
+
+    # if velocities in atoms object write velocities
+    if atoms.get_velocities() is not None:
+        cform = 3 * ' {:19.16f}' + '\n'
+        fd.write('Cartesian\n')
+        vel = atoms.get_velocities()
+        for vatom in vel:
+            fd.write(cform.format(*vatom))
 
 
 def _handle_ase_constraints(atoms: Atoms) -> np.ndarray:
