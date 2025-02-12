@@ -88,7 +88,7 @@ src = ['ase']
 [tool.ruff.format]
 quote-style = 'single'
 skip-magic-trailing-comma = false
-exclude = ['*.py']
+exclude = ['doc/*.py', 'ase/test/*.py']
 
 [tool.ruff.lint]
 preview = true  # necessary to activate many pycodestyle rules
