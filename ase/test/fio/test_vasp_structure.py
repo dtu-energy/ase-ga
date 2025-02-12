@@ -161,7 +161,7 @@ def test_FixedLine_and_Plane(ConstraintClass, graphene_atoms):
 
 def test_write_read_velocities(graphene_atoms):
     vel = np.zeros_like(graphene_atoms.positions)
-    vel[-1, 0] = 10.0
+    vel = np.linspace(-1, 1, 3 * len(graphene_atoms)).reshape(-1, 3)
     graphene_atoms.set_velocities(vel)
 
     graphene_atoms.write('CONTCAR', direct=False)
