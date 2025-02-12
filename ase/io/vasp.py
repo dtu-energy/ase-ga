@@ -15,8 +15,8 @@ from ase.io import ParseError
 from ase.io.formats import string2index
 from ase.io.utils import ImageIterator
 from ase.symbols import Symbols
-from ase.utils import reader, writer
 from ase.units import Ang, fs
+from ase.utils import reader, writer
 
 from .vasp_parsers import vasp_outcar_parsers as vop
 
