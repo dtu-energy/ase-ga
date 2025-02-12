@@ -1,3 +1,5 @@
+# fmt: off
+
 # flake8: noqa
 """Calculator for the Embedded Atom Method Potential"""
 

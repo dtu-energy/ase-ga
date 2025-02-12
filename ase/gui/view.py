@@ -1,3 +1,5 @@
+# fmt: off
+
 from math import cos, sin, sqrt
 from os.path import basename
 

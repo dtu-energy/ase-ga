@@ -1,3 +1,5 @@
+# fmt: off
+
 """Build crystalline systems"""
 from math import sqrt
 from typing import Any

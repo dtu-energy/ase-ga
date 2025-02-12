@@ -1,3 +1,5 @@
+# fmt: off
+
 """Filters"""
 from functools import cached_property
 from itertools import product

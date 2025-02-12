@@ -1,3 +1,5 @@
+# fmt: off
+
 """van der Waals correction schemes for DFT"""
 import numpy as np
 from scipy.special import erfc, erfinv

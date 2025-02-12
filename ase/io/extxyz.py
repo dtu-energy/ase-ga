@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Extended XYZ support
 

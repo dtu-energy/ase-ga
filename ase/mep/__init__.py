@@ -1,3 +1,5 @@
+# fmt: off
+
 """Methods for finding minimum-energy paths and/or saddle points."""
 
 from ase.mep.autoneb import AutoNEB

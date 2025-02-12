@@ -1,3 +1,5 @@
+# fmt: off
+
 import warnings
 
 from ase.calculators.calculator import FileIOCalculator

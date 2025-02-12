@@ -1,3 +1,5 @@
+# fmt: off
+
 """ase.units
 
 Physical constants and units derived from CODATA for converting

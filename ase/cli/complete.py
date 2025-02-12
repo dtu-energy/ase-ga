@@ -1,3 +1,5 @@
+# fmt: off
+
 #!/usr/bin/env python3
 """Bash completion for ase.
 

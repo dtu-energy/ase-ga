@@ -1,3 +1,5 @@
+# fmt: off
+
 from random import randint
 from typing import Any, Dict
 

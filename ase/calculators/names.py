@@ -1,3 +1,5 @@
+# fmt: off
+
 import importlib
 from collections.abc import Mapping
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 """ Van der Waals radii in [A] taken from
 http://www.webelements.com/periodicity/van_der_waals_radius/
 and the references given there.

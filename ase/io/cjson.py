@@ -1,3 +1,5 @@
+# fmt: off
+
 """Module to read atoms in chemical json file format.
 
 https://wiki.openchemistry.org/Chemical_JSON

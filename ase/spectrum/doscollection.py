@@ -1,3 +1,5 @@
+# fmt: off
+
 import collections
 from functools import reduce, singledispatch
 from typing import (

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Functions to read from control file and from turbomole standard output"""
 
 import os

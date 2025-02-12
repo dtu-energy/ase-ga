@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 ASE Calculator for interatomic models compatible with the Knowledgebase
 of Interatomic Models (KIM) application programming interface (API).

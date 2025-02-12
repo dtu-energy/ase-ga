@@ -1,3 +1,5 @@
+# fmt: off
+
 """ASE-interface to Octopus.
 
 Ask Hjorth Larsen <asklarsen@gmail.com>

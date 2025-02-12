@@ -1,3 +1,5 @@
+# fmt: off
+
 """ Partly occupied Wannier functions
 
     Find the set of partly occupied Wannier functions using the method from

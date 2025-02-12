@@ -1,3 +1,5 @@
+# fmt: off
+
 """ASE LAMMPS Calculator Library Version"""
 
 

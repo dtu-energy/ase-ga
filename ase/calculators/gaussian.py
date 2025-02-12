@@ -1,3 +1,5 @@
+# fmt: off
+
 import copy
 import os
 from collections.abc import Iterable

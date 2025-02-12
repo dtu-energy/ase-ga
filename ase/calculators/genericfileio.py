@@ -1,3 +1,5 @@
+# fmt: off
+
 import shlex
 from abc import ABC, abstractmethod
 from contextlib import ExitStack

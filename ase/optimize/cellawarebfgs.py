@@ -1,3 +1,5 @@
+# fmt: off
+
 import time
 from typing import IO, Optional, Union
 

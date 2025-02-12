@@ -1,3 +1,5 @@
+# fmt: off
+
 # Copyright (C) 2008 CSC - Scientific Computing Ltd.
 """This module defines an ASE interface to VASP.
 

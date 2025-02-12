@@ -1,3 +1,5 @@
+# fmt: off
+
 """Dialog for saving one or more configurations."""
 
 import numpy as np

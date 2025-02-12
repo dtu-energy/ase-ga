@@ -1,3 +1,5 @@
+# fmt: off
+
 """ Class for handling interaction with the PBS queuing system."""
 import os
 import time

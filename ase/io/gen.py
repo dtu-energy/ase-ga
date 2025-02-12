@@ -1,3 +1,5 @@
+# fmt: off
+
 """Extension to ASE: read and write structures in GEN format
 
 Refer to DFTB+ manual for GEN format description.

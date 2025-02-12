@@ -1,3 +1,5 @@
+# fmt: off
+
 """Inline viewer for jupyter notebook using X3D."""
 import warnings
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 # flake8: noqa
 """This module defines an ASE interface to deMon-nano.
 

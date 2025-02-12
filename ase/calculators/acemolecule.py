@@ -1,3 +1,5 @@
+# fmt: off
+
 import os
 from copy import deepcopy
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Tools for generating new random starting candidates."""
 import numpy as np
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Checkpointing and restart functionality for scripts using ASE Atoms objects.
 
 Initialize checkpoint object:

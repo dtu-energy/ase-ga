@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module provides I/O functions for the MAGRES file format, introduced
 by CASTEP as an output format to store structural data and ab-initio
 calculated NMR parameters.

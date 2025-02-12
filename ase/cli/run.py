@@ -1,3 +1,5 @@
+# fmt: off
+
 import sys
 from typing import Any, Dict
 

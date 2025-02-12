@@ -1,3 +1,5 @@
+# fmt: off
+
 # flake8: noqa
 """
 The following contains a database of 24 gas-phase reaction barrier heights for small molecules.

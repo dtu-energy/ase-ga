@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 This module defines abstract helper classes with the objective of reducing
 boilerplace method definitions (i.e. duplication) in calculators.

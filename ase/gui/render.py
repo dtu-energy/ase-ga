@@ -1,3 +1,5 @@
+# fmt: off
+
 from os import unlink
 
 import numpy as np

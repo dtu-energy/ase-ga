@@ -1,3 +1,5 @@
+# fmt: off
+
 '''Constant pressure/stress and temperature dynamics.
 
 **This dynamics is not recommended due to stability problems.**

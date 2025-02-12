@@ -1,3 +1,5 @@
+# fmt: off
+
 # ######################################
 # Implementation of FIRE2.0 and ABC-FIRE
 

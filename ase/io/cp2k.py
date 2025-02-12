@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Reader for CP2Ks DCD_ALIGNED_CELL format and restart files.
 

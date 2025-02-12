@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 from ase.geometry import find_mic

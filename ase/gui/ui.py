@@ -1,3 +1,5 @@
+# fmt: off
+
 # type: ignore
 import platform
 import re

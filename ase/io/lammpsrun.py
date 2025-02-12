@@ -1,3 +1,5 @@
+# fmt: off
+
 import gzip
 import struct
 from collections import deque

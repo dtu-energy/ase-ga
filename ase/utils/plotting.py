@@ -1,3 +1,5 @@
+# fmt: off
+
 from typing import Any, Optional
 
 import matplotlib.pyplot as plt

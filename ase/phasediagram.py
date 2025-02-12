@@ -1,3 +1,5 @@
+# fmt: off
+
 import fractions
 import functools
 import re

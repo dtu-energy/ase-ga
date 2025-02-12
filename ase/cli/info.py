@@ -1,3 +1,5 @@
+# fmt: off
+
 # Note:
 # Try to avoid module level import statements here to reduce
 # import time during CLI execution

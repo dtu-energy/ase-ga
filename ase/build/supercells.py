@@ -1,3 +1,5 @@
+# fmt: off
+
 """Helper functions for creating supercells."""
 
 import warnings

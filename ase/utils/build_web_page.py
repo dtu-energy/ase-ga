@@ -1,3 +1,5 @@
+# fmt: off
+
 """Build ASE's web-page."""
 
 import os

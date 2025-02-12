@@ -1,3 +1,5 @@
+# fmt: off
+
 import errno
 import functools
 import io

@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Provides utility functions for FixSymmetry class
 """

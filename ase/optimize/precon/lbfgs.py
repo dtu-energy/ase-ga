@@ -1,3 +1,5 @@
+# fmt: off
+
 import time
 import warnings
 from math import sqrt

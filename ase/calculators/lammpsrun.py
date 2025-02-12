@@ -1,3 +1,5 @@
+# fmt: off
+
 """ASE calculator for the LAMMPS classical MD code"""
 # lammps.py (2011/03/29)
 #
