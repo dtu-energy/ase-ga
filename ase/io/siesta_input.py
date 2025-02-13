@@ -1,3 +1,5 @@
+# fmt: off
+
 """SiestaInput"""
 import warnings
 

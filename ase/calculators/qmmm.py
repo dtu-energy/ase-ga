@@ -1,3 +1,5 @@
+# fmt: off
+
 from typing import Sequence
 
 import numpy as np

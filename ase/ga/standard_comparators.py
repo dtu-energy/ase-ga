@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 from ase.ga import get_raw_score

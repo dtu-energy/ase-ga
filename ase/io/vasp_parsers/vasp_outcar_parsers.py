@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Module for parsing OUTCAR files.
 """

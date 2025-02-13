@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Knowledgebase of Interatomic Models (KIM) Calculator for ASE written by:
 

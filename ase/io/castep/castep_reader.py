@@ -1,3 +1,5 @@
+# fmt: off
+
 import io
 import re
 import warnings

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Implements the Topology-Scaling Algorithm (TSA)
 
 Method is described in:

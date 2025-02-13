@@ -1,3 +1,5 @@
+# fmt: off
+
 import difflib
 import re
 import warnings

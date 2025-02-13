@@ -1,3 +1,5 @@
+# fmt: off
+
 from functools import cached_property
 
 import numpy as np

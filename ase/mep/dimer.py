@@ -1,3 +1,5 @@
+# fmt: off
+
 """Minimum mode follower for finding saddle points in an unbiased way.
 
 There is, currently, only one implemented method: The Dimer method.

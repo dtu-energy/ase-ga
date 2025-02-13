@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase import Atoms
 
 

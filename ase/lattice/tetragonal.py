@@ -1,3 +1,5 @@
+# fmt: off
+
 """Function-like objects creating tetragonal lattices.
 
 The following lattice creators are defined:

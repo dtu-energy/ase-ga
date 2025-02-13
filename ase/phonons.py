@@ -1,3 +1,5 @@
+# fmt: off
+
 """Module for calculating phonons of periodic systems."""
 
 import warnings

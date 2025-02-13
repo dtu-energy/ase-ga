@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Implementation of the Precon abstract base class and subclasses
 """

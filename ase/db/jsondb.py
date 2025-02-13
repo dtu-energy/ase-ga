@@ -1,3 +1,5 @@
+# fmt: off
+
 import os
 import sys
 from contextlib import ExitStack

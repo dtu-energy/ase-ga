@@ -1,3 +1,5 @@
+# fmt: off
+
 from math import atan2, cos, log10, sin
 
 import numpy as np

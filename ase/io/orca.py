@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 from io import StringIO
 from pathlib import Path

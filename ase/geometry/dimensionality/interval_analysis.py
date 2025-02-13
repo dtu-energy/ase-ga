@@ -1,3 +1,5 @@
+# fmt: off
+
 """Implements the dimensionality scoring parameter.
 
 Method is described in:

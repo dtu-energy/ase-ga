@@ -1,3 +1,5 @@
+# fmt: off
+
 """Langevin dynamics class."""
 from typing import IO, Optional, Union
 

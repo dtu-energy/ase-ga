@@ -1,3 +1,5 @@
+# fmt: off
+
 """ This module defines a FileIOCalculator for DFTB+
 
 http://www.dftbplus.org/

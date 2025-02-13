@@ -1,3 +1,5 @@
+# fmt: off
+
 import ase.parallel as parallel
 
 

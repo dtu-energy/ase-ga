@@ -1,3 +1,5 @@
+# fmt: off
+
 """Defines class/functions to write input and parse output for FHI-aims."""
 import os
 import re

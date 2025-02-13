@@ -1,3 +1,5 @@
+# fmt: off
+
 """Function-like objects creating lattices with more than one element.
 
 These lattice creators are mainly intended as examples for how to build you

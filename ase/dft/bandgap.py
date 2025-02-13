@@ -1,3 +1,5 @@
+# fmt: off
+
 import warnings
 from dataclasses import dataclass
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 # Refactor of DOS-like data objects
 # towards replacing ase.dft.dos and ase.dft.pdos
 import warnings

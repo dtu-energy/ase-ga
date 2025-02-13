@@ -1,3 +1,5 @@
+# fmt: off
+
 """Reads Quantum ESPRESSO files.
 
 Read multiple structures and results from pw.x output files. Read

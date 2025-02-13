@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 
 import ase.io.orca as io

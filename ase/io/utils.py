@@ -1,3 +1,5 @@
+# fmt: off
+
 from itertools import islice
 from math import sqrt
 from typing import IO

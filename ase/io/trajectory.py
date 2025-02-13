@@ -1,3 +1,5 @@
+# fmt: off
+
 """Trajectory"""
 import contextlib
 import io

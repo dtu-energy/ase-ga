@@ -1,3 +1,5 @@
+# fmt: off
+
 import time
 
 import numpy as np

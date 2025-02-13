@@ -1,3 +1,5 @@
+# fmt: off
+
 """A class for computing vibrational modes"""
 
 import sys

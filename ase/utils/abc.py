@@ -1,3 +1,5 @@
+# fmt: off
+
 import collections
 from abc import abstractmethod
 

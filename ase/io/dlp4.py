@@ -1,3 +1,5 @@
+# fmt: off
+
 """ Read/Write DL_POLY_4 CONFIG files """
 import itertools
 import re

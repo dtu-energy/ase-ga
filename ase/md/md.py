@@ -1,3 +1,5 @@
+# fmt: off
+
 """Molecular Dynamics."""
 import warnings
 from typing import IO, Optional, Union

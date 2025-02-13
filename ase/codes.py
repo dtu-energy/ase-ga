@@ -1,3 +1,5 @@
+# fmt: off
+
 from dataclasses import dataclass
 
 # Note: There could be more than one "calculator" for any given code;

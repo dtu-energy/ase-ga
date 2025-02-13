@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module defines an ASE interface to CRYSTAL14/CRYSTAL17
 
 http://www.crystal.unito.it/

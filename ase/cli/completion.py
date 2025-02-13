@@ -1,3 +1,5 @@
+# fmt: off
+
 """TAB-completion sub-command and update helper funtion.
 
 Run this when ever options are changed::

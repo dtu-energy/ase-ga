@@ -1,3 +1,5 @@
+# fmt: off
+
 """The following contains a database of small molecules
 
 Data for the G2/97 database are from

@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 from ase.build.general_surface import surface

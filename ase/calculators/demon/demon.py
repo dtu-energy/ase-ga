@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module defines an ASE interface to deMon.
 
 http://www.demon-software.com

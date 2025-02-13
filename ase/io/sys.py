@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 IO support for the qb@ll sys format.
 

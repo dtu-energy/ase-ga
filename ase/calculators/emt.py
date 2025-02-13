@@ -1,3 +1,5 @@
+# fmt: off
+
 """Effective medium theory potential."""
 from collections import defaultdict
 from math import log, sqrt

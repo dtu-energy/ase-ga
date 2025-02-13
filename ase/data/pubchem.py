@@ -1,3 +1,5 @@
+# fmt: off
+
 import json
 import urllib.request
 import warnings

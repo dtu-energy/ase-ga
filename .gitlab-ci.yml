@@ -219,6 +219,7 @@ lint:
     - mypy --color-output -p ase
     - python -We:invalid -m compileall -f -q ase/
     - ruff check
+    - ruff format --check
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
   cache:

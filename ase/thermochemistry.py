@@ -1,3 +1,5 @@
+# fmt: off
+
 """Modules for calculating thermochemical information from computational
 outputs."""
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.data import covalent_radii
 from ase.data.colors import jmol_colors
 

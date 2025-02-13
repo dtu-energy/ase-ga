@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module defines an ASE interface to MOPAC.
 
 Set $ASE_MOPAC_COMMAND to something like::

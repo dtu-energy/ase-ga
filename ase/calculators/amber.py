@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module defines an ASE interface to Amber16.
 
 Usage: (Tested only with Amber16, http://ambermd.org/)

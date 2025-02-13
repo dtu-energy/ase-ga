@@ -1,3 +1,5 @@
+# fmt: off
+
 """Prism"""
 import warnings
 from typing import Sequence, Union

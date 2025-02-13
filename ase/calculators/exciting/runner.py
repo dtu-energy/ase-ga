@@ -1,3 +1,5 @@
+# fmt: off
+
 """Binary runner and results class."""
 import os
 import subprocess

@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Module for povray file format support.
 

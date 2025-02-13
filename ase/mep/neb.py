@@ -1,3 +1,5 @@
+# fmt: off
+
 import sys
 import threading
 import time

@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.build.bulk import bulk
 from ase.build.connected import (
     connected_atoms,

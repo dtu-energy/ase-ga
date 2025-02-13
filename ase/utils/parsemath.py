@@ -1,3 +1,5 @@
+# fmt: off
+
 """A Module to safely parse/evaluate Mathematical Expressions"""
 import ast
 import math

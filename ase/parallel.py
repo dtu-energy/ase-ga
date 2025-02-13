@@ -1,3 +1,5 @@
+# fmt: off
+
 import atexit
 import functools
 import os

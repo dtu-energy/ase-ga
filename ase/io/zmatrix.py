@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 from collections import namedtuple
 from numbers import Real

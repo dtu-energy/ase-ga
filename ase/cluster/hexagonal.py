@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Function-like objects that creates cubic clusters.
 """

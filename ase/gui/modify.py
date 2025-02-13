@@ -1,3 +1,5 @@
+# fmt: off
+
 from functools import partial
 
 import numpy as np
