@@ -94,7 +94,7 @@ class VaspChargeDensity:
                     break
                 # if present we would have already read this line in read_vasp
                 # when checking velocities
-                #fd.readline()
+                # fd.readline()
                 ngr = fd.readline().split()
                 ng = (int(ngr[0]), int(ngr[1]), int(ngr[2]))
                 chg = np.empty(ng)
