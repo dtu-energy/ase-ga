@@ -437,7 +437,7 @@ class UnitCellFilter(Filter):
         # deformation gradient applied) and the new deformation gradient.
         # This should also preserve symmetry, so if set_positions() calls
         # FixSymmetyr.adjust_positions(), it should be OK
-        self.atoms.set_positions(new_atom_positions @ deform.T,
+        self.atoms.set_positions(new_atom_positions @ (np.eye(3) + deform.T),
                                  **kwargs)
 
     def get_potential_energy(self, force_consistent=True):
