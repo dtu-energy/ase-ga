@@ -708,10 +708,19 @@ def lazyproperty(meth):
     return property(lazymethod(meth))
 
 
+class _DelExitStack(ExitStack):
+    # We don't want IOContext itself to implement __del__, since IOContext
+    # might be subclassed, and we don't want __del__ on objects that we
+    # don't fully control.  Therefore we make a little custom class
+    # that nobody else refers to, and that has the __del__.
+    def __del__(self):
+        self.close()
+
+
 class IOContext:
     @functools.cached_property
     def _exitstack(self):
-        return ExitStack()
+        return _DelExitStack()
 
     def __enter__(self):
         return self
