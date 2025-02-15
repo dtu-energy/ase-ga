@@ -125,7 +125,7 @@ def test_elasticity_tensor():
     C_ijkl = get_elasticity_tensor(atoms, verbose=True)
 
     # d = 0.01
-    # deformation = np.eye(3) + d * (np.random.rand(3, 3) - 0.5)
+    # deformation = np.eye(3) + d * (rng.random((3, 3)) - 0.5)
     deformation = np.array([[9.99163386e-01, -8.49034327e-04, -3.1448271e-03],
                             [3.25727960e-03, 9.98723923e-01, 2.76098324e-03],
                             [9.85751768e-04, 4.61517003e-03, 9.95895994e-01]])
