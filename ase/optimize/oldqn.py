@@ -172,10 +172,6 @@ class GoodOldQuasiNewton(Optimizer):
         self.radius = max(min(self.radius, self.maxradius), 0.0001)
 
         self.transitionstate = transitionstate
-
-        if self.optimizable.is_neb():
-            self.forcemin = False
-
         self.t0 = time.time()
 
     def initialize(self):
