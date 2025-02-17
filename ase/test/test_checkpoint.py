@@ -39,25 +39,25 @@ def rattle_calc(atoms, calc):
     orig_atoms = atoms.copy()
 
     # first do a couple of calculations
-    np.random.seed(0)
-    atoms.rattle()
+    rng = np.random.RandomState(0)
+    atoms.rattle(rng=rng)
     cp_calc_1 = CheckpointCalculator(calc)
     atoms.calc = cp_calc_1
     e11 = atoms.get_potential_energy()
     f11 = atoms.get_forces()
-    atoms.rattle()
+    atoms.rattle(rng=rng)
     e12 = atoms.get_potential_energy()
     f12 = atoms.get_forces()
 
     # then re-read them from checkpoint file
     atoms = orig_atoms
-    np.random.seed(0)
-    atoms.rattle()
+    rng = np.random.RandomState(0)
+    atoms.rattle(rng=rng)
     cp_calc_2 = CheckpointCalculator(calc)
     atoms.calc = cp_calc_2
     e21 = atoms.get_potential_energy()
     f21 = atoms.get_forces()
-    atoms.rattle()
+    atoms.rattle(rng=rng)
     e22 = atoms.get_potential_energy()
     f22 = atoms.get_forces()
 
