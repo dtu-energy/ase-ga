@@ -5,6 +5,8 @@ This module contains functionality for reading and writing an ASE
 Atoms object in VASP POSCAR format.
 
 """
+from __future__ import annotations
+
 import re
 from pathlib import Path
 from typing import List, Optional, TextIO, Tuple
