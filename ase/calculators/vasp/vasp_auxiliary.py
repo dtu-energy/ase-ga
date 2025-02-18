@@ -94,7 +94,11 @@ class VaspChargeDensity:
                     # Probably an empty line, or we tried to read the
                     # augmentation occupancies in CHGCAR
                     break
-                fd.readline()
+
+                # Note: We continue reading from the same file, and
+                # this relies on read_vasp() to read no more lines
+                # than it currently does.
+
                 ngr = fd.readline().split()
                 ng = (int(ngr[0]), int(ngr[1]), int(ngr[2]))
                 chg = np.empty(ng)

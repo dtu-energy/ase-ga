@@ -17,6 +17,7 @@ from ase.io import ParseError
 from ase.io.formats import string2index
 from ase.io.utils import ImageIterator
 from ase.symbols import Symbols
+from ase.units import Ang, fs
 from ase.utils import reader, writer
 
 from .vasp_parsers import vasp_outcar_parsers as vop
@@ -251,6 +252,19 @@ def read_vasp(filename='CONTCAR'):
         atoms_pos[atom] = [float(_) for _ in ac[0:3]]
         if selective_dynamics:
             selective_flags[atom] = [_ == 'F' for _ in ac[3:6]]
+
+    ac_type = fd.readline()
+    # Check if velocities are present
+    cartesian_v = False
+    if ac_type:
+        cartesian_v = ac_type[0].lower() == 'c' or ac_type[0].lower() == 'k'
+
+    if cartesian_v:
+        atoms_vel = np.empty((tot_natoms, 3))
+        for atom in range(tot_natoms):
+            ac = fd.readline().split()
+            atoms_vel[atom] = (float(ac[0]), float(ac[1]), float(ac[2]))
+
     atoms = Atoms(symbols=atom_symbols, cell=cell, pbc=True)
     if cartesian:
         atoms_pos *= scale
@@ -259,6 +273,12 @@ def read_vasp(filename='CONTCAR'):
         atoms.set_scaled_positions(atoms_pos)
     if selective_dynamics:
         set_constraints(atoms, selective_flags)
+
+    if cartesian_v:
+        # unit conversion from Angstrom/fs to ASE units
+        atoms_vel = atoms_vel * (Ang / fs)
+        atoms.set_velocities(atoms_vel)
+
     return atoms
 
 
@@ -847,6 +867,15 @@ def write_vasp(
             flags = ['F' if flag else 'T' for flag in sflags[iatom]]
             fd.write(''.join([f'{f:>4s}' for f in flags]))
         fd.write('\n')
+
+    # if velocities in atoms object write velocities
+    if atoms.has('momenta'):
+        cform = 3 * ' {:19.16f}' + '\n'
+        fd.write('Cartesian\n')
+        # unit conversion to Angstrom / fs
+        vel = atoms.get_velocities() / (Ang / fs)
+        for vatom in vel:
+            fd.write(cform.format(*vatom))
 
 
 def _handle_ase_constraints(atoms: Atoms) -> np.ndarray:
