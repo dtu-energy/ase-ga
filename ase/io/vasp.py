@@ -143,7 +143,7 @@ def get_atomtypes_from_formula(formula):
 
 
 @reader
-def read_vasp(filename='CONTCAR'):
+def read_vasp(fd):
     """Import POSCAR/CONTCAR type file.
 
     Reads unitcell, atom positions and constraints from the POSCAR/CONTCAR
@@ -153,7 +153,6 @@ def read_vasp(filename='CONTCAR'):
 
     from ase.data import chemical_symbols
 
-    fd = filename
     # The first line is in principle a comment line, however in VASP
     # 4.x a common convention is to have it contain the atom symbols,
     # eg. "Ag Ge" in the same order as later in the file (and POTCAR
