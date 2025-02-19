@@ -5,6 +5,8 @@ This module contains functionality for reading and writing an ASE
 Atoms object in VASP POSCAR format.
 
 """
+from __future__ import annotations
+
 import re
 from pathlib import Path
 from typing import List, Optional, TextIO, Tuple
@@ -143,17 +145,24 @@ def get_atomtypes_from_formula(formula):
 
 
 @reader
-def read_vasp(filename='CONTCAR'):
+def read_vasp(fd):
     """Import POSCAR/CONTCAR type file.
 
     Reads unitcell, atom positions and constraints from the POSCAR/CONTCAR
     file and tries to read atom types from POSCAR/CONTCAR header, if this
     fails the atom types are read from OUTCAR or POTCAR file.
     """
+    atoms = read_vasp_configuration(fd)
+    velocities = read_velocities_if_present(fd, len(atoms))
+    if velocities is not None:
+        atoms.set_velocities(velocities)
+    return atoms
 
+
+def read_vasp_configuration(fd):
+    """Read common POSCAR/CONTCAR/CHGCAR/CHG quantities and return Atoms."""
     from ase.data import chemical_symbols
 
-    fd = filename
     # The first line is in principle a comment line, however in VASP
     # 4.x a common convention is to have it contain the atom symbols,
     # eg. "Ag Ge" in the same order as later in the file (and POTCAR
@@ -253,18 +262,6 @@ def read_vasp(filename='CONTCAR'):
         if selective_dynamics:
             selective_flags[atom] = [_ == 'F' for _ in ac[3:6]]
 
-    ac_type = fd.readline()
-    # Check if velocities are present
-    cartesian_v = False
-    if ac_type:
-        cartesian_v = ac_type[0].lower() == 'c' or ac_type[0].lower() == 'k'
-
-    if cartesian_v:
-        atoms_vel = np.empty((tot_natoms, 3))
-        for atom in range(tot_natoms):
-            ac = fd.readline().split()
-            atoms_vel[atom] = (float(ac[0]), float(ac[1]), float(ac[2]))
-
     atoms = Atoms(symbols=atom_symbols, cell=cell, pbc=True)
     if cartesian:
         atoms_pos *= scale
@@ -274,12 +271,25 @@ def read_vasp(filename='CONTCAR'):
     if selective_dynamics:
         set_constraints(atoms, selective_flags)
 
-    if cartesian_v:
-        # unit conversion from Angstrom/fs to ASE units
-        atoms_vel = atoms_vel * (Ang / fs)
-        atoms.set_velocities(atoms_vel)
-
     return atoms
+
+
+def read_velocities_if_present(fd, natoms) -> np.ndarray | None:
+    """Read velocities from POSCAR/CONTCAR if present, return in ASE units."""
+    ac_type = fd.readline()
+
+    # Check if velocities are present
+    if not ac_type:
+        return None
+
+    atoms_vel = np.empty((natoms, 3))
+    for atom in range(natoms):
+        words = fd.readline().split()
+        assert len(words) == 3
+        atoms_vel[atom] = (float(words[0]), float(words[1]), float(words[2]))
+
+    # unit conversion from Angstrom/fs to ASE units
+    return atoms_vel * (Ang / fs)
 
 
 def set_constraints(atoms: Atoms, selective_flags: np.ndarray):
