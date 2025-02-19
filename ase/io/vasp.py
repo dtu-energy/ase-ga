@@ -160,6 +160,7 @@ def read_vasp(fd):
 
 
 def read_vasp_configuration(fd):
+    """Read common POSCAR/CONTCAR/CHGCAR/CHG quantities and return Atoms."""
     from ase.data import chemical_symbols
 
     # The first line is in principle a comment line, however in VASP
@@ -274,6 +275,7 @@ def read_vasp_configuration(fd):
 
 
 def read_velocities_if_present(fd, natoms) -> np.ndarray | None:
+    """Read velocities from POSCAR/CONTCAR if present, return in ASE units."""
     ac_type = fd.readline()
 
     # Check if velocities are present
