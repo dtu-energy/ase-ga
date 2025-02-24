@@ -1,3 +1,5 @@
+import numpy as np
+
 from ase import Atoms
 from ase.geometry import get_duplicate_atoms
 
@@ -30,3 +32,11 @@ def test_no_duplicate_atoms():
     dups = get_duplicate_atoms(at)
 
     assert dups.size == 0
+
+
+def test_pbc():
+    """test if it works under PBCs."""
+    positions = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
+    atoms = Atoms('H2', positions=positions, cell=np.eye(3), pbc=True)
+    dups = get_duplicate_atoms(atoms, cutoff=0.2)
+    np.testing.assert_array_equal(dups, [[0, 1]])
