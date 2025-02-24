@@ -19,11 +19,13 @@ def test_atoms_get_duplicates():
     get_duplicate_atoms(at, delete=True)
     assert len(at) == 4
 
+
+def test_no_duplicate_atoms():
+    """test if it works if no duplicates are detected."""
     at = Atoms('H3', positions=[[0., 0., 0.],
                                 [1., 0., 0.],
                                 [3, 2.2, 5.2]])
 
-    # test if it works if no duplicates are detected.
     get_duplicate_atoms(at, delete=True)
     dups = get_duplicate_atoms(at)
 
