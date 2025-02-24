@@ -571,6 +571,10 @@ class BaseCalculator(GetPropertiesMixin):
     def name(self) -> str:
         return self._get_name()
 
+    def todict(self) -> dict[str, Any]:
+        """Obtain a dictionary of parameter information"""
+        return {}
+
 
 class Calculator(BaseCalculator):
     """Base-class for all ASE calculators.
