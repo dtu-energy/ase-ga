@@ -317,7 +317,8 @@ def parse_selection(selection, **kwargs):
             key = atomic_numbers[key]
             value = int(value)
         elif isinstance(value, str):
-            value = convert_str_to_int_float_bool_or_str(value)
+            if key != 'unique_id':
+                value = convert_str_to_int_float_bool_or_str(value)
         if key in numeric_keys and not isinstance(value, (int, float)):
             msg = 'Wrong type for "{}{}{}" - must be a number'
             raise ValueError(msg.format(key, op, value))
