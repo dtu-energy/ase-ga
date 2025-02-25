@@ -207,6 +207,85 @@ HEADER_DETAILED = """\
 """  # noqa: E501
 
 
+# Some XC functionals cannot be mapped by ASE to keywords; e.g. from Castep 25
+HEADER_PZ_LDA = """\
+ ************************************ Title ************************************
+ 
+
+ ***************************** General Parameters ******************************
+  
+ output verbosity                               : normal  (1)
+ write checkpoint data to                       : castep.check
+ type of calculation                            : single point energy
+ stress calculation                             : on
+ density difference calculation                 : off
+ electron localisation func (ELF) calculation   : off
+ Hirshfeld analysis                             : off
+ polarisation (Berry phase) analysis            : off
+ molecular orbital projected DOS                : off
+ deltaSCF calculation                           : off
+ unlimited duration calculation
+ timing information                             : on
+ memory usage estimate                          : on
+ write extra output files                       : on
+ write final potential to formatted file        : off
+ write final density to formatted file          : off
+ write BibTeX reference list                    : on
+ write OTFG pseudopotential files               : on
+ write electrostatic potential file             : on
+ write bands file                               : on
+ checkpoint writing                             : both castep_bin and check files
+ random number generator seed                   :  112211524
+
+ *********************** Exchange-Correlation Parameters ***********************
+  
+ using functional                               : Perdew-Zunger Local Density Approximation
+ DFT+D: Semi-empirical dispersion correction    : off
+
+ ************************* Pseudopotential Parameters **************************
+  
+ pseudopotential representation                 : reciprocal space
+ <beta|phi> representation                      : reciprocal space
+ spin-orbit coupling                            : off
+
+ **************************** Basis Set Parameters *****************************
+  
+ basis set accuracy                             : FINE
+ finite basis set correction                    : none
+
+ **************************** Electronic Parameters ****************************
+  
+ number of  electrons                           :  28.00    
+ net charge of system                           :  0.000    
+ treating system as non-spin-polarized
+ number of bands                                :         18
+
+ ********************* Electronic Minimization Parameters **********************
+  
+ Method: Treating system as metallic with density mixing treatment of electrons,
+         and number of  SD  steps               :          1
+         and number of  CG  steps               :          4
+  
+ total energy / atom convergence tol.           : 0.1000E-04   eV
+ eigen-energy convergence tolerance             : 0.1429E-06   eV
+ max force / atom convergence tol.              : ignored
+ periodic dipole correction                     : NONE
+
+ ************************** Density Mixing Parameters **************************
+  
+ density-mixing scheme                          : Pulay
+ max. length of mixing history                  :         20
+
+ *********************** Population Analysis Parameters ************************
+  
+ Population analysis with cutoff                :  3.000       A
+ Population analysis output                     : summary and pdos components
+
+ *******************************************************************************
+
+"""  # noqa: E501
+
+
 def test_header():
     """Test if the header blocks can be parsed correctly."""
     out = StringIO(HEADER)
@@ -241,6 +320,24 @@ def test_header_detailed():
         'elec_energy_tol': 1e-5,
         'elec_convergence_win': 3,
         'mixing_scheme': 'Broyden',
+    }
+    assert parameters == parameters_ref
+
+
+def test_header_castep25():
+    """Test if header block with unknown XC functional is parsed correctly"""
+    out = StringIO(HEADER_PZ_LDA)
+    parameters = _read_header(out)
+    parameters_ref = {
+        "task": "SinglePoint",
+        "iprint": 1,
+        "calculate_stress": True,
+        "xc_functional": "Perdew-Zunger Local Density Approximation",
+        "sedc_apply": False,
+        "basis_precision": "FINE",
+        "finite_basis_corr": 0,
+        "elec_energy_tol": 1e-5,
+        "mixing_scheme": "Pulay",
     }
     assert parameters == parameters_ref
 
