@@ -342,7 +342,7 @@ def _read_header(out: io.TextIOBase):
                 'hybrid B3LYP': 'B3LYP',
                 'hybrid HSE03': 'HSE03',
                 'hybrid HSE06': 'HSE06',
-                'RSCAN': 'RSCAN',                
+                'RSCAN': 'RSCAN',
             }
 
             # If the name is not recognised, use the whole string.
