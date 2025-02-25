@@ -56,6 +56,9 @@ def update(path: Path,
             dct[command].extend(arg for arg in args
                                 if arg.startswith('-'))
 
+        def add_argument_group(self, name):
+            return self
+
         def add_mutually_exclusive_group(self, required=False):
             return self
 
