@@ -246,6 +246,7 @@ def find_optimal_cell_shape(
     cell,
     target_size,
     target_shape,
+    target_length=None,
     lower_limit=-2,
     upper_limit=2,
     minimal_size=False,
@@ -315,9 +316,9 @@ def find_optimal_cell_shape(
                + f'Please select from {score_functions}.')
         raise SupercellError(msg)
 
-    scores = get_deviation_score(
-        operations @ cell,
-        target_shape)
+    scores = get_deviation_score(operations @ cell,
+                                 target_shape,
+                                 target_length=target_length)
 
     # obtain optimal transformation from scores
     optimal_P, best_score = _optimal_transformation(operations, scores, ideal_P)
