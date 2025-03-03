@@ -3,14 +3,13 @@ import itertools
 import numpy as np
 import pytest
 
-from ase.geometry.cell import cell_to_cellpar
 from ase.build import bulk
 from ase.build.supercells import (
-    find_optimal_cell_shape,
     all_score_func,
+    find_optimal_cell_shape,
     make_supercell,
 )
-
+from ase.geometry.cell import cell_to_cellpar
 
 sq2 = np.sqrt(2.0)
 
