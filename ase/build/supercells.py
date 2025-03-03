@@ -218,7 +218,7 @@ def _screen_supercell_size(operations, target_size, minimal_size=False):
     return operations
 
 
-def _optimal_transformation(operations, scores, ideal_P): 
+def _optimal_transformation(operations, scores, ideal_P):
 
     imin = np.argmin(scores)
     best_score = scores[imin]
@@ -238,7 +238,11 @@ def _optimal_transformation(operations, scores, ideal_P):
     if np.linalg.det(optimal_P) <= 0:
         optimal_P *= -1  # flip signs if negative determinant
 
-    return optimal_P
+    return optimal_P, best_score
+
+
+all_score_func = [get_deviation_from_optimal_cell_length,
+                  get_deviation_from_optimal_cell_shape]
 
 
 def find_optimal_cell_shape(
@@ -302,11 +306,13 @@ def find_optimal_cell_shape(
     # pre-screen operations based on target_size
     # minimal_size selects all non-zero operations smaller than target_size
     operations = _screen_supercell_size(operations, target_size,
-                                       minimal_size=minimal_size)
-    
+                                        minimal_size=minimal_size)
+
     # evaluate derivations of the screened supercells
-    if score_func in all_score_func:
-        get_deviation_score = globals()[score_func]
+    score_func_dict = {func.__name__: func for func in all_score_func}
+    score_functions = list(score_func_dict)
+    if score_func in score_functions:
+        get_deviation_score = score_func_dict[score_func]
     else:
         msg = (f'Score func {score_func} not implemented.'
                + f'Please select from {score_functions}.')
@@ -317,7 +323,7 @@ def find_optimal_cell_shape(
         target_shape)
 
     # obtain optimal transformation from scores
-    optimal_P = _optimal_transformation(operations, scores, ideal_P) 
+    optimal_P, best_score = _optimal_transformation(operations, scores, ideal_P)
 
     # Finalize.
     if verbose:

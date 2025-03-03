@@ -7,17 +7,12 @@ from ase.geometry.cell import cell_to_cellpar
 from ase.build import bulk
 from ase.build.supercells import (
     find_optimal_cell_shape,
-    get_deviation_from_optimal_cell_length,
-    get_deviation_from_optimal_cell_shape,
+    all_score_func,
     make_supercell,
 )
 
 
 sq2 = np.sqrt(2.0)
-
-
-all_score_func = [get_deviation_from_optimal_cell_length,
-                  get_deviation_from_optimal_cell_shape]
 
 
 @pytest.fixture()
@@ -154,18 +149,20 @@ def test_cell_metric_twice_larger_lattice_vector(cell, target_shape):
     # cell_length
     # (ai / a0) - 1.0
     # sqrt((1./cb2 - 1.)**2 + (1./cb2 - 1.)**2 + (2./cb2 - 1.)**2)
-    ref_score_length = np.sqrt(2.*(1./cb2 - 1.)**2 + (2./cb2 - 1.)**2)
+    dia1 = (1. / cb2 - 1.) ** 2
+    dia2 = (2. / cb2 - 1.) ** 2
+    ref_score_length = np.sqrt(2. * dia1 + dia2)
 
     # cell_shape
     # (a0 / ai) - 1.0
-    dia1 = np.abs(1./cb2**2 - 1.)
-    dia2 = np.abs(4./cb2**2 - 1.)
-    ang1 = np.abs(1./cb2**2/2. - 0.5)
-    ang2 = np.abs(1./cb2**2 - 0.5)
+    dia1 = np.abs(1. / cb2 ** 2 - 1.)
+    dia2 = np.abs(4. / cb2 ** 2 - 1.)
+    ang1 = np.abs(1. / cb2 ** 2 / 2. - 0.5)
+    ang2 = np.abs(1. / cb2 ** 2 - 0.5)
     ref_score_shape = {}
-    ref_score_shape['sc'] = 2.*dia1 + dia2
-    ref_score_shape['fcc'] = 2.*dia1 + dia2 + 2.*ang1 + 4.*ang2
-    
+    ref_score_shape['sc'] = 2. * dia1 + dia2
+    ref_score_shape['fcc'] = 2. * dia1 + dia2 + 2. * ang1 + 4. * ang2
+
     ref_scores = [ref_score_length, ref_score_shape[target_shape]]
 
     for score_func, ref_score in zip(all_score_func, ref_scores):
@@ -203,7 +200,7 @@ def test_cell_metric_negative_determinant(cell, target_shape):
     Test if `get_deviation_from_optimal_cell_shape` works for the cells with
     negative determinants.
     """
-    
+
     for score_func in all_score_func:
         cell_metric = score_func(cell, target_shape)
         assert np.isclose(cell_metric, 0.0)
@@ -249,7 +246,7 @@ def test_find_optimal_cell_shape(
     ([[0, 1, 1], [1, 0, 1], [1, 1, 0]], 'sc', 4,
      [[-1, 1, 1], [1, -1, 1], [1, 1, -1]]),
 ])
-def test_ideal_orientation(cell, target_shape, 
+def test_ideal_orientation(cell, target_shape,
                            target_size, sc_matrix_ref) -> None:
     """Test if the ideal orientation is selected among candidates."""
 
