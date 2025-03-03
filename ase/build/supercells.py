@@ -8,10 +8,6 @@ class SupercellError(Exception):
     """Use if construction of supercell fails"""
 
 
-all_score_func = ['get_deviation_from_optimal_cell_shape',
-                  'get_deviation_from_optimal_cell_length']
-
-
 def get_deviation_from_optimal_cell_shape(cell,
                                           target_shape="sc",
                                           target_length=None):
