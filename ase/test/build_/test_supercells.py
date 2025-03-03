@@ -7,13 +7,17 @@ from ase.geometry.cell import cell_to_cellpar
 from ase.build import bulk
 from ase.build.supercells import (
     find_optimal_cell_shape,
-    # get_deviation_from_optimal_cell_length,
+    get_deviation_from_optimal_cell_length,
     get_deviation_from_optimal_cell_shape,
     make_supercell,
 )
 
 
 sq2 = np.sqrt(2.0)
+
+
+all_score_func = [get_deviation_from_optimal_cell_length,
+                  get_deviation_from_optimal_cell_shape]
 
 
 @pytest.fixture()
@@ -117,20 +121,19 @@ def test_cell_metric_ideal(target_shape, cell):
 
     Test if `get_deviation_from_optimal_cell_shape` returns perfect scores
     (0.0) for the ideal cells.
-    Test also cell vectors with permutatation and elongation.
+    Test also cell vectors with permutation and elongation.
     """
 
-    # score_func = get_deviation_from_optimal_cell_length
-    score_func = get_deviation_from_optimal_cell_shape
+    for score_func in all_score_func:
 
-    cell = np.asarray(cell)
-    indices_permuted = itertools.permutations(range(3))
-    elongations = range(1, 4)
-    for perm, factor in itertools.product(indices_permuted, elongations):
-        permuted_cell = np.array([cell[i] * factor for i in perm])
-        cell_metric = score_func(permuted_cell, target_shape=target_shape)
+        cell = np.asarray(cell)
+        indices_permuted = itertools.permutations(range(3))
+        elongations = range(1, 4)
+        for perm, factor in itertools.product(indices_permuted, elongations):
+            permuted_cell = np.array([cell[i] * factor for i in perm])
+            cell_metric = score_func(permuted_cell, target_shape=target_shape)
 
-        assert np.isclose(cell_metric, 0.0)
+            assert np.isclose(cell_metric, 0.0)
 
 
 @pytest.mark.parametrize(
@@ -142,43 +145,50 @@ def test_cell_metric_ideal(target_shape, cell):
 def test_cell_metric_twice_larger_lattice_vector(cell, target_shape):
     """Test cell with a twice larger lattice vector than the others.
 
-    Test if `get_deviation_from_optimal_cell_shape` gives a correct value for
+    Test if score function gives a correct value for
     the cells that have a lattice vector twice longer than the others.
     """
 
     cb2 = np.cbrt(2.0)
 
+    # cell_length
     # (ai / a0) - 1.0
-    # score_func = get_deviation_from_optimal_cell_length
     # sqrt((1./cb2 - 1.)**2 + (1./cb2 - 1.)**2 + (2./cb2 - 1.)**2)
-    # ref_score = np.sqrt(2.*(1./cb2 - 1.)**2 + (2./cb2 - 1.)**2)
+    ref_score_length = np.sqrt(2.*(1./cb2 - 1.)**2 + (2./cb2 - 1.)**2)
 
+    # cell_shape
     # (a0 / ai) - 1.0
-    score_func = get_deviation_from_optimal_cell_shape
-    ref_score = np.sqrt(2. * (cb2 - 1.)**2 + (cb2 / 2. - 1.)**2)
+    dia1 = np.abs(1./cb2**2 - 1.)
+    dia2 = np.abs(4./cb2**2 - 1.)
+    ang1 = np.abs(1./cb2**2/2. - 0.5)
+    ang2 = np.abs(1./cb2**2 - 0.5)
+    ref_score_shape = {}
+    ref_score_shape['sc'] = 2.*dia1 + dia2
+    ref_score_shape['fcc'] = 2.*dia1 + dia2 + 2.*ang1 + 4.*ang2
+    
+    ref_scores = [ref_score_length, ref_score_shape[target_shape]]
 
-    score = score_func(cell, target_shape, angle_scale=0.0)
-
-    assert np.isclose(score, ref_score)
+    for score_func, ref_score in zip(all_score_func, ref_scores):
+        score = score_func(cell, target_shape)
+        assert np.isclose(score, ref_score)
 
 
 @pytest.mark.parametrize('target_shape', ['sc', 'fcc'])
 def test_multiple_cells(target_shape: str) -> None:
     """Test if multiple cells can be evaluated at one time."""
 
-    # score_func = get_deviation_from_optimal_cell_length
-    score_func = get_deviation_from_optimal_cell_shape
+    for score_func in all_score_func:
 
-    cells = np.array([
-        [[1, 0, 0], [0, 1, 0], [0, 0, 2]],
-        [[0, 1, 1], [1, 0, 1], [2, 2, 0]],
-    ])
-    metrics_separate = []
-    for i in range(cells.shape[0]):
-        metric = score_func(cells[i], target_shape)
-        metrics_separate.append(metric)
-    metrics_together = score_func(cells, target_shape)
-    np.testing.assert_allclose(metrics_separate, metrics_together)
+        cells = np.array([
+            [[1, 0, 0], [0, 1, 0], [0, 0, 2]],
+            [[0, 1, 1], [1, 0, 1], [2, 2, 0]],
+        ])
+        metrics_separate = []
+        for i in range(cells.shape[0]):
+            metric = score_func(cells[i], target_shape)
+            metrics_separate.append(metric)
+        metrics_together = score_func(cells, target_shape)
+        np.testing.assert_allclose(metrics_separate, metrics_together)
 
 
 @pytest.mark.parametrize(
@@ -193,12 +203,10 @@ def test_cell_metric_negative_determinant(cell, target_shape):
     Test if `get_deviation_from_optimal_cell_shape` works for the cells with
     negative determinants.
     """
-
-    # score_func = get_deviation_from_optimal_cell_length
-    score_func = get_deviation_from_optimal_cell_shape
-
-    cell_metric = score_func(cell, target_shape)
-    assert np.isclose(cell_metric, 0.0)
+    
+    for score_func in all_score_func:
+        cell_metric = score_func(cell, target_shape)
+        assert np.isclose(cell_metric, 0.0)
 
 
 @pytest.mark.parametrize('cell, target_shape, target_size, ref_cellpar', [
@@ -211,44 +219,41 @@ def test_find_optimal_cell_shape(
     """Test `find_optimal_cell_shape`.
 
     We test from sc to sc; from sc to fcc; and from fcc to sc."""
-    supercell_matrix = find_optimal_cell_shape(cell, target_size, target_shape,
-                                               lower_limit=-1, upper_limit=1)
+    for score_func in all_score_func:
 
-    # score_func = get_deviation_from_optimal_cell_length
-    score_func = get_deviation_from_optimal_cell_shape
+        sc_matrix = find_optimal_cell_shape(cell, target_size, target_shape,
+                                            score_func=score_func.__name__,
+                                            lower_limit=-1, upper_limit=1)
 
-    cell_metric = score_func(
-        supercell_matrix @ cell,
-        target_shape,
-    )
+        cell_metric = score_func(
+            sc_matrix @ cell,
+            target_shape,
+        )
 
-    sc = np.dot(supercell_matrix, cell)
-    sc_cellpar = cell_to_cellpar(sc)
-    cell_lengths = np.linalg.norm(np.dot(supercell_matrix, cell), axis=1)
+        sc = np.dot(sc_matrix, cell)
+        sc_cellpar = cell_to_cellpar(sc)
+        cell_lengths = np.linalg.norm(np.dot(sc_matrix, cell), axis=1)
 
-    if target_shape == 'fcc':
-        # old metrics is absolute metrics
-        assert np.isclose(cell_metric, 0.0)
-        assert np.allclose(cell_lengths, ref_cellpar)
-    elif target_shape == 'sc':
-        # new score is relative
-        assert np.allclose(sc_cellpar, ref_cellpar)
+        if target_shape == 'fcc':
+            # old metrics is absolute metrics
+            assert np.isclose(cell_metric, 0.0)
+            assert np.allclose(cell_lengths, ref_cellpar)
+        elif target_shape == 'sc':
+            # new score is relative
+            assert np.allclose(sc_cellpar, ref_cellpar)
 
 
-def test_ideal_orientation() -> None:
+@pytest.mark.parametrize('cell, target_shape, target_size, sc_matrix_ref', [
+    ([[1, 0, 0], [0, 1, 0], [0, 0, 1]], 'fcc', 2,
+     [[0, 1, 1], [1, 0, 1], [1, 1, 0]]),
+    ([[0, 1, 1], [1, 0, 1], [1, 1, 0]], 'sc', 4,
+     [[-1, 1, 1], [1, -1, 1], [1, 1, -1]]),
+])
+def test_ideal_orientation(cell, target_shape, 
+                           target_size, sc_matrix_ref) -> None:
     """Test if the ideal orientation is selected among candidates."""
 
-    cell = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-    target_size = 2
-    target_shape = 'fcc'
-    supercell_matrix_ref = [[0, 1, 1], [1, 0, 1], [1, 1, 0]]
-    supercell_matrix = find_optimal_cell_shape(cell, target_size, target_shape)
-    np.testing.assert_array_equal(supercell_matrix, supercell_matrix_ref)
-
-    cell = [[0, 1, 1], [1, 0, 1], [1, 1, 0]]
-    target_size = 4
-    target_shape = 'sc'
-    supercell_matrix_ref = [[-1, 1, 1], [1, -1, 1], [1, 1, -1]]
-    supercell_matrix = find_optimal_cell_shape(cell, target_size, target_shape)
-
-    np.testing.assert_array_equal(supercell_matrix, supercell_matrix_ref)
+    for score_func in all_score_func:
+        sc_matrix = find_optimal_cell_shape(cell, target_size, target_shape,
+                                            score_func=score_func.__name__)
+        np.testing.assert_array_equal(sc_matrix, sc_matrix_ref)
