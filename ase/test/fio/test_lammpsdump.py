@@ -92,6 +92,35 @@ def lammpsdump_single_atom():
     return factory
 
 
+@pytest.fixture()
+def lammpsdump_no_element():
+    def factory(bounds="pp pp pp",
+                position_cols="x y z",
+                have_id=True,
+                have_type=True,
+                have_mass=True):
+
+        _id = "id" if have_id else "unk1"
+        _type = "type" if have_type else "unk2"
+        _mass = "mass" if have_mass else "unk3"
+
+        buf = f"""\
+        ITEM: TIMESTEP
+        100
+        ITEM: NUMBER OF ATOMS
+        1
+        ITEM: BOX BOUNDS {bounds}
+        0.0e+00 4e+00
+        0.0e+00 5.0e+00
+        0.0e+00 2.0e+01
+        ITEM: ATOMS {_id} {_type} {_mass} {position_cols}
+        1 1 12 0.5 0.6 0.7
+        """
+        return buf
+
+    return factory
+
+
 def lammpsdump_headers():
     actual_magic = 'ITEM: TIMESTEP'
     yield actual_magic
@@ -125,6 +154,13 @@ def test_lammpsdump_single_atom(fmt, lammpsdump_single_atom):
     atoms = fmt.parse_atoms(lammpsdump_single_atom())
     assert np.all(atoms.get_atomic_numbers() == np.array([6]))
     assert pytest.approx(atoms.get_initial_charges()) == np.array([1.])
+
+
+def test_lammpsdump_no_element(fmt, lammpsdump_no_element):
+    # Test lammpsdump with no element column
+    atoms = fmt.parse_atoms(lammpsdump_no_element())
+    assert atoms.info['timestep'] == 100
+    assert np.all(atoms.get_chemical_symbols() == np.array(['C']))
 
 
 def test_lammpsdump_errors(fmt, lammpsdump):
