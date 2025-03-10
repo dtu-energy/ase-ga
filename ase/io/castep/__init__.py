@@ -29,6 +29,13 @@ from ase.parallel import paropen
 from ase.spacegroup import Spacegroup
 from ase.utils import atoms_to_spglib_cell, reader, writer
 
+from .geom_md_ts import (
+    read_castep_geom,
+    read_castep_md,
+    write_castep_geom,
+    write_castep_md,
+)
+
 units_ase = {
     'hbar': ase.units._hbar * ase.units.J,
     'Eh': ase.units.Hartree,
@@ -74,16 +81,17 @@ __all__ = [
     # routines for the generic io function
     'read_castep_castep',
     'read_castep_cell',
-    'read_geom',
     'read_castep_geom',
+    'read_castep_md',
     'read_phonon',
     'read_castep_phonon',
     # additional reads that still need to be wrapped
-    'read_md',
     'read_param',
     'read_seed',
     # write that is already wrapped
     'write_castep_cell',
+    'write_castep_geom',
+    'write_castep_md',
     # param write - in principle only necessary in junction with the calculator
     'write_param']
 
@@ -762,80 +770,6 @@ def read_castep_cell(fd, index=None, calculator_args={}, find_spg=False,
     return atoms
 
 
-def read_geom(filename, index=':', units=units_CODATA2002):
-    """
-    Wrapper function for the more generic read() functionality.
-
-    Note that this is function is intended to maintain backwards-compatibility
-    only. Keyword arguments will be passed to read_castep_geom().
-    """
-    from ase.io import read
-    return read(filename, index=index, format='castep-geom', units=units)
-
-
-def read_castep_geom(fd, index=None, units=units_CODATA2002):
-    """Reads a .geom file produced by the CASTEP GeometryOptimization task and
-    returns an atoms  object.
-    The information about total free energy and forces of each atom for every
-    relaxation step will be stored for further analysis especially in a
-    single-point calculator.
-    Note that everything in the .geom file is in atomic units, which has
-    been conversed to commonly used unit angstrom(length) and eV (energy).
-
-    Note that the index argument has no effect as of now.
-
-    Contribution by Wei-Bing Zhang. Thanks!
-
-    Routine now accepts a filedescriptor in order to out-source the gz and
-    bz2 handling to formats.py. Note that there is a fallback routine
-    read_geom() that behaves like previous versions did.
-    """
-    from ase.calculators.singlepoint import SinglePointCalculator
-
-    # fd is closed by embracing read() routine
-    txt = fd.readlines()
-
-    traj = []
-
-    Hartree = units['Eh']
-    Bohr = units['a0']
-
-    # Yeah, we know that...
-    # print('N.B.: Energy in .geom file is not 0K extrapolated.')
-    for i, line in enumerate(txt):
-        if line.find('<-- E') > 0:
-            start_found = True
-            energy = float(line.split()[0]) * Hartree
-            cell = [x.split()[0:3] for x in txt[i + 1:i + 4]]
-            cell = np.array([[float(col) * Bohr for col in row] for row in
-                             cell])
-        if line.find('<-- R') > 0 and start_found:
-            start_found = False
-            geom_start = i
-            for i, line in enumerate(txt[geom_start:]):
-                if line.find('<-- F') > 0:
-                    geom_stop = i + geom_start
-                    break
-            species = [line.split()[0] for line in
-                       txt[geom_start:geom_stop]]
-            geom = np.array([[float(col) * Bohr for col in
-                              line.split()[2:5]] for line in
-                             txt[geom_start:geom_stop]])
-            forces = np.array([[float(col) * Hartree / Bohr for col in
-                                line.split()[2:5]] for line in
-                               txt[geom_stop:geom_stop
-                                   + (geom_stop - geom_start)]])
-            image = ase.Atoms(species, geom, cell=cell, pbc=True)
-            image.calc = SinglePointCalculator(
-                atoms=image, energy=energy, forces=forces)
-            traj.append(image)
-
-    if index is None:
-        return traj
-    else:
-        return traj[index]
-
-
 def read_phonon(filename, index=None, read_vib_data=False,
                 gamma_only=True, frequency_factor=None,
                 units=units_CODATA2002):
@@ -963,166 +897,6 @@ def read_castep_phonon(fd, index=None, read_vib_data=False,
         return vibdata, atoms
     else:
         return atoms
-
-
-def read_md(filename, index=None, return_scalars=False,
-            units=units_CODATA2002):
-    """Wrapper function for the more generic read() functionality.
-
-    Note that this function is intended to maintain backwards-compatibility
-    only. For documentation see read_castep_md()
-    """
-    if return_scalars:
-        full_output = True
-    else:
-        full_output = False
-
-    from ase.io import read
-    return read(filename, index=index, format='castep-md',
-                full_output=full_output, return_scalars=return_scalars,
-                units=units)
-
-
-def read_castep_md(fd, index=None, return_scalars=False,
-                   units=units_CODATA2002):
-    """Reads a .md file written by a CASTEP MolecularDynamics task
-    and returns the trajectory stored therein as a list of atoms object.
-
-    Note that the index argument has no effect as of now."""
-
-    from ase.calculators.singlepoint import SinglePointCalculator
-
-    factors = {
-        't': units['t0'] * 1E15,     # fs
-        'E': units['Eh'],            # eV
-        'T': units['Eh'] / units['kB'],
-        'P': units['Eh'] / units['a0']**3 * units['Pascal'],
-        'h': units['a0'],
-        'hv': units['a0'] / units['t0'],
-        'S': units['Eh'] / units['a0']**3,
-        'R': units['a0'],
-        'V': np.sqrt(units['Eh'] / units['me']),
-        'F': units['Eh'] / units['a0']}
-
-    # fd is closed by embracing read() routine
-    lines = fd.readlines()
-
-    L = 0
-    while 'END header' not in lines[L]:
-        L += 1
-    l_end_header = L
-    lines = lines[l_end_header + 1:]
-    times = []
-    energies = []
-    temperatures = []
-    pressures = []
-    traj = []
-
-    # Initialization
-    time = None
-    Epot = None
-    Ekin = None
-    EH = None
-    temperature = None
-    pressure = None
-    symbols = None
-    positions = None
-    cell = None
-    velocities = None
-    symbols = []
-    positions = []
-    velocities = []
-    forces = []
-    cell = np.eye(3)
-    cell_velocities = []
-    stress = []
-
-    for (L, line) in enumerate(lines):
-        fields = line.split()
-        if len(fields) == 0:
-            if L != 0:
-                times.append(time)
-                energies.append([Epot, EH, Ekin])
-                temperatures.append(temperature)
-                pressures.append(pressure)
-                atoms = ase.Atoms(symbols=symbols,
-                                  positions=positions,
-                                  cell=cell)
-                atoms.set_velocities(velocities)
-                if len(stress) == 0:
-                    atoms.calc = SinglePointCalculator(
-                        atoms=atoms, energy=Epot, forces=forces)
-                else:
-                    atoms.calc = SinglePointCalculator(
-                        atoms=atoms, energy=Epot,
-                        forces=forces, stress=stress)
-                traj.append(atoms)
-            symbols = []
-            positions = []
-            velocities = []
-            forces = []
-            cell = []
-            cell_velocities = []
-            stress = []
-            continue
-        if len(fields) == 1:
-            time = factors['t'] * float(fields[0])
-            continue
-
-        if fields[-1] == 'E':
-            E = [float(x) for x in fields[0:3]]
-            Epot, EH, Ekin = (factors['E'] * Ei for Ei in E)
-            continue
-
-        if fields[-1] == 'T':
-            temperature = factors['T'] * float(fields[0])
-            continue
-
-        # only printed in case of variable cell calculation or calculate_stress
-        # explicitly requested
-        if fields[-1] == 'P':
-            pressure = factors['P'] * float(fields[0])
-            continue
-        if fields[-1] == 'h':
-            h = [float(x) for x in fields[0:3]]
-            cell.append([factors['h'] * hi for hi in h])
-            continue
-
-        # only printed in case of variable cell calculation
-        if fields[-1] == 'hv':
-            hv = [float(x) for x in fields[0:3]]
-            cell_velocities.append([factors['hv'] * hvi for hvi in hv])
-            continue
-
-        # only printed in case of variable cell calculation
-        if fields[-1] == 'S':
-            S = [float(x) for x in fields[0:3]]
-            stress.append([factors['S'] * Si for Si in S])
-            continue
-        if fields[-1] == 'R':
-            symbols.append(fields[0])
-            R = [float(x) for x in fields[2:5]]
-            positions.append([factors['R'] * Ri for Ri in R])
-            continue
-        if fields[-1] == 'V':
-            V = [float(x) for x in fields[2:5]]
-            velocities.append([factors['V'] * Vi for Vi in V])
-            continue
-        if fields[-1] == 'F':
-            F = [float(x) for x in fields[2:5]]
-            forces.append([factors['F'] * Fi for Fi in F])
-            continue
-
-    if index is None:
-        pass
-    else:
-        traj = traj[index]
-
-    if return_scalars:
-        data = [times, energies, temperatures, pressures]
-        return data, traj
-    else:
-        return traj
 
 
 # Routines that only the calculator requires
