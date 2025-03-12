@@ -17,6 +17,7 @@ from ase.calculators.calculator import Calculator, all_changes
 from ase.data import chemical_symbols
 from ase.neighborlist import NeighborList
 from ase.units import Bohr, Hartree
+from ase.stress import full_3x3_to_voigt_6_stress
 
 
 class EAM(Calculator):
@@ -233,8 +234,7 @@ Notes/Issues
 End EAM Interface Documentation
     """
 
-    implemented_properties = ['energy', 'free_energy', 'forces', 'stress',
-                              'stresses']
+    implemented_properties = ['energy', 'free_energy', 'forces', 'stress']
 
     default_parameters = dict(
         skin=1.0,
@@ -682,9 +682,7 @@ End EAM Interface Documentation
             self.update(self.atoms)
             self.calculate_energy(self.atoms)
 
-            if ('forces' in properties
-                    or 'stress' in properties
-                    or 'stresses' in properties):
+            if 'forces' in properties or 'stress' in properties:
                 self.calculate_forces(self.atoms)
 
         # check we have all the properties requested
@@ -693,7 +691,7 @@ End EAM Interface Documentation
                 if property == 'energy':
                     self.calculate_energy(self.atoms)
 
-                if property in ['forces', 'stresses', 'stress']:
+                if property in ['forces', 'stress']:
                     self.calculate_forces(self.atoms)
 
         # we need to remember the previous state of parameters
@@ -794,10 +792,7 @@ End EAM Interface Documentation
 
         self.update(atoms)
         self.results['forces'] = np.zeros((len(atoms), 3))
-        self.results['stresses'] = np.zeros((len(atoms), 3, 3))
-        self.results['stress'] = np.zeros((3, 3))
-
-        volume = self.atoms.get_volume()
+        stresses = np.zeros((len(atoms), 3, 3))
 
         for i in range(len(atoms)):  # this is the atom to be embedded
             neighbors, offsets = self.neighbors.get_neighbors(i)
@@ -836,9 +831,9 @@ End EAM Interface Documentation
                               self.d_electron_density[self.index[i]](rnuse)))
 
                 self.results['forces'][i] += np.dot(scale, urvec[nearest][use])
-                self.results['stresses'][i] += 0.5 * np.dot(
+                stresses[i] += np.dot(
                                 (scale[:,np.newaxis] * urvec[nearest][use]).T,
-                                rvec[nearest][use]) / volume
+                                rvec[nearest][use])
 
                 if self.form == 'adp':
                     adp_forces, adp_stresses = self.angular_forces(
@@ -852,9 +847,11 @@ End EAM Interface Documentation
                         j_index)
 
                     self.results['forces'][i] += adp_forces
-                    self.results['stresses'][i] += 0.5 / volume * adp_stresses
-
-        self.results['stress'] = np.sum(self.results['stresses'], axis=0)
+                    stresses[i] += adp_stresses
+        
+        if self.atoms.cell.rank == 3:
+            stress = 0.5 * np.sum(stresses, axis=0) / self.atoms.get_volume()
+            self.results['stress'] = full_3x3_to_voigt_6_stress(stress)
 
     def angular_forces(self, mu_i, mu, lam_i, lam, r, rvec, form1, form2):
         # calculate the extra components for the adp forces
