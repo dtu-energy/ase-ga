@@ -15,9 +15,9 @@ reStructuredText_ markup language.
 Installing Docutils and Sphinx
 ==============================
 
-.. highlight:: bash
+If you do:
 
-If you do::
+.. code-block:: console
 
     $ pip install sphinx_rtd_theme --user
 
@@ -38,7 +38,9 @@ reStructuredText_.
 If you don't already have your own copy of the ASE package, then read
 :ref:`here <contribute>` how to get everything set up.
 
-Then :command:`cd` to the :file:`doc` directory and build the html-pages::
+Then :command:`cd` to the :file:`doc` directory and build the HTML pages:
+
+.. code-block:: console
 
   $ cd ~/ase/doc
   $ make
@@ -53,7 +55,9 @@ This might take a long time the first time you do it.
 
 Create a branch for your work, make your changes to the ``.rst`` files, run
 :command:`make` again, check the results and if things
-look ok, create a *merge request*::
+look ok, create a *merge request*:
+
+.. code-block:: console
 
     $ git checkout -b fixdoc
     $ idle index.rst
