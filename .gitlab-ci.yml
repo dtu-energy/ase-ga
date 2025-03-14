@@ -63,21 +63,18 @@ pipinstall:
 # It would be better to install it for real, and for things to just work.
 main:
   image: registry.gitlab.com/ase/ase:ase-main
-
-  # We ignore a DeprecationWarning about --rsyncdir from pytest-xdist.
-  # This seems to be internal between pytest libs.
-  script:
+  before_script:
     - python --version
     - pip install --no-deps --editable .
     - ase info --calculators
     - cd $CI_PROJECT_DIR
+  script:
     - >
       ase test
       --calculators asap,ff,lj,morse,tip3p,tip4p
       --coverage --pytest --color=yes --durations 20 -v -r s
       --junit-xml=report.xml
-      -W "ignore:The --rsyncdir command line argument"
-      -W "ignore:NumPy will stop allowing conversion of out-of-bound Python integers"
+  after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-main
     - mv ase/test/.coverage coverage-main/coverage.dat
@@ -100,15 +97,16 @@ main:
 # Please make sure these tests are cheap.
 calculators-lite:
   image: registry.gitlab.com/ase/ase:ase-full-monty
-  script:
+  before_script:
     - pip install --no-deps --editable .
     - export ASE_CONFIG_PATH=/home/ase/aseconfig.ini
     - sed 's/binary = /command = /' -i /home/ase/aseconfig.ini
+  script:
     - >
       ase test calculator --calculators=auto --coverage
       --pytest -m calculator_lite --color=yes --durations=20 -v
       --junit-xml=report.xml -r s
-      -W "ignore:The --rsyncdir command line argument"
+  after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-calculators-lite
     - mv ase/test/.coverage coverage-calculators-lite/coverage.dat
@@ -134,15 +132,16 @@ calculators-lite:
 # It would be great if someone could enable more calculators with this.
 calculators:
   image: registry.gitlab.com/ase/ase:ase-full-monty
-  script:
+  before_script:
     - pip install --no-deps --editable .
     - export ASE_CONFIG_PATH=/home/ase/aseconfig.ini
     - sed 's/binary = /command = /' -i /home/ase/aseconfig.ini
     - ase info --calculators
+  script:
     - >
       ase test calculator --calculators abinit,asap,cp2k,dftb,espresso,gpaw,kim,lammpslib,lammpsrun,mopac,nwchem,octopus,siesta
       --coverage --pytest --color=yes --durations 20 --junit-xml=report.xml
-      -W "ignore:The --rsyncdir command line argument"
+  after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-calculators
     - mv ase/test/.coverage coverage-calculators/coverage.dat
