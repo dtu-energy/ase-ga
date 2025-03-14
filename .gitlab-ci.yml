@@ -37,9 +37,10 @@ oldlibs:
 # on dockerhub.
 pipinstall:
   image: python:3.11
-  script:
+  before_script:
     - python --version
     - pip install .[test]
+  script:
     - ase test --pytest --color=yes
   when: manual
 
