@@ -2,6 +2,7 @@
 
 variables:
   OMP_NUM_THREADS: "1"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
 
 stages:
   - test
@@ -15,12 +16,24 @@ stages:
 # on different codes, then complains.  So we use -j 0.
 oldlibs:
   image: registry.gitlab.com/ase/ase:ase-oldlibs
-  script:
+  before_script:
+    - pwd
+    - whoami
+    - >
+      pip install
+      numpy==1.19.5 scipy==1.6.0 matplotlib==3.3.4
+      pytest==7.0.0 attrs==20.3.0 pluggy==1.0.0 py==1.11.0 six==1.15.0
+      pytest-xdist==2.1.0 execnet==1.8.1 pytest-forked==1.4.0
     - pip install --no-deps .
+  script:
     - >
       ase test -j0 --pytest --color=yes
       -W "ignore:can't resolve package"
       -W ignore::PendingDeprecationWarning
+  cache:
+    key: oldlibs
+    paths:
+     - $PIP_CACHE_DIR
 
 
 # For testing newest versions of libraries against standard images
