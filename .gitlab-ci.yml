@@ -11,9 +11,6 @@ stages:
 
 # Check oldest supported Python with oldest supported libraries.
 # Does not install any optional libraries except matplotlib.
-#
-# With older python, pytest-xdist jumbles the tests differently
-# on different codes, then complains.  So we use -j 0.
 oldlibs:
   image: registry.gitlab.com/ase/ase:ase-oldlibs
   before_script:
@@ -27,7 +24,7 @@ oldlibs:
     - pip install --no-deps .
   script:
     - >
-      ase test -j0 --pytest --color=yes
+      ase test --pytest --color=yes
       -W "ignore:can't resolve package"
       -W ignore::PendingDeprecationWarning
   cache:
