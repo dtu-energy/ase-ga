@@ -3,7 +3,7 @@
 variables:
   OMP_NUM_THREADS: "1"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
-  PYTEST_ADDOPTS: "--color=yes --durations=20"
+  PYTEST_ADDOPTS: "--color=yes --durations=20 -r s"
 
 stages:
   - test
@@ -73,7 +73,7 @@ main:
     - >
       ase test
       --calculators asap,ff,lj,morse,tip3p,tip4p
-      --coverage --pytest -v -r s
+      --coverage --pytest -v
       --junit-xml=report.xml
   after_script:
     - coverage xml --data-file ase/test/.coverage
@@ -106,7 +106,7 @@ calculators-lite:
     - >
       ase test calculator --calculators=auto --coverage
       --pytest -m calculator_lite -v
-      --junit-xml=report.xml -r s
+      --junit-xml=report.xml
   after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-calculators-lite
