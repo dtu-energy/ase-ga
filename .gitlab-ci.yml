@@ -171,7 +171,7 @@ bleeding-edge:
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
   before_script:
-    - pip install --upgrade numpy scipy matplotlib spglib
+    - pip install --upgrade numpy scipy matplotlib
     - pip install --editable .[test]
     - pip freeze
   script:
