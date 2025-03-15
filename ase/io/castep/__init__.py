@@ -395,13 +395,13 @@ def read_freeform(fd):
     for i, l in enumerate(filelines):
 
         # Strip all comments, aka anything after a hash
-        L = re.split(r'[#!;]', l, 1)[0].strip()
+        L = re.split(r'[#!;]', l, maxsplit=1)[0].strip()
 
         if L == '':
             # Empty line... skip
             continue
 
-        lsplit = re.split(r'\s*[:=]*\s+', L, 1)
+        lsplit = re.split(r'\s*[:=]*\s+', L, maxsplit=1)
 
         if read_block:
             if lsplit[0].lower() == '%endblock':
