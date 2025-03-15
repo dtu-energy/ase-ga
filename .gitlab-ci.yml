@@ -3,6 +3,7 @@
 variables:
   OMP_NUM_THREADS: "1"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
+  PYTEST_ADDOPTS: "--color=yes --durations=20"
 
 stages:
   - test
@@ -35,7 +36,7 @@ oldlibs:
     - pip install --no-deps .
   script:
     - >
-      ase test --pytest --color=yes
+      ase test --pytest
       -W "ignore:can't resolve package"
       -W ignore::PendingDeprecationWarning
   cache:
@@ -52,7 +53,7 @@ pipinstall:
     - python --version
     - pip install .[test]
   script:
-    - ase test --pytest --color=yes
+    - ase test --pytest
   when: manual
 
 # This is the main test job using new versions of libraries.
@@ -72,7 +73,7 @@ main:
     - >
       ase test
       --calculators asap,ff,lj,morse,tip3p,tip4p
-      --coverage --pytest --color=yes --durations 20 -v -r s
+      --coverage --pytest -v -r s
       --junit-xml=report.xml
   after_script:
     - coverage xml --data-file ase/test/.coverage
@@ -104,7 +105,7 @@ calculators-lite:
   script:
     - >
       ase test calculator --calculators=auto --coverage
-      --pytest -m calculator_lite --color=yes --durations=20 -v
+      --pytest -m calculator_lite -v
       --junit-xml=report.xml -r s
   after_script:
     - coverage xml --data-file ase/test/.coverage
@@ -140,7 +141,7 @@ calculators:
   script:
     - >
       ase test calculator --calculators abinit,asap,cp2k,dftb,espresso,gpaw,kim,lammpslib,lammpsrun,mopac,nwchem,octopus,siesta
-      --coverage --pytest --color=yes --durations 20 --junit-xml=report.xml
+      --coverage --pytest --junit-xml=report.xml
   after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-calculators
@@ -175,9 +176,8 @@ bleeding-edge:
     - pip freeze
   script:
     - >
-      ase test --pytest --color=yes -m 'not slow'
+      ase test --pytest -m 'not slow'
       --ignore gui/ --ignore test_imports.py
-      --durations 20
   cache:
     paths:
       - $PIP_CACHE_DIR
@@ -216,10 +216,10 @@ distribution-package:
     - python setup.py sdist | tee dist/setup_sdist.log
     - python setup.py bdist_wheel | tee dist/setup_bdist_wheel.log
     - pip install dist/ase-*.tar.gz
-    - ase test --pytest --color=yes
+    - ase test --pytest
     - pip uninstall --yes ase
     - pip install dist/ase-*-py3-none-any.whl
-    - ase test --pytest --color=yes
+    - ase test --pytest
   artifacts:
     paths:
       - dist
@@ -299,7 +299,7 @@ coverage-combine:
     - >
       ase test
       --calculators eam,ff,lj,morse,tip3p,tip4p
-      --pytest --color=yes --durations 20
+      --pytest
       -W "ignore:The --rsyncdir command line argument"
       -W "ignore:NumPy will stop allowing conversion of out-of-bound Python integers"
   rules:
