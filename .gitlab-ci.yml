@@ -166,10 +166,11 @@ calculators:
      - $PIP_CACHE_DIR
 
 bleeding-edge:
-  image: python:3.12.4-alpine
+  image: python:3-alpine
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
   before_script:
+    - pip install --upgrade numpy scipy matplotlib spglib
     - pip install --editable .[test]
     - pip freeze
   script:
