@@ -51,7 +51,7 @@ pipinstall:
     - python --version
     - pip install .[test]
   script:
-    - ase test --pytest
+    - ase test
   when: manual
 
 # This is the main test job using new versions of libraries.
@@ -71,7 +71,7 @@ main:
     - >
       ase test
       --calculators asap,ff,lj,morse,tip3p,tip4p
-      --coverage --pytest -v
+      --coverage --pytest
       --junit-xml=report.xml
   after_script:
     - coverage xml --data-file ase/test/.coverage
@@ -103,7 +103,7 @@ calculators-lite:
   script:
     - >
       ase test calculator --calculators=auto --coverage
-      --pytest -m calculator_lite -v
+      --pytest -m calculator_lite
       --junit-xml=report.xml
   after_script:
     - coverage xml --data-file ase/test/.coverage
@@ -173,9 +173,7 @@ bleeding-edge:
     - pip install --editable .[test]
     - pip freeze
   script:
-    - >
-      ase test --pytest -m 'not slow'
-      --ignore gui/ --ignore test_imports.py
+    - ase test --pytest --ignore gui/ --ignore test_imports.py
   cache:
     paths:
       - $PIP_CACHE_DIR
@@ -214,10 +212,10 @@ distribution-package:
     - python setup.py sdist | tee dist/setup_sdist.log
     - python setup.py bdist_wheel | tee dist/setup_bdist_wheel.log
     - pip install dist/ase-*.tar.gz
-    - ase test --pytest
+    - ase test
     - pip uninstall --yes ase
     - pip install dist/ase-*-py3-none-any.whl
-    - ase test --pytest
+    - ase test
   artifacts:
     paths:
       - dist
@@ -291,7 +289,7 @@ coverage-combine:
     - refreshenv
     - python --version
     - python -m pip install --upgrade pip
-    - python -m pip install pytest pytest-mock
+    - python -m pip install pytest
     - python -m pip install .
   script:
     - >
