@@ -35,8 +35,7 @@ oldlibs:
       pytest-xdist==2.1.0 execnet==1.8.1 pytest-forked==1.4.0
     - pip install --no-deps .
   script:
-    - >
-      ase test
+    - ase test
   cache:
     key: oldlibs
     paths:
