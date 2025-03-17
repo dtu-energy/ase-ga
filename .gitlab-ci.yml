@@ -36,9 +36,7 @@ oldlibs:
     - pip install --no-deps .
   script:
     - >
-      ase test --pytest
-      -W "ignore:can't resolve package"
-      -W ignore::PendingDeprecationWarning
+      ase test
   cache:
     key: oldlibs
     paths:
