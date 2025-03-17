@@ -3,6 +3,7 @@
 variables:
   OMP_NUM_THREADS: "1"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
+  PYTEST_ADDOPTS: "--color=yes --durations=20 -r s"
 
 stages:
   - test
@@ -34,10 +35,7 @@ oldlibs:
       pytest-xdist==2.1.0 execnet==1.8.1 pytest-forked==1.4.0
     - pip install --no-deps .
   script:
-    - >
-      ase test --pytest --color=yes
-      -W "ignore:can't resolve package"
-      -W ignore::PendingDeprecationWarning
+    - ase test
   cache:
     key: oldlibs
     paths:
@@ -52,7 +50,7 @@ pipinstall:
     - python --version
     - pip install .[test]
   script:
-    - ase test --pytest --color=yes
+    - ase test
   when: manual
 
 # This is the main test job using new versions of libraries.
@@ -72,7 +70,7 @@ main:
     - >
       ase test
       --calculators asap,ff,lj,morse,tip3p,tip4p
-      --coverage --pytest --color=yes --durations 20 -v -r s
+      --coverage --pytest
       --junit-xml=report.xml
   after_script:
     - coverage xml --data-file ase/test/.coverage
@@ -104,8 +102,8 @@ calculators-lite:
   script:
     - >
       ase test calculator --calculators=auto --coverage
-      --pytest -m calculator_lite --color=yes --durations=20 -v
-      --junit-xml=report.xml -r s
+      --pytest -m calculator_lite
+      --junit-xml=report.xml
   after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-calculators-lite
@@ -140,7 +138,7 @@ calculators:
   script:
     - >
       ase test calculator --calculators abinit,asap,cp2k,dftb,espresso,gpaw,kim,lammpslib,lammpsrun,mopac,nwchem,octopus,siesta
-      --coverage --pytest --color=yes --durations 20 --junit-xml=report.xml
+      --coverage --pytest --junit-xml=report.xml
   after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-calculators
@@ -166,17 +164,15 @@ calculators:
      - $PIP_CACHE_DIR
 
 bleeding-edge:
-  image: python:3.12.4-alpine
+  image: python:3-alpine
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
   before_script:
+    - pip install --upgrade numpy scipy matplotlib
     - pip install --editable .[test]
     - pip freeze
   script:
-    - >
-      ase test --pytest --color=yes -m 'not slow'
-      --ignore gui/ --ignore test_imports.py
-      --durations 20
+    - ase test --pytest --ignore gui/ --ignore test_imports.py
   cache:
     paths:
       - $PIP_CACHE_DIR
@@ -215,10 +211,10 @@ distribution-package:
     - python setup.py sdist | tee dist/setup_sdist.log
     - python setup.py bdist_wheel | tee dist/setup_bdist_wheel.log
     - pip install dist/ase-*.tar.gz
-    - ase test --pytest --color=yes
+    - ase test
     - pip uninstall --yes ase
     - pip install dist/ase-*-py3-none-any.whl
-    - ase test --pytest --color=yes
+    - ase test
   artifacts:
     paths:
       - dist
@@ -292,13 +288,13 @@ coverage-combine:
     - refreshenv
     - python --version
     - python -m pip install --upgrade pip
-    - python -m pip install pytest pytest-mock
+    - python -m pip install pytest
     - python -m pip install .
   script:
     - >
       ase test
       --calculators eam,ff,lj,morse,tip3p,tip4p
-      --pytest --color=yes --durations 20
+      --pytest
       -W "ignore:The --rsyncdir command line argument"
       -W "ignore:NumPy will stop allowing conversion of out-of-bound Python integers"
   rules:
