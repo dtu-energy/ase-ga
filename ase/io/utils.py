@@ -171,12 +171,11 @@ class PlottingVariables:
         self.tags = None
         self.occs = None
 
-        try:
+        if 'occupancy' in atoms.info:
             self.occs = atoms.info['occupancy']
             self.tags = atoms.get_tags()
             self.frac_occ = True
-        except KeyError:
-            pass
+
 
         # colors
         self.colors = colors
@@ -273,7 +272,7 @@ class PlottingVariables:
         elif self.auto_image_plane_z == 'front_auto':
             offset[2] = bbox_auto[1, 2]
         else:
-            print('bad image plane setting')
+            raise ValueError(f'bad image plane setting {self.auto_image_plane_z!r}')
 
         # since we are moving the origin in the image plane (camera coordinates)
         self.offset += offset
