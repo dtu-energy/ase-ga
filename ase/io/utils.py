@@ -383,7 +383,7 @@ class PlottingVariables:
     def to_atom_positions(self, im_positions):
         """Converts image plane positions to atomic coordinates."""
         positions = ((im_positions + self.offset) /
-                     self.scale) @ (self.rotation.T)
+                     self.scale) @ self.rotation.T
         return positions
 
     def get_bbox_from_atoms(self, atoms, im_radii):

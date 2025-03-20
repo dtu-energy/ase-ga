@@ -3,7 +3,7 @@
 from ase import Atoms
 from ase.io.utils import PlottingVariables
 import numpy as np
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation
 import pytest
 
 
@@ -28,8 +28,8 @@ def atoms_in_cell():
 
 @pytest.fixture
 def random_rotation():
-    myrng = np.random.default_rng()
-    random_rotation = R.random(random_state=myrng)
+    myrng = np.random.default_rng(seed = 453)
+    random_rotation = Rotation.random(random_state=myrng)
     random_rotation_matrix = random_rotation.as_matrix()
 
     return random_rotation_matrix
