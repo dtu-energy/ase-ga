@@ -1,3 +1,5 @@
+# fmt: off
+
 """ Partly occupied Wannier functions
 
     Find the set of partly occupied Wannier functions using the method from
@@ -38,7 +40,7 @@ def lowdin(U, S=None):
        orthonormal matrix, but is more robust.
     """
 
-    L, s, R = np.linalg.svd(U, full_matrices=False)
+    L, _s, R = np.linalg.svd(U, full_matrices=False)
     U[:] = L @ R
 
 

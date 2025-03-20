@@ -1,3 +1,5 @@
+# fmt: off
+
 import copy
 import os
 import shlex
@@ -568,6 +570,10 @@ class BaseCalculator(GetPropertiesMixin):
     @property
     def name(self) -> str:
         return self._get_name()
+
+    def todict(self) -> dict[str, Any]:
+        """Obtain a dictionary of parameter information"""
+        return {}
 
 
 class Calculator(BaseCalculator):

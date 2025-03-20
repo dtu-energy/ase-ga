@@ -1,3 +1,5 @@
+# fmt: off
+
 """Helper functions for creating the most common surfaces and related tasks.
 
 The helper functions can create the most common low-index surfaces,
@@ -268,7 +270,7 @@ def add_vacuum(atoms, vacuum):
     atoms.set_cell(uc)
 
 
-def create_tags(size) -> np.array:
+def create_tags(size) -> np.ndarray:
     """ Function to create layer tags. """
     # tag atoms by layer
     # create blocks of descending integers of length size[0]*size[1]

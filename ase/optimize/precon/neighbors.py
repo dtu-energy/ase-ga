@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 from ase.constraints import FixAtoms
@@ -75,14 +77,14 @@ def estimate_nearest_neighbour_distance(atoms,
     phi = (1.0 + np.sqrt(5.0)) / 2.0  # Golden ratio
 
     # cell lengths and angles
-    a, b, c, alpha, beta, gamma = cell_to_cellpar(atoms.cell)
+    a, b, c, _alpha, _beta, _gamma = cell_to_cellpar(atoms.cell)
     extent = [a, b, c]
     # print('estimate_nearest_neighbour_distance(): extent=%r' % extent)
 
     while r_cut < 2.0 * max(extent):
         # print('estimate_nearest_neighbour_distance(): '
         #            'calling neighbour_list with r_cut=%.2f A' % r_cut)
-        i, j, rij, fixed_atoms = get_neighbours(
+        i, _j, rij, _fixed_atoms = get_neighbours(
             atoms, r_cut, self_interaction=True,
             neighbor_list=neighbor_list)
         if len(i) != 0:

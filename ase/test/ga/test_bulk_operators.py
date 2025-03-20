@@ -66,7 +66,7 @@ def test_bulk_operators(seed, tmp_path):
                                   cellbounds=cellbounds, use_tags=True,
                                   rng=rng)
 
-    a3, desc = pairing.get_new_individual([a1, a2])
+    a3, _desc = pairing.get_new_individual([a1, a2])
     cell = a3.get_cell()
     assert cellbounds.is_within_bounds(cell)
     assert not atoms_too_close(a3, blmin, use_tags=True)
@@ -94,7 +94,7 @@ def test_bulk_operators(seed, tmp_path):
         a = [a1, a2][i % 2]
         a3 = None
         while a3 is None:
-            a3, desc = mut.get_new_individual([a])
+            a3, _desc = mut.get_new_individual([a])
 
         cell = a3.get_cell()
         assert cellbounds.is_within_bounds(cell)

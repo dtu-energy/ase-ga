@@ -45,8 +45,8 @@ def setup_fixinternals():
 
 @pytest.mark.optimize()
 def test_fixinternals():
-    (atoms, constr, bond_def, target_bond, angle_def, target_angle,
-     dihedral_def, target_dihedral) = setup_fixinternals()
+    (atoms, constr, bond_def, target_bond, angle_def, _target_angle,
+     dihedral_def, _target_dihedral) = setup_fixinternals()
 
     opt = BFGS(atoms)
 
@@ -127,8 +127,8 @@ def test_combos():
 
 
 def test_index_shuffle():
-    (atoms, constr, bond_def, target_bond, angle_def, target_angle,
-     dihedral_def, target_dihedral) = setup_fixinternals()
+    (atoms, constr, _bond_def, _target_bond, _angle_def, _target_angle,
+     _dihedral_def, _target_dihedral) = setup_fixinternals()
 
     constr2 = copy.deepcopy(constr)
 
@@ -149,7 +149,7 @@ def test_index_shuffle():
 
 
 def test_combo_index_shuffle():
-    atoms, constr, bondcombo_def, target_bondcombo = setup_combos()
+    atoms, constr, _bondcombo_def, _target_bondcombo = setup_combos()
 
     # test no change, test constr.get_indices()
     answer = (1, 2, 3)

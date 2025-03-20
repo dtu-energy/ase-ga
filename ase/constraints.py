@@ -1,3 +1,5 @@
+# fmt: off
+
 """Constraints"""
 from typing import Sequence
 from warnings import warn
@@ -1168,7 +1170,7 @@ class FixInternals(FixConstraint):
 
         list_constraints = [r.ravel() for r in list_constraints]
         aa = np.column_stack(list_constraints)
-        (aa, bb) = np.linalg.qr(aa)
+        (aa, _bb) = np.linalg.qr(aa)
         # Projection
         hh = []
         for i, constraint in enumerate(self.constraints):

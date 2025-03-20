@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Reader for CP2Ks DCD_ALIGNED_CELL format and restart files.
 
@@ -153,7 +155,7 @@ class DCDImageIterator:
                               indices.start, indices.stop, indices.step)
         except ValueError:
             # Negative indices. Adjust slice to positive numbers.
-            dtype, natoms, nsteps, header_end = _read_metainfo(fd)
+            _dtype, _natoms, nsteps, _header_end = _read_metainfo(fd)
             indices_tuple = indices.indices(nsteps + 1)
             iterator = islice(self.ichunks(fd, self.ref_atoms, self.aligned),
                               *indices_tuple)

@@ -1,3 +1,5 @@
+# fmt: off
+
 import logging
 import re
 import warnings
@@ -713,7 +715,7 @@ def _read_zmatrix(zmatrix_contents, zmatrix_vars=None):
     (zmatrix_vars), and returns atom positions and symbols '''
     try:
         atoms = parse_zmatrix(zmatrix_contents, defs=zmatrix_vars)
-    except (ValueError, AssertionError) as e:
+    except (ValueError, RuntimeError) as e:
         raise ParseError("Failed to read Z-matrix from "
                          "Gaussian input file: ", e)
     except KeyError as e:

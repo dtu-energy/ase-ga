@@ -1,3 +1,5 @@
+# fmt: off
+
 import os
 import re
 
@@ -87,12 +89,17 @@ class VaspChargeDensity:
             self.augdiff = ''
             while True:
                 try:
-                    atoms = aiv.read_vasp(fd)
+                    atoms = aiv.read_vasp_configuration(fd)
                 except (KeyError, RuntimeError, ValueError):
                     # Probably an empty line, or we tried to read the
                     # augmentation occupancies in CHGCAR
                     break
+
+                # Note: We continue reading from the same file, and
+                # this relies on read_vasp() to read no more lines
+                # than it currently does.
                 fd.readline()
+
                 ngr = fd.readline().split()
                 ng = (int(ngr[0]), int(ngr[1]), int(ngr[2]))
                 chg = np.empty(ng)

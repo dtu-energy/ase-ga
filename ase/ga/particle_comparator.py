@@ -1,3 +1,5 @@
+# fmt: off
+
 """Comparators originally meant to be used with particles"""
 import numpy as np
 

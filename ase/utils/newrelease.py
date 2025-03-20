@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# fmt: off
+
 
 """Generate new release of ASE.
 
@@ -48,7 +50,6 @@ def git(cmd, error_ok=False):
 versionfile = Path(ase.__file__)
 
 ase_toplevel = versionfile.parent.parent
-pyproject = ase_toplevel / 'pyproject.toml'
 
 
 def get_version():
@@ -66,6 +67,9 @@ def main():
     p.add_argument('--clean', action='store_true',
                    help='delete release branch and tag')
     args = p.parse_args()
+
+    assert versionfile.name == '__init__.py'
+    assert ase_toplevel == Path.cwd()
 
     try:
         current_version = get_version()
@@ -90,6 +94,11 @@ def main():
 
     print(f'New release: {version}')
 
+    if shutil.which('scriv') is None:
+        p.error('No "scriv" command in PATH.  Is scriv installed?')
+
+    runcmd(f'scriv collect --add --title "Version {version}"')
+
     txt = git('status')
     branch = re.match(r'On branch (\S+)', txt).group(1)
 
@@ -112,11 +121,6 @@ def main():
         versionfile,
         pattern='__version__ = ',
         replacement=f"__version__ = '{version}'")
-
-    match_and_edit_version(
-        pyproject,
-        pattern='version = ',
-        replacement=f"version = '{version}'")
 
     releasenotes = ase_toplevel / 'doc/releasenotes.rst'
 
@@ -200,8 +204,7 @@ News
     print(f'Creating new release from branch {branch!r}')
     git(f'checkout -b {branchname}')
 
-    edited_paths = [versionfile, installdoc, pyproject,
-                    frontpage, releasenotes]
+    edited_paths = [versionfile, installdoc, frontpage, releasenotes]
 
     git('add {}'.format(' '.join(str(path) for path in edited_paths)))
     git(f'commit -m "ASE version {version}"')
@@ -242,8 +245,6 @@ News
 
 
 if __name__ == '__main__':
-    assert versionfile.name == '__init__.py'
-    assert ase_toplevel == Path.cwd()
     os.environ['LANGUAGE'] = 'C'
 
     main()

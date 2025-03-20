@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module defines an ASE interface to CRYSTAL14/CRYSTAL17
 
 http://www.crystal.unito.it/
@@ -269,7 +271,7 @@ class CRYSTAL(FileIOCalculator):
                 self.pcpot.crys_pcc = True
             else:
                 self.pcpot.manual_pc_correct()
-            e_coul, f_coul = self.pcpot.coulomb_corrections
+            e_coul, _f_coul = self.pcpot.coulomb_corrections
 
         energy = float(self.lines[index_energy].split()[pos_en]) * Hartree
         energy -= e_coul  # e_coul already in eV.
@@ -409,7 +411,7 @@ class PointChargePotential:
             self.read_pc_corrections()
         else:
             self.manual_pc_correct()
-        e_coul, f_coul = self.coulomb_corrections
+        _e_coul, f_coul = self.coulomb_corrections
 
         external_forces = []
         for n, line in enumerate(lines):

@@ -262,7 +262,7 @@ def test_integrate_forces(setup_images):
 
     neb = NEB(images)
     spline_points = 1000  # it is the default value
-    s, E, F = neb.integrate_forces(spline_points=spline_points)
+    _s, E, _F = neb.integrate_forces(spline_points=spline_points)
     # check the difference between initial and final images
     np.testing.assert_allclose(E[0] - E[-1],
                                forcefit.energies[0] - forcefit.energies[-1],

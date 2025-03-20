@@ -1,3 +1,5 @@
+# fmt: off
+
 '''
 Conversion of text from a Crystallographic Information File (CIF) format to
 unicode. CIF text is neither unicode nor bibtex/latex code.

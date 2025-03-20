@@ -1,3 +1,5 @@
+# fmt: off
+
 from math import pi, sqrt
 
 import numpy as np
@@ -55,7 +57,7 @@ class DOS:
 
         if width == 0.0:
             bzkpts = calc.get_bz_k_points()
-            size, offset = get_monkhorst_pack_size_and_offset(bzkpts)
+            size, _offset = get_monkhorst_pack_size_and_offset(bzkpts)
             bz2ibz = calc.get_bz_to_ibz_map()
             shape = (self.nspins,) + tuple(size) + (-1,)
             self.e_skn = self.e_skn[:, bz2ibz].reshape(shape)

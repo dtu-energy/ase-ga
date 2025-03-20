@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Execution of turbomole binaries and scripts:
 define, dscf, grad, ridft, rdgrad, aoforce, jobex, NumForce
@@ -24,6 +26,6 @@ def execute(args, input_str=''):
     with open(stdout_file, 'w') as stdout:
         proc = Popen(args, stdin=PIPE, stderr=PIPE, stdout=stdout,
                      encoding='ASCII')
-        stdout_txt, stderr_txt = proc.communicate(input=input_str)
+        _stdout_txt, stderr_txt = proc.communicate(input=input_str)
         check_bad_output(stderr_txt)
     return stdout_file

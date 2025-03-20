@@ -1,3 +1,5 @@
+# fmt: off
+
 """Minimum mode follower for finding saddle points in an unbiased way.
 
 There is, currently, only one implemented method: The Dimer method.
@@ -184,7 +186,7 @@ class DimerEigenmodeSearch:
 
                 # Rotate into the (hopefully) lowest eigenmode
                 # NYI Conjugate gradient rotation
-                n_min, dummy = rotate_vectors(n_A, rot_unit_A, rotangle)
+                n_min, _dummy = rotate_vectors(n_A, rot_unit_A, rotangle)
                 self.update_eigenmode(n_min)
 
                 # Store the curvature estimate instead of the old curvature

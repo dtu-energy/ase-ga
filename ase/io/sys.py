@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 IO support for the qb@ll sys format.
 
@@ -33,7 +35,7 @@ def read_sys(fileobj):
         line = fileobj.readline()
     while line:
         # The units column is ignored.
-        a, symlabel, spec, x, y, z = line.split()[0:6]
+        _a, symlabel, _spec, x, y, z = line.split()[0:6]
         positions.append([float(x) * Bohr, float(y) * Bohr,
                          float(z) * Bohr])
         sym = reg.split(str(symlabel))

@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.data import atomic_numbers, chemical_symbols, reference_states
 
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Function-like object creating triclinic lattices.
 
 The following lattice creator is defined:

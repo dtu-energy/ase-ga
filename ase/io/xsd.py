@@ -1,3 +1,5 @@
+# fmt: off
+
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
@@ -469,7 +471,7 @@ def write_xsd(fd, images, connectivity=None):
     if hasattr(images, 'get_positions'):
         images = [images]
 
-    XSD, ATR = _write_xsd_html(images, connectivity)
+    XSD, _ATR = _write_xsd_html(images, connectivity)
 
     # Return a pretty-printed XML string for the Element.
     rough_string = ET.tostring(XSD, 'utf-8')

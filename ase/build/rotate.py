@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 from ase.geometry import find_mic
@@ -87,7 +89,7 @@ def minimize_rotation_and_translation(target, atoms):
         # account for them?
 
         # is this the best form of *find_mic version to use?
-        dp_min, dp_len = find_mic(p - p0, cell=target.cell, pbc=target.pbc)
+        dp_min, _dp_len = find_mic(p - p0, cell=target.cell, pbc=target.pbc)
 
         # add displacement without net translation
         p = p0 + dp_min - np.mean(dp_min, axis=0)

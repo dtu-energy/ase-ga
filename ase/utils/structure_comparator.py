@@ -1,3 +1,5 @@
+# fmt: off
+
 """Determine symmetry equivalence of two structures.
 Based on the recipe from Comput. Phys. Commun. 183, 690-697 (2012)."""
 from collections import Counter

@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Implementation of the Precon abstract base class and subclasses
 """
@@ -1128,7 +1130,7 @@ class Exp_FF(Exp, FF):
         start_time = time.time()
         if self.apply_positions:
             # compute neighbour list
-            i_list, j_list, rij_list, fixed_atoms = get_neighbours(
+            i_list, j_list, rij_list, _fixed_atoms = get_neighbours(
                 atoms, self.r_cut, self.neighbor_list)
             self.logfile.write(
                 f'--- neighbour list created in {(time.time() - start_time)} s '

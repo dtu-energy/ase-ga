@@ -164,7 +164,7 @@ def test_metadyn(factory):
 def test_restart(factory):
     ins = setups()
     # first steps
-    _, res = run(factory, ins, name='restart')
+    _, _res = run(factory, ins, name='restart')
 
     # rest of steps with restart
     input, atoms1, timestep = setups()

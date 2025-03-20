@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# fmt: off
+
 """Bash completion for ase.
 
 Put this in your .bashrc::
@@ -73,10 +75,6 @@ commands = {
         ['--files', '-v', '--verbose', '--formats', '--calculators'],
     'nebplot':
         ['--nimages', '--share-x', '--share-y'],
-    'nomad-get':
-        [],
-    'nomad-upload':
-        ['-t', '--token', '-n', '--no-save-token', '-0', '--dry-run'],
     'reciprocal':
         [],
     'run':

@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 from collections import OrderedDict
 
@@ -212,7 +214,6 @@ def parse_gto_chunk(chunk):
     forces = None
     energy = None
     dipole = None
-    quadrupole = None
     for theory, pattern in _e_gto.items():
         matches = pattern.findall(chunk)
         if matches:
@@ -235,7 +236,7 @@ def parse_gto_chunk(chunk):
         forces *= Hartree / Bohr
         atoms = Atoms(symbols, positions=pos)
 
-    dipole, quadrupole = _get_multipole(chunk)
+    dipole, _quadrupole = _get_multipole(chunk)
 
     kpts = _get_gto_kpts(chunk)
 

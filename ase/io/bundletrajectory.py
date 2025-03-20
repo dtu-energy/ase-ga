@@ -1,3 +1,5 @@
+# fmt: off
+
 """bundletrajectory - a module for I/O from large MD simulations.
 
 The BundleTrajectory class writes trajectory into a directory with the
@@ -97,7 +99,7 @@ class BundleTrajectory:
         elif mode == 'w':
             self._open_write(atoms, backup, backend)
         elif mode == 'a':
-            self._open_append(atoms)
+            self._open_append(atoms, backend)
         else:
             raise ValueError('Unknown mode: ' + str(mode))
 
@@ -144,11 +146,13 @@ class BundleTrajectory:
         if atoms is None:
             atoms = self.atoms
 
+        # Handle NEB etc.  If atoms is just a normal Atoms object, it is used
+        # as-is.
         for image in atoms.iterimages():
             self._write_atoms(image)
 
     def _write_atoms(self, atoms):
-        # OK, it is a real atoms object.  Write it.
+        "Write a single atoms object to file."
         self._call_observers(self.pre_observers)
         self.log('Beginning to write frame ' + str(self.nframes))
         framedir = self._make_framedir(self.nframes)
@@ -340,7 +344,7 @@ class BundleTrajectory:
         data['constraint'] = smalldata['constraints']
         if self.subtype == 'split':
             self.backend.set_fragments(smalldata['fragments'])
-            self.atom_id, dummy = self.backend.read_split(framedir, 'ID')
+            self.atom_id, _dummy = self.backend.read_split(framedir, 'ID')
         else:
             self.atom_id = None
         atoms = Atoms(**data)
@@ -399,7 +403,7 @@ class BundleTrajectory:
         elif self.subtype == 'split':
             if self.datatypes[name] == 'once':
                 d, issplit = self.backend.read_split(f0, name)
-                atom_id, dummy = self.backend.read_split(f0, 'ID')
+                atom_id, _dummy = self.backend.read_split(f0, 'ID')
             else:
                 d, issplit = self.backend.read_split(f, name)
             if issplit:
@@ -412,6 +416,7 @@ class BundleTrajectory:
         return self.nframes
 
     def _open_log(self):
+        "Open the log file."
         if not (self.master or self.slavelog):
             return
         if self.master:
@@ -427,7 +432,15 @@ class BundleTrajectory:
             del self.logdata
 
     def _open_write(self, atoms, backup, backend):
-        "Open a bundle trajectory for writing."
+        """Open a bundle trajectory for writing.
+
+        Parameters:
+        atoms: Object to be written.
+        backup: (bool) Whether a backup is kept if file already exists.
+        backend: Which type of backend to use.
+
+        Note that the file name of the bundle is already stored as an attribute.
+        """
         self._set_backend(backend)
         self.logfile = None  # enable delayed logging
         self.atoms = atoms
@@ -503,11 +516,24 @@ class BundleTrajectory:
         self.backend.readpy2 = (self.pythonmajor == 2)
         self.state = 'read'
 
-    def _open_append(self, atoms):
+    def _open_append(self, atoms, backend):
+        """Open a trajectory for writing in append mode.
+
+        If there is no pre-existing bundle, it is just opened in write mode
+        instead.
+
+        Parameters:
+        atoms:  Object to be written.
+        backend:  The backend to be used if a new bundle is opened.  Ignored
+                  if we append to existing bundle, as the backend cannot be
+                  changed.
+
+        The filename is already stored as an attribute.
+        """
         if not os.path.exists(self.filename):
             # OK, no old bundle.  Open as for write instead.
             barrier()
-            self._open_write(atoms, False)
+            self._open_write(atoms, False, backend)
             return
         if not self.is_bundle(self.filename):
             raise OSError('Not a BundleTrajectory: ' + self.filename)
@@ -880,6 +906,9 @@ def read_bundletrajectory(filename, index=-1):
         frame).
     """
     traj = BundleTrajectory(filename, mode='r')
+    if isinstance(index, int):
+        yield traj[index]
+
     for i in range(*index.indices(len(traj))):
         yield traj[i]
 
@@ -982,11 +1011,6 @@ def print_bundletrajectory_info(filename):
             print(infoline)
 
 
-class PickleBundleBackend:
-    # Leave placeholder class so importing asap3 won't crash.
-    pass
-
-
 def main():
     import optparse
     parser = optparse.OptionParser(
@@ -994,7 +1018,7 @@ def main():
         'a.bundle [b.bundle ...]',
         description='Print information about '
         'the contents of one or more bundletrajectories.')
-    opts, args = parser.parse_args()
+    _opts, args = parser.parse_args()
     for name in args:
         print_bundletrajectory_info(name)
 

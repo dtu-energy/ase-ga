@@ -1,3 +1,5 @@
+# fmt: off
+
 from typing import IO, Any, Dict, List, Optional, Type, Union
 
 from numpy.linalg import norm

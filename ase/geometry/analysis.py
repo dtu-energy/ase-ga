@@ -1,3 +1,5 @@
+# fmt: off
+
 # flake8: noqa
 """Tools for analyzing instances of :class:`~ase.Atoms`
 """

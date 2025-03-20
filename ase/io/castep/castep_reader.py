@@ -1,3 +1,5 @@
+# fmt: off
+
 import io
 import re
 import warnings
@@ -324,9 +326,8 @@ def _read_header(out: io.TextIOBase):
             }[line.split(':')[-1].strip()]
 
         # Exchange-Correlation Parameters
-
         elif re.match(r'\susing functional\s*:', line):
-            parameters['xc_functional'] = {
+            functional_abbrevs = {
                 'Local Density Approximation': 'LDA',
                 'Perdew Wang (1991)': 'PW91',
                 'Perdew Burke Ernzerhof': 'PBE',
@@ -342,7 +343,16 @@ def _read_header(out: io.TextIOBase):
                 'hybrid HSE03': 'HSE03',
                 'hybrid HSE06': 'HSE06',
                 'RSCAN': 'RSCAN',
-            }[line.split(':')[-1].strip()]
+            }
+
+            # If the name is not recognised, use the whole string.
+            # This won't work in a new calculation, so will need to load from
+            # .param file in such cases... but at least it will fail rather
+            # than use the wrong XC!
+            _xc_full_name = line.split(':')[-1].strip()
+            parameters['xc_functional'] = functional_abbrevs.get(
+                _xc_full_name, _xc_full_name)
+
         elif 'DFT+D: Semi-empirical dispersion correction' in line:
             parameters['sedc_apply'] = _parse_on_off(line.split()[-1])
         elif 'SEDC with' in line:
@@ -484,7 +494,8 @@ def _read_stress(out: io.TextIOBase):
     results['stress'] = results['stress'].reshape(9)[[0, 4, 8, 5, 2, 1]]
     line = out.readline()
     if "Pressure:" in line:
-        results['pressure'] = float(line.split()[-2]) * units.GPa
+        results['pressure'] = float(
+            line.split()[-2]) * units.GPa  # type: ignore[assignment]
     return results
 
 

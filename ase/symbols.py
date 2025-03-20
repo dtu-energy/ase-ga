@@ -1,3 +1,5 @@
+# fmt: off
+
 import collections.abc
 import numbers
 import warnings

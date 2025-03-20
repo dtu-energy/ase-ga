@@ -1,3 +1,5 @@
+# fmt: off
+
 from pathlib import Path
 
 from ase.calculators.abc import GetOutputsMixin

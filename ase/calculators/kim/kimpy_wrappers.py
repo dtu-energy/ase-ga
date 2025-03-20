@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Wrappers that provide a minimal interface to kimpy methods and objects
 

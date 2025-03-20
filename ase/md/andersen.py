@@ -1,3 +1,5 @@
+# fmt: off
+
 """Andersen dynamics class."""
 from typing import IO, Optional, Union
 

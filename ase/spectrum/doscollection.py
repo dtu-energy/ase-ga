@@ -1,3 +1,5 @@
+# fmt: off
+
 import collections
 from functools import reduce, singledispatch
 from typing import (
@@ -395,7 +397,9 @@ class GridDOSCollection(DOSCollection):
         else:
             self._energies = np.asarray(energies)
 
-        self._weights = np.empty((len(dos_list), len(self._energies)), float)
+        self._weights: np.ndarray = np.empty(
+            (len(dos_list), len(self._energies)), float,
+        )
         self._info = []
 
         for i, dos_data in enumerate(dos_list):

@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Module for managing viewers
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 import os
 import re
 from glob import glob
@@ -307,7 +309,6 @@ def read_stress(fd):
             # Not a real value error.  What should we raise?
             raise ValueError('Line {!r} does not match stress pattern {!r}'
                              .format(line, pat))
-        s1, s2 = m.group(1, 2)
         stress[i] = float(m.group(1))
         stress[i + 3] = float(m.group(2))
     unit = Hartree / Bohr**3

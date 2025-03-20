@@ -1,3 +1,5 @@
+# fmt: off
+
 """Berendsen NVT dynamics class."""
 from typing import IO, Optional, Union
 

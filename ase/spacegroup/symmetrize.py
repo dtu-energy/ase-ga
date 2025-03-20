@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Provides utility functions for FixSymmetry class
 """
@@ -148,7 +150,7 @@ def _check_and_symmetrize_positions(atoms, *, symprec, **kwargs):
 
 
 def _symmetrize_positions(atoms, dataset, primitive_spglib_cell):
-    prim_cell, prim_scaled_pos, prim_types = primitive_spglib_cell
+    prim_cell, _prim_scaled_pos, _prim_types = primitive_spglib_cell
 
     # calculate offset between standard cell and actual cell
     std_cell = dataset.std_lattice

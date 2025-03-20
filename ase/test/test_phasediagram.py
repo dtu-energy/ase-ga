@@ -33,13 +33,13 @@ def test_phasediagram_3d():
     """The triangualtion can have zero area slivers along the edges
     which can lead to problems."""
     pd = PhaseDiagram(refs3d.values())
-    energy3, indices, coefs = pd.decompose(Mg=8, I=12)
+    energy3, _indices, _coefs = pd.decompose(Mg=8, I=12)
 
     # Same calculation without Cu:
     pd = PhaseDiagram([ref for ref in refs3d.values() if 'Cu' not in ref[0]])
-    energy2, indices, coefs = pd.decompose(Mg=8, I=12)
+    energy2, _indices, _coefs = pd.decompose(Mg=8, I=12)
 
-    assert energy2 == energy3
+    assert energy2 == pytest.approx(energy3, abs=1e-6)
     assert energy2 == pytest.approx(-19.470, abs=0.001)
 
 

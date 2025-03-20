@@ -6,28 +6,6 @@ import ase.units as units
 from ase import Atoms
 from ase.data import chemical_symbols
 
-nomad_api_template = ('https://labdev-nomad.esc.rzg.mpg.de/'
-                      'api/resolve/{hash}?format=recursiveJson')
-
-
-def nmd2https(uri):
-    """Get https URI corresponding to given nmd:// URI."""
-    assert uri.startswith('nmd://')
-    return nomad_api_template.format(hash=uri[6:])
-
-
-def download(uri):
-    """Download data at nmd:// URI as a NomadEntry object."""
-    try:
-        from urllib2 import urlopen
-    except ImportError:
-        from urllib.request import urlopen
-
-    httpsuri = nmd2https(uri)
-    response = urlopen(httpsuri)
-    txt = response.read().decode('utf8')
-    return json.loads(txt, object_hook=NomadEntry)
-
 
 def read(fd, _includekeys=lambda key: True):
     """Read NomadEntry object from file."""
@@ -71,13 +49,6 @@ def section_system_to_atoms(section):
         atoms.cell = cell
 
     return atoms
-
-
-def nomad_entry_to_images(section):
-    """Yield the images from a Nomad entry.
-
-    The entry must contain a section_run.
-    One atoms object will be yielded for each section_system."""
 
 
 class NomadEntry(dict):
@@ -128,15 +99,3 @@ class NomadEntry(dict):
                 if self.get('name') == 'calculation_context':
                     atoms.info['nomad_calculation_uri'] = self['uri']
                 yield atoms
-
-
-def main():
-    uri = "nmd://N9Jqc1y-Bzf7sI1R9qhyyyoIosJDs/C74RJltyQeM9_WFuJYO49AR4gKuJ2"
-    print(nmd2https(uri))
-    entry = download(uri)
-    from ase.visualize import view
-    view(list(entry.iterimages()))
-
-
-if __name__ == '__main__':
-    main()

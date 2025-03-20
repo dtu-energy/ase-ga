@@ -282,11 +282,8 @@ def test_cif():
     elements = np.unique(atoms_leg.get_atomic_numbers())
     for n in (11, 17, 53):
         assert n in elements
-    try:
-        atoms_leg.info['occupancy']
-        raise AssertionError
-    except KeyError:
-        pass
+
+    assert 'occupancy' not in atoms_leg.info
 
     cif_file = io.StringIO(content)
     # new behavior is to still not read the K atoms, but build info

@@ -25,12 +25,12 @@ def test_neighbor_kernel():
     assert (j == np.array([1, 0])).all()
     assert np.abs(d - np.array([np.sqrt(3 / 4), np.sqrt(3 / 4)])).max() < tol
 
+    rng = np.random.RandomState(42)
+
     # test_neighbor_list
     for pbc in [True, False, [True, False, True]]:
         a = ase.Atoms('4001C', cell=[29, 29, 29])
-        a.set_scaled_positions(np.transpose([np.random.random(len(a)),
-                                             np.random.random(len(a)),
-                                             np.random.random(len(a))]))
+        a.set_scaled_positions(rng.random((len(a), 3)))
         j, dr, i, abs_dr, shift = neighbor_list("jDidS", a, 1.85)
 
         assert (np.bincount(i) == np.bincount(j)).all()
@@ -50,9 +50,7 @@ def test_neighbor_kernel():
     # test_neighbor_list_atoms_outside_box
     for pbc in [True, False, [True, False, True]]:
         a = ase.Atoms('4001C', cell=[29, 29, 29])
-        a.set_scaled_positions(np.transpose([np.random.random(len(a)),
-                                             np.random.random(len(a)),
-                                             np.random.random(len(a))]))
+        a.set_scaled_positions(rng.random((len(a), 3)))
         a.set_pbc(pbc)
         a.positions[100, :] += a.cell[0, :]
         a.positions[200, :] += a.cell[1, :]
@@ -170,7 +168,7 @@ def test_neighbor_kernel():
                       cell=[(0.2, 1.2, 1.4),
                             (1.4, 0.1, 1.6),
                             (1.3, 2.0, -0.1)])
-    atoms.set_scaled_positions(3 * np.random.random((nat, 3)) - 1)
+    atoms.set_scaled_positions(3 * rng.random((nat, 3)) - 1)
 
     for p1 in range(2):
         for p2 in range(2):
@@ -180,7 +178,7 @@ def test_neighbor_kernel():
                     "ijdDS", atoms, atoms.numbers * 0.2 + 0.5)
                 c = np.bincount(i, minlength=len(atoms))
                 atoms2 = atoms.repeat((p1 + 1, p2 + 1, p3 + 1))
-                i2, j2, d2, D2, S2 = neighbor_list(
+                i2, j2, d2, _D2, _S2 = neighbor_list(
                     "ijdDS", atoms2, atoms2.numbers * 0.2 + 0.5)
                 c2 = np.bincount(i2, minlength=len(atoms))
                 c2.shape = (-1, nat)

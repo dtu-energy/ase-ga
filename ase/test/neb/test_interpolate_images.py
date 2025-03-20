@@ -50,7 +50,7 @@ def test_interpolate_images_fixed(images, initial, average_pos):
         image.set_constraint(FixAtoms([0]))
 
     # test raising a RuntimeError here
-    with pytest.raises(RuntimeError, match=r"Constraint\(s\) in image number"):
+    with pytest.raises(RuntimeError, match=r"Constraints in image "):
         interpolate(images)
 
     interpolate(images, apply_constraint=True)

@@ -1,3 +1,5 @@
+# fmt: off
+
 import argparse
 import textwrap
 from importlib import import_module
@@ -28,8 +30,6 @@ commands = [
     ('ulm', 'ase.cli.ulm'),
     ('find', 'ase.cli.find'),
     ('nebplot', 'ase.cli.nebplot'),
-    ('nomad-upload', 'ase.cli.nomad'),
-    ('nomad-get', 'ase.cli.nomadget'),
     ('convert', 'ase.cli.convert'),
     ('reciprocal', 'ase.cli.reciprocal'),
     ('completion', 'ase.cli.completion'),

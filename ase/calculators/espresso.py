@@ -1,3 +1,5 @@
+# fmt: off
+
 """Quantum ESPRESSO Calculator
 
 Run pw.x jobs.

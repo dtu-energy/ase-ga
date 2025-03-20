@@ -1,3 +1,5 @@
+# fmt: off
+
 import string
 
 import numpy as np

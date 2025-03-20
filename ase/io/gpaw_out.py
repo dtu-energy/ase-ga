@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 from typing import List, Tuple, Union
 
@@ -12,7 +14,7 @@ from ase.calculators.singlepoint import (
 
 def index_startswith(lines: List[str], string: str) -> int:
     for i, line in enumerate(lines):
-        if line.startswith(string):
+        if line.strip().startswith(string):
             return i
     raise ValueError
 
@@ -53,6 +55,14 @@ def read_stresses(lines: List[str],
 def read_gpaw_out(fileobj, index):  # -> Union[Atoms, List[Atoms]]:
     """Read text output from GPAW calculation."""
     lines = [line.lower() for line in fileobj.readlines()]
+
+    # read charge
+    try:
+        ii = index_startswith(lines, 'total charge:')
+    except ValueError:
+        q = None
+    else:
+        q = float(lines[ii].split()[2])
 
     blocks = []
     i1 = 0
@@ -151,11 +161,11 @@ def read_gpaw_out(fileobj, index):  # -> Union[Atoms, List[Atoms]]:
         # read Eigenvalues and occupations
         ii1 = ii2 = 1e32
         try:
-            ii1 = index_startswith(lines, ' band   eigenvalues  occupancy')
+            ii1 = index_startswith(lines, 'band   eigenvalues  occupancy')
         except ValueError:
             pass
         try:
-            ii2 = index_startswith(lines, ' band  eigenvalues  occupancy')
+            ii2 = index_startswith(lines, 'band  eigenvalues  occupancy')
         except ValueError:
             pass
         ii = min(ii1, ii2)
@@ -177,13 +187,6 @@ def read_gpaw_out(fileobj, index):  # -> Union[Atoms, List[Atoms]]:
                 kpts.append(SinglePointKPoint(1, 1, 0))
                 kpts[1].eps_n = vals[3]
                 kpts[1].f_n = vals[4]
-        # read charge
-        try:
-            ii = index_startswith(lines, 'total charge:')
-        except ValueError:
-            q = None
-        else:
-            q = float(lines[ii].split()[2])
         # read dipole moment
         try:
             ii = index_startswith(lines, 'dipole moment:')

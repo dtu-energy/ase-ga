@@ -2,56 +2,56 @@
 
 variables:
   OMP_NUM_THREADS: "1"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
 
 stages:
   - test
   - paperwork
   - deploy
 
-# Test a non-standard port (default is 3306) to prevent bugs like
-# https://gitlab.com/ase/ase/-/merge_requests/2789 from reoccuring
-# UPDATE: MYSQL_TCP_PORT does not work at all with gitlab-runner.
-# No matter what the variable is set to, it errors out.
-# Thus (temporarily?) disabled as of April 2023.
-.database-configuration:
-  variables:
-    POSTGRES_DB: testase
-    POSTGRES_USER: ase
-    POSTGRES_PASSWORD: "ase"
-    MYSQL_DATABASE: testase_mysql
-    MYSQL_ROOT_PASSWORD: ase
-    # MYSQL_TCP_PORT: 3306
-
-  services:
-    - postgres:latest
-    - mysql:latest
-    - mariadb:latest
+# This will ensure that only pipelines in master get to update the cache,
+# see https://docs.gitlab.com/ci/caching/
+# conditional-policy:
+#  rules:
+#    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+#      variables:
+#        POLICY: pull-push
+#    - if: $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
+#      variables:
+#        POLICY: pull
 
 # Check oldest supported Python with oldest supported libraries.
 # Does not install any optional libraries except matplotlib.
-#
-# With older python, pytest-xdist jumbles the tests differently
-# on different codes, then complains.  So we use -j 0.
 oldlibs:
   image: registry.gitlab.com/ase/ase:ase-oldlibs
-  extends: .database-configuration
-  script:
-    - pip install --no-deps .
+  before_script:
+    - pwd
+    - whoami
     - >
-      ase test -j0 --pytest --color=yes
+      pip install
+      numpy==1.19.5 scipy==1.6.0 matplotlib==3.3.4
+      pytest==7.0.0 attrs==20.3.0 pluggy==1.0.0 py==1.11.0 six==1.15.0
+      pytest-xdist==2.1.0 execnet==1.8.1 pytest-forked==1.4.0
+    - pip install --no-deps .
+  script:
+    - >
+      ase test --pytest --color=yes
       -W "ignore:can't resolve package"
       -W ignore::PendingDeprecationWarning
+  cache:
+    key: oldlibs
+    paths:
+     - $PIP_CACHE_DIR
 
 
 # For testing newest versions of libraries against standard images
 # on dockerhub.
 pipinstall:
   image: python:3.11
-  extends: .database-configuration
-  script:
+  before_script:
     - python --version
-    - pip install psycopg2-binary pymysql cryptography
     - pip install .[test]
+  script:
     - ase test --pytest --color=yes
   when: manual
 
@@ -63,39 +63,18 @@ pipinstall:
 # It would be better to install it for real, and for things to just work.
 main:
   image: registry.gitlab.com/ase/ase:ase-main
-  extends: .database-configuration
-  # Inheriting variables from the database-configuration job
-  # seems to be broken all of a sudden (gitlab-runner 13.0.1 and 13.3.1)
-  # We need to redefine them here then, otherwise gitlab-runner will fail
-  # those tests when run locally.  Meanwhile everything works on gitlab.com.
-  # Strange!
-  variables:
-    POSTGRES_DB: testase
-    POSTGRES_USER: ase
-    POSTGRES_PASSWORD: "ase"
-    MYSQL_DATABASE: testase_mysql
-    MYSQL_ROOT_PASSWORD: ase
-    # MYSQL_TCP_PORT: 3306
-
-  services:
-    - postgres:latest
-    - mysql:latest
-    - mariadb:latest
-
-  # We ignore a DeprecationWarning about --rsyncdir from pytest-xdist.
-  # This seems to be internal between pytest libs.
-  script:
+  before_script:
     - python --version
     - pip install --no-deps --editable .
     - ase info --calculators
     - cd $CI_PROJECT_DIR
+  script:
     - >
       ase test
       --calculators asap,ff,lj,morse,tip3p,tip4p
       --coverage --pytest --color=yes --durations 20 -v -r s
       --junit-xml=report.xml
-      -W "ignore:The --rsyncdir command line argument"
-      -W "ignore:NumPy will stop allowing conversion of out-of-bound Python integers"
+  after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-main
     - mv ase/test/.coverage coverage-main/coverage.dat
@@ -108,21 +87,26 @@ main:
         path: coverage.xml
       junit: ase/test/report.xml
     expire_in: 1 week
+  cache:
+    key: main
+    paths:
+     - $PIP_CACHE_DIR
 
 # Calculator integration tests which always run.
 # Encompasses those tests marked as @pytest.mark.calculator_lite.
 # Please make sure these tests are cheap.
 calculators-lite:
   image: registry.gitlab.com/ase/ase:ase-full-monty
-  script:
+  before_script:
     - pip install --no-deps --editable .
     - export ASE_CONFIG_PATH=/home/ase/aseconfig.ini
     - sed 's/binary = /command = /' -i /home/ase/aseconfig.ini
+  script:
     - >
       ase test calculator --calculators=auto --coverage
       --pytest -m calculator_lite --color=yes --durations=20 -v
       --junit-xml=report.xml -r s
-      -W "ignore:The --rsyncdir command line argument"
+  after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-calculators-lite
     - mv ase/test/.coverage coverage-calculators-lite/coverage.dat
@@ -135,6 +119,10 @@ calculators-lite:
         path: coverage.xml
       junit: ase/test/report.xml
     expire_in: 1 week
+  cache:
+    key: calculators
+    paths:
+     - $PIP_CACHE_DIR
 
 # Plan: Test as many calculators as possible as well as possible.
 # Obviously this is kind of expensive so the job is manually activated.
@@ -144,15 +132,16 @@ calculators-lite:
 # It would be great if someone could enable more calculators with this.
 calculators:
   image: registry.gitlab.com/ase/ase:ase-full-monty
-  script:
+  before_script:
     - pip install --no-deps --editable .
     - export ASE_CONFIG_PATH=/home/ase/aseconfig.ini
     - sed 's/binary = /command = /' -i /home/ase/aseconfig.ini
     - ase info --calculators
+  script:
     - >
       ase test calculator --calculators abinit,asap,cp2k,dftb,espresso,gpaw,kim,lammpslib,lammpsrun,mopac,nwchem,octopus,siesta
       --coverage --pytest --color=yes --durations 20 --junit-xml=report.xml
-      -W "ignore:The --rsyncdir command line argument"
+  after_script:
     - coverage xml --data-file ase/test/.coverage
     - mv ase/test/coverage-html coverage-calculators
     - mv ase/test/.coverage coverage-calculators/coverage.dat
@@ -170,6 +159,11 @@ calculators:
         path: coverage.xml
       junit: ase/test/report.xml
     expire_in: 1 week
+  cache:
+    key: calculators
+    policy: pull
+    paths:
+     - $PIP_CACHE_DIR
 
 bleeding-edge:
   image: python:3.12.4-alpine
@@ -180,24 +174,33 @@ bleeding-edge:
     - pip freeze
   script:
     - >
-      ase test -j0 --pytest --color=yes -m 'not slow'
+      ase test --pytest --color=yes -m 'not slow'
       --ignore gui/ --ignore test_imports.py
       --durations 20
   cache:
     paths:
       - $PIP_CACHE_DIR
-    key: $CI_PROJECT_ID
+    key: bleeding-edge
 
 
 doc:
   image: registry.gitlab.com/ase/ase:ase-main
-  script:
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache-doc"
+  before_script:
+    - pip install scriv
     - pip install --no-deps .[docs]
     - ase info
     - which sphinx-build
     - cd $CI_PROJECT_DIR/doc
+  script:
+    - scriv collect --keep || echo Not compiling changelog then  # Avoid error
     - python -m ase.utils.sphinx run # test scripts
     - sphinx-build -W . build
+  cache:
+    paths:
+      - $PIP_CACHE_DIR
+    key: doc
   artifacts:
     paths:
       - $CI_PROJECT_DIR/doc/build/
@@ -205,9 +208,10 @@ doc:
 
 distribution-package:
   image: registry.gitlab.com/ase/ase:ase-main
-  extends: .database-configuration
-  script:
+  before_script:
     - mkdir dist
+    - pip install setuptools
+  script:
     - python setup.py sdist | tee dist/setup_sdist.log
     - python setup.py bdist_wheel | tee dist/setup_bdist_wheel.log
     - pip install dist/ase-*.tar.gz
@@ -240,13 +244,22 @@ pages:
     - master
 
 lint:
-  image: registry.gitlab.com/ase/ase:ase-paperwork
+  image: python:3.12.4-alpine
+  before_script:
+    - pip install .[lint]
+    - pip freeze
   script:
-    - cd $CI_PROJECT_DIR
     - mypy --version
     - mypy --color-output -p ase
     - python -We:invalid -m compileall -f -q ase/
     - ruff check
+    - ruff format --check
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
+  cache:
+    paths:
+      - $PIP_CACHE_DIR
+    key: lint
 
 coverage-combine:
   image: registry.gitlab.com/ase/ase:ase-paperwork
@@ -267,7 +280,7 @@ coverage-combine:
       - coverage-html
     expire_in: 1 week
 
-windows_test:
+.windows_test:
   tags:
     - saas-windows-medium-amd64
   stage: test

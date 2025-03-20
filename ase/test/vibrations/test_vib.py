@@ -9,7 +9,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 try:
     from numpy.exceptions import ComplexWarning  # NumPy 2.0.0
 except ImportError:
-    from numpy import ComplexWarning
+    from numpy import ComplexWarning  # type: ignore[attr-defined,no-redef]
 
 import ase.io
 from ase import Atoms, units
@@ -368,7 +368,7 @@ def test_init(n2_data):
 
 
 def test_energies_and_modes(n2_data, n2_vibdata):
-    energies, modes = n2_vibdata.get_energies_and_modes()
+    energies, _modes = n2_vibdata.get_energies_and_modes()
     assert_array_almost_equal(n2_data['ref_frequencies'],
                               energies / units.invcm,
                               decimal=5)

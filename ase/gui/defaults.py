@@ -1,3 +1,5 @@
+# fmt: off
+
 """This is a module to handle generic ASE (gui) defaults ...
 
 ... from a ~/.ase/gui.py configuration file, if it exists. It is imported when

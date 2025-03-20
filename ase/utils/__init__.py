@@ -18,12 +18,32 @@ import numpy as np
 
 from ase.formula import formula_hill, formula_metal
 
-__all__ = ['basestring', 'import_module', 'seterr', 'plural',
-           'devnull', 'gcd', 'convert_string_to_fd', 'Lock',
-           'opencew', 'OpenLock', 'rotate', 'irotate', 'pbc2pbc', 'givens',
-           'hsv2rgb', 'hsv', 'pickleload', 'reader',
-           'formula_hill', 'formula_metal', 'PurePath', 'xwopen',
-           'tokenize_version', 'get_python_package_path_description']
+__all__ = [
+    'basestring',
+    'import_module',
+    'seterr',
+    'plural',
+    'devnull',
+    'gcd',
+    'convert_string_to_fd',
+    'Lock',
+    'opencew',
+    'OpenLock',
+    'rotate',
+    'irotate',
+    'pbc2pbc',
+    'givens',
+    'hsv2rgb',
+    'hsv',
+    'pickleload',
+    'reader',
+    'formula_hill',
+    'formula_metal',
+    'PurePath',
+    'xwopen',
+    'tokenize_version',
+    'get_python_package_path_description',
+]
 
 
 def tokenize_version(version_string: str):
@@ -52,7 +72,7 @@ pickleload = functools.partial(pickle.load, encoding='bytes')
 def deprecated(
     message: Union[str, Warning],
     category: Type[Warning] = FutureWarning,
-    callback: Callable[[List, Dict], bool] = lambda args, kwargs: True
+    callback: Callable[[List, Dict], bool] = lambda args, kwargs: True,
 ):
     """Return a decorator deprecating a function.
 
@@ -167,8 +187,9 @@ class DevNull:
     encoding = 'UTF-8'
     closed = False
 
-    _use_os_devnull = deprecated('use open(os.devnull) instead',
-                                 DeprecationWarning)
+    _use_os_devnull = deprecated(
+        'use open(os.devnull) instead', DeprecationWarning
+    )
     # Deprecated for ase-3.21.0.  Change to futurewarning later on.
 
     @_use_os_devnull
@@ -203,9 +224,11 @@ class DevNull:
 devnull = DevNull()
 
 
-@deprecated('convert_string_to_fd does not facilitate proper resource '
-            'management.  '
-            'Please use e.g. ase.utils.IOContext class instead.')
+@deprecated(
+    'convert_string_to_fd does not facilitate proper resource '
+    'management.  '
+    'Please use e.g. ase.utils.IOContext class instead.'
+)
 def convert_string_to_fd(name, world=None):
     """Create a file-descriptor for text output.
 
@@ -254,6 +277,7 @@ def opencew(filename, world=None):
 
 def _opencew(filename, world=None):
     import ase.parallel as parallel
+
     if world is None:
         world = parallel.world
 
@@ -408,31 +432,27 @@ def rotate(rotations, rotation=np.identity(3)):
     if rotations == '':
         return rotation.copy()
 
-    for i, a in [('xyz'.index(s[-1]), radians(float(s[:-1])))
-                 for s in rotations.split(',')]:
+    for i, a in [
+        ('xyz'.index(s[-1]), radians(float(s[:-1])))
+        for s in rotations.split(',')
+    ]:
         s = sin(a)
         c = cos(a)
         if i == 0:
-            rotation = np.dot(rotation, [(1, 0, 0),
-                                         (0, c, s),
-                                         (0, -s, c)])
+            rotation = np.dot(rotation, [(1, 0, 0), (0, c, s), (0, -s, c)])
         elif i == 1:
-            rotation = np.dot(rotation, [(c, 0, -s),
-                                         (0, 1, 0),
-                                         (s, 0, c)])
+            rotation = np.dot(rotation, [(c, 0, -s), (0, 1, 0), (s, 0, c)])
         else:
-            rotation = np.dot(rotation, [(c, s, 0),
-                                         (-s, c, 0),
-                                         (0, 0, 1)])
+            rotation = np.dot(rotation, [(c, s, 0), (-s, c, 0), (0, 0, 1)])
     return rotation
 
 
 def givens(a, b):
     """Solve the equation system::
 
-      [ c s]   [a]   [r]
-      [    ] . [ ] = [ ]
-      [-s c]   [b]   [0]
+    [ c s]   [a]   [r]
+    [    ] . [ ] = [ ]
+    [-s c]   [b]   [0]
     """
     sgn = np.sign
     if b == 0:
@@ -441,14 +461,14 @@ def givens(a, b):
         r = abs(a)
     elif abs(b) >= abs(a):
         cot = a / b
-        u = sgn(b) * (1 + cot**2)**0.5
-        s = 1. / u
+        u = sgn(b) * (1 + cot**2) ** 0.5
+        s = 1.0 / u
         c = s * cot
         r = b * u
     else:
         tan = b / a
-        u = sgn(a) * (1 + tan**2)**0.5
-        c = 1. / u
+        u = sgn(a) * (1 + tan**2) ** 0.5
+        c = 1.0 / u
         s = c * tan
         r = a * u
     return c, s, r
@@ -458,9 +478,11 @@ def irotate(rotation, initial=np.identity(3)):
     """Determine x, y, z rotation angles from rotation matrix."""
     a = np.dot(initial, rotation)
     cx, sx, rx = givens(a[2, 2], a[1, 2])
-    cy, sy, ry = givens(rx, a[0, 2])
-    cz, sz, rz = givens(cx * a[1, 1] - sx * a[2, 1],
-                        cy * a[0, 1] - sy * (sx * a[1, 1] + cx * a[2, 1]))
+    cy, sy, _ry = givens(rx, a[0, 2])
+    cz, sz, _rz = givens(
+        cx * a[1, 1] - sx * a[2, 1],
+        cy * a[0, 1] - sy * (sx * a[1, 1] + cx * a[2, 1]),
+    )
     x = degrees(atan2(sx, cx))
     y = degrees(atan2(-sy, cy))
     z = degrees(atan2(sz, cz))
@@ -499,7 +521,7 @@ def hsv2rgb(h, s, v):
     if s == 0:
         return v, v, v
 
-    i, f = divmod(h / 60., 1)
+    i, f = divmod(h / 60.0, 1)
     p = v * (1 - s)
     q = v * (1 - s * f)
     t = v * (1 - s * (1 - f))
@@ -520,8 +542,8 @@ def hsv2rgb(h, s, v):
         raise RuntimeError('h must be in [0, 360]')
 
 
-def hsv(array, s=.9, v=.9):
-    array = (array + array.min()) * 359. / (array.max() - array.min())
+def hsv(array, s=0.9, v=0.9):
+    array = (array + array.min()) * 359.0 / (array.max() - array.min())
     result = np.empty((len(array.flat), 3))
     for rgb, h in zip(result, array.flat):
         rgb[:] = hsv2rgb(h, s, v)
@@ -580,6 +602,7 @@ class iofunction:
                 if openandclose and fd is not None:
                     # fd may be None if open() failed
                     fd.close()
+
         return iofunc
 
 
@@ -596,9 +619,11 @@ def reader(func):
 # in ase.io.jsonio, but we'd rather import them from a 'basic' module
 # like ase/utils than one which triggers a lot of extra (cyclic) imports.
 
+
 def write_json(self, fd):
     """Write to JSON file."""
     from ase.io.jsonio import write_json as _write_json
+
     _write_json(fd, self)
 
 
@@ -606,6 +631,7 @@ def write_json(self, fd):
 def read_json(cls, fd):
     """Read new instance from JSON file."""
     from ase.io.jsonio import read_json as _read_json
+
     obj = _read_json(fd)
     assert isinstance(obj, cls)
     return obj
@@ -620,6 +646,7 @@ def jsonable(name):
     (such as ndarray, float, ...) or implement todict().  If the class
     defines a string called ase_objtype, the decoder will want to convert
     the object back into its original type when reading."""
+
     def jsonableclass(cls):
         cls.ase_objtype = name
         if not hasattr(cls, 'todict'):
@@ -633,6 +660,7 @@ def jsonable(name):
         cls.write = write_json
         cls.read = read_json
         return cls
+
     return jsonableclass
 
 
@@ -642,15 +670,21 @@ class ExperimentalFeatureWarning(Warning):
 
 def experimental(func):
     """Decorator for functions not ready for production use."""
+
     @functools.wraps(func)
     def expfunc(*args, **kwargs):
-        warnings.warn('This function may change or misbehave: {}()'
-                      .format(func.__qualname__),
-                      ExperimentalFeatureWarning)
+        warnings.warn(
+            'This function may change or misbehave: {}()'.format(
+                func.__qualname__
+            ),
+            ExperimentalFeatureWarning,
+        )
         return func(*args, **kwargs)
+
     return expfunc
 
 
+@deprecated('use functools.cached_property instead')
 def lazymethod(meth):
     """Decorator for lazy evaluation and caching of data.
 
@@ -664,7 +698,10 @@ def lazymethod(meth):
 
     The method body is only executed first time thing() is called, and
     its return value is stored.  Subsequent calls return the cached
-    value."""
+    value.
+
+    .. deprecated:: 3.25.0
+    """
     name = meth.__name__
 
     @functools.wraps(meth)
@@ -677,14 +714,17 @@ def lazymethod(meth):
         if name not in cache:
             cache[name] = meth(self)
         return cache[name]
+
     return getter
 
 
 def atoms_to_spglib_cell(atoms):
     """Convert atoms into data suitable for calling spglib."""
-    return (atoms.get_cell(),
-            atoms.get_scaled_positions(),
-            atoms.get_atomic_numbers())
+    return (
+        atoms.get_cell(),
+        atoms.get_scaled_positions(),
+        atoms.get_atomic_numbers(),
+    )
 
 
 def warn_legacy(feature_name):
@@ -692,16 +732,21 @@ def warn_legacy(feature_name):
         f'The {feature_name} feature is untested and ASE developers do not '
         'know whether it works or how to use it.  Please rehabilitate it '
         '(by writing unittests) or it may be removed.',
-        FutureWarning)
+        FutureWarning,
+    )
 
 
+@deprecated('use functools.cached_property instead')
 def lazyproperty(meth):
-    """Decorator like lazymethod, but making item available as a property."""
+    """Decorator like lazymethod, but making item available as a property.
+
+    .. deprecated:: 3.25.0
+    """
     return property(lazymethod(meth))
 
 
 class IOContext:
-    @lazyproperty
+    @functools.cached_property
     def _exitstack(self):
         return ExitStack()
 
@@ -724,8 +769,9 @@ class IOContext:
         encoding = None if mode.endswith('b') else 'utf-8'
 
         if file is None or comm.rank != 0:
-            return self.closelater(open(os.devnull, mode=mode,
-                                        encoding=encoding))
+            return self.closelater(
+                open(os.devnull, mode=mode, encoding=encoding)
+            )
 
         if file == '-':
             return sys.stdout
@@ -734,7 +780,8 @@ class IOContext:
 
 
 def get_python_package_path_description(
-        package, default='module has no path') -> str:
+    package, default='module has no path'
+) -> str:
     """Helper to get path description of a python package/module
 
     If path has multiple elements, the first one is returned.
@@ -749,4 +796,4 @@ def get_python_package_path_description(
         else:
             return default
     except Exception as ex:
-        return f"{default} ({ex})"
+        return f'{default} ({ex})'

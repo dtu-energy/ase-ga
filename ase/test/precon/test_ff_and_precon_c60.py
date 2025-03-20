@@ -39,7 +39,9 @@ def forcefield_params(atoms0):
     vdws = []
 
     # create neighbor list
-    i_list, j_list, d_list, fixed_atoms = get_neighbours(atoms=a, r_cut=cutoff)
+    i_list, j_list, _d_list, _fixed_atoms = get_neighbours(
+        atoms=a, r_cut=cutoff)
+
     for i, j in zip(i_list, j_list):
         neighbor_list[i].append(j)
     for neighbor in neighbor_list:

@@ -1,3 +1,5 @@
+# fmt: off
+
 # type: ignore
 """turbomole parameters management classes and functions"""
 

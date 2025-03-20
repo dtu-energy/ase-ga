@@ -80,7 +80,7 @@ def test_chain_operators(seed):
     for operator in [pairing, strainmut]:
         child = None
         while child is None:
-            child, desc = operator.get_new_individual(parents)
+            child, _desc = operator.get_new_individual(parents)
 
         assert not atoms_too_close(child, blmin, use_tags=use_tags)
         cell = child.get_cell()

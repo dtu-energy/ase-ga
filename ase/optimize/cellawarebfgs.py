@@ -1,3 +1,5 @@
+# fmt: off
+
 import time
 from typing import IO, Optional, Union
 
@@ -94,7 +96,7 @@ class CellAwareBFGS(BFGS):
     def converged(self, forces=None):
         if forces is None:
             forces = self.atoms.atoms.get_forces()
-        stress = self.atoms.atoms.get_stress()
+        stress = self.atoms.atoms.get_stress(voigt=False) * self.atoms.mask
         return np.max(np.sum(forces**2, axis=1))**0.5 < self.fmax and \
             np.max(np.abs(stress)) < self.smax
 
@@ -103,7 +105,7 @@ class CellAwareBFGS(BFGS):
         self.fmax = fmax
         self.smax = smax
         if steps is not None:
-            self.max_steps = steps
+            return Dynamics.run(self, steps=steps)
         return Dynamics.run(self)
 
     def log(self, forces=None):
@@ -112,7 +114,8 @@ class CellAwareBFGS(BFGS):
         fmax = (forces ** 2).sum(axis=1).max() ** 0.5
         e = self.optimizable.get_potential_energy()
         T = time.localtime()
-        smax = abs(self.atoms.atoms.get_stress()).max()
+        smax = abs(self.atoms.atoms.get_stress(voigt=False) *
+                   self.atoms.mask).max()
         volume = self.atoms.atoms.cell.volume
         if self.logfile is not None:
             name = self.__class__.__name__

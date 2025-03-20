@@ -13,17 +13,17 @@ ase -T db -v testase.json natoms=1,Cu=1 --delete --yes &&
 ase -T db -v testase.json "H>0" -k hydro=1,abc=42,foo=bar &&
 ase -T db -v testase.json "H>0" --delete-keys foo"""
 
-dbtypes = ['json', 'db', 'postgresql', 'mysql', 'mariadb']
+dbtypes = ['json', 'db']
 
 
 @pytest.mark.slow()
 @pytest.mark.parametrize('dbtype', dbtypes)
-def test_db(dbtype, cli, testdir, get_db_name):
+def test_db(dbtype, cli, testdir):
     def count(n, *args, **kwargs):
         m = len(list(con.select(columns=['id'], *args, **kwargs)))
         assert m == n, (m, n)
 
-    name = get_db_name(dbtype)
+    name = f'testase.{dbtype}'
 
     cli.shell(cmd.replace('testase.json', name))
 

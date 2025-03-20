@@ -1,3 +1,5 @@
+# fmt: off
+
 # VelocityDistributions.py -- set up a velocity distribution
 
 """Module for setting up velocity distributions such as Maxwell–Boltzmann.
@@ -113,7 +115,7 @@ def MaxwellBoltzmannDistribution(
         The atoms.  Their momenta will be modified.
 
     temp: float (deprecated)
-        The temperature in eV.  Deprecated, use temperature_K instead.
+        The temperature in eV.  Deprecated, use ``temperature_K`` instead.
 
     temperature_K: float
         The temperature in Kelvin.
@@ -131,7 +133,7 @@ def MaxwellBoltzmannDistribution(
     rng: Numpy RNG (optional)
         Random number generator.  Default: numpy.random
         If you would like to always get the identical distribution, you can
-        supply a random seed like `rng=numpy.random.RandomState(seed)`, where
+        supply a random seed like ``rng=numpy.random.RandomState(seed)``, where
         seed is an integer.
     """
     temp = units.kB * process_temperature(temp, temperature_K, 'eV')

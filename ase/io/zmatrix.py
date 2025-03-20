@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 from collections import namedtuple
 from numbers import Real
@@ -21,6 +23,12 @@ _ZMatrixRow = namedtuple(
 
 
 ThreeFloats = Union[Tuple[float, float, float], np.ndarray]
+
+
+def require(condition):
+    # (This is not good error handling, but it replaces assertions.)
+    if not condition:
+        raise RuntimeError('Internal requirement violated')
 
 
 class _ZMatrixToAtoms:
@@ -123,19 +131,19 @@ class _ZMatrixToAtoms:
         name = tokens[0]
         self.set_index(name)
         if len(tokens) == 1:
-            assert self.nrows == 0
+            require(self.nrows == 0)
             return name, np.zeros(3, dtype=float)
 
         ind1 = self.get_index(tokens[1])
         if ind1 == -1:
-            assert len(tokens) == 5
+            require(len(tokens) == 5)
             return name, np.array(list(map(self.get_var, tokens[2:])),
                                   dtype=float)
 
         dist = self.dconv * self.get_var(tokens[2])
 
         if len(tokens) == 3:
-            assert self.nrows == 1
+            require(self.nrows == 1)
             self.validate_indices(ind1)
             return name, np.array([dist, 0, 0], dtype=float)
 
@@ -143,7 +151,7 @@ class _ZMatrixToAtoms:
         a_bend = self.aconv * self.get_var(tokens[4])
 
         if len(tokens) == 5:
-            assert self.nrows == 2
+            require(self.nrows == 2)
             self.validate_indices(ind1, ind2)
             return name, _ZMatrixRow(ind1, dist, ind2, a_bend, None, None)
 

@@ -41,6 +41,7 @@ ase = 'ase.cli.main:main'
 docs = ['sphinx', 'sphinx_rtd_theme', 'pillow']
 test = ['pytest>=7.0.0', 'pytest-xdist>=2.1.0']
 spglib = ['spglib>=1.9']
+lint = ['mypy', 'ruff', 'coverage', 'types-docutils', 'types-PyMySQL', 'flake8']
 
 [tool.setuptools.package-data]
 ase = [
@@ -59,10 +60,10 @@ version = {attr = 'ase.__version__'}
 [tool.pytest.ini_options]
 testpaths = ['ase/test']
 markers = [
-    "calculator: parametrizes calculator tests with calculator factories",
-    "calculator_lite: for calculator tests; include in calculators-lite job",
-    "optimize: tests of optimizers",
-    "slow: test takes longer than a few seconds",
+    'calculator: parametrizes calculator tests with calculator factories',
+    'calculator_lite: for calculator tests; include in calculators-lite job',
+    'optimize: tests of optimizers',
+    'slow: test takes longer than a few seconds',
 ]
 
 [tool.mypy]
@@ -81,25 +82,25 @@ exclude_also = [
 
 [tool.ruff]
 line-length = 80
-exclude = ["./build/", "./dist", "./doc/build"]
-src = ["ase"]
+exclude = ['./build/', './dist', './doc/build']
+src = ['ase']
 
 [tool.ruff.format]
-quote-style = "single"
+quote-style = 'single'
 skip-magic-trailing-comma = false
+exclude = ['doc/*.py', 'ase/test/*.py']
 
 [tool.ruff.lint]
 preview = true  # necessary to activate many pycodestyle rules
 select = [
-    "F",  # Pyflakes
-    "E",  # pycodestyle
-    "W",  # pycodestyle
-    "I"   # isort
+    'F',  # Pyflakes
+    'E',  # pycodestyle
+    'W',  # pycodestyle
+    'I'   # isort
 ]
 ignore = [
-    "F841",  # unused-variable
-    "E741",  # ambiguous-variable-name
-    "W505",  # doc-line-too-long
+    'E741',  # ambiguous-variable-name
+    'W505',  # doc-line-too-long
 ]
 
 [tool.ruff.lint.pycodestyle]
@@ -107,8 +108,22 @@ max-line-length = 80
 max-doc-length = 80
 
 [tool.ruff.lint.pydocstyle]
-convention = "numpy"
+convention = 'numpy'
 
 [tool.ruff.lint.isort]
-known-first-party = ["ase"]
+known-first-party = ['ase']
 
+[tool.scriv]
+output_file = 'doc/changelog.rst'
+insert_marker = 'scriv-auto-changelog-start'
+end_marker = 'scriv-auto-changelog-end'
+categories = [
+    'I/O',
+    'Calculators',
+    'Optimizers',
+    'Molecular dynamics',
+    'GUI',
+    'Development',
+    'Other changes',
+    'Bugfixes'
+]

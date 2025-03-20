@@ -1,3 +1,5 @@
+# fmt: off
+
 # Copyright (C) 2010, Jesper Friis
 # (see accompanying license files for details).
 
@@ -428,29 +430,12 @@ def get_duplicate_atoms(atoms, cutoff=0.1, delete=False):
     Identify all atoms which lie within the cutoff radius of each other.
     Delete one set of them if delete == True.
     """
-    from scipy.spatial.distance import pdist
-    dists = pdist(atoms.get_positions(), 'sqeuclidean')
-    dup = np.nonzero(dists < cutoff**2)
-    rem = np.array(_row_col_from_pdist(len(atoms), dup[0]))
-    if delete:
-        if rem.size != 0:
-            del atoms[rem[:, 0]]
-    else:
-        return rem
-
-
-def _row_col_from_pdist(dim, i):
-    """Calculate the i,j index in the square matrix for an index in a
-    condensed (triangular) matrix.
-    """
-    i = np.array(i)
-    b = 1 - 2 * dim
-    x = (np.floor((-b - np.sqrt(b**2 - 8 * i)) / 2)).astype(int)
-    y = (i + x * (b + x + 2) / 2 + 1).astype(int)
-    if i.shape:
-        return list(zip(x, y))
-    else:
-        return [(x, y)]
+    dists = get_distances(atoms.positions, cell=atoms.cell, pbc=atoms.pbc)[1]
+    dup = np.argwhere(dists < cutoff)
+    dup = dup[dup[:, 0] < dup[:, 1]]  # indices at upper triangle
+    if delete and dup.size != 0:
+        del atoms[dup[:, 0]]
+    return dup
 
 
 def permute_axes(atoms, permutation):

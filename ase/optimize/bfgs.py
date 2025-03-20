@@ -1,3 +1,5 @@
+# fmt: off
+
 import warnings
 from typing import IO, Optional, Union
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 from typing import IO, Optional, Union
 
 import numpy as np

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Implementation of the cut-and-splice paring operator."""
 import numpy as np
 
@@ -469,7 +471,7 @@ class CutAndSplicePairing(OffspringCreator):
             c = a1.get_cell() if p.origin == 0 else a2.get_cell()
             pos = np.dot(p.scaled_positions, c)
             cop = np.dot(p.cop, c)
-            vectors, lengths = find_mic(pos - cop, c, pbc)
+            vectors, _lengths = find_mic(pos - cop, c, pbc)
             newcop = np.dot(p.cop, cell)
             pos = newcop + vectors
             for row in pos:

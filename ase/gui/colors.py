@@ -1,3 +1,5 @@
+# fmt: off
+
 """colors.py - select how to color the atoms in the GUI."""
 import numpy as np
 

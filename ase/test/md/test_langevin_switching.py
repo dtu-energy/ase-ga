@@ -19,7 +19,7 @@ def test_langevin_switching():
     dt = 10
 
     # for reproducibility
-    np.random.seed(42)
+    rng = np.random.RandomState(42)
 
     # setup atoms and calculators
     atoms = bulk('Al').repeat(size)
@@ -37,16 +37,18 @@ def test_langevin_switching():
     # switch_forward
     with SwitchLangevin(atoms, calc1, calc2, dt * units.fs,
                         temperature_K=T, friction=0.01,
-                        n_eq=n_steps, n_switch=n_steps) as dyn_forward:
-        MaxwellBoltzmannDistribution(atoms, temperature_K=2 * T)
+                        n_eq=n_steps, n_switch=n_steps,
+                        rng=rng) as dyn_forward:
+        MaxwellBoltzmannDistribution(atoms, temperature_K=2 * T, rng=rng)
         dyn_forward.run()
         dF_forward = dyn_forward.get_free_energy_difference() / len(atoms)
 
     # switch_backwards
     with SwitchLangevin(atoms, calc2, calc1, dt * units.fs,
                         temperature_K=T, friction=0.01,
-                        n_eq=n_steps, n_switch=n_steps) as dyn_backward:
-        MaxwellBoltzmannDistribution(atoms, temperature_K=2 * T)
+                        n_eq=n_steps, n_switch=n_steps,
+                        rng=rng) as dyn_backward:
+        MaxwellBoltzmannDistribution(atoms, temperature_K=2 * T, rng=rng)
         dyn_backward.run()
         dF_backward = -dyn_backward.get_free_energy_difference() / len(atoms)
 

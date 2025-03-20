@@ -1,3 +1,5 @@
+# fmt: off
+
 """Checkpointing and restart functionality for scripts using ASE Atoms objects.
 
 Initialize checkpoint object:
@@ -268,11 +270,9 @@ class CheckpointCalculator(Calculator):
         try:
             results = self.checkpoint.load(atoms)
             prev_atoms, results = results[0], results[1:]
-            try:
-                assert atoms_almost_equal(atoms, prev_atoms)
-            except AssertionError:
-                raise AssertionError('mismatch between current atoms and '
-                                     'those read from checkpoint file')
+            if not atoms_almost_equal(atoms, prev_atoms):
+                raise RuntimeError('mismatch between current atoms and '
+                                   'those read from checkpoint file')
             self.logfile.write('retrieved results for {} from checkpoint\n'
                                .format(properties))
             # save results in calculator for next time

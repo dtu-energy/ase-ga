@@ -1,3 +1,5 @@
+# fmt: off
+
 """Defines class/functions to write input and parse output for FHI-aims."""
 import os
 import re
@@ -1269,7 +1271,7 @@ class AimsOutCalcChunk(AimsOutChunk):
         """Parse the dielectric tensor from the aims.out file"""
         line_start = self.reverse_search_for(
             ["DFPT for dielectric_constant:--->",
-            "PARSE DFPT_dielectric_tensor"],
+             "PARSE DFPT_dielectric_tensor"],
         )
         if line_start == LINE_NOT_FOUND:
             return None
@@ -1344,8 +1346,6 @@ class AimsOutCalcChunk(AimsOutChunk):
         for a particular k-point is not present in the output file
         then set it to np.nan
         """
-
-        atoms = self._atoms
 
         line_start = self.reverse_search_for(["Writing Kohn-Sham eigenvalues."])
         if line_start == LINE_NOT_FOUND:

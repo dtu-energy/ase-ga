@@ -75,7 +75,8 @@ def test_supercell(sorted):
                   cell=[(0.2, 1.2, 1.4),
                         (1.4, 0.1, 1.6),
                         (1.3, 2.0, -0.1)])
-    atoms.set_scaled_positions(3 * np.random.random((10, 3)) - 1)
+    rng = np.random.RandomState(42)
+    atoms.set_scaled_positions(3 * rng.random((10, 3)) - 1)
 
     for p1 in range(2):
         for p2 in range(2):

@@ -1,3 +1,5 @@
+# fmt: off
+
 import os.path as op
 
 from ase.db.row import AtomsRow

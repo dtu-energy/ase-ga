@@ -1,3 +1,5 @@
+# fmt: off
+
 import warnings
 
 import numpy as np
@@ -202,7 +204,7 @@ class EquationOfState:
         self.func = globals()[self.eos_string]
 
         p0 = [min(self.e), 1, 1]
-        popt, pcov = curve_fit(parabola, self.v, self.e, p0)
+        popt, _pcov = curve_fit(parabola, self.v, self.e, p0)
 
         parabola_parameters = popt
         # Here I just make sure the minimum is bracketed by the volumes
@@ -231,7 +233,7 @@ class EquationOfState:
 
         # now fit the equation of state
         p0 = initial_guess
-        popt, pcov = curve_fit(self.func, self.v, self.e, p0)
+        popt, _pcov = curve_fit(self.func, self.v, self.e, p0)
 
         self.eos_parameters = popt
 

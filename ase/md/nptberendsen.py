@@ -1,3 +1,5 @@
+# fmt: off
+
 """Berendsen NPT dynamics class."""
 import warnings
 from typing import IO, Optional, Union

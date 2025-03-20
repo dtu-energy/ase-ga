@@ -1,3 +1,5 @@
+# fmt: off
+
 """Collection of helper function for LAMMPS* calculator
 """
 from .coordinatetransform import Prism

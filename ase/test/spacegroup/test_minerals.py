@@ -70,14 +70,14 @@ def test_mineral_symmetrization(datadir, mineral, rngseed):
 
     # Find a symmetry precision that recovers the original symmetry
     symprec = 1e-5
-    symatoms, dataset = get_symmetrized_atoms(atoms, symprec=symprec)
+    _symatoms, dataset = get_symmetrized_atoms(atoms, symprec=symprec)
     while dataset.number != mineral.spacegroup:
         if symprec > 0.5:
             raise ValueError('Could not recover original symmetry of the'
                              f'mineral {mineral.name}')
         symprec *= 1.2
         try:
-            symatoms, dataset = get_symmetrized_atoms(
+            _symatoms, dataset = get_symmetrized_atoms(
                 atoms, symprec=symprec, final_symprec=1e-5)
         except IntermediateDatasetError:
             continue

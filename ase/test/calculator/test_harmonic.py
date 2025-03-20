@@ -1,11 +1,7 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
-
-try:
-    from numpy import trapezoid  # NumPy 2.0.0
-except ImportError:
-    from numpy import trapz as trapezoid
+from scipy.integrate import trapezoid
 
 from ase import Atoms
 from ase.calculators.calculator import CalculationFailed, CalculatorSetupError

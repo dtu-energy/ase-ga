@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Module for parsing OUTCAR files.
 """
@@ -398,7 +400,9 @@ class Magmom(VaspChunkPropertyParser):
         idx = parts.index('magnetization') + 1
         magmom_lst = parts[idx:]
         if len(magmom_lst) != 1:
-            magmom = np.array(list(map(float, magmom_lst)))
+            magmom: Union[np.ndarray, float] = np.array(
+                list(map(float, magmom_lst))
+            )
         else:
             magmom = float(magmom_lst[0])
         return {'magmom': magmom}

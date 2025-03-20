@@ -1,3 +1,5 @@
+# fmt: off
+
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Sequence, Union

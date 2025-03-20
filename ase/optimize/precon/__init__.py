@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 This module contains tools for preconditioned geometry optimisation.
 

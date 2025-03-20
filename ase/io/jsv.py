@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 A module for reading and writing crystal structures from JSV
 See http://www.jcrystal.com/steffenweber/JAVA/JSV/jsv.html

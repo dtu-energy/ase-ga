@@ -1,3 +1,5 @@
+# fmt: off
+
 import time
 
 import numpy as np
@@ -314,7 +316,7 @@ minimize        1.0e-14 1.0e-5 100000 100000
                                       np.dot(offset, cell))
                 if dist > cut:
                     continue  # too far away
-                name, val = self.bonds.name_value(iname, jname)
+                name, _val = self.bonds.name_value(iname, jname)
                 if name is None:
                     if self.warnings:
                         print(f'Warning: potential {iname}-{jname} not found')
@@ -366,7 +368,7 @@ minimize        1.0e-14 1.0e-5 100000 100000
                                           atoms[k].position)
                     if dist > cut:
                         continue  # too far away
-                    name, val = self.angles.name_value(jname, iname,
+                    name, _val = self.angles.name_value(jname, iname,
                                                        kname)
                     if name is None:
                         if self.warnings > 1:
@@ -421,7 +423,7 @@ minimize        1.0e-14 1.0e-5 100000 100000
                                       np.dot(offsetl, cell))
                 if dist > cut:
                     continue  # too far away
-                name, val = self.dihedrals.name_value(lname, iname,
+                name, _val = self.dihedrals.name_value(lname, iname,
                                                       jname, kname)
                 if name is None:
                     continue  # don't have it
@@ -440,7 +442,7 @@ minimize        1.0e-14 1.0e-5 100000 100000
                                       np.dot(offsetl, cell))
                 if dist > cut:
                     continue  # too far away
-                name, val = self.dihedrals.name_value(iname, jname,
+                name, _val = self.dihedrals.name_value(iname, jname,
                                                       kname, lname)
                 if name is None:
                     continue  # don't have it

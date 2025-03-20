@@ -1,3 +1,5 @@
+# fmt: off
+
 """Helper functions for Flask WSGI-app."""
 from typing import Dict, List, Optional, Tuple
 

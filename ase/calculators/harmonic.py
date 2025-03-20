@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 from numpy.linalg import eigh, norm, pinv
 from scipy.linalg import lstsq  # performs better than numpy.linalg.lstsq

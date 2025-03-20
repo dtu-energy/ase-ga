@@ -1,3 +1,5 @@
+# fmt: off
+
 import warnings
 from math import acos, pi, sqrt
 
@@ -87,8 +89,8 @@ class Status:  # Status is used as a mixin in GUI
             if charges.any():
                 text += _(' q={:1.2f}'.format(
                     charges[indices][0]))
-            haveit = ['numbers', 'positions', 'forces', 'momenta',
-                      'initial_charges', 'initial_magmoms']
+            haveit = {'numbers', 'positions', 'forces', 'momenta',
+                      'initial_charges', 'initial_magmoms', 'tags'}
             for key in atoms.arrays:
                 if key not in haveit:
                     val = atoms.get_array(key)[indices[0]]

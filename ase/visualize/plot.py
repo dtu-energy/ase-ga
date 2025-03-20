@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.io.utils import PlottingVariables, make_patch_list
 
 

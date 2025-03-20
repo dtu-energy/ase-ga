@@ -1,9 +1,5 @@
 import numpy as np
-
-try:
-    from numpy import trapezoid  # NumPy 2.0.0
-except ImportError:
-    from numpy import trapz as trapezoid
+from scipy.integrate import trapezoid
 
 from ase.dft.dos import DOS
 from ase.dft.kpoints import monkhorst_pack

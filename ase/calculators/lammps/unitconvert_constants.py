@@ -1,3 +1,5 @@
+# fmt: off
+
 # The following definitions are all given in SI and are excerpted from the
 # kim_units.cpp file created by Prof. Ellad B. Tadmor (UMinn) distributed with
 # LAMMPS. Note that these values do not correspond to any official CODATA set

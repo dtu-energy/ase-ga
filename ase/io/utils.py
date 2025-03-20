@@ -1,5 +1,5 @@
+# fmt: off
 import numpy as np
-from math import sqrt
 from itertools import islice
 from typing import IO
 
@@ -434,7 +434,7 @@ def cell_to_lines(writer, cell):
     nlines = 0
     nsegments = []
     for c in range(3):
-        d = sqrt((cell[c]**2).sum())
+        d = np.sqrt((cell[c]**2).sum())
         n = max(2, int(d / 0.3))
         nsegments.append(n)
         nlines += 4 * n

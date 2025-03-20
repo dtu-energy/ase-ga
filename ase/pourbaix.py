@@ -1,3 +1,5 @@
+# fmt: off
+
 import functools
 import re
 from collections import Counter
@@ -776,8 +778,9 @@ class PourbaixDiagram:
             ax):
         """Backend for drawing Pourbaix diagrams."""
 
+        meta = self.meta.copy()
         if normalize:
-            meta = self.meta / self.pbx.material.natoms
+            meta /= self.pbx.material.natoms
             cbarlabel = r'$\Delta G_{pbx}$ (eV/atom)'
         else:
             cbarlabel = r'$\Delta G_{pbx}$ (eV)'
@@ -798,7 +801,7 @@ class PourbaixDiagram:
             vmax = cap
 
         colorplot = ax.imshow(
-            self.meta, cmap=cmap,
+            meta, cmap=cmap,
             extent=extent,
             vmin=vmin, vmax=vmax,
             origin='lower', aspect='auto',
@@ -927,7 +930,7 @@ class PourbaixDiagram:
 
         fig = ax.get_figure()
 
-        colorbar = self._draw_diagram_axes(
+        self._draw_diagram_axes(
             cap,
             normalize,
             include_text,

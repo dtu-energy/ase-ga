@@ -33,14 +33,15 @@ being true if the atom should be kept visible.
 
 Example of use::
 
-  >>> from ase import Atoms, Filter
+  >>> from ase import Atoms
+  >>> from ase.filters import Filter
   >>> atoms=Atoms(positions=[[ 0    , 0    , 0],
   ...                        [ 0.773, 0.600, 0],
   ...                        [-0.773, 0.600, 0]],
   ...             symbols='OH2')
   >>> f1 = Filter(atoms, indices=[1, 2])
   >>> f2 = Filter(atoms, mask=[0, 1, 1])
-  >>> f3 = Filter(atoms, mask=[a.Z == 1 for a in atoms])
+  >>> f3 = Filter(atoms, mask=[a.z == 1 for a in atoms])
   >>> f1.get_positions()
   [[ 0.773  0.6    0.   ]
    [-0.773  0.6    0.   ]]

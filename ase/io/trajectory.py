@@ -1,3 +1,5 @@
+# fmt: off
+
 """Trajectory"""
 import contextlib
 import io
@@ -497,7 +499,7 @@ def main():
                                    description='Convert old trajectory '
                                    'file(s) to new format. '
                                    'The old file is kept as a1.traj.old.')
-    opts, args = parser.parse_args()
+    _opts, args = parser.parse_args()
     for name in args:
         convert(name)
 

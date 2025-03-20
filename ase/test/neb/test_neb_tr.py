@@ -66,7 +66,7 @@ def test_neb_tr(testdir):
         images = neb.images
 
         nebtools = NEBTools(images)
-        Ef_neb, dE_neb = nebtools.get_barrier(fit=False)
+        Ef_neb, _dE_neb = nebtools.get_barrier(fit=False)
         nsteps_neb = qn.nsteps
         if remove_rotation_and_translation:
             Ef_neb_0 = Ef_neb

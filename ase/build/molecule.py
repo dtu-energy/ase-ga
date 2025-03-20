@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.atoms import Atoms
 from ase.collections import g2
 

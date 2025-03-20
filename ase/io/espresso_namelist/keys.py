@@ -1,3 +1,5 @@
+# fmt: off
+
 pw_keys = {
     "control": [
         "calculation",

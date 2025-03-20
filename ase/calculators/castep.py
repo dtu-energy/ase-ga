@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module defines an interface to CASTEP for
     use by the ASE (Webpage: http://wiki.fysik.dtu.dk/ase)
 
@@ -633,7 +635,7 @@ End CASTEP Interface Documentation
         if not os.path.exists(bandfile):
             raise ValueError(f'Cannot find band file "{bandfile}".')
 
-        kpts, weights, eigenvalues, efermi = read_bands(bandfile)
+        kpts, _weights, eigenvalues, efermi = read_bands(bandfile)
 
         # Get definitions of high-symmetry points
         special_points = self.atoms.cell.bandpath(npoints=0).special_points
@@ -1206,9 +1208,12 @@ End CASTEP Interface Documentation
         self._castep_file = self._abs_path(f'{self._seed}.castep')
 
         # write out the input file
+        magnetic_moments = ('initial' if
+                            self.param.spin_polarized.value == 'TRUE'
+                            else None)
         self._write_cell(self._abs_path(f'{self._seed}.cell'),
                          self.atoms, castep_cell=self.cell,
-                         force_write=force_write)
+                         magnetic_moments=magnetic_moments)
 
         if self._export_settings:
             interface_options = self._opt
@@ -1443,8 +1448,12 @@ End CASTEP Interface Documentation
         self._fetch_pspots(temp_dir)
         seed = 'dryrun'
 
+        magnetic_moments = ('initial' if
+                            self.param.spin_polarized.value == 'TRUE'
+                            else None)
         self._write_cell(os.path.join(temp_dir, f'{seed}.cell'),
-                         self.atoms, castep_cell=self.cell)
+                         self.atoms, castep_cell=self.cell,
+                         magnetic_moments=magnetic_moments)
         # This part needs to be modified now that we rely on the new formats.py
         # interface
         if not os.path.isfile(os.path.join(temp_dir, f'{seed}.cell')):

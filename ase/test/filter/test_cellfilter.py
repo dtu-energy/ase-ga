@@ -86,8 +86,8 @@ def test_cellfilter_stress(
     # Check gradient at other than origin
     natoms = len(atoms)
     pos0 = filter.get_positions()
-    np.random.seed(0)
-    pos0[natoms:, :] += 1e-2 * np.random.randn(3, 3)
+    rng = np.random.RandomState(0)
+    pos0[natoms:, :] += 1e-2 * rng.randn(3, 3)
     filter.set_positions(pos0)
     grads_actual = -filter.get_forces()
 

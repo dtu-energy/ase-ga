@@ -1,3 +1,5 @@
+# fmt: off
+
 from typing import Mapping, Sequence, Union
 
 import numpy as np
@@ -117,7 +119,7 @@ class Cell:
         """
         from ase.lattice import identify_lattice
         pbc = self.mask() & pbc2pbc(pbc)
-        lat, op = identify_lattice(self, eps=eps, pbc=pbc)
+        lat, _op = identify_lattice(self, eps=eps, pbc=pbc)
         return lat
 
     def bandpath(

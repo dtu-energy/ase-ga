@@ -1,3 +1,5 @@
+# fmt: off
+
 import os
 import subprocess
 from pathlib import Path
@@ -270,7 +272,7 @@ class PureDFTD3(FileIOCalculator):
         # If a parameter file exists in the working directory, delete it
         # first. If we need that file, we'll recreate it later.
         localparfile = os.path.join(self.directory, '.dftd3par.local')
-        if world.rank == 0 and os.path.isfile(localparfile):
+        if self.comm.rank == 0 and os.path.isfile(localparfile):
             os.remove(localparfile)
 
         # Write XYZ or POSCAR file and .dftd3par.local file if we are using

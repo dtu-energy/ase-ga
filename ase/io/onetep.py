@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 import warnings
 from copy import deepcopy

@@ -1,3 +1,5 @@
+# fmt: off
+
 import os
 import random
 import string
@@ -569,6 +571,7 @@ def write_nwchem_in(fd, atoms, properties=None, echo=False, **params):
                 f'permanent_dir {perm}',
                 f'scratch_dir {scratch}',
                 f'{restart_kw} {short_label}',
+                '\n'.join(_render_set(params.get('set', {}))),
                 '\n'.join(_render_geom(atoms, params))])
 
     # Add the charge if provided
@@ -598,7 +601,6 @@ def write_nwchem_in(fd, atoms, properties=None, echo=False, **params):
     # Finish output file with the commands to perform the desired computation
     out.extend(['\n'.join(_render_basis(theory, params)),
                 '\n'.join(_render_other(params)),
-                '\n'.join(_render_set(params.get('set', {}))),
                 f'task {theory} {task}',
                 '\n'.join(_render_bandpath(params.get('bandpath', None)))])
 

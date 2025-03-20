@@ -1,3 +1,5 @@
+# fmt: off
+
 import os
 from typing import Any, Union
 
@@ -125,7 +127,7 @@ class BEEFEnsemble:
         return (np.sqrt(2) * np.dot(np.dot(V, np.diag(np.sqrt(W))), rand)[:]).T
 
     def eigendecomposition(self, omega, seed=0):
-        u, s, v = np.linalg.svd(omega)  # unsafe: W, V = np.linalg.eig(omega)
+        _u, s, v = np.linalg.svd(omega)  # unsafe: W, V = np.linalg.eig(omega)
         generator = np.random.RandomState(seed)
         return s, v.T, generator
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.cell import Cell
 from ase.geometry.cell import (
     cell_to_cellpar,

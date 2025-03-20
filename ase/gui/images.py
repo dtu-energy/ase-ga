@@ -1,3 +1,5 @@
+# fmt: off
+
 import warnings
 from math import sqrt
 
@@ -58,7 +60,7 @@ class Images:
         try:
             return atoms.get_potential_energy()
         except RuntimeError:
-            return np.nan
+            return np.nan  # type: ignore[return-value]
 
     def get_forces(self, atoms: Atoms):
         try:
