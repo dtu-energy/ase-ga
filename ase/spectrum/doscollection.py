@@ -286,7 +286,8 @@ class DOSCollection(collections.abc.Sequence):
         matches = self._select_to_list(self, info_selection, negative=True)
         return type(self)(matches)
 
-    def sum_by(self, *info_keys: str) -> 'DOSCollection':
+    # Use typehint *info_keys: str from python3.11+
+    def sum_by(self, *info_keys) -> 'DOSCollection':
         """Return a DOSCollection with some data summed by common attributes
 
         For example, if ::
