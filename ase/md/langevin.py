@@ -1,13 +1,12 @@
-# fmt: off
-
 """Langevin dynamics class."""
-from typing import IO, Optional, Union
+
+import warnings
+from typing import Optional
 
 import numpy as np
 
 from ase import Atoms, units
 from ase.md.md import MolecularDynamics
-from ase.parallel import DummyMPI, world
 
 
 class Langevin(MolecularDynamics):
@@ -25,16 +24,12 @@ class Langevin(MolecularDynamics):
         fixcm: bool = True,
         *,
         temperature_K: Optional[float] = None,
-        trajectory: Optional[str] = None,
-        logfile: Optional[Union[IO, str]] = None,
-        loginterval: int = 1,
-        communicator=world,
         rng=None,
-        append_trajectory: bool = False,
+        **kwargs,
     ):
         """
-        Parameters:
-
+        Parameters
+        ----------
         atoms: Atoms object
             The list of atoms.
 
@@ -61,24 +56,9 @@ class Langevin(MolecularDynamics):
             standard_normal method matching the signature of
             numpy.random.standard_normal.
 
-        logfile: file object or str (optional)
-            If *logfile* is a string, a file with that name will be opened.
-            Use '-' for stdout.
-
-        trajectory: Trajectory object or str (optional)
-            Attach trajectory object.  If *trajectory* is a string a
-            Trajectory will be constructed.  Use *None* (the default) for no
-            trajectory.
-
-        communicator: MPI communicator (optional)
-            Communicator used to distribute random numbers to all tasks.
-            Default: ase.parallel.world. Set to None to disable communication.
-
-        append_trajectory: bool (optional)
-            Defaults to False, which causes the trajectory file to be
-            overwritten each time the dynamics is restarted from scratch.
-            If True, the new structures are appended to the trajectory
-            file instead.
+        **kwargs : dict, optional
+            Additional arguments passed to :class:~ase.md.md.MolecularDynamics
+            base class.
 
         The temperature and friction are normally scalars, but in principle one
         quantity per atom could be specified by giving an array.
@@ -91,34 +71,44 @@ class Langevin(MolecularDynamics):
         propagator in Eq. 21/34; but that propagator is not quasi-symplectic
         and gives a systematic offset in the temperature at large time steps.
         """
+        if 'communicator' in kwargs:
+            msg = (
+                '`communicator` has been deprecated since ASE 3.25.0 '
+                'and will be removed in ASE 3.26.0. Use `comm` instead.'
+            )
+            warnings.warn(msg, FutureWarning)
+            kwargs['comm'] = kwargs.pop('communicator')
+
         if friction is None:
             raise TypeError("Missing 'friction' argument.")
         self.fr = friction
-        self.temp = units.kB * self._process_temperature(temperature,
-                                                         temperature_K, 'eV')
+        self.temp = units.kB * self._process_temperature(
+            temperature, temperature_K, 'eV'
+        )
         self.fix_com = fixcm
-        if communicator is None:
-            communicator = DummyMPI()
-        self.communicator = communicator
+
         if rng is None:
             self.rng = np.random
         else:
             self.rng = rng
-        MolecularDynamics.__init__(self, atoms, timestep, trajectory,
-                                   logfile, loginterval,
-                                   append_trajectory=append_trajectory)
+        MolecularDynamics.__init__(self, atoms, timestep, **kwargs)
         self.updatevars()
 
     def todict(self):
         d = MolecularDynamics.todict(self)
-        d.update({'temperature_K': self.temp / units.kB,
-                  'friction': self.fr,
-                  'fixcm': self.fix_com})
+        d.update(
+            {
+                'temperature_K': self.temp / units.kB,
+                'friction': self.fr,
+                'fixcm': self.fix_com,
+            }
+        )
         return d
 
     def set_temperature(self, temperature=None, temperature_K=None):
-        self.temp = units.kB * self._process_temperature(temperature,
-                                                         temperature_K, 'eV')
+        self.temp = units.kB * self._process_temperature(
+            temperature, temperature_K, 'eV'
+        )
         self.updatevars()
 
     def set_friction(self, friction):
@@ -136,11 +126,11 @@ class Langevin(MolecularDynamics):
         masses = self.masses
         sigma = np.sqrt(2 * T * fr / masses)
 
-        self.c1 = dt / 2. - dt * dt * fr / 8.
-        self.c2 = dt * fr / 2 - dt * dt * fr * fr / 8.
-        self.c3 = np.sqrt(dt) * sigma / 2. - dt**1.5 * fr * sigma / 8.
+        self.c1 = dt / 2.0 - dt * dt * fr / 8.0
+        self.c2 = dt * fr / 2 - dt * dt * fr * fr / 8.0
+        self.c3 = np.sqrt(dt) * sigma / 2.0 - dt**1.5 * fr * sigma / 8.0
         self.c5 = dt**1.5 * sigma / (2 * np.sqrt(3))
-        self.c4 = fr / 2. * self.c5
+        self.c4 = fr / 2.0 * self.c5
 
     def step(self, forces=None):
         atoms = self.atoms
@@ -166,8 +156,8 @@ class Langevin(MolecularDynamics):
                 constraint.redistribute_forces_md(atoms, xi, rand=True)
                 constraint.redistribute_forces_md(atoms, eta, rand=True)
 
-        self.communicator.broadcast(xi, 0)
-        self.communicator.broadcast(eta, 0)
+        self.comm.broadcast(xi, 0)
+        self.comm.broadcast(eta, 0)
 
         # To keep the center of mass stationary, we have to calculate
         # the random perturbations to the positions and the momenta,
@@ -178,14 +168,16 @@ class Langevin(MolecularDynamics):
         if self.fix_com:
             factor = np.sqrt(natoms / (natoms - 1.0))
             self.rnd_pos -= self.rnd_pos.sum(axis=0) / natoms
-            self.rnd_vel -= (self.rnd_vel *
-                             self.masses).sum(axis=0) / (self.masses * natoms)
+            self.rnd_vel -= (self.rnd_vel * self.masses).sum(axis=0) / (
+                self.masses * natoms
+            )
             self.rnd_pos *= factor
             self.rnd_vel *= factor
 
         # First halfstep in the velocity.
-        self.v += (self.c1 * forces / self.masses - self.c2 * self.v +
-                   self.rnd_vel)
+        self.v += (
+            self.c1 * forces / self.masses - self.c2 * self.v + self.rnd_vel
+        )
 
         # Full step in positions
         x = atoms.get_positions()
@@ -198,8 +190,9 @@ class Langevin(MolecularDynamics):
         forces = atoms.get_forces(md=True)
 
         # Update the velocities
-        self.v += (self.c1 * forces / self.masses - self.c2 * self.v +
-                   self.rnd_vel)
+        self.v += (
+            self.c1 * forces / self.masses - self.c2 * self.v + self.rnd_vel
+        )
 
         # Second part of RATTLE taken care of here
         atoms.set_momenta(self.v * self.masses)
