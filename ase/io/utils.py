@@ -86,6 +86,12 @@ def has_cell(atoms):
     return atoms.cell.rank > 0
 
 
+HIDE = 0
+SHOW_CELL = 1
+SHOW_CELL_AND_FIT_TO_ALL = 2
+SHOW_CELL_AND_FIT_TO_CELL = 3
+
+
 class PlottingVariables:
     # removed writer - self
     def __init__(self, atoms, rotation='', show_unit_cell=2,
@@ -243,8 +249,10 @@ class PlottingVariables:
             bbox_combined = bbox_atoms
 
         # bbox_auto is the bbox that matches the show_unit_cell option
-        if has_cell(self.atoms) and self.show_unit_cell in (2, 3):
-            if self.show_unit_cell == 2:
+        if has_cell(self.atoms) and self.show_unit_cell in (
+            SHOW_CELL_AND_FIT_TO_ALL, SHOW_CELL_AND_FIT_TO_CELL):
+
+            if self.show_unit_cell == SHOW_CELL_AND_FIT_TO_ALL:
                 bbox_auto = bbox_combined
             else:
                 bbox_auto = bbox_cell
@@ -354,7 +362,9 @@ class PlottingVariables:
         disp = self.atoms.get_celldisp().flatten()
         positions = self.atoms.get_positions()
 
-        if self.show_unit_cell > 0:
+        if self.show_unit_cell in (
+            SHOW_CELL, SHOW_CELL_AND_FIT_TO_ALL, SHOW_CELL_AND_FIT_TO_CELL):
+
             L, T, D = cell_to_lines(self, cell)
             cell_verts_in_atom_coords = get_cell_vertex_points(cell, disp)
             cell_vertices = self.to_image_plane_positions(
