@@ -1,19 +1,24 @@
 # fmt: off
-import numpy as np
 from itertools import islice
 from typing import IO
 
+import numpy as np
+
+from ase.data import atomic_numbers, covalent_radii
+from ase.data.colors import jmol_colors as default_colors
 from ase.io.formats import string2index
-from ase.utils import rotate, irotate
-from ase.data import covalent_radii, atomic_numbers
-from ase.data.colors import jmol_colors
+from ase.utils import irotate, rotate
+
+
+def normalize(a):
+    return np.array(a) / np.linalg.norm(a)
 
 
 def complete_camera_vectors(look=None, up=None, right=None):
-    ''' creates the camera (or look) basis vectors from user input and
+    """Creates the camera (or look) basis vectors from user input and
      will autocomplete missing vector or non-orthogonal vectors using dot
      products. The look direction will be maintained, up direction has higher
-     priority than right direction'''
+     priority than right direction"""
 
     # ensure good input
     if look is not None:
@@ -28,9 +33,6 @@ def complete_camera_vectors(look=None, up=None, right=None):
         assert len(right) == 3
         r = np.array(right)
 
-    def normalize(a):
-        return np.array(a) / np.linalg.norm(a)
-
     if look is not None and up is not None:
         r = normalize(np.cross(l, u))
         u = normalize(np.cross(r, l))  # ensures complete perpendicularity
@@ -44,12 +46,13 @@ def complete_camera_vectors(look=None, up=None, right=None):
         r = normalize(np.cross(l, u))  # ensures complete perpendicularity
         u = normalize(np.cross(r, u))
     else:
-        print('some kind of error')
+        raise ValueError('''At least two camera vectors of <look>, <up>,
+ or <right> must be specified''')
     return l, u, r
 
 
 def get_cell_vertex_points(cell, disp=(0.0, 0.0, 0.0)):
-    ''' returns 8x3 list of the cell vertex coordinates'''
+    """Returns 8x3 list of the cell vertex coordinates"""
     cell_vertices = np.empty((2, 2, 2, 3))
     displacement = np.array(disp)
     for c1 in range(2):
@@ -176,12 +179,11 @@ class PlottingVariables:
             self.tags = atoms.get_tags()
             self.frac_occ = True
 
-
         # colors
         self.colors = colors
         if colors is None:
-            ncolors = len(jmol_colors)
-            self.colors = jmol_colors[self.numbers.clip(max=ncolors - 1)]
+            ncolors = len(default_colors)
+            self.colors = default_colors[self.numbers.clip(max=ncolors - 1)]
 
         # radius
         if radii is None:
@@ -191,11 +193,8 @@ class PlottingVariables:
         else:
             radii = np.array(radii)
 
-        # TODO: these should be tied together via some @property so that they
-        # are automatically updated together
         self.radii = radii  # radius in Angstroms
-        self.scale = scale
-        self.d = 2 * scale * radii  # diameter in paper space.
+        self.scale = scale  # Angstroms per cm
 
         self.set_rotation(rotation)
         self.update_image_plane_offset_and_size_from_structure(bbox=bbox)
@@ -203,8 +202,16 @@ class PlottingVariables:
     def to_dict(self):
         out = {
             'bbox': self.get_bbox(),
-            'rotation': self.rotation, }
+            'rotation': self.rotation,
+            'scale':    self.scale,
+            'colors': self.colors}
         return out
+
+    @property
+    def d(self):
+        # XXX hopefully this can be deprecated someday.
+        """Returns paperspace diameters for scale and radii lists"""
+        return 2 * self.scale * self.radii
 
     def set_rotation(self, rotation):
         if rotation is not None:
@@ -214,10 +221,10 @@ class PlottingVariables:
         self.update_patch_and_line_vars()
 
     def update_image_plane_offset_and_size_from_structure(self, bbox=None):
-        '''Updates image size to fit structure according to show_unit_cell
+        """Updates image size to fit structure according to show_unit_cell
         if bbox=None. Otherwise, sets the image size from bbox. bbox is in the
         image plane. Note that bbox format is (xlo, ylo, xhi, yhi) for
-        compatibility reasons the internal functions use (2,3)'''
+        compatibility reasons the internal functions use (2,3)"""
 
         # zero out the offset so it's not involved in the
         # to_image_plane_positions() calculations which are used to calcucate
@@ -272,13 +279,14 @@ class PlottingVariables:
         elif self.auto_image_plane_z == 'front_auto':
             offset[2] = bbox_auto[1, 2]
         else:
-            raise ValueError(f'bad image plane setting {self.auto_image_plane_z!r}')
+            raise ValueError(
+                f'bad image plane setting {self.auto_image_plane_z!r}')
 
         # since we are moving the origin in the image plane (camera coordinates)
         self.offset += offset
 
         # Previously, the picture size changed with extra_offset, This is very
-        # counter intuitive and seems like a bug.  Leaving it commented out in
+        # counter intuitive and seems like a bug. Leaving it commented out in
         # case someone relying on this likely bug needs to revert it.
         self.w = im_size[0]  # + self.extra_offset[0]
         self.h = im_size[1]  # + self.extra_offset[1]
@@ -328,8 +336,8 @@ class PlottingVariables:
         self.update_patch_and_line_vars()
 
     def get_rotation_angles(self):
-        '''Gets the rotation angles from the rotation matrix in the current
-        PlottingVariables object'''
+        """Gets the rotation angles from the rotation matrix in the current
+        PlottingVariables object"""
         return irotate(self.rotation)
 
     def get_rotation_angles_string(self, digits=5):
@@ -339,9 +347,9 @@ class PlottingVariables:
         return outstring
 
     def update_patch_and_line_vars(self):
-        '''Updates all the line and path stuff that is still inobvious, this
+        """Updates all the line and path stuff that is still inobvious, this
         function should be deprecated if nobody can understand why it's features
-        exist.'''
+        exist."""
         cell = self.atoms.get_cell()
         disp = self.atoms.get_celldisp().flatten()
         positions = self.atoms.get_positions()
@@ -376,7 +384,7 @@ class PlottingVariables:
 
     def to_image_plane_positions(self, positions):
         """Converts atomic coordinates to image plane positions. The third
-        coordinate is distance from the image plane"""
+        coordinate is distance above/below the image plane"""
         im_positions = (positions @ self.rotation) * self.scale - self.offset
         return im_positions
 
@@ -491,7 +499,7 @@ def make_patch_list(writer):
                         extent = 360. * occ
                         patch = Wedge(
                             xy, r, start, start + extent,
-                            facecolor=jmol_colors[atomic_numbers[sym]],
+                            facecolor=default_colors[atomic_numbers[sym]],
                             edgecolor='black')
                         patch_list.append(patch)
                         start += extent
