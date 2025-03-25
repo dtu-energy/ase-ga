@@ -1,10 +1,11 @@
 
 
+import numpy as np
+import pytest
+from scipy.spatial.transform import Rotation
+
 from ase import Atoms
 from ase.io.utils import PlottingVariables
-import numpy as np
-from scipy.spatial.transform import Rotation
-import pytest
 
 
 @pytest.fixture
@@ -19,16 +20,10 @@ def atoms_in_cell():
 
     return atoms
 
-#rotation = '0x, 45y, 0z'
-#generic_projection_settings = {
-#    'rotation': rotation,
-#    # 'radii': len(atoms) * [0.2],
-#    'show_unit_cell': 2}
-#pl = PlottingVariables(atoms, **generic_projection_settings)
 
 @pytest.fixture
 def random_rotation():
-    myrng = np.random.default_rng(seed = 453)
+    myrng = np.random.default_rng(seed=453)
     random_rotation = Rotation.random(random_state=myrng)
     random_rotation_matrix = random_rotation.as_matrix()
 
@@ -44,7 +39,7 @@ def test_set_bbox(atoms_in_cell):
         'bbox': (0, 0, 1, 1),
         'show_unit_cell': 2}
 
-    pl = PlottingVariables(atoms = atoms_in_cell, **generic_projection_settings)
+    pl = PlottingVariables(atoms=atoms_in_cell, **generic_projection_settings)
 
     camera_location = pl.get_image_plane_center()
     assert np.allclose(camera_location, [0.5, 0.5, 1.0])
@@ -65,7 +60,7 @@ def test_camera_directions(atoms_in_cell):
 
     generic_projection_settings = {'rotation': rotation}
 
-    pl = PlottingVariables(atoms = atoms_in_cell, **generic_projection_settings)
+    pl = PlottingVariables(atoms=atoms_in_cell, **generic_projection_settings)
 
     camdir = pl.get_camera_direction()
     up = pl.get_camera_up()
@@ -86,7 +81,7 @@ def test_set_rotation_from_camera_directions(atoms_in_cell):
     generic_projection_settings = {
         'show_unit_cell': 2}
 
-    pl = PlottingVariables(atoms = atoms_in_cell, **generic_projection_settings)
+    pl = PlottingVariables(atoms=atoms_in_cell, **generic_projection_settings)
 
     pl.set_rotation_from_camera_directions(
         look=[-1, -1, -1], up=None, right=[-1, 1, 0],
@@ -105,10 +100,9 @@ def test_set_rotation_from_camera_directions(atoms_in_cell):
 
 def test_center_camera_on_position(atoms_in_cell):
     '''look at the upper left corner, camera should be above that point'''
-    generic_projection_settings = {'show_unit_cell': 2}
-    atoms = atoms_in_cell
-    pl = PlottingVariables(atoms = atoms_in_cell, **generic_projection_settings)
 
+    generic_projection_settings = {'show_unit_cell': 2}
+    pl = PlottingVariables(atoms=atoms_in_cell, **generic_projection_settings)
     pl.center_camera_on_position([1, 1, 0])
     camera_location = pl.get_image_plane_center()
 
@@ -122,7 +116,7 @@ def test_camera_string_with_random_rotation(atoms_in_cell, random_rotation):
     random_rotation_matrix = random_rotation
     generic_projection_settings = {'show_unit_cell': 2,
                                    'rotation': random_rotation_matrix}
-    pl = PlottingVariables(atoms = atoms_in_cell, **generic_projection_settings)
+    pl = PlottingVariables(atoms=atoms_in_cell, **generic_projection_settings)
 
     rotation_string = pl.get_rotation_angles_string()
     pl.set_rotation(rotation_string)
