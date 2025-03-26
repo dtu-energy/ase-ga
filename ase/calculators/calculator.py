@@ -409,7 +409,7 @@ class EigenvalOccupationMixin:
         return self._propwrapper().occupations
 
     def _propwrapper(self):
-        from ase.calculator.singlepoint import OutputPropertyWrapper
+        from ase.calculators.singlepoint import OutputPropertyWrapper
 
         return OutputPropertyWrapper(self)
 
