@@ -6,7 +6,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 cmds = """\
 python3 -m venv venv
 . venv/bin/activate
