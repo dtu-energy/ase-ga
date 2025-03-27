@@ -46,9 +46,12 @@ def build_all():
     webpage = Path('/scratch/jensj/ase-docs-ok/ase/doc/ase-web-page')
     home = Path.home() / 'web-pages'
     cmds = ' && '.join(
-        [f'cd {webpage.parent}',
-         'tar -czf ase-web-page.tar.gz ase-web-page',
-         f'cp ase-web-page.tar.gz {home}'])
+        [
+            f'cd {webpage.parent}',
+            'tar -czf ase-web-page.tar.gz ase-web-page',
+            f'cp ase-web-page.tar.gz {home}',
+        ]
+    )
     subprocess.run(cmds, shell=True, check=True)
 
 
