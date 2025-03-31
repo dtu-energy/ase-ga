@@ -361,7 +361,7 @@ F('aims', 'FHI-aims geometry file', '1S', ext='in')
 F('aims-output', 'FHI-aims output', '+S',
   module='aims', magic=b'*Invoking FHI-aims ...')
 F('bundletrajectory', 'ASE bundle trajectory', '+S')
-F('aselmdb','ASE LMDB format','+F')
+F('aselmdb', 'ASE LMDB format', '+F')
 F('castep-castep', 'CASTEP output file', '+F',
   module='castep', ext='castep')
 F('castep-cell', 'CASTEP geom file', '1F',
