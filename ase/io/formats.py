@@ -361,6 +361,8 @@ F('aims', 'FHI-aims geometry file', '1S', ext='in')
 F('aims-output', 'FHI-aims output', '+S',
   module='aims', magic=b'*Invoking FHI-aims ...')
 F('bundletrajectory', 'ASE bundle trajectory', '+S')
+# XXX: Define plugin in ase db backends package:
+# F('aselmdb', 'ASE LMDB format', '+F')
 F('castep-castep', 'CASTEP output file', '+F',
   module='castep', ext='castep')
 F('castep-cell', 'CASTEP geom file', '1F',
@@ -950,6 +952,9 @@ def filetype(
 
         if filename.startswith('mysql') or filename.startswith('mariadb'):
             return 'mysql'
+
+        if filename.endswith('aselmdb'):
+            return 'db'
 
         # strip any compression extensions that can be read
         root, _compression = get_compression(filename)
