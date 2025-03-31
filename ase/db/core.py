@@ -1,5 +1,3 @@
-# fmt: off
-
 import functools
 import json
 import numbers
@@ -228,7 +226,7 @@ def connect(
         Optional extra kwargs to pass on to the underlying db
     """
 
-    if isinstance(name, PurePath) or isinstance(name, Path):
+    if isinstance(name, PurePath):
         name = str(name)
 
     if type == 'extract_from_name':
@@ -659,8 +657,6 @@ class Database:
         check(add_key_value_pairs)
 
         row = self._get_row(id)
-        print(row)
-        print(row.data)
         kvp = row.key_value_pairs
 
         n = len(kvp)
@@ -690,10 +686,8 @@ class Database:
             row.id = id
 
         if atoms or os.path.splitext(self.filename)[1] == '.json':
-            print(row)
             self._write(row, kvp, data, row.id)
         else:
-            print(row)
             self._update(row.id, kvp, data)
         return m, n
 
