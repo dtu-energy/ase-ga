@@ -752,9 +752,9 @@ def o2b(obj: Any, parts: List[bytes]):
     if isinstance(obj, (list, tuple)):
         return [o2b(value, parts) for value in obj]
     if isinstance(obj, np.ndarray):
-        assert (
-            obj.dtype != object
-        ), 'Cannot convert ndarray of type "object" to bytes.'
+        assert obj.dtype != object, (
+            'Cannot convert ndarray of type "object" to bytes.'
+        )
         offset = sum(len(part) for part in parts)
         if not np.little_endian:
             obj = obj.byteswap()
