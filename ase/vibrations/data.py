@@ -1,3 +1,5 @@
+# fmt: off
+
 """Storage and analysis for vibrational data"""
 
 import collections

@@ -1,3 +1,5 @@
+# fmt: off
+
 # flake8: noqa
 """Definition of the XrDebye class.
 

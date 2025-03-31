@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 # http://metal.elte.hu/~groma/Anyagtudomany/kittel.pdf

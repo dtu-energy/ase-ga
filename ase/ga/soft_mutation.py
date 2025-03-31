@@ -1,3 +1,5 @@
+# fmt: off
+
 """Soft-mutation operator and associated tools"""
 import inspect
 import json

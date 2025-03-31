@@ -1,3 +1,5 @@
+# fmt: off
+
 import argparse
 import textwrap
 from importlib import import_module

@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 from collections import namedtuple
 from numbers import Real
@@ -108,7 +110,8 @@ class _ZMatrixToAtoms:
 
         self.name_to_index[name] = self.nrows
 
-    def validate_indices(self, *indices: int) -> None:
+    # Use typehint *indices: str from python3.11+
+    def validate_indices(self, *indices) -> None:
         """Raises an error if indices in a Z-matrix row are invalid."""
         if any(np.array(indices) >= self.nrows):
             raise ValueError('An invalid Z-matrix was provided! Row {} refers '

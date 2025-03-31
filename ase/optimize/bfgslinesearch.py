@@ -1,3 +1,5 @@
+# fmt: off
+
 # ******NOTICE***************
 # optimize.py module by Travis E. Oliphant
 #
@@ -109,9 +111,6 @@ class BFGSLineSearch(Optimizer):
         if forces is None:
             forces = optimizable.get_forces()
 
-        if optimizable.is_neb():
-            raise TypeError('NEB calculations cannot use the BFGSLineSearch'
-                            ' optimizer. Use BFGS or another optimizer.')
         r = optimizable.get_positions()
         r = r.reshape(-1)
         g = -forces.reshape(-1) / self.alpha

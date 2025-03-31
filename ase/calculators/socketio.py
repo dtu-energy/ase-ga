@@ -1,3 +1,5 @@
+# fmt: off
+
 import os
 import socket
 from contextlib import contextmanager

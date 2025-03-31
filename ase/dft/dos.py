@@ -1,3 +1,5 @@
+# fmt: off
+
 from math import pi, sqrt
 
 import numpy as np

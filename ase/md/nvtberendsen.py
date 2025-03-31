@@ -1,11 +1,12 @@
 """Berendsen NVT dynamics class."""
-from typing import IO, Optional, Union
+
+import warnings
+from typing import Optional
 
 import numpy as np
 
 from ase import Atoms
 from ase.md.md import MolecularDynamics
-from ase.parallel import world
 
 
 class NVTBerendsen(MolecularDynamics):
@@ -18,16 +19,12 @@ class NVTBerendsen(MolecularDynamics):
         fixcm: bool = True,
         *,
         temperature_K: Optional[float] = None,
-        trajectory: Optional[str] = None,
-        logfile: Optional[Union[IO, str]] = None,
-        loginterval: int = 1,
-        communicator=world,
-        append_trajectory: bool = False,
+        **kwargs,
     ):
         """Berendsen (constant N, V, T) molecular dynamics.
 
-        Parameters:
-
+        Parameters
+        ----------
         atoms: Atoms object
             The list of atoms.
 
@@ -48,38 +45,29 @@ class NVTBerendsen(MolecularDynamics):
             If True, the position and momentum of the center of mass is
             kept unperturbed.  Default: True.
 
-        trajectory: Trajectory object or str (optional)
-            Attach trajectory object.  If *trajectory* is a string a
-            Trajectory will be constructed.  Use *None* for no
-            trajectory.
-
-        logfile: file object or str (optional)
-            If *logfile* is a string, a file with that name will be opened.
-            Use '-' for stdout.
-
-        loginterval: int (optional)
-            Only write a log line for every *loginterval* time steps.
-            Default: 1
-
-        append_trajectory: boolean (optional)
-            Defaults to False, which causes the trajectory file to be
-            overwriten each time the dynamics is restarted from scratch.
-            If True, the new structures are appended to the trajectory
-            file instead.
+        **kwargs : dict, optional
+            Additional arguments passed to :class:~ase.md.md.MolecularDynamics
+            base class.
 
         """
+        if 'communicator' in kwargs:
+            msg = (
+                '`communicator` has been deprecated since ASE 3.25.0 '
+                'and will be removed in ASE 3.26.0. Use `comm` instead.'
+            )
+            warnings.warn(msg, FutureWarning)
+            kwargs['comm'] = kwargs.pop('communicator')
 
-        MolecularDynamics.__init__(self, atoms, timestep, trajectory,
-                                   logfile, loginterval,
-                                   append_trajectory=append_trajectory)
+        MolecularDynamics.__init__(self, atoms, timestep, **kwargs)
+
         if taut is None:
             raise TypeError("Missing 'taut' argument.")
         self.taut = taut
-        self.temperature = self._process_temperature(temperature,
-                                                     temperature_K, 'K')
+        self.temperature = self._process_temperature(
+            temperature, temperature_K, 'K'
+        )
 
         self.fix_com = fixcm  # will the center of mass be held fixed?
-        self.communicator = communicator
 
     def set_taut(self, taut):
         self.taut = taut
@@ -88,8 +76,9 @@ class NVTBerendsen(MolecularDynamics):
         return self.taut
 
     def set_temperature(self, temperature=None, *, temperature_K=None):
-        self.temperature = self._process_temperature(temperature,
-                                                     temperature_K, 'K')
+        self.temperature = self._process_temperature(
+            temperature, temperature_K, 'K'
+        )
 
     def get_temperature(self):
         return self.temperature
@@ -101,13 +90,13 @@ class NVTBerendsen(MolecularDynamics):
         return self.dt
 
     def scale_velocities(self):
-        """ Do the NVT Berendsen velocity scaling """
+        """Do the NVT Berendsen velocity scaling"""
         tautscl = self.dt / self.taut
         old_temperature = self.atoms.get_temperature()
 
-        scl_temperature = np.sqrt(1.0 +
-                                  (self.temperature / old_temperature - 1.0) *
-                                  tautscl)
+        scl_temperature = np.sqrt(
+            1.0 + (self.temperature / old_temperature - 1.0) * tautscl
+        )
         # Limit the velocity scaling to reasonable values
         if scl_temperature > 1.1:
             scl_temperature = 1.1
@@ -139,8 +128,9 @@ class NVTBerendsen(MolecularDynamics):
             p = p - psum
 
         self.atoms.set_positions(
-            self.atoms.get_positions() +
-            self.dt * p / self.atoms.get_masses()[:, np.newaxis])
+            self.atoms.get_positions()
+            + self.dt * p / self.atoms.get_masses()[:, np.newaxis]
+        )
 
         # We need to store the momenta on the atoms before calculating
         # the forces, as in a parallel Asap calculation atoms may

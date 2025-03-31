@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 This module defines the ASE interface to SIESTA.
 

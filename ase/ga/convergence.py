@@ -1,3 +1,5 @@
+# fmt: off
+
 """Classes that determine convergence of an algorithm run
 based on population stagnation or max raw score reached"""
 from ase.ga import get_raw_score

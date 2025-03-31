@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 from typing import List, Tuple, Union
 

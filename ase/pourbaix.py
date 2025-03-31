@@ -1,3 +1,5 @@
+# fmt: off
+
 import functools
 import re
 from collections import Counter

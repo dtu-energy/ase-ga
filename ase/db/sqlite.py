@@ -1,3 +1,5 @@
+# fmt: off
+
 """SQLite3 backend.
 
 Versions:

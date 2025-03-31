@@ -1,3 +1,5 @@
+# fmt: off
+
 import copy
 import os
 import shlex
@@ -387,31 +389,6 @@ def kpts2ndarray(kpts, atoms=None):
     return kpts2kpts(kpts, atoms=atoms).kpts
 
 
-class EigenvalOccupationMixin:
-    """Define 'eigenvalues' and 'occupations' properties on class.
-
-    eigenvalues and occupations will be arrays of shape (spin, kpts, nbands).
-
-    Classes must implement the old-fashioned get_eigenvalues and
-    get_occupations methods."""
-
-    # We should maybe deprecate this and rely on the new
-    # Properties object for eigenvalues/occupations.
-
-    @property
-    def eigenvalues(self):
-        return self._propwrapper().eigenvalues
-
-    @property
-    def occupations(self):
-        return self._propwrapper().occupations
-
-    def _propwrapper(self):
-        from ase.calculator.singlepoint import OutputPropertyWrapper
-
-        return OutputPropertyWrapper(self)
-
-
 class Parameters(dict):
     """Dictionary for parameters.
 
@@ -568,6 +545,10 @@ class BaseCalculator(GetPropertiesMixin):
     @property
     def name(self) -> str:
         return self._get_name()
+
+    def todict(self) -> dict[str, Any]:
+        """Obtain a dictionary of parameter information"""
+        return {}
 
 
 class Calculator(BaseCalculator):

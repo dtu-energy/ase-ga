@@ -1,3 +1,5 @@
+# fmt: off
+
 import logging
 import re
 import warnings

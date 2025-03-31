@@ -1,3 +1,5 @@
+# fmt: off
+
 """Structure optimization. """
 import time
 import warnings

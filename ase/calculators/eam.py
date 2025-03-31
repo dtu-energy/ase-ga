@@ -1,3 +1,5 @@
+# fmt: off
+
 # flake8: noqa
 """Calculator for the Embedded Atom Method Potential"""
 
@@ -17,6 +19,7 @@ from ase.calculators.calculator import Calculator, all_changes
 from ase.data import chemical_symbols
 from ase.neighborlist import NeighborList
 from ase.units import Bohr, Hartree
+from ase.stress import full_3x3_to_voigt_6_stress
 
 
 class EAM(Calculator):
@@ -95,7 +98,7 @@ by element types.
 Running the Calculator
 ======================
 
-EAM calculates the cohesive atom energy and forces. Internally the
+EAM calculates the cohesive atom energy, forces and stress. Internally the
 potential functions are defined by splines which may be directly
 supplied or created by reading the spline points from a data file from
 which a spline function is created.  The LAMMPS compatible ``.alloy``, ``.fs``
@@ -114,6 +117,7 @@ For example::
     slab.calc = mishin
     slab.get_potential_energy()
     slab.get_forces()
+    slab.get_stress()
 
 The breakdown of energy contribution from the indvidual components are
 stored in the calculator instance ``.results['energy_components']``
@@ -232,7 +236,7 @@ Notes/Issues
 End EAM Interface Documentation
     """
 
-    implemented_properties = ['energy', 'forces']
+    implemented_properties = ['energy', 'free_energy', 'forces', 'stress']
 
     default_parameters = dict(
         skin=1.0,
@@ -680,7 +684,7 @@ End EAM Interface Documentation
             self.update(self.atoms)
             self.calculate_energy(self.atoms)
 
-            if 'forces' in properties:
+            if 'forces' in properties or 'stress' in properties:
                 self.calculate_forces(self.atoms)
 
         # check we have all the properties requested
@@ -689,7 +693,7 @@ End EAM Interface Documentation
                 if property == 'energy':
                     self.calculate_energy(self.atoms)
 
-                if property == 'forces':
+                if property in ['forces', 'stress']:
                     self.calculate_forces(self.atoms)
 
         # we need to remember the previous state of parameters
@@ -783,12 +787,14 @@ End EAM Interface Documentation
 
         self.results['energy_components'] = components
         self.results['energy'] = energy
+        self.results['free_energy'] = energy
 
     def calculate_forces(self, atoms):
         # calculate the forces based on derivatives of the three EAM functions
 
         self.update(atoms)
         self.results['forces'] = np.zeros((len(atoms), 3))
+        stresses = np.zeros((len(atoms), 3, 3))
 
         for i in range(len(atoms)):  # this is the atom to be embedded
             neighbors, offsets = self.neighbors.get_neighbors(i)
@@ -827,9 +833,12 @@ End EAM Interface Documentation
                               self.d_electron_density[self.index[i]](rnuse)))
 
                 self.results['forces'][i] += np.dot(scale, urvec[nearest][use])
+                stresses[i] += np.dot(
+                                (scale[:,np.newaxis] * urvec[nearest][use]).T,
+                                rvec[nearest][use])
 
                 if self.form == 'adp':
-                    adp_forces = self.angular_forces(
+                    adp_forces, adp_stresses = self.angular_forces(
                         self.mu[i],
                         self.mu[neighbors[nearest][use]],
                         self.lam[i],
@@ -840,6 +849,11 @@ End EAM Interface Documentation
                         j_index)
 
                     self.results['forces'][i] += adp_forces
+                    stresses[i] += adp_stresses
+        
+        if self.atoms.cell.rank == 3:
+            stress = 0.5 * np.sum(stresses, axis=0) / self.atoms.get_volume()
+            self.results['stress'] = full_3x3_to_voigt_6_stress(stress)
 
     def angular_forces(self, mu_i, mu, lam_i, lam, r, rvec, form1, form2):
         # calculate the extra components for the adp forces
@@ -872,7 +886,7 @@ End EAM Interface Documentation
             # on the NIST website with the AlH potential
             psi[:, gamma] = term1 + term2 + term3 + term4 - term5
 
-        return np.sum(psi, axis=0)
+        return np.sum(psi, axis=0), np.dot(psi.T, rvec)
 
     def adp_dipole(self, r, rvec, d):
         # calculate the dipole contribution

@@ -1,4 +1,6 @@
-from random import randint
+# fmt: off
+
+import uuid
 from typing import Any, Dict
 
 import numpy as np
@@ -35,7 +37,7 @@ def atoms2dict(atoms):
     dct = {
         'numbers': atoms.numbers,
         'positions': atoms.positions,
-        'unique_id': '%x' % randint(16**31, 16**32 - 1)}
+        'unique_id': uuid.uuid4().hex}
     if atoms.pbc.any():
         dct['pbc'] = atoms.pbc
     if atoms.cell.any():

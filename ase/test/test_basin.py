@@ -20,8 +20,8 @@ def test_basin(testdir):
         7: -16.505384}
     N = 7
     R = N**(1. / 3.)
-    np.random.seed(42)
-    pos = np.random.uniform(-R, R, (N, 3))
+    rng = np.random.RandomState(42)
+    pos = rng.uniform(-R, R, (N, 3))
     s = Atoms('He' + str(N),
               positions=pos)
     s.calc = LennardJones()

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Constraints"""
 from typing import Sequence
 from warnings import warn

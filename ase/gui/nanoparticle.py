@@ -1,3 +1,5 @@
+# fmt: off
+
 """nanoparticle.py - Window for setting up crystalline nanoparticles.
 """
 from copy import copy

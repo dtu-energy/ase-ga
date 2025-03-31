@@ -1,3 +1,5 @@
+# fmt: off
+
 """Module for creating clusters."""
 
 from ase.cluster.cluster import Cluster

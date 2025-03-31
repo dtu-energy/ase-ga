@@ -1,3 +1,5 @@
+# fmt: off
+
 """ASE Calculator for the ground state exciting DFT code.
 
 Exciting calculator class in this file allow for writing exciting input

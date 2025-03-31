@@ -1,3 +1,5 @@
+# fmt: off
+
 """
     The ASE Calculator for OpenMX <http://www.openmx-square.org>
     A Python interface to the software package for nano-scale

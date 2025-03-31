@@ -1,3 +1,5 @@
+# fmt: off
+
 # Copyright (C) 2003  CAMP
 # Please see the accompanying LICENSE file for further information.
 
@@ -170,10 +172,6 @@ class GoodOldQuasiNewton(Optimizer):
         self.radius = max(min(self.radius, self.maxradius), 0.0001)
 
         self.transitionstate = transitionstate
-
-        if self.optimizable.is_neb():
-            self.forcemin = False
-
         self.t0 = time.time()
 
     def initialize(self):

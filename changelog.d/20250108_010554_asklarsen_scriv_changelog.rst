@@ -31,7 +31,7 @@
 Development
 -----------
 
-- Changelog is now generated using scriv.
+- Changelog is now generated using ``scriv`` (:mr:`3572`).
 
 
 

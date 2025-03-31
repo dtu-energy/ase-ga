@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Output support for X3D and X3DOM file types.
 See http://www.web3d.org/x3d/specifications/

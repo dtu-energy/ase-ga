@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 from xml.dom import minidom
 

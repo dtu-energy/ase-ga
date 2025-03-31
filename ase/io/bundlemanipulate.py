@@ -1,3 +1,5 @@
+# fmt: off
+
 """Functions for in-place manipulation of bundletrajectories.
 
 This module defines a number of functions that can be used to

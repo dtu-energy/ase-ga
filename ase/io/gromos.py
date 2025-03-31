@@ -1,3 +1,5 @@
+# fmt: off
+
 """ write gromos96 geometry files
 (the exact file format is copied from the freely available
 gromacs package, http://www.gromacs.org

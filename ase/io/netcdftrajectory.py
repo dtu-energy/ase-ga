@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 netcdftrajectory - I/O trajectory files in the AMBER NetCDF convention
 

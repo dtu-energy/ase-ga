@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Implements functions for extracting ('isolating') a low-dimensional material
 component in its own unit cell.

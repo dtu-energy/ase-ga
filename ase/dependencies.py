@@ -1,3 +1,5 @@
+# fmt: off
+
 import importlib
 from typing import List, Tuple
 

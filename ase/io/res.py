@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 SHELX (.res) input/output
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 import collections
 from abc import abstractmethod
 
@@ -31,9 +33,6 @@ class Optimizable(collections.abc.Sized):
 
     def converged(self, forces, fmax):
         return np.linalg.norm(forces, axis=1).max() < fmax
-
-    def is_neb(self):
-        return False
 
     def __ase_optimizable__(self):
         return self

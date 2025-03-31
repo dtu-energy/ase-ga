@@ -1,3 +1,5 @@
+# fmt: off
+
 import collections
 import errno
 import os

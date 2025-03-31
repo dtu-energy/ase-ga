@@ -1,3 +1,5 @@
+# fmt: off
+
 """File formats.
 
 This module implements the read(), iread() and write() functions in ase.io.

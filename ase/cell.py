@@ -1,3 +1,5 @@
+# fmt: off
+
 from typing import Mapping, Sequence, Union
 
 import numpy as np

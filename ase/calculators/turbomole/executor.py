@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Execution of turbomole binaries and scripts:
 define, dscf, grad, ridft, rdgrad, aoforce, jobex, NumForce

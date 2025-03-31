@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Exceptions for the general error types that can occur either while
 setting up the calculator, which requires constructing KIM API C++

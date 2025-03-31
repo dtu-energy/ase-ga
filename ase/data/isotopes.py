@@ -1,3 +1,5 @@
+# fmt: off
+
 """Isotope data extracted from NIST public website.
 
 Source data has been compiled by NIST:

@@ -1,3 +1,5 @@
+# fmt: off
+
 import math
 from typing import List, Optional, Tuple, Union
 

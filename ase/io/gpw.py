@@ -1,3 +1,5 @@
+# fmt: off
+
 """Read gpw-file from GPAW."""
 import ase.io.ulm as ulm
 from ase import Atoms

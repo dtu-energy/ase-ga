@@ -1,3 +1,5 @@
+# fmt: off
+
 import json
 from collections.abc import Mapping, MutableMapping
 from contextlib import contextmanager

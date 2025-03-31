@@ -1,3 +1,5 @@
+# fmt: off
+
 '''celleditor.py - Window for editing the cell of an atoms object
 '''
 import numpy as np

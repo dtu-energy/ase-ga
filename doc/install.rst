@@ -128,8 +128,7 @@ from Git.
 :Tar-file:
 
     You can get the source as a `tar-file <http://xkcd.com/1168/>`__ for the
-    latest stable release (ase-3.24.0.tar.gz_) or the latest
-    development snapshot (`<snapshot.tar.gz>`_).
+    latest stable release here: ase-3.24.0.tar.gz_
 
     Unpack and make a soft link::
 

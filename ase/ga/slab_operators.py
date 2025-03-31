@@ -1,3 +1,5 @@
+# fmt: off
+
 """Operators that work on slabs.
 Allowed compositions are respected.
 Identical indexing of the slabs are assumed for the cut-splice operator."""

@@ -1,3 +1,5 @@
+# fmt: off
+
 """A collection of mutations that can be used."""
 from math import cos, pi, sin
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 """This is the implementation of the exciting I/O functions.
 
 The main roles these functions do is write exciting ground state

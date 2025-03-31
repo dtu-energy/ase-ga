@@ -688,7 +688,8 @@ def test_pw_input_write_raw_kpts():
 
     fh = 'espresso_test.pwi'
     pseudos = {'Ni': 'potato', 'O': 'orange'}
-    kpts = np.random.random((10, 4))
+    rng = np.random.RandomState(42)
+    kpts = rng.random((10, 4))
 
     write_espresso_in(fh, bulk, pseudopotentials=pseudos, kpts=kpts)
     readback = read_espresso_in('espresso_test.pwi')

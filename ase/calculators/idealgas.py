@@ -1,3 +1,5 @@
+# fmt: off
+
 """Ideal gas calculator - the potential energy is always zero."""
 
 import numpy as np

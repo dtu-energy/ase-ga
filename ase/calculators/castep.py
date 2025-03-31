@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module defines an interface to CASTEP for
     use by the ASE (Webpage: http://wiki.fysik.dtu.dk/ase)
 

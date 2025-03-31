@@ -2,6 +2,10 @@ import numpy as np
 import pytest
 
 from ase.build import bulk, fcc111
+from ase.calculators.fd import (
+    calculate_numerical_forces,
+    calculate_numerical_stress,
+)
 
 
 @pytest.mark.calculator('eam')
@@ -34,3 +38,13 @@ def test_read_potential(factory, potential: str, with_elements: bool):
     atoms = bulk(element)
     atoms.calc = calc
     atoms.get_potential_energy()
+
+    # test forces against numerical forces
+    forces = atoms.get_forces()
+    numerical_forces = calculate_numerical_forces(atoms, eps=1e-5)
+    np.testing.assert_allclose(forces, numerical_forces, atol=1e-5)
+
+    # test stress against numerical stress
+    stress = atoms.get_stress()
+    numerical_stress = calculate_numerical_stress(atoms, eps=1e-5)
+    np.testing.assert_allclose(stress, numerical_stress, atol=1e-5)

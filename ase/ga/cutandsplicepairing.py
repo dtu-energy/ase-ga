@@ -1,3 +1,5 @@
+# fmt: off
+
 """Implementation of the cut-and-splice paring operator."""
 import numpy as np
 

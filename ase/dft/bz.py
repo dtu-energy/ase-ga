@@ -1,3 +1,5 @@
+# fmt: off
+
 from itertools import product
 from math import cos, pi, sin
 from typing import Any, Dict, Optional, Tuple, Union

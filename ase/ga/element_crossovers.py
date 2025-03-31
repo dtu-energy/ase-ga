@@ -1,3 +1,5 @@
+# fmt: off
+
 """Crossover classes, that cross the elements in the supplied
 atoms objects.
 

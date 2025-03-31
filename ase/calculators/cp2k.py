@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module defines an ASE interface to CP2K.
 
 https://www.cp2k.org/

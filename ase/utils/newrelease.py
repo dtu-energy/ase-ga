@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# fmt: off
+
 
 """Generate new release of ASE.
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 This module contains functionality for reading and writing an ASE
 Atoms object in V_Sim 3.5+ ascii format.
