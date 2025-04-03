@@ -5,6 +5,7 @@ import pytest
 
 from ase.atoms import Atoms
 from ase.calculators.calculator import compare_atoms
+from ase.io import read
 from ase.io.orca import (
     read_dipole,
     read_energy,
@@ -92,6 +93,15 @@ MULLIKEN ATOMIC CHARGES AND SPIN POPULATIONS
 Sum of atomic charges         :   -0.0000000
 Sum of atomic spin populations:    1.0000000
 
+Number of atoms                             ...      3
+
+ ---------------------------------                                               
+ CARTESIAN COORDINATES (ANGSTROEM)                                               
+ ---------------------------------
+   O     0.0000000    0.0000000    0.0000000
+   H     1.8897261    0.0000000    0.0000000
+   H     0.0000000    1.8897261    0.0000000
+
  -------
 TIMINGS
 -------
@@ -120,7 +130,8 @@ Grid generation             ....       0.081 sec  (  2.1%)
 -------------------------   --------------------
 FINAL SINGLE POINT ENERGY       -76.422436201230
 -------------------------   --------------------
-"""
+ORCA TERMINATED NORMALLY
+"""  # noqa: E501, W291
 
     sample_engradfile = """\
 #
@@ -165,7 +176,8 @@ FINAL SINGLE POINT ENERGY       -76.422436201230
 
     results_sample['free_energy'] = results_sample['energy']
 
-    results = read_orca_outputs('.', 'orcamolecule_test.out')
+    with pytest.warns(DeprecationWarning):
+        results = read_orca_outputs('.', 'orcamolecule_test.out')
 
     keys = set(results)
     assert keys == set(results_sample)
@@ -205,3 +217,64 @@ FINAL SINGLE POINT ENERGY      -815.959737266080
     energy = read_energy(io.StringIO(text))
     energy_ref = -815.959737266080 * Hartree
     assert energy == energy_ref
+
+
+def test_read_orca_output_file():
+    sample_outputfile = """\
+    
+                                 *****************
+                                 * O   R   C   A *
+                                 *****************
+
+                     *******************************
+                     * Energy+Gradient Calculation *
+                     *******************************
+
+---------------------------------
+CARTESIAN COORDINATES (ANGSTROEM)
+---------------------------------
+   O     0.0000000    0.0000000    0.0000000
+   H     1.8897261    0.0000000    0.0000000
+   H     0.0000000    1.8897261    0.0000000
+
+----------------------
+SHARK INTEGRAL PACKAGE
+----------------------
+
+Number of atoms                             ...      3
+
+
+------------------
+CARTESIAN GRADIENT
+------------------
+
+   1   O   :   -0.047131485   -0.047131485    0.0000000001
+   2   H   :    0.025621056    0.021510429    0.0000000000
+   3   H   :    0.021510429    0.025621056   -0.0000000001
+
+-------------------------   --------------------
+FINAL SINGLE POINT ENERGY       -76.422436201230
+-------------------------   --------------------
+ORCA TERMINATED NORMALLY
+"""  # noqa: W293
+    with open('orca_test.out', 'w') as fd:
+        fd.write(sample_outputfile)
+
+    results_sample = {
+        'energy': -2079.560412394247,
+        'forces': np.array([
+            [2.42359838e+00, 2.42359837e+00, -5.14220671e-09],
+            [-1.31748766e+00, -1.10611070e+00, -0.0000000e-00],
+            [-1.10611071e+00, -1.31748767e+00, 5.14220671e-09]]),
+        'positions': np.array([
+            [0.0000000, 0.0000000, 0.0000000],
+            [1.8897261, 0.0000000, 0.0000000],
+            [0.0000000, 1.8897261, 0.0000000]])}
+
+    results_sample['free_energy'] = results_sample['energy']
+
+    atoms = read('orca_test.out')
+
+    assert results_sample['energy'] == pytest.approx(atoms.get_total_energy())
+    assert results_sample['forces'] == pytest.approx(atoms.get_forces())
+    assert results_sample['positions'] == pytest.approx(atoms.get_positions())

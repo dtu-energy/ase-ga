@@ -473,6 +473,8 @@ F('onetep-in', 'ONETEP input file', '1F',
   magic=[b'*lock species ',
          b'*LOCK SPECIES ',
          b'*--- INPUT FILE ---*'])
+F('orca-output', 'ORCA output', '+F',
+  module='orca', magic=b'* O   R   C   A *')
 F('proteindatabank', 'Protein Data Bank', '+F',
   ext='pdb')
 F('png', 'Portable Network Graphics', '1B')
