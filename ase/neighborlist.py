@@ -534,8 +534,8 @@ def neighbor_list(quantities, a, cutoff, self_interaction=False,
     The neighbor list is sorted by first atom index 'i', but not by second
     atom index 'j'.
 
-    Parameters:
-
+    Parameters
+    ----------
     quantities: str
         Quantities to compute by the neighbor list algorithm. Each character
         in this string defines a quantity. They are returned in a tuple of
@@ -571,67 +571,75 @@ def neighbor_list(quantities, a, cutoff, self_interaction=False,
         Maximum number of bins used in neighbor search. This is used to limit
         the maximum amount of memory required by the neighbor list.
 
-    Returns:
-
+    Returns
+    -------
     i, j, ...: array
         Tuple with arrays for each quantity specified above. Indices in `i`
         are returned in ascending order 0..len(a), but the order of (i,j)
         pairs is not guaranteed.
 
-    Examples:
+    Examples
+    --------
 
-    Examples assume Atoms object *a* and numpy imported as *np*.
+    >>> import numpy as np
+    >>> from ase.build import bulk, molecule
 
-    1. Coordination counting::
+    1. Coordination counting
 
-        i = neighbor_list('i', a, 1.85)
-        coord = np.bincount(i)
+    >>> atoms = molecule('isobutane')
+    >>> i = neighbor_list('i', atoms, 1.85)
+    >>> coord = np.bincount(i, minlength=len(atoms))
 
-    2. Coordination counting with different cutoffs for each pair of species::
+    2. Coordination counting with different cutoffs for each pair of species
 
-        i = neighbor_list('i', a,
-                          {('H', 'H'): 1.1, ('C', 'H'): 1.3, ('C', 'C'): 1.85})
-        coord = np.bincount(i)
+    >>> cutoff = {('H', 'H'): 1.1, ('C', 'H'): 1.3, ('C', 'C'): 1.85}
+    >>> i = neighbor_list('i', atoms, cutoff)
+    >>> coord = np.bincount(i, minlength=len(atoms))
 
-    3. Pair distribution function::
+    3. Pair distribution function
 
-        d = neighbor_list('d', a, 10.00)
-        h, bin_edges = np.histogram(d, bins=100)
-        pdf = h/(4*np.pi/3*(
-            bin_edges[1:]**3 - bin_edges[:-1]**3)) * a.get_volume()/len(a)
+    >>> atoms = bulk('Cu', cubic=True) * 3
+    >>> atoms.rattle(0.5, rng=np.random.default_rng(42))
+    >>> cutoff = 5.0
+    >>> d = neighbor_list('d', atoms, cutoff)
+    >>> hist, bin_edges = np.histogram(d, bins=100, range=(0.0, cutoff))
+    >>> hist = hist / len(atoms)  # per atom
+    >>> rho_mean = len(atoms) / atoms.cell.volume
+    >>> dv = 4.0 * np.pi * (bin_edges[1:] ** 3 - bin_edges[:-1] ** 3) / 3.0
+    >>> rho = hist / dv
+    >>> pdf = rho / rho_mean
 
-    4. Pair potential::
+    4. Forces of a pair potential
 
-        i, j, d, D = neighbor_list('ijdD', a, 5.0)
-        energy = (-C/d**6).sum()
-        forces = (6*C/d**5  * (D/d).T).T
-        forces_x = np.bincount(j, weights=forces[:, 0], minlength=len(a)) - \
-                   np.bincount(i, weights=forces[:, 0], minlength=len(a))
-        forces_y = np.bincount(j, weights=forces[:, 1], minlength=len(a)) - \
-                   np.bincount(i, weights=forces[:, 1], minlength=len(a))
-        forces_z = np.bincount(j, weights=forces[:, 2], minlength=len(a)) - \
-                   np.bincount(i, weights=pair_forces[:, 2], minlength=len(a))
+    >>> natoms = len(atoms)
+    >>> i, j, d, D = neighbor_list('ijdD', atoms, 5.0)
+    >>> # Lennard-Jones potential
+    >>> eps = 1.0
+    >>> sgm = 1.0
+    >>> epairs = 4.0 * eps * ((sgm / d) ** 12 - (sgm / d) ** 6)
+    >>> energy = 0.5 * epairs.sum()  # correct double-counting
+    >>> dd = -4.0 * eps * (12 * (sgm / d) ** 13 - 6 * (sgm / d) ** 7) / sgm
+    >>> dd = (dd * (D.T / d)).T
+    >>> fx = -1.0 * np.bincount(i, weights=dd[:, 0], minlength=natoms)
+    >>> fy = -1.0 * np.bincount(i, weights=dd[:, 1], minlength=natoms)
+    >>> fz = -1.0 * np.bincount(i, weights=dd[:, 2], minlength=natoms)
 
-    5. Dynamical matrix for a pair potential stored in a block sparse format::
+    5. Force-constant matrix of a pair potential
 
-        from scipy.sparse import bsr_matrix
-        i, j, dr, abs_dr = neighbor_list('ijDd', atoms)
-        energy = (dr.T / abs_dr).T
-        dynmat = -(dde * (energy.reshape(-1, 3, 1)
-                   * energy.reshape(-1, 1, 3)).T).T \
-                 -(de / abs_dr * (np.eye(3, dtype=energy.dtype) - \
-                   (energy.reshape(-1, 3, 1) * energy.reshape(-1, 1, 3))).T).T
-        dynmat_bsr = bsr_matrix((dynmat, j, first_i),
-                                shape=(3*len(a), 3*len(a)))
-
-        dynmat_diag = np.empty((len(a), 3, 3))
-        for x in range(3):
-            for y in range(3):
-                dynmat_diag[:, x, y] = -np.bincount(i, weights=dynmat[:, x, y])
-
-        dynmat_bsr += bsr_matrix((dynmat_diag, np.arange(len(a)),
-                                  np.arange(len(a) + 1)),
-                                 shape=(3 * len(a), 3 * len(a)))
+    >>> i, j, d, D = neighbor_list('ijdD', atoms, 5.0)
+    >>> epairs = 1.0 / d  # Coulomb potential
+    >>> forces = (D.T / d**3).T  # (npairs, 3)
+    >>> # second derivative
+    >>> d2 = 3.0 * D[:, :, None] * D[:, None, :] / d[:, None, None] ** 5
+    >>> for k in range(3):
+    ...     d2[:, k, k] -= 1.0 / d**3
+    >>> # force-constant matrix
+    >>> fc = np.zeros((natoms, 3, natoms, 3))
+    >>> for ia in range(natoms):
+    ...     for ja in range(natoms):
+    ...         fc[ia, :, ja, :] -= d2[(i == ia) & (j == ja), :, :].sum(axis=0)
+    >>> for ia in range(natoms):
+    ...     fc[ia, :, ia, :] -= fc[ia].sum(axis=1)
 
     """
     return primitive_neighbor_list(quantities, a.pbc,
