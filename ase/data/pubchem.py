@@ -173,6 +173,10 @@ def analyze_input(
     field = input_fields[index]
     search = inputs[index]
 
+    # convert hash (triple bond) to hex for URL
+    if isinstance(search, str):
+        search = search.replace('#', '%23')
+
     return PubchemSearch(search, field)
 
 
