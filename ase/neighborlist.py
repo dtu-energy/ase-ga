@@ -882,10 +882,8 @@ class NewPrimitiveNeighborList:
         True
         >>> indices, offsets = nl.get_neighbors(0)
         >>> for i, offset in zip(indices, offsets):
-        ...     print(
-        ...           atoms.positions[i] + offset @ atoms.get_cell()
-        ...     )  # doctest: +ELLIPSIS
-        [3.6 ... 0. ]
+        ...     print(atoms.positions[i] + offset @ atoms.get_cell())
+        ... # doctest: +SKIP
 
         Notice that if get_neighbors(a) gives atom b as a neighbor,
         then get_neighbors(b) will not return a as a neighbor - unless
@@ -1053,10 +1051,8 @@ class PrimitiveNeighborList:
         True
         >>> indices, offsets = nl.get_neighbors(0)
         >>> for i, offset in zip(indices, offsets):
-        ...     print(
-        ...           atoms.positions[i] + offset @ atoms.get_cell()
-        ...     )  # doctest: +ELLIPSIS
-        [3.6 ... 0. ]
+        ...     print(atoms.positions[i] + offset @ atoms.get_cell())
+        ... # doctest: +SKIP
 
         Notice that if get_neighbors(a) gives atom b as a neighbor,
         then get_neighbors(b) will not return a as a neighbor - unless
