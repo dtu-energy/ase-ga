@@ -17,6 +17,7 @@ ase.geometry.cell
 ase.geometry.geometry
 ase.io.ulm
 ase.lattice
+ase.neighborlist
 ase.spacegroup.spacegroup
 ase.spacegroup.xtal
 ase.symbols
