@@ -216,11 +216,17 @@ def lammps_data_to_ase_atoms(
     # process the extra columns of fixes, variables and computes
     #    that can be dumped, add as additional arrays to atoms object
     for colname in colnames:
-        # determine if it is a compute or fix (but not the quaternian)
+        # determine if it is a compute, fix or
+        # custom property/atom (but not the quaternian)
         if (colname.startswith('f_') or colname.startswith('v_') or
-                (colname.startswith('c_') and not colname.startswith('c_q['))):
+            colname.startswith('d_') or colname.startswith('d2_') or
+            (colname.startswith('c_') and not colname.startswith('c_q['))):
             out_atoms.new_array(colname, get_quantity([colname]),
                                 dtype='float')
+
+        elif colname.startswith('i_') or colname.startswith('i2_'):
+            out_atoms.new_array(colname, get_quantity([colname]),
+                                dtype='int')
 
     return out_atoms
 
