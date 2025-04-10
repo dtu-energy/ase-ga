@@ -326,6 +326,7 @@ def test_reciprocal(gui):
     reciprocal = gui.reciprocal()
     reciprocal.terminate()
     exitcode = reciprocal.wait(timeout=5)
+    reciprocal.stdout.close()
     assert exitcode != 0
 
 
