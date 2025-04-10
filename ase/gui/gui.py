@@ -407,6 +407,12 @@ class GUI(View, Status):
         selection_mask = self.images.selected[:len(self.atoms)]
         return self.atoms[selection_mask]
 
+    def wrap_atoms(self, key=None):
+        """Wrap atoms around the unit cell."""
+        for atoms in self.images:
+            atoms.wrap()
+        self.set_frame()
+
     @property
     def clipboard(self):
         from ase.gui.clipboard import AtomsClipboard
@@ -561,7 +567,8 @@ class GUI(View, Status):
                 'Ctrl+R'),
               M(_('NE_B plot'), self.neb),
               M(_('B_ulk Modulus'), self.bulk_modulus),
-              M(_('Reciprocal space ...'), self.reciprocal)]),
+              M(_('Reciprocal space ...'), self.reciprocal),
+              M(_('Wrap atoms'), self.wrap_atoms, 'Ctrl+W')]),
 
             # TRANSLATORS: Set up (i.e. build) surfaces, nanoparticles, ...
             (_('_Setup'),
