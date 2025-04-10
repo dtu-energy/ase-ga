@@ -442,6 +442,24 @@ def test_clipboard_paste_onto_existing(gui):
     assert gui.atoms == ti + h2o
 
 
+def test_wrap(gui):
+    """Test the Wrap atoms function."""
+    from ase.build import bulk
+
+    atoms = bulk('Si')
+    atoms.positions += 1234
+    gui.new_atoms(atoms)
+    unwrapped = atoms.get_scaled_positions(wrap=False)
+    wrapped_ref = atoms.get_scaled_positions(wrap=True)
+
+    assert (unwrapped > 1).all()
+    gui.wrap_atoms()
+    wrapped = gui.images[0].get_scaled_positions(wrap=False)
+    assert (wrapped < 1).all()
+    assert (wrapped >= 0).all()
+    assert wrapped == pytest.approx(wrapped_ref)
+
+
 @pytest.mark.parametrize('text', [
     '',
     'invalid_atoms',
