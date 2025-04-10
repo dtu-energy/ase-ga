@@ -250,7 +250,7 @@ class NPT(MolecularDynamics):
         self.frac_traceless = fracTraceless
 
     def get_strain_rate(self):
-        """Get the strain rate as an upper-triangular 3x3 matrix.
+        """Get the strain rate as a triangular 3x3 matrix.
 
         This includes the fluctuations in the shape of the computational box.
 
@@ -258,14 +258,14 @@ class NPT(MolecularDynamics):
         return np.array(self.eta, copy=1)
 
     def set_strain_rate(self, rate):
-        """Set the strain rate.  Must be an upper triangular 3x3 matrix.
+        """Set the strain rate.  Must be a triangular 3x3 matrix.
 
         If you set a strain rate along a direction that is "masked out"
         (see ``set_mask``), the strain rate along that direction will be
         maintained constantly.
         """
-        if not (rate.shape == (3, 3) and self._isuppertriangular(rate)):
-            raise ValueError("Strain rate must be an upper triangular matrix.")
+        if not (rate.shape == (3, 3) and self._triangular(rate)):
+            raise ValueError("Strain rate must be a triangular matrix.")
         self.eta = rate
         if self.initialized:
             # Recalculate h_past and eta_past so they match the current value.
@@ -331,10 +331,10 @@ class NPT(MolecularDynamics):
 
         if self.frac_traceless == 1:
             eta_future = self.eta_past + self.mask * \
-                self._makeuppertriangular(deltaeta)
+                self._maketriangular(deltaeta)
         else:
             trace_part, traceless_part = self._separatetrace(
-                self._makeuppertriangular(deltaeta))
+                self._maketriangular(deltaeta))
             eta_future = (self.eta_past + trace_part +
                           self.frac_traceless * traceless_part)
 
@@ -382,15 +382,10 @@ class NPT(MolecularDynamics):
         dt = self.dt
         atoms = self.atoms
         self.h = self._getbox()
-        if not self._isuppertriangular(self.h):
-            print("I am", self)
-            print("self.h:")
-            print(self.h)
-            print("Min:", min((self.h[1, 0], self.h[2, 0], self.h[2, 1])))
-            print("Max:", max((self.h[1, 0], self.h[2, 0], self.h[2, 1])))
+        if not self._istriangular(self.h):
             raise NotImplementedError(
-                "Can (so far) only operate on lists of atoms where the "
-                "computational box is an upper triangular matrix.")
+                f"Can (so far) only operate on lists of atoms where the "
+                f"computational box is a triangular matrix. {self.h}")
         self.inv_h = linalg.inv(self.h)
         # The contents of the q arrays should migrate in parallel simulations.
         # self._make_special_q_arrays()
@@ -626,23 +621,39 @@ class NPT(MolecularDynamics):
                         * (self.stresscalculator() - self.externalstress))
         if self.frac_traceless == 1:
             self.eta_past = self.eta - self.mask * \
-                self._makeuppertriangular(deltaeta)
+                self._maketriangular(deltaeta)
         else:
             trace_part, traceless_part = self._separatetrace(
-                self._makeuppertriangular(deltaeta))
+                self._maketriangular(deltaeta))
             self.eta_past = (self.eta - trace_part -
                              self.frac_traceless * traceless_part)
 
-    def _makeuppertriangular(self, sixvector):
-        "Make an upper triangular matrix from a 6-vector."
-        return np.array(((sixvector[0], sixvector[5], sixvector[4]),
-                         (0, sixvector[1], sixvector[3]),
-                         (0, 0, sixvector[2])))
-
     @staticmethod
     def _isuppertriangular(m) -> bool:
-        "Check that a matrix is on upper triangular form."
+        "Check that a 3x3 matrix is of upper triangular form."
         return m[1, 0] == m[2, 0] == m[2, 1] == 0.0
+
+    @classmethod
+    def _islowertriangular(cls, m) -> bool:
+        "Check that a 3x3 matrix is of lower triangular form."
+        return cls._isuppertriangular(m.T)
+
+    @classmethod
+    def _istriangular(cls, m) -> bool:
+        "Check that a 3x3 matrix is of triangular form."
+        return cls._isuppertriangular(m) or cls._islowertriangular(m)
+
+    def _maketriangular(self, sixvector):
+        "Make 3x3 triangular matrix from a 6-vector."
+        if self._isuppertriangular(self.h):
+            return np.array(((sixvector[0], sixvector[5], sixvector[4]),
+                            (0, sixvector[1], sixvector[3]),
+                            (0, 0, sixvector[2])))
+
+        if self._islowertriangular(self.h):
+            return np.array(((sixvector[0], 0, 0),
+                            (sixvector[5], sixvector[1], 0),
+                            (sixvector[4], sixvector[3], sixvector[2])))
 
     def _calculateconstants(self):
         """(Re)calculate some constants when pfactor,

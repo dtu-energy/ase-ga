@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from ase import Atoms
-from ase.build import bulk
+from ase.build import bulk, make_supercell
 from ase.md.bussi import Bussi
 from ase.md.langevin import Langevin
 from ase.md.nose_hoover_chain import NoseHooverChainNVT
@@ -38,14 +38,11 @@ def dynamicsparams():
         )
 
 
-@pytest.fixture(scope='module')
-def equilibrated(asap3, dynamicsparams):
+def equilibrate(atoms, dynamicsparams):
     """Make an atomic system with equilibrated temperature and pressure."""
     rng = np.random.RandomState(42)
     # Must be small enough that we can see the an off-by-one error
     # in the energy
-    atoms = bulk('Au', cubic=True)
-    atoms.calc = asap3.EMT()
     MaxwellBoltzmannDistribution(atoms, temperature_K=300, force_temp=True,
                                  rng=rng)
     Stationary(atoms)
@@ -60,6 +57,33 @@ def equilibrated(asap3, dynamicsparams):
         include_ideal_gas=True)[:3].sum() / 3 / GPa * 10000
     print(f"Temperature: {T:.2f} K    Pressure: {pres:.2f} bar")
     return atoms
+
+
+@pytest.fixture(scope='module')
+def equilibrated(asap3, dynamicsparams):
+    atoms = bulk('Au', cubic=True)
+    atoms.calc = asap3.EMT()
+
+    return equilibrate(atoms, dynamicsparams)
+
+
+@pytest.fixture(scope='module')
+def equilibrated_upper_tri(asap3, dynamicsparams):
+    atoms = make_supercell(bulk('Pt', cubic=True),
+                           [[1, 1, 0], [0, 1, 1], [0, 0, 1]])
+    atoms.calc = asap3.EMT()
+    return equilibrate(atoms, dynamicsparams)
+
+
+@pytest.fixture(scope='module')
+def equilibrated_lower_tri(asap3, dynamicsparams):
+    atoms = bulk('Pt') * (3, 1, 1)
+    atoms.calc = asap3.EMT()
+
+    # Rotate to lower triangular cell matrix
+    atoms.set_cell(atoms.cell.standard_form()[0], scale_atoms=True)
+
+    return equilibrate(atoms, dynamicsparams)
 
 
 def propagate(atoms,
@@ -149,10 +173,34 @@ def test_nptberendsen(asap3, equilibrated, dynamicsparams, allraise):
 
 @pytest.mark.optimize()
 @pytest.mark.slow()
-def test_npt(asap3, equilibrated, dynamicsparams, allraise):
+def test_npt_cubic(asap3, equilibrated, dynamicsparams, allraise):
     propagate(Atoms(equilibrated), asap3, NPT,
               dynamicsparams['nptold'],
               max_pressure_error=100 * bar,
               com_not_thermalized=True)
     # Unlike NPTBerendsen, NPT assumes that the center of mass is not
     # thermalized, so the kinetic energy should be 3/2 ' kB * (N-1) * T
+
+
+@pytest.mark.optimize()
+@pytest.mark.slow()
+def test_npt_upper_tri(asap3, equilibrated_upper_tri, dynamicsparams, allraise):
+    # Otherwise, parameters are the same as test_npt
+    propagate(Atoms(equilibrated_upper_tri),
+              asap3,
+              NPT,
+              dynamicsparams['nptold'],
+              max_pressure_error=100 * bar,
+              com_not_thermalized=True)
+
+
+@pytest.mark.optimize()
+@pytest.mark.slow()
+def test_npt_lower_tri(asap3, equilibrated_lower_tri, dynamicsparams, allraise):
+    # Otherwise, parameters are the same as test_npt
+    propagate(Atoms(equilibrated_lower_tri),
+              asap3,
+              NPT,
+              dynamicsparams['nptold'],
+              max_pressure_error=100 * bar,
+              com_not_thermalized=True)
