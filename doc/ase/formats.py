@@ -2,8 +2,18 @@
 from ase.formula import Formula
 
 formulas = ['H2O', 'SiC', 'MoS2', 'AB2', 'BN', 'SiO2']
-formats = ['hill', 'metal', 'abc', 'reduce', 'ab2', 'a2b', 'periodic',
-           'latex', 'html', 'rest']
+formats = [
+    'hill',
+    'metal',
+    'abc',
+    'reduce',
+    'ab2',
+    'a2b',
+    'periodic',
+    'latex',
+    'html',
+    'rest',
+]
 
 
 with open('formats.csv', 'w') as fd:

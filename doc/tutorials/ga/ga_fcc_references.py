@@ -15,18 +15,21 @@ for m in metals:
     a = atoms.cell[0][0]
 
     eps = 0.05
-    volumes = (a * np.linspace(1 - eps, 1 + eps, 9))**3
+    volumes = (a * np.linspace(1 - eps, 1 + eps, 9)) ** 3
     energies = []
     for v in volumes:
-        atoms.set_cell([v**(1. / 3)] * 3, scale_atoms=True)
+        atoms.set_cell([v ** (1.0 / 3)] * 3, scale_atoms=True)
         energies.append(atoms.get_potential_energy())
 
     eos = EquationOfState(volumes, energies)
     v1, e1, B = eos.fit()
 
-    atoms.set_cell([v1**(1. / 3)] * 3, scale_atoms=True)
+    atoms.set_cell([v1 ** (1.0 / 3)] * 3, scale_atoms=True)
     ef = atoms.get_potential_energy()
 
-    db.write(atoms, metal=m,
-             latticeconstant=v1**(1. / 3),
-             energy_per_atom=ef / len(atoms))
+    db.write(
+        atoms,
+        metal=m,
+        latticeconstant=v1 ** (1.0 / 3),
+        energy_per_atom=ef / len(atoms),
+    )

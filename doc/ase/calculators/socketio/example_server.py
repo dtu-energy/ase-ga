@@ -13,8 +13,7 @@ write('initial.traj', atoms)
 
 opt = BFGS(atoms, trajectory='opt.driver.traj', logfile='opt.driver.log')
 
-with SocketIOCalculator(log=sys.stdout,
-                        unixsocket=unixsocket) as calc:
+with SocketIOCalculator(log=sys.stdout, unixsocket=unixsocket) as calc:
     # Server is now running and waiting for connections.
     # If you want to launch the client process here directly,
     # instead of manually in the terminal, uncomment these lines:

@@ -11,21 +11,20 @@ from ase.optimize.fire import FIRE as QuasiNewton
 nimages = 5
 
 # Some algebra to determine surface normal and the plane of the surface.
-d3 = [2., 1., 1.]
-a1 = np.array([0., 1., 1.])
+d3 = [2.0, 1.0, 1.0]
+a1 = np.array([0.0, 1.0, 1.0])
 d1 = np.cross(a1, d3)
-a2 = np.array([0., -1., 1.])
+a2 = np.array([0.0, -1.0, 1.0])
 d2 = np.cross(a2, d3)
 
 # Create the slab.
-slab = FaceCenteredCubic(directions=[d1, d2, d3],
-                         size=(2, 1, 2),
-                         symbol=('Pt'),
-                         latticeconstant=3.9)
+slab = FaceCenteredCubic(
+    directions=[d1, d2, d3], size=(2, 1, 2), symbol=('Pt'), latticeconstant=3.9
+)
 
 # Add some vacuum to the slab.
 uc = slab.get_cell()
-uc[2] += [0., 0., 10.]  # There are ten layers of vacuum.
+uc[2] += [0.0, 0.0, 10.0]  # There are ten layers of vacuum.
 uc = slab.set_cell(uc, scale_atoms=False)
 
 # Some positions needed to place the atom in the correct place.
@@ -50,7 +49,7 @@ relax = QuasiNewton(initial)
 relax.run(fmax=0.05)
 
 # Optimise the final state: atom above step.
-slab[-1].position = (x3, y2 + 1., z2 + 3.5)
+slab[-1].position = (x3, y2 + 1.0, z2 + 3.5)
 final = slab.copy()
 final.calc = EMT()
 relax = QuasiNewton(final)

@@ -14,8 +14,4 @@ pbx.get_pourbaix_energy(0.0, 10.0, verbose=True)
 
 diagram = pbx.diagram(U=np.linspace(-2, 2, 100), pH=np.linspace(0, 14, 100))
 
-diagram.plot(
-    show=False,
-    include_text=True,
-    filename='zno.png'
-)
+diagram.plot(show=False, include_text=True, filename='zno.png')

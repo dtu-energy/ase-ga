@@ -8,10 +8,7 @@ from ase.data.colors import jmol_colors as chemical_colors
 from ase.io.pov import get_bondpairs, write_pov
 
 unit_cell = build.bulk('AlN', 'wurtzite', a=3.129, c=5.017)
-sqs_cell = build.cut(unit_cell,
-                     a=[1, 0, 1],
-                     b=[-2, -2, 0],
-                     c=[1, -1, -1])
+sqs_cell = build.cut(unit_cell, a=[1, 0, 1], b=[-2, -2, 0], c=[1, -1, -1])
 names = ['unit_cell', 'sqs_cell']
 list_of_atoms_obj = [unit_cell, sqs_cell]
 
@@ -19,10 +16,7 @@ list_of_atoms_obj = [unit_cell, sqs_cell]
 # see the gallery to see examples of the built-in styles
 style = 'simple'
 # reverts to jmol_colors if not unspecified
-color_dict_rgb255 = {
-    'N': [23, 111, 208],
-    'Ga': [230, 83, 17]
-}
+color_dict_rgb255 = {'N': [23, 111, 208], 'Ga': [230, 83, 17]}
 
 # used to automatically guess bonds
 covalent_radius_bond_cutoff_scale = 0.9
@@ -44,7 +38,7 @@ rotation = '37x, -79y, -128z'
 kwargs = {
     'transparent': True,  # Transparent background
     'canvas_width': None,  # Width of canvas in pixels
-    'canvas_height': 720,   # Height of canvas in pixels
+    'canvas_height': 720,  # Height of canvas in pixels
     # 'image_height' : 22,
     # 'image_width'  : 102, # I think these are in atomic units
     # 'camera_dist'  : 170.0,   # Distance from camera to front atom,
@@ -96,13 +90,13 @@ def make_color_list(atoms, color_dict):
 # converting RGB255 to RGB1 for povray.
 color_dict = {}
 for symbol in color_dict_rgb255:
-    color_dict[symbol] = [val / 255. for val in color_dict_rgb255[symbol]]
+    color_dict[symbol] = [val / 255.0 for val in color_dict_rgb255[symbol]]
 
 # loop over atoms objects to render them
 for atoms, name in zip(list_of_atoms_obj, names):
-
     radius_list = make_radius_list(
-        atoms, radius_dict, radius_scale=radius_scale)
+        atoms, radius_dict, radius_scale=radius_scale
+    )
     bondpairs = get_bondpairs(atoms, radius=covalent_radius_bond_cutoff_scale)
     color_list = make_color_list(atoms, color_dict)
 
@@ -115,7 +109,7 @@ for atoms, name in zip(list_of_atoms_obj, names):
     generic_projection_settings['radii'] = radius_list
 
     pov_name = name + '.pov'
-    povobj = write_pov(pov_name, atoms,
-                       **generic_projection_settings,
-                       povray_settings=kwargs)
+    povobj = write_pov(
+        pov_name, atoms, **generic_projection_settings, povray_settings=kwargs
+    )
     povobj.render()

@@ -9,19 +9,20 @@ from ase.optimize import QuasiNewton
 # Set up a (3 x 3) two layer slab of Ru:
 a = 2.70
 c = 1.59 * a
-sqrt3 = 3. ** .5
-bulk = Atoms('2Cu', [(0., 0., 0.), (1. / 3, 1. / 3, -0.5 * c)],
-             tags=(1, 1),
-             pbc=(1, 1, 0))
-bulk.set_cell([(a, 0, 0),
-               (a / 2, sqrt3 * a / 2, 0),
-               (0, 0, 1)])
+sqrt3 = 3.0**0.5
+bulk = Atoms(
+    '2Cu',
+    [(0.0, 0.0, 0.0), (1.0 / 3, 1.0 / 3, -0.5 * c)],
+    tags=(1, 1),
+    pbc=(1, 1, 0),
+)
+bulk.set_cell([(a, 0, 0), (a / 2, sqrt3 * a / 2, 0), (0, 0, 1)])
 slab = bulk.repeat((4, 4, 1))
 
 # Initial state.
 # Add the molecule:
-x = a / 2.
-y = a * 3. ** .5 / 6.
+x = a / 2.0
+y = a * 3.0**0.5 / 6.0
 z = 1.8
 d = 1.10  # N2 bond length
 

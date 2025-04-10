@@ -9,16 +9,14 @@ lc = 3.61000
 culayer = FaceCenteredCubic('Cu', surfaces, layers, latticeconstant=lc)
 culayer.rotate(6, 'x', rotate_cell=True)
 culayer.rotate(2, 'y', rotate_cell=True)
-write('culayer.pov', culayer,
-      show_unit_cell=0).render()
+write('culayer.pov', culayer, show_unit_cell=0).render()
 
 surfaces = [(1, 0, 0), (1, 1, 1), (1, -1, 1)]
 layers = [6, 5, -1]
 trunc = FaceCenteredCubic('Cu', surfaces, layers)
 trunc.rotate(6, 'x', rotate_cell=True)
 trunc.rotate(2, 'y', rotate_cell=True)
-write('truncated.pov', trunc,
-      show_unit_cell=0).render()
+write('truncated.pov', trunc, show_unit_cell=0).render()
 
 # This does not work!
 # surfaces = [(0, 0, 0, 1), (1, 1, -2, 0), (1, 0, -1, 1)]

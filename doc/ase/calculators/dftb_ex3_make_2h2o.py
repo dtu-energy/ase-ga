@@ -21,36 +21,40 @@ atoms = o2 + h2_1 + h2_2
 
 # 1fs = 41.3 au
 # 1000K = 0.0031668 au
-calculator_NVE = Dftb(label='h2o',
-                      Hamiltonian_MaxAngularMomentum_='',
-                      Hamiltonian_MaxAngularMomentum_O='p',
-                      Hamiltonian_MaxAngularMomentum_H='s',
-                      Driver_='VelocityVerlet',
-                      Driver_MDRestartFrequency=10,
-                      Driver_Velocities_='',
-                      Driver_Velocities_empty='<<+ "velocities.txt"',
-                      Driver_Steps=1000,
-                      Driver_KeepStationary='Yes',
-                      Driver_TimeStep=4.13,
-                      Driver_Thermostat_='None',
-                      Driver_Thermostat_empty='')
+calculator_NVE = Dftb(
+    label='h2o',
+    Hamiltonian_MaxAngularMomentum_='',
+    Hamiltonian_MaxAngularMomentum_O='p',
+    Hamiltonian_MaxAngularMomentum_H='s',
+    Driver_='VelocityVerlet',
+    Driver_MDRestartFrequency=10,
+    Driver_Velocities_='',
+    Driver_Velocities_empty='<<+ "velocities.txt"',
+    Driver_Steps=1000,
+    Driver_KeepStationary='Yes',
+    Driver_TimeStep=4.13,
+    Driver_Thermostat_='None',
+    Driver_Thermostat_empty='',
+)
 
 # 1fs = 41.3 au
 # 1000K = 0.0031668 au
-calculator_NVT = Dftb(label='h2o',
-                      Hamiltonian_MaxAngularMomentum_='',
-                      Hamiltonian_MaxAngularMomentum_O='p',
-                      Hamiltonian_MaxAngularMomentum_H='s',
-                      Driver_='VelocityVerlet',
-                      Driver_MDRestartFrequency=5,
-                      Driver_Velocities_='',
-                      Driver_Velocities_empty='<<+ "velocities.txt"',
-                      Driver_Steps=500,
-                      Driver_KeepStationary='Yes',
-                      Driver_TimeStep=8.26,
-                      Driver_Thermostat_='Berendsen',
-                      Driver_Thermostat_Temperature=0.00339845142,  # 800 degC
-                      Driver_Thermostat_CouplingStrength=0.01)
+calculator_NVT = Dftb(
+    label='h2o',
+    Hamiltonian_MaxAngularMomentum_='',
+    Hamiltonian_MaxAngularMomentum_O='p',
+    Hamiltonian_MaxAngularMomentum_H='s',
+    Driver_='VelocityVerlet',
+    Driver_MDRestartFrequency=5,
+    Driver_Velocities_='',
+    Driver_Velocities_empty='<<+ "velocities.txt"',
+    Driver_Steps=500,
+    Driver_KeepStationary='Yes',
+    Driver_TimeStep=8.26,
+    Driver_Thermostat_='Berendsen',
+    Driver_Thermostat_Temperature=0.00339845142,  # 800 degC
+    Driver_Thermostat_CouplingStrength=0.01,
+)
 
 write_dftb_velocities(atoms, 'velocities.txt')
 

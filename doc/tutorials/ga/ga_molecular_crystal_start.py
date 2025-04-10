@@ -13,7 +13,7 @@ blocks = [('N2', 8)]
 # get the N2 geometry using ase.build.molecule.
 
 # A guess for the cell volume in Angstrom^3
-box_volume = 30. * 8
+box_volume = 30.0 * 8
 
 # The cell splitting scheme:
 splits = {(2,): 1, (1,): 1}
@@ -24,13 +24,21 @@ splits = {(2,): 1, (1,): 1}
 # distances will only be applied intermolecularly
 # (and not intramolecularly):
 Z = atomic_numbers['N']
-blmin = closest_distances_generator(atom_numbers=[Z],
-                                    ratio_of_covalent_radii=1.3)
+blmin = closest_distances_generator(
+    atom_numbers=[Z], ratio_of_covalent_radii=1.3
+)
 
 # The bounds for the randomly generated unit cells:
-cellbounds = CellBounds(bounds={'phi': [30, 150], 'chi': [30, 150],
-                                'psi': [30, 150], 'a': [3, 50],
-                                'b': [3, 50], 'c': [3, 50]})
+cellbounds = CellBounds(
+    bounds={
+        'phi': [30, 150],
+        'chi': [30, 150],
+        'psi': [30, 150],
+        'a': [3, 50],
+        'b': [3, 50],
+        'c': [3, 50],
+    }
+)
 
 # The familiar 'slab' object, here only providing
 # the PBC as there are no atoms or cell vectors
@@ -38,14 +46,21 @@ cellbounds = CellBounds(bounds={'phi': [30, 150], 'chi': [30, 150],
 slab = Atoms('', pbc=True)
 
 # create the starting population
-sg = StartGenerator(slab, blocks, blmin, box_volume=box_volume,
-                    cellbounds=cellbounds, splits=splits,
-                    number_of_variable_cell_vectors=3,
-                    test_too_far=False)
+sg = StartGenerator(
+    slab,
+    blocks,
+    blmin,
+    box_volume=box_volume,
+    cellbounds=cellbounds,
+    splits=splits,
+    number_of_variable_cell_vectors=3,
+    test_too_far=False,
+)
 
 # Initialize the database
-da = PrepareDB(db_file_name='gadb.db', simulation_cell=slab,
-               stoichiometry=[Z] * 16)
+da = PrepareDB(
+    db_file_name='gadb.db', simulation_cell=slab, stoichiometry=[Z] * 16
+)
 
 # Generate the new structures
 # and add them to the database

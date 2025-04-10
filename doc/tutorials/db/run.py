@@ -14,10 +14,12 @@ for name in ['bulk.db', 'ads.db', 'refs.db']:
 for filename in ['bulk.py', 'ads.py', 'refs.py']:
     runpy.run_path(filename)
 
-for cmd in ['ase db ads.db ads=clean --insert-into refs.db',
-            'ase db ads.db ads=clean --delete --yes',
-            'ase db ads.db pbc=FFF --insert-into refs.db',
-            'ase db ads.db pbc=FFF --delete --yes']:
+for cmd in [
+    'ase db ads.db ads=clean --insert-into refs.db',
+    'ase db ads.db ads=clean --delete --yes',
+    'ase db ads.db pbc=FFF --insert-into refs.db',
+    'ase db ads.db pbc=FFF --delete --yes',
+]:
     main(args=cmd.split()[1:])
 
 runpy.run_path('ea.py')
@@ -26,8 +28,7 @@ runpy.run_path('ea.py')
 for n in [1, 2, 3]:
     a = read(f'ads.db@Cu{n}O')[0]
     a *= (2, 2, 1)
-    renderer = write(f'cu{n}o.pov', a,
-                     rotation='-80x')
+    renderer = write(f'cu{n}o.pov', a, rotation='-80x')
     renderer.render()
 
 # A bit of testing:

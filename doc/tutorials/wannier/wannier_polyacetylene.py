@@ -6,9 +6,13 @@ from ase.dft.wannier import Wannier
 atoms, calc = restart('poly.gpw', txt=None)
 
 # Make wannier functions using (one) extra degree of freedom
-wan = Wannier(nwannier=6, calc=calc, fixedenergy=1.5,
-              initialwannier='orbitals',
-              functional='var')
+wan = Wannier(
+    nwannier=6,
+    calc=calc,
+    fixedenergy=1.5,
+    initialwannier='orbitals',
+    functional='var',
+)
 wan.localize()
 wan.save('poly.json')
 wan.translate_all_to_cell((2, 0, 0))
@@ -24,7 +28,7 @@ with open('KSbands.txt', 'w') as fd:
 
 # Print Wannier bandstructure
 with open('WANbands.txt', 'w') as fd:
-    for k in np.linspace(-.5, .5, 100):
+    for k in np.linspace(-0.5, 0.5, 100):
         ham = wan.get_hamiltonian_kpoint([k, 0, 0])
         for eps in np.linalg.eigvalsh(ham).real:
             print(k, eps - ef, file=fd)

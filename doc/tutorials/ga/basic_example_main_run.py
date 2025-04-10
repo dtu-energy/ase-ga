@@ -26,20 +26,25 @@ atom_numbers_to_optimize = da.get_atom_numbers_to_optimize()
 n_to_optimize = len(atom_numbers_to_optimize)
 slab = da.get_slab()
 all_atom_types = get_all_atom_types(slab, atom_numbers_to_optimize)
-blmin = closest_distances_generator(all_atom_types,
-                                    ratio_of_covalent_radii=0.7)
+blmin = closest_distances_generator(all_atom_types, ratio_of_covalent_radii=0.7)
 
-comp = InteratomicDistanceComparator(n_top=n_to_optimize,
-                                     pair_cor_cum_diff=0.015,
-                                     pair_cor_max=0.7,
-                                     dE=0.02,
-                                     mic=False)
+comp = InteratomicDistanceComparator(
+    n_top=n_to_optimize,
+    pair_cor_cum_diff=0.015,
+    pair_cor_max=0.7,
+    dE=0.02,
+    mic=False,
+)
 
 pairing = CutAndSplicePairing(slab, n_to_optimize, blmin)
-mutations = OperationSelector([1., 1., 1.],
-                              [MirrorMutation(blmin, n_to_optimize),
-                               RattleMutation(blmin, n_to_optimize),
-                               PermutationMutation(n_to_optimize)])
+mutations = OperationSelector(
+    [1.0, 1.0, 1.0],
+    [
+        MirrorMutation(blmin, n_to_optimize),
+        RattleMutation(blmin, n_to_optimize),
+        PermutationMutation(n_to_optimize),
+    ],
+)
 
 # Relax all unrelaxed structures (e.g. the starting population)
 while da.get_number_of_unrelaxed_candidates() > 0:
@@ -52,9 +57,9 @@ while da.get_number_of_unrelaxed_candidates() > 0:
     da.add_relaxed_step(a)
 
 # create the population
-population = Population(data_connection=da,
-                        population_size=population_size,
-                        comparator=comp)
+population = Population(
+    data_connection=da, population_size=population_size, comparator=comp
+)
 
 # test n_to_test new candidates
 for i in range(n_to_test):

@@ -20,13 +20,14 @@ metals = db.get_param('metals')
 # Specify the procreation operators for the algorithm
 # Try and play with the mutation operators that move to nearby
 # places in the periodic table
-oclist = ([1, 1], [RandomElementMutation(metals),
-                   OnePointElementCrossover(metals)])
+oclist = (
+    [1, 1],
+    [RandomElementMutation(metals), OnePointElementCrossover(metals)],
+)
 operation_selector = OperationSelector(*oclist)
 
 # Pass parameters to the population instance
-pop = Population(data_connection=db,
-                 population_size=population_size)
+pop = Population(data_connection=db, population_size=population_size)
 
 # We form generations in this algorithm run and can therefore set
 # a convergence criteria based on generations

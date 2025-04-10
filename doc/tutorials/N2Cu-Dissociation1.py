@@ -14,8 +14,9 @@ slab.set_pbc((1, 1, 0))
 # Initial state.
 # Add the N2 molecule oriented at 60 degrees:
 d = 1.10  # N2 bond length
-N2mol = Atoms('N2', positions=[[0.0, 0.0, 0.0],
-                               [0.5 * 3**0.5 * d, 0.5 * d, 0.0]])
+N2mol = Atoms(
+    'N2', positions=[[0.0, 0.0, 0.0], [0.5 * 3**0.5 * d, 0.5 * d, 0.0]]
+)
 add_adsorbate(slab, N2mol, height=1.0, position='fcc')
 
 # Use the EMT calculator for the forces and energies:

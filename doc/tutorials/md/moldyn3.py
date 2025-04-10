@@ -1,4 +1,5 @@
 """Demonstrates molecular dynamics with constant temperature."""
+
 from asap3 import EMT  # Way too slow with ase.EMT !
 
 from ase import units
@@ -11,10 +12,12 @@ size = 10
 T = 1500  # Kelvin
 
 # Set up a crystal
-atoms = FaceCenteredCubic(directions=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-                          symbol="Cu",
-                          size=(size, size, size),
-                          pbc=False)
+atoms = FaceCenteredCubic(
+    directions=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+    symbol='Cu',
+    size=(size, size, size),
+    pbc=False,
+)
 
 # Describe the interatomic interactions with the Effective Medium Theory
 atoms.calc = EMT()
@@ -29,8 +32,10 @@ def printenergy(a=atoms):  # store a reference to atoms in the definition.
     """Function to print the potential, kinetic and total energy."""
     epot = a.get_potential_energy() / len(a)
     ekin = a.get_kinetic_energy() / len(a)
-    print('Energy per atom: Epot = %.3feV  Ekin = %.3feV (T=%3.0fK)  '
-          'Etot = %.3feV' % (epot, ekin, ekin / (1.5 * units.kB), epot + ekin))
+    print(
+        'Energy per atom: Epot = %.3feV  Ekin = %.3feV (T=%3.0fK)  '
+        'Etot = %.3feV' % (epot, ekin, ekin / (1.5 * units.kB), epot + ekin)
+    )
 
 
 dyn.attach(printenergy, interval=50)
