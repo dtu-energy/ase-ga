@@ -6,16 +6,11 @@ I/O
 
  - :mod:`ase.db`: Unique IDs are now based on UUID rather than pseudorandom numbers that could become equal due to seeding (:mr:`3614`).
  - :mod:`ase.db`: Fix bug where unique_id could be converted to float or int (:mr:`3613`).
- - pubchem: Support for triple bonds in SMILES (:mr:`3620`).
  - Vasp: More robust reading of CHGCAR (:mr:`3607`).
- - ORCA logfiles are now an IO format (:mr:`3599`).
  - Lammpsdump: Read timestep from lammpsdump and set element based on mass (:mr:`3529`).
  - Vasp: Read and write velocities (:mr:`3597`).
  - DB: Support for LMDB via `ase-db-backends` project (:mr:`3564`, :mr:`3639`).
  - Espresso: Fix bug reading `alat` in some cases (:mr:`3562`).
- - DB: Heavy-weight database backends moved to external
-   `ase-db-backends <https://gitlab.com/ase/ase-db-backends>`_ project
-   (:mr:`3545`).
  - GPAW: Fix reading of total charge from text file (:mr:`3519`).
  - extxyz: Somewhat restrict what properties are automatically written (:mr:`3516`).
  - Lammpsdump: Read custom property/atom LAMMPS dump data (:mr:`3510`).
@@ -40,7 +35,6 @@ Molecular dynamics
 ------------------
 
  - Improved random sampling in countour exploration (:mr:`3643`).
- - Deprecate `communicator` keyword in favour of `comm` (:mr:`3631`).
  - Fix small energy error in Langevin dynamics (:mr:`3567`).
  - Isotropic NPT with MTK equations (:mr:`3550`).
  - Bussi dynamics now work in parallel (:mr:`3569`).
