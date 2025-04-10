@@ -19,7 +19,9 @@ from ase.optimize.optimize import Optimizer
 
 def f(lamda, Gbar, b, radius):
     b1 = b - lamda
-    g = radius**2 - np.dot(Gbar / b1, Gbar / b1)
+    b1[abs(b1) < 1e-40] = 1e-40  # avoid divide-by-zero
+    gbar_b_lamda = Gbar / b1  # only compute once
+    g = radius**2 - np.dot(gbar_b_lamda, gbar_b_lamda)
     return g
 
 
@@ -74,8 +76,15 @@ def scale_radius_force(f, r):
 def find_lamda(upperlimit, Gbar, b, radius):
     lowerlimit = upperlimit
     step = 0.1
+    i = 0
+
     while f(lowerlimit, Gbar, b, radius) < 0:
         lowerlimit -= step
+        i += 1
+
+        # if many iterations are required, dynamically scale step for efficiency
+        if i % 100 == 0:
+            step *= 1.25
 
     converged = False
 
