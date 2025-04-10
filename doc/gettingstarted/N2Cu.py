@@ -12,7 +12,7 @@ slab = fcc111('Cu', size=(4, 4, 2), vacuum=10.0)
 slab.calc = EMT()
 e_slab = slab.get_potential_energy()
 
-molecule = Atoms('2N', positions=[(0., 0., 0.), (0., 0., d)])
+molecule = Atoms('2N', positions=[(0.0, 0.0, 0.0), (0.0, 0.0, d)])
 molecule.calc = EMT()
 e_N2 = molecule.get_potential_energy()
 
