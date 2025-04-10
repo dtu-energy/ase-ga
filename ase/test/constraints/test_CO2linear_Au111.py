@@ -1,3 +1,4 @@
+# fmt: off
 from math import cos, pi, sin
 
 import pytest

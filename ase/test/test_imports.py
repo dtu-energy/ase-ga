@@ -1,3 +1,4 @@
+# fmt: off
 import contextlib
 from importlib import import_module
 from pathlib import Path

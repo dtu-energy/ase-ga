@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for parsers of CASTEP .geom, .md, .ts files"""
 import io
 

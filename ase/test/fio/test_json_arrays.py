@@ -1,3 +1,4 @@
+# fmt: off
 import numpy as np
 
 from ase.io.jsonio import decode, encode

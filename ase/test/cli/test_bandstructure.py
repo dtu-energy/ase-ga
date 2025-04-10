@@ -1,3 +1,4 @@
+# fmt: off
 from pathlib import Path
 
 from ase.lattice import RHL

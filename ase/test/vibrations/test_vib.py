@@ -1,3 +1,4 @@
+# fmt: off
 """Test the ase.vibrations.Vibrations object using a harmonic calculator."""
 import os
 from pathlib import Path

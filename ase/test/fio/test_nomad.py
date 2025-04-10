@@ -1,3 +1,4 @@
+# fmt: off
 # Stripped (minimal) version of nomad entry with 3 images.
 # The images are actually identical for some reason, but we want to be sure
 # that they are extracted correctly.

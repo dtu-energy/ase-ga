@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import bulk
 from ase.dft.kpoints import monkhorst_pack
 from ase.units import Bohr, Hartree, fs, kB, kcal, kJ, mol

@@ -1,3 +1,4 @@
+# fmt: off
 from types import SimpleNamespace
 
 from ase.db.table import Table

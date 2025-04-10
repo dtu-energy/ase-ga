@@ -1,3 +1,4 @@
+# fmt: off
 """Testing of "ase db" command-line interface."""
 from pathlib import Path
 

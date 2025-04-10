@@ -1,3 +1,4 @@
+# fmt: off
 import numpy as np
 
 from ase.geometry import cell_to_cellpar as c2p

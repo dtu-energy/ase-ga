@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import stack
 from ase.build.surface import _all_surface_functions
 from ase.calculators.calculator import compare_atoms

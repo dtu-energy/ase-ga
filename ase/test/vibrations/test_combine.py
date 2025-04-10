@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import molecule
 from ase.test.utils import RandomCalculator
 from ase.utils import workdir

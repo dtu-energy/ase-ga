@@ -1,3 +1,4 @@
+# fmt: off
 import numpy as np
 
 from ase.utils.cube import grid_2d_slice

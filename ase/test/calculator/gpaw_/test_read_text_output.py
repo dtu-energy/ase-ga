@@ -1,3 +1,4 @@
+# fmt: off
 from ase import io
 from ase.calculators.singlepoint import SinglePointDFTCalculator
 

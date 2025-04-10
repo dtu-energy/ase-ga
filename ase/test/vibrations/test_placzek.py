@@ -1,3 +1,4 @@
+# fmt: off
 """
 Test Placzek type resonant Raman implementations
 """

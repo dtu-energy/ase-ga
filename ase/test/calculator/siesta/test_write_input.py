@@ -1,3 +1,4 @@
+# fmt: off
 """Test write_input"""
 import numpy as np
 import pytest

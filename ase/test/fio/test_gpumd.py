@@ -1,3 +1,4 @@
+# fmt: off
 """GPUMD input file parser.
 
 Implemented:

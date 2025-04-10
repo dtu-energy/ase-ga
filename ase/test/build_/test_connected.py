@@ -1,3 +1,4 @@
+# fmt: off
 from ase import Atoms
 from ase.build import molecule
 from ase.build.connected import connected_atoms, separate, split_bond

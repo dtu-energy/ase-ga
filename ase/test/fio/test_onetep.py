@@ -1,3 +1,4 @@
+# fmt: off
 """ONETEP file parsers.
 
 Implemented:

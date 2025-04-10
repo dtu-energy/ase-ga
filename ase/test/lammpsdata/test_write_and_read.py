@@ -1,3 +1,4 @@
+# fmt: off
 """Test write and read."""
 import io
 import re

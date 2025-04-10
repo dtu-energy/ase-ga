@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for PubChem."""
 
 import json

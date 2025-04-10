@@ -1,3 +1,4 @@
+# fmt: off
 from math import pi
 
 import pytest

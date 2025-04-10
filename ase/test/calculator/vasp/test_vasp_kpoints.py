@@ -1,3 +1,4 @@
+# fmt: off
 """
 Check the many ways of specifying KPOINTS
 """

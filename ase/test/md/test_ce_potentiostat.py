@@ -1,3 +1,4 @@
+# fmt: off
 '''These tests ensure that the potentiostat can keep a sysytem near the PEC'''
 
 import numpy as np

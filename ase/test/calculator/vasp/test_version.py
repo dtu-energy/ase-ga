@@ -1,3 +1,4 @@
+# fmt: off
 from ase.calculators.vasp import get_vasp_version
 
 vasp_sample_header = """\

@@ -1,3 +1,4 @@
+# fmt: off
 import shutil
 from math import sqrt
 from os.path import getsize

@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for CASTEP parsers"""
 import io
 import os

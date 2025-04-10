@@ -1,3 +1,4 @@
+# fmt: off
 from dataclasses import dataclass
 from itertools import product
 from pathlib import Path

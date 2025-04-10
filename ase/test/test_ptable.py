@@ -1,3 +1,4 @@
+# fmt: off
 #!/usr/bin/env python3
 """Test Periodic Table."""
 from ase.utils.ptable import ptable

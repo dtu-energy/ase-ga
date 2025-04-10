@@ -1,3 +1,4 @@
+# fmt: off
 import io
 
 from ase.io import read

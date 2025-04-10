@@ -1,3 +1,4 @@
+# fmt: off
 import pytest
 
 from ase.constraints import FixAtoms

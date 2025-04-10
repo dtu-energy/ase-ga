@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import bulk, molecule
 from ase.constraints import FixAtoms, FixBondLength
 from ase.io import read

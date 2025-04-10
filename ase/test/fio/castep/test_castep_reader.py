@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for the Castep.read method"""
 from io import StringIO
 

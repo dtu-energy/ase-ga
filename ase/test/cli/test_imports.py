@@ -1,3 +1,4 @@
+# fmt: off
 """Check that plain cli doesn't execute too many imports."""
 import sys
 

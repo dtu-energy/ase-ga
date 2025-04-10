@@ -1,3 +1,4 @@
+# fmt: off
 import pytest
 
 from ase.calculators.h2morse import (

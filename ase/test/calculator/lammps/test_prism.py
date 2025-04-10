@@ -1,3 +1,4 @@
+# fmt: off
 """Test Prism"""
 from math import sqrt
 

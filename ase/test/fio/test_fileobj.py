@@ -1,3 +1,4 @@
+# fmt: off
 # test reading and writing a file descriptor using its name
 
 import pytest

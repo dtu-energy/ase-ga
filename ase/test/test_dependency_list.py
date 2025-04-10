@@ -1,3 +1,4 @@
+# fmt: off
 from ase.dependencies import format_dependency
 
 

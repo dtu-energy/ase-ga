@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for the gaussian-out format."""
 from io import StringIO
 

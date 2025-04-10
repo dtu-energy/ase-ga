@@ -1,3 +1,4 @@
+# fmt: off
 """
 Read and write on compressed files.
 """

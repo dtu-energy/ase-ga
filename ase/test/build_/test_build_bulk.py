@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for `bulk`"""
 import pytest
 

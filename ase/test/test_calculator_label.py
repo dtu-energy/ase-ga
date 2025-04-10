@@ -1,3 +1,4 @@
+# fmt: off
 from ase.calculators.calculator import Calculator
 
 

@@ -1,3 +1,4 @@
+# fmt: off
 # type: ignore
 from math import cos, pi, sin
 

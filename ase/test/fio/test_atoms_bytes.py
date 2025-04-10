@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import bulk
 from ase.calculators.calculator import compare_atoms
 from ase.io.bytes import parse_atoms, parse_images, to_bytes

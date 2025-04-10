@@ -1,3 +1,4 @@
+# fmt: off
 from ase.atoms import Atoms
 from ase.md.analysis import DiffusionCoefficient
 from ase.units import fs as fs_conversion

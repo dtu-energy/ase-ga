@@ -1,3 +1,4 @@
+# fmt: off
 import copy
 from io import StringIO
 

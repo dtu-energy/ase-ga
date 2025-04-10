@@ -1,3 +1,4 @@
+# fmt: off
 """
 Use lammpsdata module to create an Atoms object from a lammps data file
 and checks that the cell, mass, positions, and velocities match the

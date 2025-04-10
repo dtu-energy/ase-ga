@@ -1,3 +1,4 @@
+# fmt: off
 """Test module for explicitly unittesting parts of the VASP calculator"""
 
 import os

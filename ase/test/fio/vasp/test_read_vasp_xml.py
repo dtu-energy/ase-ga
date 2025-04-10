@@ -1,3 +1,4 @@
+# fmt: off
 from collections import OrderedDict
 from io import StringIO
 from pathlib import Path

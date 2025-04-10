@@ -1,3 +1,4 @@
+# fmt: off
 import pytest
 
 from ase.calculators.genericfileio import BaseProfile, CalculatorTemplate

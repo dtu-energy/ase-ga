@@ -1,3 +1,4 @@
+# fmt: off
 """Example, in order to run you must place a pseudopotential 'Na.psf' in
 the folder"""
 

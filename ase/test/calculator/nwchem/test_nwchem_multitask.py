@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for the NWChem computations which use more than one task"""
 import numpy as np
 import pytest

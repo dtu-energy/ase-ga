@@ -1,3 +1,4 @@
+# fmt: off
 from ase import Atoms
 from ase.calculators.siesta import Siesta
 from ase.calculators.siesta.parameters import PAOBasisBlock, Species

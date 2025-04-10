@@ -1,3 +1,4 @@
+# fmt: off
 """
 Create an atoms object and write it to a lammps data file
 """

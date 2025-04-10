@@ -1,3 +1,4 @@
+# fmt: off
 """Test Pourbaix diagram."""
 import numpy as np
 import pytest

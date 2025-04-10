@@ -1,3 +1,4 @@
+# fmt: off
 """Check if we can deal with spin-broken symmetries."""
 import pytest
 from numpy import array

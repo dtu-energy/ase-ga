@@ -1,3 +1,4 @@
+# fmt: off
 # test read
 # https://wiki.openchemistry.org/Chemical_JSON
 import numpy as np

@@ -1,3 +1,4 @@
+# fmt: off
 import warnings
 from io import StringIO
 

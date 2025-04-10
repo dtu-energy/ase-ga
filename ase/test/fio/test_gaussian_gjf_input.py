@@ -1,3 +1,4 @@
+# fmt: off
 """
 test_gaussian_gjf_input.py, Geoffrey Weal, 23/5/24
 
