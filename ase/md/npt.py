@@ -275,8 +275,20 @@ class NPT(MolecularDynamics):
         "Get the elapsed time."
         return self.timeelapsed
 
-    def run(self, steps):
-        """Perform a number of time steps."""
+    def irun(self, steps):
+        """Run dynamics algorithm as generator.
+
+        Parameters
+        ----------
+        steps : int
+            Number of dynamics steps to be run.
+
+        Yields
+        ------
+        complete : bool
+            True if the maximum number of steps are reached.
+        """
+
         if not self.initialized:
             self.initialize()
         else:
@@ -284,10 +296,25 @@ class NPT(MolecularDynamics):
                 raise NotImplementedError(
                     "You have modified the atoms since the last timestep.")
 
-        for _ in range(steps):
-            self.step()
-            self.nsteps += 1
-            self.call_observers()
+        yield from super().irun(steps)
+
+    def run(self, steps):
+        """Perform a number of time steps.
+
+        Parameters
+        ----------
+        steps : int
+            Number of dynamics steps to be run.
+
+        Yields
+        ------
+        complete : bool
+            True if the maximum number of steps are reached.
+        """
+
+        for complete in self.irun(steps):
+            pass
+        return complete
 
     def have_the_atoms_been_changed(self):
         "Checks if the user has modified the positions or momenta of the atoms"
