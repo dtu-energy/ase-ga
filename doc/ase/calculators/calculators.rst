@@ -49,7 +49,7 @@ The calculators can be divided in four groups:
    FORTRAN/C/C++ codes are not part of ASE.
 
 3) Pure python implementations included in the ASE package: EMT, EAM,
-   Lennard-Jones, Morse and HarmonicCalculator.
+   Lennard-Jones, Morse, Tersoff, and HarmonicCalculator.
 
 4) Calculators that wrap others, included in the ASE package:
 
@@ -124,6 +124,7 @@ elk                                       Full Potential LAPW code
 :mod:`~ase.calculators.qchem`             Gaussian based electronic structure code
 :mod:`~ase.calculators.siesta`            LCAO pseudopotential code
 :mod:`~ase.calculators.turbomole`         Fast atom orbital code
+:mod:`~ase.calculators.tersoff`           Tersoff bond-order potential
 :mod:`~ase.calculators.vasp`              Plane-wave PAW code
 :mod:`~ase.calculators.emt`               Effective Medium Theory calculator
 lj                                        Lennard-Jones potential
@@ -266,6 +267,7 @@ to set the ``ASE_CONFIG_PATH`` to an empty string.
    qchem
    siesta
    turbomole
+   tersoff
    vasp
    qmmm
    checkpointing
