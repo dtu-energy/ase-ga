@@ -8,8 +8,8 @@
 .. - A bullet item for the I/O category.
 ..
 
- Calculators
- -----------
+Calculators
+-----------
 
  - A new Calculator :class:`ase.calculators.tersoff.Tersoff` has been added. This is a Python implementation of a LAMMPS-style Tersoff interatomic potential. Parameters may be passed directly to the calculator as a :class:`ase.calculators.tersoff.TersoffParameters` object, or the Calculator may be constructed from a LAMMPS-style file using its ``from_lammps`` classmethod. (:mr:`3502`)
 
