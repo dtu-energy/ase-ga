@@ -1,5 +1,0 @@
-I/O
----
-
-- Fixed `:mod:`ase.data.pubchem` module to convert ``#`` in SMILES to HEX
-  ``%23`` for URL (:mr:`3620`).

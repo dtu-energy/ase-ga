@@ -11,6 +11,14 @@ Git master branch
 
 :git:`master <>`.
 
+* No changes yet
+
+
+Version 3.25.0
+==============
+
+11 April 2025: :git:`3.25.0 <../3.25.0>`
+
 Version 3.24.0
 ==============
 

@@ -1,4 +1,0 @@
-Molecular dynamics
-------------------
-
-- Merged `self.communicator` into `self.comm` (:mr:`3631`).
