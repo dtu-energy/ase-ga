@@ -456,21 +456,19 @@ class Tersoff(Calculator):
         den = (d2 + h * h) * (d2 + h * h)
         return params.gamma * num / den
 
-    def cutoff_func(self, r, R, D):
+    def cutoff_func(self, r: float, R: float, D: float) -> float:
         """Calculate the cutoff function."""
         if r > R + D:
             return 0.0
-        elif r < R - D:
+        if r < R - D:
             return 1.0
-        else:
-            return 0.5 * (1.0 - np.sin(np.pi * (r - R) / (2.0 * D)))
+        return 0.5 * (1.0 - np.sin(np.pi * (r - R) / (2.0 * D)))
 
-    def cutoff_func_deriv(self, r, R, D):
-        """Calculate cutoff function derivative."""
+    def cutoff_func_deriv(self, r: float, R: float, D: float) -> float:
+        """Calculate cutoff function derivative with respect to ``r``."""
         if r > R + D or r < R - D:
             return 0.0
-        else:
-            return -0.25 * np.pi / D * np.cos(np.pi * (r - R) / (2.0 * D))
+        return -0.25 * np.pi / D * np.cos(np.pi * (r - R) / (2.0 * D))
 
     def calc_bond_order_derivatives(
         self, j, neighbors, distances, vectors, params
