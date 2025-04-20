@@ -526,9 +526,8 @@ class Tersoff(Calculator):
             zeta += fc_ik * g_theta * ex_delr
 
             # Calculate derivative of zeta w.r.t r_ij (dzeta_drij)
-            dcos_theta_drij = (vec_ik - cos_theta * vectors[j]) / (
-                distances[j] * r_ik
-            )
+            dcos_theta_drij = vec_ik / (distances[j] * r_ik)
+            dcos_theta_drij -= cos_theta * vectors[j] / distances[j] ** 2
             dzeta_drij += fc_ik * (
                 g_theta_deriv * dcos_theta_drij * ex_delr
                 + g_theta * (-params.lambda3 * ex_delr * (distances[j] - r_ik))
