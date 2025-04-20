@@ -411,7 +411,7 @@ class Tersoff(Calculator):
             )
             fc_ik = self.cutoff_func(r_ik, params.R, params.D)
 
-            g_theta = self.g_angle(cos_theta, params)
+            g_theta = self._calc_gijk(cos_theta, params)
 
             # Calculate the exponential for the bond order zeta term
             # This is the term that modifies the bond order based
@@ -432,29 +432,29 @@ class Tersoff(Calculator):
         )
         return bij
 
-    def g_angle(self, cos_theta, params):
-        r"""
-        Angular function for Tersoff potential.
+    def _calc_gijk(self, cos_theta: float, params) -> float:
+        r"""Calculate the angular function ``g`` for the Tersoff potential.
 
-        g(\\theta) = \\gamma \\left( 1 + \\frac{c^2}{d^2} -
-        \\frac{c^2}{d^2 + h^2} \\right)
+        .. math::
+            g(\theta) = \gamma \left( 1 + \frac{c^2}{d^2}
+            - \frac{c^2}{d^2 + (h - \cos \theta)^2} \right)
 
-        where \\theta is the angle between the bond vector
+        where :math:`\theta` is the angle between the bond vector
         and the vector of atom i and its neighbors j-k.
         """
         c2 = params.c * params.c
         d2 = params.d * params.d
-        h = params.h - cos_theta
-        return params.gamma * (1.0 + c2 / d2 - c2 / (d2 + h * h))
+        hcth = params.h - cos_theta
+        return params.gamma * (1.0 + c2 / d2 - c2 / (d2 + hcth**2))
 
-    def g_angle_deriv(self, cos_theta, params):
-        """Calculate the derivative of the angular function."""
+    def _calc_gijk_d(self, cos_theta: float, params) -> float:
+        """Calculate the derivative of ``g`` with respect to ``cos_theta``."""
         c2 = params.c * params.c
         d2 = params.d * params.d
-        h = params.h - cos_theta
-        num = 2.0 * c2 * h
-        den = (d2 + h * h) * (d2 + h * h)
-        return params.gamma * num / den
+        hcth = params.h - cos_theta
+        numerator = -2.0 * params.gamma * c2 * hcth
+        denominator = (d2 + hcth**2) ** 2
+        return numerator / denominator
 
     def cutoff_func(self, r: float, R: float, D: float) -> float:
         """Calculate the cutoff function."""
@@ -511,8 +511,8 @@ class Tersoff(Calculator):
 
             cos_theta = np.dot(vectors[j], vec_ik) / (distances[j] * r_ik)
             fc_ik = self.cutoff_func(r_ik, params.R, params.D)
-            g_theta = self.g_angle(cos_theta, params)
-            g_theta_deriv = self.g_angle_deriv(cos_theta, params)
+            g_theta = self._calc_gijk(cos_theta, params)
+            g_theta_deriv = self._calc_gijk_d(cos_theta, params)
 
             # See comment in calc_bond_order for explanation
             arg = (params.lambda3 * (distances[j] - r_ik)) ** params.m
