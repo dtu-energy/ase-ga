@@ -51,7 +51,10 @@ class TersoffParameters:
 
 
 class Tersoff(Calculator):
-    """ASE Calculator for Tersoff interatomic potential."""
+    """ASE Calculator for Tersoff interatomic potential.
+
+    .. versionadded:: 3.25.0
+    """
 
     implemented_properties = _IMPLEMENTED_PROPERTIES
 
