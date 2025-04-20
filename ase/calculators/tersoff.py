@@ -417,7 +417,7 @@ class Tersoff(Calculator):
             # This is the term that modifies the bond order based
             # on the distance between atoms i-j and i-k. Tresholds are
             # used to prevent overflow/underflow.
-            arg = params.lambda3 * (distances[j] - r_ik) ** params.m
+            arg = (params.lambda3 * (distances[j] - r_ik)) ** params.m
             if arg > _MAX_EXP_ARG:
                 ex_delr = 1.0e30
             elif arg < _MIN_EXP_ARG:
@@ -515,7 +515,7 @@ class Tersoff(Calculator):
             g_theta_deriv = self.g_angle_deriv(cos_theta, params)
 
             # See comment in calc_bond_order for explanation
-            arg = params.lambda3 * (distances[j] - r_ik) ** params.m
+            arg = (params.lambda3 * (distances[j] - r_ik)) ** params.m
             if arg > _MAX_EXP_ARG:
                 ex_delr = 1.0e30
             elif arg < _MIN_EXP_ARG:
