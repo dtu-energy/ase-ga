@@ -10,7 +10,7 @@ from ase.neighborlist import NeighborList
 __author__ = 'Stefan Bringuier <stefanbringuier@gmail.com>'
 __description__ = 'LAMMPS-style native Tersoff potential for ASE'
 
-_IMPLEMENTED_PROPERTIES = ['energy', 'forces', 'stress']
+_IMPLEMENTED_PROPERTIES = ['free_energy', 'energy', 'forces', 'stress']
 
 # Maximum/minimum exponents for numerical stability
 # in bond order calculation
@@ -272,6 +272,7 @@ class Tersoff(Calculator):
             virial += stress_i
 
         self.results['energy'] = energy
+        self.results['free_energy'] = energy
         self.results['forces'] = forces
         # Virial to stress (i.e., eV/A^3)
         stress_tensor = virial / self.atoms.get_volume()
