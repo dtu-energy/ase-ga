@@ -10,8 +10,6 @@ from ase.neighborlist import NeighborList
 __author__ = 'Stefan Bringuier <stefanbringuier@gmail.com>'
 __description__ = 'LAMMPS-style native Tersoff potential for ASE'
 
-_IMPLEMENTED_PROPERTIES = ['free_energy', 'energy', 'forces', 'stress']
-
 # Maximum/minimum exponents for numerical stability
 # in bond order calculation
 _MAX_EXP_ARG = 69.0776e0
@@ -56,7 +54,7 @@ class Tersoff(Calculator):
     .. versionadded:: 3.25.0
     """
 
-    implemented_properties = _IMPLEMENTED_PROPERTIES
+    implemented_properties = ['free_energy', 'energy', 'forces', 'stress']
 
     def __init__(
         self,
@@ -65,26 +63,25 @@ class Tersoff(Calculator):
         **kwargs,
     ):
         """
-        Initialize a Tersoff calculator.
-
         Parameters
         ----------
         parameters : dict
-            Dictionary mapping element combinations to
-            TersoffParameters objects.
-            Format: {
-                ('A', 'B', 'C'): TersoffParameters(
-                    m, gamma, lambda3, c, d, h, n,
-                    beta, lambda2, B, R, D, lambda1, A),
-                ...
-            }
-            where ('A', 'B', 'C') represents the elements
-            involved in the interaction.
+            Mapping element combinations to TersoffParameters objects::
+
+                {
+                    ('A', 'B', 'C'): TersoffParameters(
+                        m, gamma, lambda3, c, d, h, n,
+                        beta, lambda2, B, R, D, lambda1, A),
+                    ...
+                }
+
+            where ('A', 'B', 'C') are the elements involved in the interaction.
         skin : float, default 0.3
             The skin distance for neighbor list calculations.
         **kwargs : dict
-            Additional parameters to be passed to the
-            ASE Calculator constructor.
+            Additional parameters to be passed to
+            :class:`~ase.calculators.Calculator`.
+
         """
         Calculator.__init__(self, **kwargs)
         self.cutoff_skin = skin
@@ -97,9 +94,7 @@ class Tersoff(Calculator):
         skin: float = 0.3,
         **kwargs,
     ) -> 'Tersoff':
-        """
-        Initialize a Tersoff calculator from a LAMMPS-style\
-        Tersoff potential file.
+        """Make :class:`Tersoff` from a LAMMPS-style Tersoff potential file.
 
         Parameters
         ----------
@@ -113,18 +108,18 @@ class Tersoff(Calculator):
 
         Returns
         -------
-        Tersoff
+        :class:`Tersoff`
             Initialized Tersoff calculator with parameters from the file.
+
         """
-        parameters = cls.read_lammps_format(potential_file)
+        parameters = cls._read_lammps_format(potential_file)
         return cls(parameters=parameters, skin=skin, **kwargs)
 
     @staticmethod
-    def read_lammps_format(
+    def _read_lammps_format(
         potential_file: Union[str, Path],
     ) -> Dict[Tuple[str, str, str], TersoffParameters]:
-        """
-        Read the Tersoff potential parameters from a LAMMPS-style file.
+        """Read the Tersoff potential parameters from a LAMMPS-style file.
 
         Parameters
         ----------
@@ -135,6 +130,7 @@ class Tersoff(Calculator):
         -------
         dict
             Dictionary mapping element combinations to TersoffParameters objects
+
         """
         block_size = 17
         with open(potential_file, 'r') as fd:
@@ -166,9 +162,8 @@ class Tersoff(Calculator):
         key: Tuple[str, str, str],
         params: TersoffParameters = None,
         **kwargs,
-    ):
-        """
-        Update parameters for a specific element combination.
+    ) -> None:
+        """Update parameters for a specific element combination.
 
         Parameters
         ----------
@@ -178,6 +173,7 @@ class Tersoff(Calculator):
             A TersoffParameters instance to completely replace the parameters
         **kwargs:
             Individual parameter values to update, e.g. R=2.9
+
         """
         if key not in self.parameters:
             raise KeyError(f"Key '{key}' not found in parameters.")
@@ -192,9 +188,8 @@ class Tersoff(Calculator):
                     raise ValueError(f'Invalid parameter name: {name}')
                 setattr(self.parameters[key], name, value)
 
-    def update_nl(self, atoms) -> None:
-        """
-        Update the neighbor list with the parameter R+D cutoffs.
+    def _update_nl(self, atoms) -> None:
+        """Update the neighbor list with the parameter R+D cutoffs.
 
         Parameters
         ----------
@@ -206,6 +201,7 @@ class Tersoff(Calculator):
         The cutoffs are determined by the parameters of the Tersoff potential.
         Each atom's cutoff is based on the R+D values from the parameter set
         where that atom's element appears first in the key tuple.
+
         """
         # Get cutoff for each atom based on its element type
         cutoffs = []
@@ -234,11 +230,13 @@ class Tersoff(Calculator):
         system_changes=all_changes,
     ):
         """Calculate energy, forces, and stress.
+
         Notes
         -----
         The force and stress are calculated regardless if they are
         requested, despite some additional overhead cost,
         therefore they are always stored in the results dict.
+
         """
         Calculator.calculate(self, atoms, properties, system_changes)
 
@@ -247,7 +245,7 @@ class Tersoff(Calculator):
         if any(change in checks for change in system_changes) or not hasattr(
             self, 'nl'
         ):
-            self.update_nl(atoms)
+            self._update_nl(atoms)
 
         self.results = {}
         energies = np.zeros(len(atoms))
