@@ -324,9 +324,7 @@ class Tersoff(Calculator):
             if fc == 0.0:
                 continue
 
-            bij = self.calc_bond_order(
-                i, j, neighbors, distances, vectors, params
-            )
+            bij = self.calc_bond_order(j, neighbors, distances, vectors, params)
 
             repulsive = params.A * np.exp(-params.lambda1 * r_ij)
             attractive = -params.B * np.exp(-params.lambda2 * r_ij)
@@ -364,7 +362,7 @@ class Tersoff(Calculator):
         force = np.sum(forces, axis=0)
         return energy, force, stress
 
-    def calc_bond_order(self, i, j, neighbors, distances, vectors, params):
+    def calc_bond_order(self, j, neighbors, distances, vectors, params):
         """
         Calculate bond order term considering atom i's neighbors.
 
@@ -378,8 +376,6 @@ class Tersoff(Calculator):
 
         Parameters
         ----------
-        i: int
-            Index of atom
         j: int
             Index of atom
         neighbors: list of int
@@ -396,7 +392,13 @@ class Tersoff(Calculator):
         bij: float
             The bond order between atoms i and j
         """
-        zeta = 0.0e0
+        zeta = self._calc_zeta(j, neighbors, distances, vectors, params)
+        n = params.n
+        return (1.0 + params.beta**n * zeta**n) ** (-1.0 / (2.0 * n))
+
+    def _calc_zeta(self, j, neighbors, distances, vectors, params):
+        """Calculate ``zeta_ij``."""
+        zeta = 0.0
 
         for k in range(len(neighbors)):
             if k == j:
@@ -427,10 +429,7 @@ class Tersoff(Calculator):
 
             zeta += fc_ik * g_theta * ex_delr
 
-        bij = (1.0 + params.beta**params.n * zeta**params.n) ** (
-            -1.0 / (2.0 * params.n)
-        )
-        return bij
+        return zeta
 
     def _calc_gijk(self, cos_theta: float, params) -> float:
         r"""Calculate the angular function ``g`` for the Tersoff potential.
