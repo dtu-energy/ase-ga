@@ -534,10 +534,9 @@ class Tersoff(Calculator):
             zeta += fc_ik * g_theta * ex_delr
 
             # Calculate derivative of zeta w.r.t r_ij (dzeta_drij)
-            dcos_theta_drij = vec_ik / (distances[j] * r_ik)
-            dcos_theta_drij -= cos_theta * vectors[j] / distances[j] ** 2
+            dcosdrj = self._calc_costheta_d(distances[j], vec_ik)[1]
             dzeta_drij += fc_ik * (
-                g_theta_deriv * dcos_theta_drij * ex_delr
+                g_theta_deriv * dcosdrj * ex_delr
                 + g_theta * (-params.lambda3 * ex_delr * (distances[j] - r_ik))
             )
 
@@ -547,3 +546,48 @@ class Tersoff(Calculator):
         derivatives[j] = -1.0 * bij_d * dzeta_drij
 
         return derivatives
+
+    def _calc_costheta_d(
+        self,
+        rij: np.ndarray,
+        rik: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        r"""Calculate the derivatives of ``costheta``.
+
+        If
+
+        .. math::
+            \cos \theta = \frac{\mathbf{u} \cdot \mathbf{v}}{u v}
+
+        Then
+
+        .. math::
+            \frac{\partial \cos \theta}{\partial \mathbf{u}}
+            = \frac{\mathbf{v}}{u v}
+            - \frac{\mathbf{u} \cdot \mathbf{v}}{v} \cdot \frac{\mathbf{u}}{u^3}
+            = \frac{\mathbf{v}}{u v} - \frac{\cos \theta}{u^2} \mathbf{u}
+
+        Parameters
+        ----------
+        rij : ndarray of shape (3,), dtype float
+            Vector from atoms ``i`` to ``j``.
+        rik : ndarray of shape (3,), dtype float
+            Vector from atoms ``i`` to ``k``.
+
+        Returns
+        -------
+        dri : ndarray of shape (3,), dtype float
+            Derivative with respect to the position of atom ``i``.
+        drj : ndarray of shape (3,), dtype float
+            Derivative with respect to the position of atom ``j``.
+        drk : ndarray of shape (3,), dtype float
+            Derivative with respect to the position of atom ``k``.
+
+        """
+        abs_rij = np.linalg.norm(rij)
+        abs_rik = np.linalg.norm(rik)
+        costheta = (rij @ rik) / (abs_rij * abs_rik)
+        drj = (rik / abs_rik - costheta * rij / abs_rij) / abs_rij
+        drk = (rij / abs_rij - costheta * rik / abs_rik) / abs_rik
+        dri = -(drj + drk)
+        return dri, drj, drk
