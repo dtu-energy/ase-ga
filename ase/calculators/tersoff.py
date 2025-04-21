@@ -396,6 +396,15 @@ class Tersoff(Calculator):
         n = params.n
         return (1.0 + params.beta**n * zeta**n) ** (-1.0 / (2.0 * n))
 
+    def _calc_bij_d(self, zeta: float, beta: float, n: float) -> float:
+        """Calculate the derivative of ``bij`` with respect to ``zeta``."""
+        tmp = beta * zeta
+        return (
+            -0.5
+            * (1.0 + tmp**n) ** (-1.0 - (1.0 / (2.0 * n)))
+            * (beta * tmp ** (n - 1.0))
+        )
+
     def _calc_zeta(self, j, neighbors, distances, vectors, params):
         """Calculate ``zeta_ij``."""
         zeta = 0.0
@@ -532,12 +541,9 @@ class Tersoff(Calculator):
                 + g_theta * (-params.lambda3 * ex_delr * (distances[j] - r_ik))
             )
 
-        # Derivative of the bond order (bij) w.r.t r_ij
-        beta_n = params.beta**params.n
-        dbij = -beta_n * zeta ** (params.n - 1) * dzeta_drij
-        dbij *= (1.0 + beta_n * zeta**params.n) ** (
-            -1.0 - 1.0 / (2.0 * params.n)
-        )
+        bij_d = self._calc_bij_d(zeta, params.beta, params.n)
 
-        derivatives[j] = dbij
+        # Derivative of the bond order (bij) w.r.t r_ij
+        derivatives[j] = -1.0 * bij_d * dzeta_drij
+
         return derivatives
