@@ -250,40 +250,30 @@ class Tersoff(Calculator):
             self.update_nl(atoms)
 
         self.results = {}
-        energy = 0.0e0
-        forces = np.zeros((len(atoms), 3), dtype=np.float64)
-        # Accumulated virial stress tensor
-        virial = np.zeros((3, 3))
+        energies = np.zeros(len(atoms))
+        forces = np.zeros((len(atoms), 3))
+        stress = np.zeros((3, 3))
 
         # Duplicates atoms.get_distances() functionality, but uses
         # neighbor list's pre-computed offsets for efficiency in a
         # tight force-calculation loop rather than recompute MIC
-        for i, position in enumerate(atoms.positions):
-            indices, offsets = self.nl.get_neighbors(i)
-            vectors = (
-                atoms.positions[indices]
-                + np.dot(offsets, atoms.get_cell())
-                - position
-            )
-            distances = np.linalg.norm(vectors, axis=1)
+        for i in range(len(atoms)):
+            self._calc_atom_contribution(i, energies, forces, stress)
 
-            energy_i, force_i, stress_i = self.calc_atom_contribution(
-                i, indices, distances, vectors
-            )
-            energy += energy_i
-            forces[i] = force_i
-            virial += stress_i
-
-        self.results['energy'] = energy
-        self.results['free_energy'] = energy
+        self.results['energy'] = self.results['free_energy'] = energies.sum()
         self.results['forces'] = forces
         # Virial to stress (i.e., eV/A^3)
-        stress_tensor = virial / self.atoms.get_volume()
-        self.results['stress'] = stress_tensor.flat[[0, 4, 8, 5, 2, 1]]
+        stress /= self.atoms.get_volume()
+        self.results['stress'] = stress.flat[[0, 4, 8, 5, 2, 1]]
 
-    def calc_atom_contribution(self, i, neighbors, distances, vectors):
-        """
-        Calculate the energy and forces of a single atom.
+    def _calc_atom_contribution(
+        self,
+        i: int,
+        energies: np.ndarray,
+        forces: np.ndarray,
+        stress: np.ndarray,
+    ):
+        """Calculate the contributions of a single atom to the properties.
 
         This function calculates the energy, force, and stress on atom i
         by looking at i-j pair interactions and the modification made by
@@ -293,106 +283,84 @@ class Tersoff(Calculator):
         ----------
         i: int
             Index of the atom
-        neighbors: array_like
-            Indices of the neighbor atoms
-        distances: array_like
-            Distances between the current atom and the neighbor atoms
-        vectors: array_like
-            Vectors from the current atom to the neighbor atoms
-
-        Returns
-        -------
-        energy: float
-            Energy contribution of the atom
+        energies: array_like
+            Site energies to be updated.
         forces: array_like
-            Forces on the current atom
+            Forces to be updated.
         stress: array_like
-            Stress contribution of the atom
+            Stress times volume to be updated.
+
         """
-        energy = 0.0e0
-        forces = np.zeros((len(neighbors), 3), dtype=np.float64)
-        stress = np.zeros((3, 3), dtype=np.float64)
+        indices, offsets = self.nl.get_neighbors(i)
+        vectors = self.atoms.positions[indices]
+        vectors += offsets @ self.atoms.cell
+        vectors -= self.atoms.positions[i]
+        distances = np.sqrt(np.add.reduce(vectors**2, axis=1))
 
         type_i = self.atoms.symbols[i]
-
-        for j, (r_ij, vec_ij) in enumerate(zip(distances, vectors)):
-            type_j = self.atoms.symbols[neighbors[j]]
+        for idx0, (j, abs_rij, rij) in enumerate(
+            zip(indices, distances, vectors)
+        ):
+            type_j = self.atoms.symbols[j]
             key = (type_i, type_j, type_j)
             params = self.parameters[key]
 
-            fc = self.cutoff_func(r_ij, params.R, params.D)
+            rij_hat = rij / abs_rij
+
+            fc = self._calc_fc(abs_rij, params.R, params.D)
             if fc == 0.0:
                 continue
 
-            bij = self.calc_bond_order(j, neighbors, distances, vectors, params)
+            zeta = self._calc_zeta(idx0, indices, distances, vectors, params)
+            bij = self._calc_bij(zeta, params.beta, params.n)
+            bij_d = self._calc_bij_d(zeta, params.beta, params.n)
 
-            repulsive = params.A * np.exp(-params.lambda1 * r_ij)
-            attractive = -params.B * np.exp(-params.lambda2 * r_ij)
+            repulsive = params.A * np.exp(-params.lambda1 * abs_rij)
+            attractive = -params.B * np.exp(-params.lambda2 * abs_rij)
 
-            pair_energy = fc * (repulsive + bij * attractive)
-            energy += 0.5 * pair_energy
+            energies[i] += 0.5 * fc * (repulsive + bij * attractive)
 
-            fc_deriv = self.cutoff_func_deriv(r_ij, params.R, params.D)
+            dfc = self._calc_fc_d(abs_rij, params.R, params.D)
             rep_deriv = -params.lambda1 * repulsive
             att_deriv = -params.lambda2 * attractive
 
-            force_ij = -(
-                (
-                    fc_deriv * (repulsive + bij * attractive)
-                    + fc * (rep_deriv + bij * att_deriv)
-                )
-                * vec_ij
-                / r_ij
-            )
+            tmp = dfc * (repulsive + bij * attractive)
+            tmp += fc * (rep_deriv + bij * att_deriv)
 
-            # Forces on neighbors j are added to i at the end
-            forces[j] = force_ij
+            # derivative with respect to the position of atom j
+            grad = 0.5 * tmp * rij_hat
 
-            if bij > 0.0e0:
-                dbij = self.calc_bond_order_derivatives(
-                    j, neighbors, distances, vectors, params
-                )
-                forces[j] += dbij[j] * fc * attractive
+            forces[i] += grad
+            forces[j] -= grad
 
-            # Virial stress
-            stress += 0.5 * np.outer(vec_ij, forces[j])
+            stress += np.outer(grad, rij)
 
-        force = np.sum(forces, axis=0)
-        return energy, force, stress
+            for idx1, k in enumerate(indices):
+                if idx1 == idx0:
+                    continue
 
-    def calc_bond_order(self, j, neighbors, distances, vectors, params):
-        """
-        Calculate bond order term considering atom i's neighbors.
+                if distances[idx1] > params.R + params.D:
+                    continue
 
-        The bond order between atoms i and j is calculated as the
-        sum of a few terms. The first term is the radial term, which
-        is the distance between the two atoms. The second term is a
-        angular term, which is the angle between the bond vector and
-        the vector of atom i and its neighbors j-k. The third term is
-        an exponential term, which is a function of the distance between
-        the atoms and the cutoff radius.
+                rik = vectors[idx1]
 
-        Parameters
-        ----------
-        j: int
-            Index of atom
-        neighbors: list of int
-            List of indices of atoms that are neighbors to atom i
-        distances: list of float
-            List of distances between atom i and its neighbors
-        vectors: list of float
-            List of vectors between atom i and its neighbors
-        params: dict
-            Dictionary of parameters for the Tersoff potential
+                dztdri, dztdrj, dztdrk = self._calc_zeta_d(rij, rik, params)
 
-        Returns
-        -------
-        bij: float
-            The bond order between atoms i and j
-        """
-        zeta = self._calc_zeta(j, neighbors, distances, vectors, params)
-        n = params.n
-        return (1.0 + params.beta**n * zeta**n) ** (-1.0 / (2.0 * n))
+                gradi = 0.5 * fc * bij_d * dztdri * attractive
+                gradj = 0.5 * fc * bij_d * dztdrj * attractive
+                gradk = 0.5 * fc * bij_d * dztdrk * attractive
+
+                forces[i] -= gradi
+                forces[j] -= gradj
+                forces[k] -= gradk
+
+                stress += np.outer(gradj, rij)
+                stress += np.outer(gradk, rik)
+
+    def _calc_bij(self, zeta: float, beta: float, n: float) -> float:
+        """Calculate the bond order ``bij`` between atoms ``i`` and ``j``."""
+        tmp = beta * zeta
+        return (1.0 + tmp**n) ** (-1.0 / (2.0 * n))
 
     def _calc_bij_d(self, zeta: float, beta: float, n: float) -> float:
         """Calculate the derivative of ``bij`` with respect to ``zeta``."""
@@ -403,7 +371,14 @@ class Tersoff(Calculator):
             * (beta * tmp ** (n - 1.0))
         )
 
-    def _calc_zeta(self, j, neighbors, distances, vectors, params):
+    def _calc_zeta(
+        self,
+        j: int,
+        neighbors: np.ndarray,
+        distances: np.ndarray,
+        vectors: np.ndarray,
+        params,
+    ):
         """Calculate ``zeta_ij``."""
         zeta = 0.0
 
@@ -418,7 +393,7 @@ class Tersoff(Calculator):
             cos_theta = np.dot(vectors[j], vectors[k]) / (
                 distances[j] * distances[k]
             )
-            fc_ik = self.cutoff_func(r_ik, params.R, params.D)
+            fc_ik = self._calc_fc(r_ik, params.R, params.D)
 
             g_theta = self._calc_gijk(cos_theta, params)
 
@@ -462,7 +437,7 @@ class Tersoff(Calculator):
         denominator = (d2 + hcth**2) ** 2
         return numerator / denominator
 
-    def cutoff_func(self, r: float, R: float, D: float) -> float:
+    def _calc_fc(self, r: float, R: float, D: float) -> float:
         """Calculate the cutoff function."""
         if r > R + D:
             return 0.0
@@ -470,73 +445,11 @@ class Tersoff(Calculator):
             return 1.0
         return 0.5 * (1.0 - np.sin(np.pi * (r - R) / (2.0 * D)))
 
-    def cutoff_func_deriv(self, r: float, R: float, D: float) -> float:
+    def _calc_fc_d(self, r: float, R: float, D: float) -> float:
         """Calculate cutoff function derivative with respect to ``r``."""
         if r > R + D or r < R - D:
             return 0.0
         return -0.25 * np.pi / D * np.cos(np.pi * (r - R) / (2.0 * D))
-
-    def calc_bond_order_derivatives(
-        self, j, neighbors, distances, vectors, params
-    ):
-        """
-        Compute the derivative of the bond order term for\
-        atoms i-j.
-
-        Parameters
-        ----------
-        j : int
-            Index of atom j
-        neighbors : array_like
-            List of indices of atoms that are neighbors of atom i
-        distances : array_like
-            Distances between atom i and each of its neighbors
-        vectors : array_like
-            Vectors from atom i to each of its neighbors
-        params : dict
-            Tersoff parameters
-
-        Returns
-        -------
-        derivatives : array_like
-            Derivative of the bond order for atoms i-j
-
-        """
-        derivatives = np.zeros_like(vectors, dtype=np.float64)
-        zeta = 0.0e0
-        dzeta_drij = np.zeros_like(vectors[j], dtype=np.float64)
-
-        for k in range(len(neighbors)):
-            if k == j:
-                continue
-
-            r_ik = distances[k]
-            vec_ik = vectors[k]
-            if r_ik > params.R + params.D:
-                continue
-
-            cos_theta = np.dot(vectors[j], vec_ik) / (distances[j] * r_ik)
-            fc_ik = self.cutoff_func(r_ik, params.R, params.D)
-            g_theta = self._calc_gijk(cos_theta, params)
-
-            # See comment in calc_bond_order for explanation
-            arg = (params.lambda3 * (distances[j] - r_ik)) ** params.m
-            if arg > _MAX_EXP_ARG:
-                ex_delr = 1.0e30
-            elif arg < _MIN_EXP_ARG:
-                ex_delr = 0.0
-            else:
-                ex_delr = np.exp(arg)
-
-            zeta += fc_ik * g_theta * ex_delr
-            dzeta_drij += self._calc_zeta_d(distances[j], vec_ik, params)[1]
-
-        bij_d = self._calc_bij_d(zeta, params.beta, params.n)
-
-        # Derivative of the bond order (bij) w.r.t r_ij
-        derivatives[j] = -1.0 * bij_d * dzeta_drij
-
-        return derivatives
 
     def _calc_zeta_d(self, rij, rik, params):
         """Calculate the derivatives of ``zeta``.
@@ -554,13 +467,16 @@ class Tersoff(Calculator):
         lam3 = params.lambda3
         m = params.m
 
-        rij_hat = rij / np.linalg.norm(rij)
-        rik_hat = rik / np.linalg.norm(rik)
+        abs_rij = np.linalg.norm(rij)
+        abs_rik = np.linalg.norm(rik)
 
-        fcik = self.cutoff_func(rik, params.R, params.D)
-        dfcik = self.cutoff_func_deriv(rik, params.R, params.D)
+        rij_hat = rij / abs_rij
+        rik_hat = rik / abs_rik
 
-        tmp = (lam3 * (rij - rik)) ** m
+        fcik = self._calc_fc(abs_rik, params.R, params.D)
+        dfcik = self._calc_fc_d(abs_rik, params.R, params.D)
+
+        tmp = (lam3 * (abs_rij - abs_rik)) ** m
         if tmp > _MAX_EXP_ARG:
             ex_delr = 1.0e30
         elif tmp < _MIN_EXP_ARG:
@@ -568,7 +484,7 @@ class Tersoff(Calculator):
         else:
             ex_delr = np.exp(tmp)
 
-        ex_delr_d = m * lam3**m * (rij - rik) ** (m - 1) * ex_delr
+        ex_delr_d = m * lam3**m * (abs_rij - abs_rik) ** (m - 1) * ex_delr
 
         costheta = rij_hat @ rik_hat
         gijk = self._calc_gijk(costheta, params)
