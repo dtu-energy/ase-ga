@@ -332,32 +332,30 @@ class Tersoff(Calculator):
             pair_energy = fc * (repulsive + bij * attractive)
             energy += 0.5 * pair_energy
 
-            if 'forces' in _IMPLEMENTED_PROPERTIES:
-                fc_deriv = self.cutoff_func_deriv(r_ij, params.R, params.D)
-                rep_deriv = -params.lambda1 * repulsive
-                att_deriv = -params.lambda2 * attractive
+            fc_deriv = self.cutoff_func_deriv(r_ij, params.R, params.D)
+            rep_deriv = -params.lambda1 * repulsive
+            att_deriv = -params.lambda2 * attractive
 
-                force_ij = -(
-                    (
-                        fc_deriv * (repulsive + bij * attractive)
-                        + fc * (rep_deriv + bij * att_deriv)
-                    )
-                    * vec_ij
-                    / r_ij
+            force_ij = -(
+                (
+                    fc_deriv * (repulsive + bij * attractive)
+                    + fc * (rep_deriv + bij * att_deriv)
                 )
+                * vec_ij
+                / r_ij
+            )
 
-                # Forces on neighbors j are added to i at the end
-                forces[j] = force_ij
+            # Forces on neighbors j are added to i at the end
+            forces[j] = force_ij
 
-                if bij > 0.0e0:
-                    dbij = self.calc_bond_order_derivatives(
-                        j, neighbors, distances, vectors, params
-                    )
-                    forces[j] += dbij[j] * fc * attractive
+            if bij > 0.0e0:
+                dbij = self.calc_bond_order_derivatives(
+                    j, neighbors, distances, vectors, params
+                )
+                forces[j] += dbij[j] * fc * attractive
 
-            if 'stress' in _IMPLEMENTED_PROPERTIES:
-                # Virial stress
-                stress += 0.5 * np.outer(vec_ij, forces[j])
+            # Virial stress
+            stress += 0.5 * np.outer(vec_ij, forces[j])
 
         force = np.sum(forces, axis=0)
         return energy, force, stress
