@@ -520,7 +520,6 @@ class Tersoff(Calculator):
             cos_theta = np.dot(vectors[j], vec_ik) / (distances[j] * r_ik)
             fc_ik = self.cutoff_func(r_ik, params.R, params.D)
             g_theta = self._calc_gijk(cos_theta, params)
-            g_theta_deriv = self._calc_gijk_d(cos_theta, params)
 
             # See comment in calc_bond_order for explanation
             arg = (params.lambda3 * (distances[j] - r_ik)) ** params.m
@@ -532,13 +531,7 @@ class Tersoff(Calculator):
                 ex_delr = np.exp(arg)
 
             zeta += fc_ik * g_theta * ex_delr
-
-            # Calculate derivative of zeta w.r.t r_ij (dzeta_drij)
-            dcosdrj = self._calc_costheta_d(distances[j], vec_ik)[1]
-            dzeta_drij += fc_ik * (
-                g_theta_deriv * dcosdrj * ex_delr
-                + g_theta * (-params.lambda3 * ex_delr * (distances[j] - r_ik))
-            )
+            dzeta_drij += self._calc_zeta_d(distances[j], vec_ik, params)[1]
 
         bij_d = self._calc_bij_d(zeta, params.beta, params.n)
 
@@ -546,6 +539,58 @@ class Tersoff(Calculator):
         derivatives[j] = -1.0 * bij_d * dzeta_drij
 
         return derivatives
+
+    def _calc_zeta_d(self, rij, rik, params):
+        """Calculate the derivatives of ``zeta``.
+
+        Returns
+        -------
+        dri : ndarray of shape (3,), dtype float
+            Derivative with respect to the position of atom ``i``.
+        drj : ndarray of shape (3,), dtype float
+            Derivative with respect to the position of atom ``j``.
+        drk : ndarray of shape (3,), dtype float
+            Derivative with respect to the position of atom ``k``.
+
+        """
+        lam3 = params.lambda3
+        m = params.m
+
+        rij_hat = rij / np.linalg.norm(rij)
+        rik_hat = rik / np.linalg.norm(rik)
+
+        fcik = self.cutoff_func(rik, params.R, params.D)
+        dfcik = self.cutoff_func_deriv(rik, params.R, params.D)
+
+        tmp = (lam3 * (rij - rik)) ** m
+        if tmp > _MAX_EXP_ARG:
+            ex_delr = 1.0e30
+        elif tmp < _MIN_EXP_ARG:
+            ex_delr = 0.0
+        else:
+            ex_delr = np.exp(tmp)
+
+        ex_delr_d = m * lam3**m * (rij - rik) ** (m - 1) * ex_delr
+
+        costheta = rij_hat @ rik_hat
+        gijk = self._calc_gijk(costheta, params)
+        gijk_d = self._calc_gijk_d(costheta, params)
+
+        dcosdri, dcosdrj, dcosdrk = self._calc_costheta_d(rij, rik)
+
+        dri = -dfcik * gijk * ex_delr * rik_hat
+        dri += fcik * gijk_d * ex_delr * dcosdri
+        dri += fcik * gijk * ex_delr_d * rik_hat
+        dri -= fcik * gijk * ex_delr_d * rij_hat
+
+        drj = fcik * gijk_d * ex_delr * dcosdrj
+        drj += fcik * gijk * ex_delr_d * rij_hat
+
+        drk = dfcik * gijk * ex_delr * rik_hat
+        drk += fcik * gijk_d * ex_delr * dcosdrk
+        drk -= fcik * gijk * ex_delr_d * rik_hat
+
+        return dri, drj, drk
 
     def _calc_costheta_d(
         self,
