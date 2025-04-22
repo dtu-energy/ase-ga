@@ -6,6 +6,10 @@ import pytest
 import ase.io
 from ase import Atoms
 from ase.build import bulk
+from ase.calculators.fd import (
+    calculate_numerical_forces,
+    calculate_numerical_stress,
+)
 from ase.calculators.tersoff import Tersoff, TersoffParameters
 from ase.units import bar
 
@@ -198,3 +202,21 @@ def test_tersoff(datadir, system):
     atoms.calc = calc
 
     validate_results(atoms, reference_data)
+
+
+def test_forces_and_stress(si_parameters: dict) -> None:
+    """Test if analytical forces and stress agree with numerical ones."""
+    atoms = bulk('Si', a=5.43, cubic=True)
+
+    # pertubate first atom to get substantial forces
+    atoms.positions[0] += [0.03, 0.02, 0.01]
+
+    atoms.calc = Tersoff(si_parameters)
+
+    forces = atoms.get_forces()
+    numerical_forces = calculate_numerical_forces(atoms, eps=1e-5)
+    np.testing.assert_allclose(forces, numerical_forces, atol=1e-5)
+
+    stress = atoms.get_stress()
+    numerical_stress = calculate_numerical_stress(atoms, eps=1e-5)
+    np.testing.assert_allclose(stress, numerical_stress, atol=1e-5)
