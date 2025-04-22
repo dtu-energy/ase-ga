@@ -79,6 +79,70 @@ def test_set_parameters(si_parameters: dict[tuple, TersoffParameters]) -> None:
     assert calc.parameters[key] == new_params
 
 
+def test_properties(si_parameters: dict) -> None:
+    """Test if energy, forces, and stress agree with LAMMPS.
+
+    The reference values are obtained in the following way.
+
+    >>> from ase.calculators.lammpslib import LAMMPSlib
+    >>>
+    >>> atoms = bulk('Si', a=5.43, cubic=True)
+    >>> atoms.positions[0] += [0.03, 0.02, 0.01]
+    >>> lmpcmds = ['pair_style tersoff', 'pair_coeff * * Si.tersoff Si']
+    >>> atoms.calc = LAMMPSlib(lmpcmds=lmpcmds)
+    >>> energy = atoms.get_potential_energy()
+    >>> energies = atoms.get_potential_energies()
+    >>> forces = atoms.get_forces()
+    >>> stress = atoms.get_stress()
+
+    """
+    atoms = bulk('Si', a=5.43, cubic=True)
+
+    # pertubate first atom to get substantial forces
+    atoms.positions[0] += [0.03, 0.02, 0.01]
+
+    atoms.calc = Tersoff(si_parameters)
+
+    energy_ref = -37.03237572778589
+    # energies_ref = [
+    #     -4.62508202,
+    #     -4.62242901,
+    #     -4.63032346,
+    #     -4.63028909,
+    #     -4.63037555,
+    #     -4.63147495,
+    #     -4.63040683,
+    #     -4.63199482,
+    # ]
+    forces_ref = [
+        [-4.63805736e-01, -3.17112011e-01, -1.79345801e-01],
+        [+2.34142607e-01, +2.29060580e-01, +2.24142706e-01],
+        [-2.79544489e-02, +1.31289732e-03, +3.99485914e-04],
+        [+1.85144670e-02, +1.48017753e-02, +8.47421196e-03],
+        [+2.06558877e-03, -1.86613107e-02, +3.98039278e-04],
+        [+8.68756690e-02, -5.15405628e-02, +7.32472691e-02],
+        [+2.06388309e-03, +1.30960793e-03, -9.30764103e-03],
+        [+1.48097970e-01, +1.40829025e-01, -1.18008270e-01],
+    ]
+    stress_ref = [
+        -0.00048610,
+        -0.00056779,
+        -0.00061684,
+        -0.00342602,
+        -0.00231541,
+        -0.00124569,
+    ]
+
+    energy = atoms.get_potential_energy()
+    # energies = atoms.get_potential_energies()
+    forces = atoms.get_forces()
+    stress = atoms.get_stress()
+    np.testing.assert_almost_equal(energy, energy_ref)
+    # np.testing.assert_allclose(energies, energies_ref, rtol=1e-5)
+    np.testing.assert_allclose(forces, forces_ref, rtol=1e-5)
+    np.testing.assert_allclose(stress, stress_ref, rtol=1e-5)
+
+
 def test_forces_and_stress(si_parameters: dict) -> None:
     """Test if analytical forces and stress agree with numerical ones."""
     atoms = bulk('Si', a=5.43, cubic=True)
