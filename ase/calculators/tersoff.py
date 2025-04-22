@@ -266,7 +266,7 @@ class Tersoff(Calculator):
 
     def _calc_atom_contribution(
         self,
-        i: int,
+        idx_i: int,
         energies: np.ndarray,
         forces: np.ndarray,
         stress: np.ndarray,
@@ -279,8 +279,8 @@ class Tersoff(Calculator):
 
         Parameters
         ----------
-        i: int
-            Index of the atom
+        idx_i: int
+            Index of atom i
         energies: array_like
             Site energies to be updated.
         forces: array_like
@@ -289,17 +289,17 @@ class Tersoff(Calculator):
             Stress times volume to be updated.
 
         """
-        indices, offsets = self.nl.get_neighbors(i)
+        indices, offsets = self.nl.get_neighbors(idx_i)
         vectors = self.atoms.positions[indices]
         vectors += offsets @ self.atoms.cell
-        vectors -= self.atoms.positions[i]
+        vectors -= self.atoms.positions[idx_i]
         distances = np.sqrt(np.add.reduce(vectors**2, axis=1))
 
-        type_i = self.atoms.symbols[i]
-        for idx0, (j, abs_rij, rij) in enumerate(
+        type_i = self.atoms.symbols[idx_i]
+        for j, (idx_j, abs_rij, rij) in enumerate(
             zip(indices, distances, vectors)
         ):
-            type_j = self.atoms.symbols[j]
+            type_j = self.atoms.symbols[idx_j]
             key = (type_i, type_j, type_j)
             params = self.parameters[key]
 
@@ -309,14 +309,14 @@ class Tersoff(Calculator):
             if fc == 0.0:
                 continue
 
-            zeta = self._calc_zeta(idx0, indices, distances, vectors, params)
+            zeta = self._calc_zeta(j, indices, distances, vectors, params)
             bij = self._calc_bij(zeta, params.beta, params.n)
             bij_d = self._calc_bij_d(zeta, params.beta, params.n)
 
             repulsive = params.A * np.exp(-params.lambda1 * abs_rij)
             attractive = -params.B * np.exp(-params.lambda2 * abs_rij)
 
-            energies[i] += 0.5 * fc * (repulsive + bij * attractive)
+            energies[idx_i] += 0.5 * fc * (repulsive + bij * attractive)
 
             dfc = self._calc_fc_d(abs_rij, params.R, params.D)
             rep_deriv = -params.lambda1 * repulsive
@@ -328,19 +328,19 @@ class Tersoff(Calculator):
             # derivative with respect to the position of atom j
             grad = 0.5 * tmp * rij_hat
 
-            forces[i] += grad
-            forces[j] -= grad
+            forces[idx_i] += grad
+            forces[idx_j] -= grad
 
             stress += np.outer(grad, rij)
 
-            for idx1, k in enumerate(indices):
-                if idx1 == idx0:
+            for k, idx_k in enumerate(indices):
+                if k == j:
                     continue
 
-                if distances[idx1] > params.R + params.D:
+                if distances[k] > params.R + params.D:
                     continue
 
-                rik = vectors[idx1]
+                rik = vectors[k]
 
                 dztdri, dztdrj, dztdrk = self._calc_zeta_d(rij, rik, params)
 
@@ -348,9 +348,9 @@ class Tersoff(Calculator):
                 gradj = 0.5 * fc * bij_d * dztdrj * attractive
                 gradk = 0.5 * fc * bij_d * dztdrk * attractive
 
-                forces[i] -= gradi
-                forces[j] -= gradj
-                forces[k] -= gradk
+                forces[idx_i] -= gradi
+                forces[idx_j] -= gradj
+                forces[idx_k] -= gradk
 
                 stress += np.outer(gradj, rij)
                 stress += np.outer(gradk, rik)
@@ -378,28 +378,28 @@ class Tersoff(Calculator):
         params,
     ):
         """Calculate ``zeta_ij``."""
+        abs_rij = distances[j]
+
         zeta = 0.0
 
         for k in range(len(neighbors)):
             if k == j:
                 continue
 
-            r_ik = distances[k]
-            if r_ik > params.R + params.D:
+            abs_rik = distances[k]
+            if abs_rik > params.R + params.D:
                 continue
 
-            cos_theta = np.dot(vectors[j], vectors[k]) / (
-                distances[j] * distances[k]
-            )
-            fc_ik = self._calc_fc(r_ik, params.R, params.D)
+            costheta = np.dot(vectors[j], vectors[k]) / (abs_rij * abs_rik)
+            fc_ik = self._calc_fc(abs_rik, params.R, params.D)
 
-            g_theta = self._calc_gijk(cos_theta, params)
+            g_theta = self._calc_gijk(costheta, params)
 
             # Calculate the exponential for the bond order zeta term
             # This is the term that modifies the bond order based
             # on the distance between atoms i-j and i-k. Tresholds are
             # used to prevent overflow/underflow.
-            arg = (params.lambda3 * (distances[j] - r_ik)) ** params.m
+            arg = (params.lambda3 * (abs_rij - abs_rik)) ** params.m
             if arg > _MAX_EXP_ARG:
                 ex_delr = 1.0e30
             elif arg < _MIN_EXP_ARG:
@@ -411,7 +411,7 @@ class Tersoff(Calculator):
 
         return zeta
 
-    def _calc_gijk(self, cos_theta: float, params) -> float:
+    def _calc_gijk(self, costheta: float, params) -> float:
         r"""Calculate the angular function ``g`` for the Tersoff potential.
 
         .. math::
@@ -423,14 +423,14 @@ class Tersoff(Calculator):
         """
         c2 = params.c * params.c
         d2 = params.d * params.d
-        hcth = params.h - cos_theta
+        hcth = params.h - costheta
         return params.gamma * (1.0 + c2 / d2 - c2 / (d2 + hcth**2))
 
-    def _calc_gijk_d(self, cos_theta: float, params) -> float:
-        """Calculate the derivative of ``g`` with respect to ``cos_theta``."""
+    def _calc_gijk_d(self, costheta: float, params) -> float:
+        """Calculate the derivative of ``g`` with respect to ``costheta``."""
         c2 = params.c * params.c
         d2 = params.d * params.d
-        hcth = params.h - cos_theta
+        hcth = params.h - costheta
         numerator = -2.0 * params.gamma * c2 * hcth
         denominator = (d2 + hcth**2) ** 2
         return numerator / denominator
