@@ -311,7 +311,7 @@ class Tersoff(Calculator):
             if fc == 0.0:
                 continue
 
-            zeta = self._calc_zeta(j, indices, distances, vectors, params)
+            zeta = self._calc_zeta(type_i, j, indices, distances, vectors)
             bij = self._calc_bij(zeta, params.beta, params.n)
             bij_d = self._calc_bij_d(zeta, params.beta, params.n)
 
@@ -338,6 +338,10 @@ class Tersoff(Calculator):
             for k, idx_k in enumerate(indices):
                 if k == j:
                     continue
+
+                type_k = self.atoms.symbols[idx_k]
+                key = (type_i, type_j, type_k)
+                params = self.parameters[key]
 
                 if distances[k] > params.R + params.D:
                     continue
@@ -373,20 +377,26 @@ class Tersoff(Calculator):
 
     def _calc_zeta(
         self,
+        type_i: str,
         j: int,
         neighbors: np.ndarray,
         distances: np.ndarray,
         vectors: np.ndarray,
-        params,
     ) -> float:
         """Calculate ``zeta_ij``."""
+        idx_j = neighbors[j]
+        type_j = self.atoms.symbols[idx_j]
         abs_rij = distances[j]
 
         zeta = 0.0
 
-        for k in range(len(neighbors)):
+        for k, idx_k in enumerate(neighbors):
             if k == j:
                 continue
+
+            type_k = self.atoms.symbols[idx_k]
+            key = (type_i, type_j, type_k)
+            params = self.parameters[key]
 
             abs_rik = distances[k]
             if abs_rik > params.R + params.D:
