@@ -435,7 +435,7 @@ class Tersoff(Calculator):
         denominator = (d2 + hcth**2) ** 2
         return numerator / denominator
 
-    def _calc_fc(self, r: float, R: float, D: float) -> float:
+    def _calc_fc(self, r: np.floating, R: float, D: float) -> float:
         """Calculate the cutoff function."""
         if r > R + D:
             return 0.0
@@ -443,7 +443,7 @@ class Tersoff(Calculator):
             return 1.0
         return 0.5 * (1.0 - np.sin(np.pi * (r - R) / (2.0 * D)))
 
-    def _calc_fc_d(self, r: float, R: float, D: float) -> float:
+    def _calc_fc_d(self, r: np.floating, R: float, D: float) -> float:
         """Calculate cutoff function derivative with respect to ``r``."""
         if r > R + D or r < R - D:
             return 0.0
