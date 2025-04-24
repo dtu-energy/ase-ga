@@ -61,7 +61,7 @@ class Tersoff(Calculator):
         parameters: Dict[Tuple[str, str, str], TersoffParameters],
         skin: float = 0.3,
         **kwargs,
-    ):
+    ) -> None:
         """
         Parameters
         ----------
@@ -228,7 +228,7 @@ class Tersoff(Calculator):
         atoms=None,
         properties=None,
         system_changes=all_changes,
-    ):
+    ) -> None:
         """Calculate energy, forces, and stress.
 
         Notes
@@ -270,7 +270,7 @@ class Tersoff(Calculator):
         energies: np.ndarray,
         forces: np.ndarray,
         virial: np.ndarray,
-    ):
+    ) -> None:
         """Calculate the contributions of a single atom to the properties.
 
         This function calculates the energy, force, and stress on atom i
@@ -376,7 +376,7 @@ class Tersoff(Calculator):
         distances: np.ndarray,
         vectors: np.ndarray,
         params,
-    ):
+    ) -> float:
         """Calculate ``zeta_ij``."""
         abs_rij = distances[j]
 
@@ -411,7 +411,7 @@ class Tersoff(Calculator):
 
         return zeta
 
-    def _calc_gijk(self, costheta: float, params) -> float:
+    def _calc_gijk(self, costheta: float, params: TersoffParameters) -> float:
         r"""Calculate the angular function ``g`` for the Tersoff potential.
 
         .. math::
@@ -426,7 +426,7 @@ class Tersoff(Calculator):
         hcth = params.h - costheta
         return params.gamma * (1.0 + c2 / d2 - c2 / (d2 + hcth**2))
 
-    def _calc_gijk_d(self, costheta: float, params) -> float:
+    def _calc_gijk_d(self, costheta: float, params: TersoffParameters) -> float:
         """Calculate the derivative of ``g`` with respect to ``costheta``."""
         c2 = params.c * params.c
         d2 = params.d * params.d
@@ -449,7 +449,12 @@ class Tersoff(Calculator):
             return 0.0
         return -0.25 * np.pi / D * np.cos(np.pi * (r - R) / (2.0 * D))
 
-    def _calc_zeta_d(self, rij, rik, params):
+    def _calc_zeta_d(
+        self,
+        rij: np.ndarray,
+        rik: np.ndarray,
+        params: TersoffParameters,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Calculate the derivatives of ``zeta``.
 
         Returns
