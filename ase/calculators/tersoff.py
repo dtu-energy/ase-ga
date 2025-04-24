@@ -250,18 +250,18 @@ class Tersoff(Calculator):
         self.results = {}
         energies = np.zeros(len(atoms))
         forces = np.zeros((len(atoms), 3))
-        stress = np.zeros((3, 3))
+        virial = np.zeros((3, 3))
 
         # Duplicates atoms.get_distances() functionality, but uses
         # neighbor list's pre-computed offsets for efficiency in a
         # tight force-calculation loop rather than recompute MIC
         for i in range(len(atoms)):
-            self._calc_atom_contribution(i, energies, forces, stress)
+            self._calc_atom_contribution(i, energies, forces, virial)
 
         self.results['energy'] = self.results['free_energy'] = energies.sum()
         self.results['forces'] = forces
         # Virial to stress (i.e., eV/A^3)
-        stress /= self.atoms.get_volume()
+        stress = virial / self.atoms.get_volume()
         self.results['stress'] = stress.flat[[0, 4, 8, 5, 2, 1]]
 
     def _calc_atom_contribution(
@@ -269,7 +269,7 @@ class Tersoff(Calculator):
         idx_i: int,
         energies: np.ndarray,
         forces: np.ndarray,
-        stress: np.ndarray,
+        virial: np.ndarray,
     ):
         """Calculate the contributions of a single atom to the properties.
 
@@ -285,8 +285,8 @@ class Tersoff(Calculator):
             Site energies to be updated.
         forces: array_like
             Forces to be updated.
-        stress: array_like
-            Stress times volume to be updated.
+        virial: array_like
+            Virial tensor to be updated.
 
         """
         indices, offsets = self.nl.get_neighbors(idx_i)
@@ -331,7 +331,7 @@ class Tersoff(Calculator):
             forces[idx_i] += grad
             forces[idx_j] -= grad
 
-            stress += np.outer(grad, rij)
+            virial += np.outer(grad, rij)
 
             for k, idx_k in enumerate(indices):
                 if k == j:
@@ -352,8 +352,8 @@ class Tersoff(Calculator):
                 forces[idx_j] -= gradj
                 forces[idx_k] -= gradk
 
-                stress += np.outer(gradj, rij)
-                stress += np.outer(gradk, rik)
+                virial += np.outer(gradj, rij)
+                virial += np.outer(gradk, rik)
 
     def _calc_bij(self, zeta: float, beta: float, n: float) -> float:
         """Calculate the bond order ``bij`` between atoms ``i`` and ``j``."""
