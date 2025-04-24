@@ -112,11 +112,11 @@ class Tersoff(Calculator):
             Initialized Tersoff calculator with parameters from the file.
 
         """
-        parameters = cls._read_lammps_format(potential_file)
+        parameters = cls.read_lammps_format(potential_file)
         return cls(parameters=parameters, skin=skin, **kwargs)
 
     @staticmethod
-    def _read_lammps_format(
+    def read_lammps_format(
         potential_file: Union[str, Path],
     ) -> Dict[Tuple[str, str, str], TersoffParameters]:
         """Read the Tersoff potential parameters from a LAMMPS-style file.
@@ -133,7 +133,7 @@ class Tersoff(Calculator):
 
         """
         block_size = 17
-        with open(potential_file, 'r') as fd:
+        with Path(potential_file).open('r', encoding='utf-8') as fd:
             content = (
                 ''.join(
                     [line for line in fd if not line.strip().startswith('#')]
