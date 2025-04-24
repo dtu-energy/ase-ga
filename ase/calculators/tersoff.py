@@ -55,7 +55,13 @@ class Tersoff(Calculator):
     .. versionadded:: 3.25.0
     """
 
-    implemented_properties = ['free_energy', 'energy', 'forces', 'stress']
+    implemented_properties = [
+        'free_energy',
+        'energy',
+        'energies',
+        'forces',
+        'stress',
+    ]
 
     def __init__(
         self,
@@ -259,6 +265,7 @@ class Tersoff(Calculator):
         for i in range(len(atoms)):
             self._calc_atom_contribution(i, energies, forces, virial)
 
+        self.results['energies'] = energies
         self.results['energy'] = self.results['free_energy'] = energies.sum()
         self.results['forces'] = forces
         # Virial to stress (i.e., eV/A^3)
@@ -318,7 +325,9 @@ class Tersoff(Calculator):
             repulsive = params.A * np.exp(-params.lambda1 * abs_rij)
             attractive = -params.B * np.exp(-params.lambda2 * abs_rij)
 
-            energies[idx_i] += 0.5 * fc * (repulsive + bij * attractive)
+            # distribute the pair energy evenly to be consistent with LAMMPS
+            energies[idx_i] += 0.25 * fc * (repulsive + bij * attractive)
+            energies[idx_j] += 0.25 * fc * (repulsive + bij * attractive)
 
             dfc = self._calc_fc_d(abs_rij, params.R, params.D)
             rep_deriv = -params.lambda1 * repulsive
