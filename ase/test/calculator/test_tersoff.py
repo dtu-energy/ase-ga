@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from ase import Atoms
 from ase.build import bulk
 from ase.calculators.fd import (
     calculate_numerical_forces,
@@ -35,6 +36,21 @@ def si_parameters():
             D=0.20,
         )
     }
+
+
+@pytest.fixture(name='atoms_si')
+def fixture_atoms_si(
+    si_parameters: dict[tuple[str, str, str], TersoffParameters],
+) -> Atoms:
+    """Make Atoms for Si with a small displacement on the first atom."""
+    atoms = bulk('Si', a=5.43, cubic=True)
+
+    # pertubate first atom to get substantial forces
+    atoms.positions[0] += [0.03, 0.02, 0.01]
+
+    atoms.calc = Tersoff(si_parameters)
+
+    return atoms
 
 
 def test_initialize_from_params_from_dict(si_parameters):
@@ -79,7 +95,7 @@ def test_set_parameters(si_parameters: dict[tuple, TersoffParameters]) -> None:
     assert calc.parameters[key] == new_params
 
 
-def test_properties(si_parameters: dict) -> None:
+def test_properties(atoms_si: Atoms) -> None:
     """Test if energy, forces, and stress agree with LAMMPS.
 
     The reference values are obtained in the following way.
@@ -96,13 +112,6 @@ def test_properties(si_parameters: dict) -> None:
     >>> stress = atoms.get_stress()
 
     """
-    atoms = bulk('Si', a=5.43, cubic=True)
-
-    # pertubate first atom to get substantial forces
-    atoms.positions[0] += [0.03, 0.02, 0.01]
-
-    atoms.calc = Tersoff(si_parameters)
-
     energy_ref = -37.03237572778589
     forces_ref = [
         [-4.63805736e-01, -3.17112011e-01, -1.79345801e-01],
@@ -123,27 +132,20 @@ def test_properties(si_parameters: dict) -> None:
         -0.00124569,
     ]
 
-    energy = atoms.get_potential_energy()
-    forces = atoms.get_forces()
-    stress = atoms.get_stress()
+    energy = atoms_si.get_potential_energy()
+    forces = atoms_si.get_forces()
+    stress = atoms_si.get_stress()
     np.testing.assert_almost_equal(energy, energy_ref)
     np.testing.assert_allclose(forces, forces_ref, rtol=1e-5)
     np.testing.assert_allclose(stress, stress_ref, rtol=1e-5)
 
 
-def test_forces_and_stress(si_parameters: dict) -> None:
+def test_forces_and_stress(atoms_si: Atoms) -> None:
     """Test if analytical forces and stress agree with numerical ones."""
-    atoms = bulk('Si', a=5.43, cubic=True)
-
-    # pertubate first atom to get substantial forces
-    atoms.positions[0] += [0.03, 0.02, 0.01]
-
-    atoms.calc = Tersoff(si_parameters)
-
-    forces = atoms.get_forces()
-    numerical_forces = calculate_numerical_forces(atoms, eps=1e-5)
+    forces = atoms_si.get_forces()
+    numerical_forces = calculate_numerical_forces(atoms_si, eps=1e-5)
     np.testing.assert_allclose(forces, numerical_forces, atol=1e-5)
 
-    stress = atoms.get_stress()
-    numerical_stress = calculate_numerical_stress(atoms, eps=1e-5)
+    stress = atoms_si.get_stress()
+    numerical_stress = calculate_numerical_stress(atoms_si, eps=1e-5)
     np.testing.assert_allclose(stress, numerical_stress, atol=1e-5)
