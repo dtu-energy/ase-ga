@@ -104,16 +104,6 @@ def test_properties(si_parameters: dict) -> None:
     atoms.calc = Tersoff(si_parameters)
 
     energy_ref = -37.03237572778589
-    # energies_ref = [
-    #     -4.62508202,
-    #     -4.62242901,
-    #     -4.63032346,
-    #     -4.63028909,
-    #     -4.63037555,
-    #     -4.63147495,
-    #     -4.63040683,
-    #     -4.63199482,
-    # ]
     forces_ref = [
         [-4.63805736e-01, -3.17112011e-01, -1.79345801e-01],
         [+2.34142607e-01, +2.29060580e-01, +2.24142706e-01],
@@ -134,11 +124,9 @@ def test_properties(si_parameters: dict) -> None:
     ]
 
     energy = atoms.get_potential_energy()
-    # energies = atoms.get_potential_energies()
     forces = atoms.get_forces()
     stress = atoms.get_stress()
     np.testing.assert_almost_equal(energy, energy_ref)
-    # np.testing.assert_allclose(energies, energies_ref, rtol=1e-5)
     np.testing.assert_allclose(forces, forces_ref, rtol=1e-5)
     np.testing.assert_allclose(stress, stress_ref, rtol=1e-5)
 
