@@ -63,9 +63,9 @@ def validate_results(atoms: Atoms, reference_data: dict):
     )
 
     assert rel_energy_diff < 1.0e-5, (
-        f"Total energy mismatch: calculated={calc_energy:.6f} eV, "
-        f"reference={reference_data['total_energy']:.6f} eV, "
-        f"relative difference={rel_energy_diff:.6f}"
+        f'Total energy mismatch: calculated={calc_energy:.6f} eV, '
+        f'reference={reference_data["total_energy"]:.6f} eV, '
+        f'relative difference={rel_energy_diff:.6f}'
     )
     # Forces validation
     calculated_forces = atoms.get_forces()
