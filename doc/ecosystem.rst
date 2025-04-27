@@ -121,6 +121,11 @@ Listed in alphabetical order, for want of a better approach.
    Additionally, Sella can perform intrinsic reaction coordinate (IRC)
    calculations.
 
+ * `texase <https://github.com/steenlysgaard/texase>`_:
+   texase is a terminal user interface (TUI) for ASE db. It allows you
+   to navigate and manipulate ASE databases with few keystrokes in the
+   terminal.
+   
  * `TorchANI <https://github.com/aiqm/torchani>`_:
    Accurate Neural Network Potential on PyTorch
 

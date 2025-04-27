@@ -83,6 +83,8 @@ Show all details for a single row:
 .. seealso::
 
     * :ref:`cli`
+    * `texase <https://github.com/steenlysgaard/texase>`_ is a
+      terminal user interface (TUI) for ASE databases
 
 
 Querying
