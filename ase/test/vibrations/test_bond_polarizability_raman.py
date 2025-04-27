@@ -1,3 +1,4 @@
+# fmt: off
 from pytest import approx, fixture
 
 from ase import Atoms

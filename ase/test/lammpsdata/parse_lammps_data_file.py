@@ -1,3 +1,4 @@
+# fmt: off
 """
 Routines for manually parsing a lammps data file.  This is a simplified
 recreation of ase.io.lammpsdata's read functionality that we use for

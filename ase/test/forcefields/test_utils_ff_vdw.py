@@ -1,3 +1,4 @@
+# fmt: off
 import math
 
 import pytest

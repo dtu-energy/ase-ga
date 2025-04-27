@@ -1,3 +1,4 @@
+# fmt: off
 # additional tests of the dftb I/O
 from io import StringIO
 

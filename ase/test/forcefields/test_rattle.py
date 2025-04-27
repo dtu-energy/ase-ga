@@ -1,3 +1,4 @@
+# fmt: off
 import pytest
 
 import ase.units as units

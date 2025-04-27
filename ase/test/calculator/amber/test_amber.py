@@ -1,3 +1,4 @@
+# fmt: off
 import subprocess
 
 import numpy as np

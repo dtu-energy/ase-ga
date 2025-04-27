@@ -1,3 +1,4 @@
+# fmt: off
 """This test cross-checks our implementation of CODATA against the
 implementation that SciPy brings with it.
 """

@@ -1,3 +1,4 @@
+# fmt: off
 """Test ase.io.ulm file stuff."""
 import numpy as np
 import pytest

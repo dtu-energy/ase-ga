@@ -1,3 +1,4 @@
+# fmt: off
 """Test file for exciting file input and output methods."""
 
 import xml.etree.ElementTree as ET

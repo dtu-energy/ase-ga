@@ -1,3 +1,4 @@
+# fmt: off
 """Test to ensure that md logger and trajectory contain same data"""
 import numpy as np
 import pytest

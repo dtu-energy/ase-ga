@@ -1,3 +1,4 @@
+# fmt: off
 from importlib.metadata import PackageNotFoundError, version
 
 import pytest

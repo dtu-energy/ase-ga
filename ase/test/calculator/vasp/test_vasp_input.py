@@ -1,3 +1,4 @@
+# fmt: off
 from unittest import mock
 
 import numpy as np

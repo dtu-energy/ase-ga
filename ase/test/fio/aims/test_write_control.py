@@ -1,3 +1,4 @@
+# fmt: off
 """Test writing control.in files for Aims using ase.io.aims.
 
 Control.in file contains calculation parameters such as the functional and

@@ -1,3 +1,4 @@
+# fmt: off
 """Check reading of a sample v_sim .ascii file, and I/O consistency"""
 
 from ase.io import read

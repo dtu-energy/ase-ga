@@ -1,3 +1,4 @@
+# fmt: off
 """unit tests for the turbomole reader module"""
 
 import pytest

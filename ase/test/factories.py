@@ -1,3 +1,4 @@
+# fmt: off
 import importlib.util
 import os
 import re

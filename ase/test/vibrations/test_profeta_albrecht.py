@@ -1,3 +1,4 @@
+# fmt: off
 """
 Test Placzek and Albrecht resonant Raman implementations
 """

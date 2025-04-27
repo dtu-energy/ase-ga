@@ -1,3 +1,4 @@
+# fmt: off
 import warnings
 
 from ase.build import add_adsorbate, fcc111

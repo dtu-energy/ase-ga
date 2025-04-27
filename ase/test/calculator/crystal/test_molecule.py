@@ -1,3 +1,4 @@
+# fmt: off
 from ase.atoms import Atoms
 from ase.calculators.crystal import CRYSTAL
 from ase.optimize import BFGS

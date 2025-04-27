@@ -1,3 +1,4 @@
+# fmt: off
 from ase import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.ga import set_raw_score

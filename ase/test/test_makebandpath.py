@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import bulk
 from ase.dft.kpoints import bandpath
 

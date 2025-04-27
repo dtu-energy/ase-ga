@@ -1,3 +1,4 @@
+# fmt: off
 import pytest
 
 from ase import Atom, Atoms

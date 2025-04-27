@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import bulk
 from ase.calculators.calculator import FileIOCalculator
 from ase.calculators.dftb import Dftb

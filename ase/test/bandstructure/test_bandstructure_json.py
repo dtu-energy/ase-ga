@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import bulk
 from ase.calculators.test import FreeElectrons
 from ase.io.jsonio import read_json

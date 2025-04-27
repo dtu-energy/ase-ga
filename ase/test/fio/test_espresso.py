@@ -1,3 +1,4 @@
+# fmt: off
 """Quantum ESPRESSO file parsers.
 
 Implemented:

@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for Octopus outputs."""
 from typing import Any, Dict
 

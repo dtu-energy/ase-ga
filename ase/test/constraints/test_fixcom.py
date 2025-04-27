@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for FixCom."""
 import numpy as np
 import pytest

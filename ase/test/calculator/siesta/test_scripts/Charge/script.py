@@ -1,3 +1,4 @@
+# fmt: off
 # In this script the Virtual Crystal approximation is used to model
 # a stronger affinity for positive charge on the H atoms.
 # This could model interaction with other molecules not explicitly

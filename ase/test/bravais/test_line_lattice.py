@@ -1,3 +1,4 @@
+# fmt: off
 from ase.cell import Cell
 
 

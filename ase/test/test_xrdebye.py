@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for XrDebye class"""
 
 from pathlib import Path

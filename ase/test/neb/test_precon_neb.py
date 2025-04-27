@@ -1,3 +1,4 @@
+# fmt: off
 import json
 
 import numpy as np

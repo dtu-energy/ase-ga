@@ -1,3 +1,4 @@
+# fmt: off
 import math
 
 from ase.utils.parsemath import eval_expression

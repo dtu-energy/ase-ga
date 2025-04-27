@@ -1,3 +1,4 @@
+# fmt: off
 from ase import Atoms
 from ase.io import read, write
 from ase.parallel import world

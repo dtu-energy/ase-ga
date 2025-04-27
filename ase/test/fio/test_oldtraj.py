@@ -1,3 +1,4 @@
+# fmt: off
 """Test that we can read old trajectory files."""
 from base64 import b64decode, b64encode
 from pathlib import Path

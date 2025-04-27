@@ -1,3 +1,4 @@
+# fmt: off
 from ase import Atoms
 from ase.calculators.acn import ACN, m_me, r_cn, r_mec
 from ase.calculators.fd import calculate_numerical_forces

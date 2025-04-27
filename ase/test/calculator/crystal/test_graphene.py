@@ -1,3 +1,4 @@
+# fmt: off
 from ase import Atoms
 from ase.calculators.crystal import CRYSTAL
 

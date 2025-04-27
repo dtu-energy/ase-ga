@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import molecule
 from ase.calculators.dmol import DMol3
 

@@ -1,3 +1,4 @@
+# fmt: off
 import sys
 from math import factorial
 

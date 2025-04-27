@@ -1,3 +1,4 @@
+# fmt: off
 import numpy as np
 import pytest
 from scipy.optimize import check_grad

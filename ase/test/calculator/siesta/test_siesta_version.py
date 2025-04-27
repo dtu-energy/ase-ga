@@ -1,3 +1,4 @@
+# fmt: off
 from ase.calculators.siesta.siesta import parse_siesta_version
 
 

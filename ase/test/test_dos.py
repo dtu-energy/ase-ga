@@ -1,3 +1,4 @@
+# fmt: off
 import numpy as np
 
 from ase.dft.dos import linear_tetrahedron_integration as lti

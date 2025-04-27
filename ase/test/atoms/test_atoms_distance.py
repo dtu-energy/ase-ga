@@ -1,3 +1,4 @@
+# fmt: off
 import itertools
 
 from ase import Atoms

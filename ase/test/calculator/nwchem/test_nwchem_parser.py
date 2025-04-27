@@ -1,3 +1,4 @@
+# fmt: off
 from ase.io.nwchem.parser import _pattern_test_data
 
 

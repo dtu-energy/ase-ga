@@ -1,3 +1,4 @@
+# fmt: off
 from subprocess import DEVNULL, check_call
 
 import numpy as np

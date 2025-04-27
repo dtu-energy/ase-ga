@@ -1,3 +1,4 @@
+# fmt: off
 from dataclasses import is_dataclass
 
 import numpy as np

@@ -1,3 +1,4 @@
+# fmt: off
 """Test runner classes to run exciting simulations using subproces."""
 
 import pytest

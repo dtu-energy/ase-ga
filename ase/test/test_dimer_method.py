@@ -1,3 +1,4 @@
+# fmt: off
 import pytest
 
 from ase.build import add_adsorbate, fcc100

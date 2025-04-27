@@ -1,3 +1,4 @@
+# fmt: off
 """Tests for `read_bands`."""
 import io
 

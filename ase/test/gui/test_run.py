@@ -1,3 +1,4 @@
+# fmt: off
 import os
 from pathlib import Path
 

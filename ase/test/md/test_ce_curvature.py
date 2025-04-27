@@ -1,3 +1,4 @@
+# fmt: off
 '''These tests ensure that the computed PEC curvature matche the actual
 geometries using a somewhat agressive angle_limit for each stepsize.'''
 import numpy as np

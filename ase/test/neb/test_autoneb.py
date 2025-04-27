@@ -1,3 +1,4 @@
+# fmt: off
 from pathlib import Path
 
 import pytest

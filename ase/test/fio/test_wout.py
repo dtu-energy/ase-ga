@@ -1,3 +1,4 @@
+# fmt: off
 """Test Wannier90 wout format."""
 import io
 

@@ -1,3 +1,4 @@
+# fmt: off
 """Test phasediagram code."""
 import pytest
 

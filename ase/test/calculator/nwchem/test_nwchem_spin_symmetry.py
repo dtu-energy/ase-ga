@@ -1,3 +1,4 @@
+# fmt: off
 """Check if spin-symmetry is conserved"""
 import pytest
 

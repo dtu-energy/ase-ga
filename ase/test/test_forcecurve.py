@@ -1,3 +1,4 @@
+# fmt: off
 from ase.build import bulk
 from ase.calculators.emt import EMT
 from ase.io import read

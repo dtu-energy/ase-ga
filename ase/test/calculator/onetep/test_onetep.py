@@ -1,3 +1,4 @@
+# fmt: off
 from os.path import isfile, join
 
 from ase.build import molecule
