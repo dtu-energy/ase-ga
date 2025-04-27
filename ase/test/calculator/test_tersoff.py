@@ -1,105 +1,15 @@
-from pathlib import Path
+"""Tests for ``Tersoff``."""
 
 import numpy as np
 import pytest
 
-import ase.io
 from ase import Atoms
 from ase.build import bulk
+from ase.calculators.fd import (
+    calculate_numerical_forces,
+    calculate_numerical_stress,
+)
 from ase.calculators.tersoff import Tersoff, TersoffParameters
-from ase.units import bar
-
-
-def read_lammps_dump_data(dump_file: Path) -> dict:
-    """Read energy, pressure tensor and forces from a custom LAMMPS dump file.
-
-    The dump file must contain comments with the total energy and pressure
-    components. The file must also contain the standard LAMMPS dump format.
-
-    The total energy is read from a comment line of the form
-    `# Total Energy (eV): <energy>`. The pressure components are read from a
-    comment line of the form
-    `# Pressure (bars): <pxx> <pyy> <pzz> <pxy> <pxz> <pyz>`.
-
-    """
-    data: dict = {
-        'total_energy': None,
-        'pressure_tensor': None,
-        'forces': [],
-        'atoms': None,
-    }
-
-    with open(dump_file, 'r') as file:
-        in_atoms_section: bool = False
-        for line in file:
-            if line.startswith('# Total Energy'):
-                data['total_energy'] = float(line.split(':')[-1])
-            elif line.startswith('# Pressure'):
-                # Parse pressure tensor components (xx, yy, zz, xy, xz, yz)
-                pressure_components = [
-                    float(x) for x in line.split(':')[-1].split()
-                ]
-                data['pressure_tensor'] = np.array(pressure_components)
-            elif line.startswith('ITEM: ATOMS'):
-                in_atoms_section = True
-                continue
-            elif in_atoms_section:
-                parts = line.strip().split()
-                data['forces'].append(
-                    [float(parts[5]), float(parts[6]), float(parts[7])]
-                )
-
-    data['forces'] = np.array(data['forces'])
-    return data
-
-
-def validate_results(atoms: Atoms, reference_data: dict):
-    """Validate calculated results against reference data."""
-    # Energy validation
-    calc_energy = atoms.get_potential_energy()
-    abs_ref_energy = abs(reference_data['total_energy'])
-    rel_energy_diff = (
-        abs(calc_energy - reference_data['total_energy']) / abs_ref_energy
-    )
-
-    assert rel_energy_diff < 1.0e-5, (
-        f'Total energy mismatch: calculated={calc_energy:.6f} eV, '
-        f'reference={reference_data["total_energy"]:.6f} eV, '
-        f'relative difference={rel_energy_diff:.6f}'
-    )
-    # Forces validation
-    calculated_forces = atoms.get_forces()
-    np.testing.assert_allclose(
-        calculated_forces,
-        reference_data['forces'],
-        atol=1.0e-4,
-        err_msg='Forces mismatch',
-    )
-
-    # Stress tensor validation
-    if reference_data['pressure_tensor'] is not None:
-        # Get stress from ASE (returned as [xx, yy, zz, yz, xz, xy])
-        calculated_stress = atoms.get_stress()
-        # Convert to bar and use positive convention
-        calculated_pressure = calculated_stress / bar
-        calculated_pressure_reordered = np.array(
-            [
-                calculated_pressure[0],  # xx
-                calculated_pressure[1],  # yy
-                calculated_pressure[2],  # zz
-                calculated_pressure[5],  # xy
-                calculated_pressure[4],  # xz
-                calculated_pressure[3],  # yz
-            ]
-        )
-
-        np.testing.assert_allclose(
-            calculated_pressure_reordered,
-            reference_data['pressure_tensor'],
-            rtol=1.0e-5,
-            atol=1e-8,
-            err_msg='Pressure tensor mismatch',
-        )
 
 
 @pytest.fixture
@@ -128,6 +38,21 @@ def si_parameters():
     }
 
 
+@pytest.fixture(name='atoms_si')
+def fixture_atoms_si(
+    si_parameters: dict[tuple[str, str, str], TersoffParameters],
+) -> Atoms:
+    """Make Atoms for Si with a small displacement on the first atom."""
+    atoms = bulk('Si', a=5.43, cubic=True)
+
+    # pertubate first atom to get substantial forces
+    atoms.positions[0] += [0.03, 0.02, 0.01]
+
+    atoms.calc = Tersoff(si_parameters)
+
+    return atoms
+
+
 def test_initialize_from_params_from_dict(si_parameters):
     """Test initializing Tersoff calculator from dictionary of parameters."""
     calc = Tersoff(si_parameters)
@@ -138,7 +63,7 @@ def test_initialize_from_params_from_dict(si_parameters):
     np.testing.assert_allclose(potential_energy, -9.260818674314585, atol=1e-8)
 
 
-def test_set_parameters(si_parameters):
+def test_set_parameters(si_parameters: dict[tuple, TersoffParameters]) -> None:
     """Test updating parameters of the Tersoff calculator."""
     calc = Tersoff(si_parameters)
     key = ('Si', 'Si', 'Si')
@@ -170,31 +95,57 @@ def test_set_parameters(si_parameters):
     assert calc.parameters[key] == new_params
 
 
-@pytest.mark.parametrize('system', ['silicon', 'silicon_carbide'])
-def test_tersoff(datadir, system):
+def test_properties(atoms_si: Atoms) -> None:
+    """Test if energy, forces, and stress agree with LAMMPS.
+
+    The reference values are obtained in the following way.
+
+    >>> from ase.calculators.lammpslib import LAMMPSlib
+    >>>
+    >>> atoms = bulk('Si', a=5.43, cubic=True)
+    >>> atoms.positions[0] += [0.03, 0.02, 0.01]
+    >>> lmpcmds = ['pair_style tersoff', 'pair_coeff * * Si.tersoff Si']
+    >>> atoms.calc = LAMMPSlib(lmpcmds=lmpcmds)
+    >>> energy = atoms.get_potential_energy()
+    >>> energies = atoms.get_potential_energies()
+    >>> forces = atoms.get_forces()
+    >>> stress = atoms.get_stress()
+
     """
-    Test the Tersoff potential for various systems.
+    energy_ref = -37.03237572778589
+    forces_ref = [
+        [-4.63805736e-01, -3.17112011e-01, -1.79345801e-01],
+        [+2.34142607e-01, +2.29060580e-01, +2.24142706e-01],
+        [-2.79544489e-02, +1.31289732e-03, +3.99485914e-04],
+        [+1.85144670e-02, +1.48017753e-02, +8.47421196e-03],
+        [+2.06558877e-03, -1.86613107e-02, +3.98039278e-04],
+        [+8.68756690e-02, -5.15405628e-02, +7.32472691e-02],
+        [+2.06388309e-03, +1.30960793e-03, -9.30764103e-03],
+        [+1.48097970e-01, +1.40829025e-01, -1.18008270e-01],
+    ]
+    stress_ref = [
+        -0.00048610,
+        -0.00056779,
+        -0.00061684,
+        -0.00342602,
+        -0.00231541,
+        -0.00124569,
+    ]
 
-    This test checks the correctness of the Tersoff interatomic potential
-    implementation by comparing calculated energy, forces, and stress tensor
-    values against reference LAMMPS data for given systems.
+    energy = atoms_si.get_potential_energy()
+    forces = atoms_si.get_forces()
+    stress = atoms_si.get_stress()
+    np.testing.assert_almost_equal(energy, energy_ref)
+    np.testing.assert_allclose(forces, forces_ref, rtol=1e-5)
+    np.testing.assert_allclose(stress, stress_ref, rtol=1e-5)
 
-    The test ensures that the Tersoff potential produces results within the
-    acceptable tolerance levels for each system.
-    """
-    # Load the test data files
-    dump_file = datadir / f'tersoff/dump.{system}'
-    potential_file = datadir / f'tersoff/{system}.tersoff'
 
-    assert dump_file.exists(), f'Dump file not found: {dump_file}'
-    assert potential_file.exists(), f"""
-    Potential file not found: {potential_file}
-    """
+def test_forces_and_stress(atoms_si: Atoms) -> None:
+    """Test if analytical forces and stress agree with numerical ones."""
+    forces = atoms_si.get_forces()
+    numerical_forces = calculate_numerical_forces(atoms_si, eps=1e-5)
+    np.testing.assert_allclose(forces, numerical_forces, atol=1e-5)
 
-    atoms = ase.io.read(dump_file, format='lammps-dump-text')
-    reference_data = read_lammps_dump_data(dump_file)
-
-    calc = Tersoff.from_lammps(str(potential_file))
-    atoms.calc = calc
-
-    validate_results(atoms, reference_data)
+    stress = atoms_si.get_stress()
+    numerical_stress = calculate_numerical_stress(atoms_si, eps=1e-5)
+    np.testing.assert_allclose(stress, numerical_stress, atol=1e-5)

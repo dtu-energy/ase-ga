@@ -187,8 +187,7 @@ Tersoff Calculator Class
     :class-doc-from: class
 
 .. autoclass:: ase.calculators.tersoff.Tersoff
-    :class-doc-from: class
-    :members:
+    :members: from_lammps, read_lammps_format, set_parameters
 
 References
 ----------
