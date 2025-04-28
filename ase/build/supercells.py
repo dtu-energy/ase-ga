@@ -3,15 +3,19 @@
 import numpy as np
 
 from ase import Atoms
+from ase.utils import deprecated
 
 
 class SupercellError(Exception):
     """Use if construction of supercell fails"""
 
 
-def get_deviation_from_optimal_cell_shape(cell,
-                                          target_shape="sc",
-                                          target_length=None):
+@deprecated('use `eval_length_deviation` instead.')
+def get_deviation_from_optimal_cell_shape(*args, **kwargs):
+    return eval_length_deviation(*args, **kwargs)
+
+
+def eval_shape_deviation(cell, target_shape="sc", target_length=None):
     r"""
     Calculates the deviation of the given cell from the target   cell metric.
 
@@ -77,9 +81,7 @@ def get_deviation_from_optimal_cell_shape(cell,
         return scores
 
 
-def get_deviation_from_optimal_cell_length(cell,
-                                           target_shape="sc",
-                                           target_length=None):
+def eval_length_deviation(cell, target_shape="sc", target_length=None):
     r"""Calculate the deviation from the target cell shape.
 
     Calculates the deviation of the given cell metric from the ideal
@@ -240,8 +242,7 @@ def _optimal_transformation(operations, scores, ideal_P):
     return optimal_P, best_score
 
 
-all_score_func = [get_deviation_from_optimal_cell_length,
-                  get_deviation_from_optimal_cell_shape]
+all_score_func = [eval_length_deviation, eval_shape_deviation]
 
 
 def find_optimal_cell_shape(
@@ -252,7 +253,7 @@ def find_optimal_cell_shape(
     lower_limit=-2,
     upper_limit=2,
     minimal_size=False,
-    score_func='get_deviation_from_optimal_cell_length',
+    score_func='eval_length_deviation',
     verbose=False,
 ):
     """Obtain the optimal transformation matrix for a supercell of target size
