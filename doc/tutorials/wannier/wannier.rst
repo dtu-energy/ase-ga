@@ -1,26 +1,93 @@
-.. _wannier tutorial:
-    
-=================================
-Partly occupied Wannier Functions
-=================================
-In this tutorial we show how to use the ASE Wannier functions module. To run the tutorial, you will need to have GPAW installed.
+.. _wannier_tutorial:
 
-1: Benzene module
+============================================
+Partly-occupied Wannier Functions
+============================================
 
-First we will calculate Wannier functionsd for the benzene molecule. First we will need to run a ground state calculation to find the ground state electron density and Kohn-Sham wave functions. The result of the ground state calculation is saved to the file benzene.gpw.
+This tutorial walks through building **partly-occupied Wannier
+functions** with the `ASE <https://wiki.fysik.dtu.dk/ase/>`_ *Wannier* module
+and the `GPAW <https://wiki.fysik.dtu.dk/gpaw/>`_ electronic structure code.
+
+
+.. contents:: **Outline**
+   :depth: 2
+   :local:
+
+
+Benzene molecule
+================
+
+Step 1 – Ground-state calculation
+---------------------------------
+
+Run the script below to obtain the ground-state density and the
+Kohn–Sham (KS) orbitals. The result is stored in :file:`benzene.gpw`.
+
 .. literalinclude:: benzene.py
+   :language: python
 
-Now, we are ready to construct the Wannier functions.
-We first make a Wannierization with 15 Wannier functions, which matches the number of occupied bands in the benzene molecule. This is specified using the nwannier parameter in the constructor. 
-The call to the localize() functions attempt to localize the Wannier functions using a gradient descent optimization procedure. The resulting maximally localized Wannier functions are saved to a .cube file, which allows them to be visualized.
+Step 2 – Maximally localized WFs for the occupied subspace (15 WFs)
+-------------------------------------------------------------------
 
-Next, we examine the effect of including extra degrees of freedom. These are extra Wannier functions that are included to improve the localization, but which need not describe any particular bands of the system. The extra degrees of freedom may be included by setting 'fixedstates' to a lower number than the total number of Wannier functions, given by 'nwannier'. By specifying 18 Wannier functions in total, we should therefore obtain a set of Wannier functions that are more localized than before.
+There are 15 occupied bands in the benzene molecule. We construct one Wannier function per occupied band by setting
+``nwannier = 15``. 
+By calling ``wan.localize()``, the code attempts to minimize the spread functional using a gradient-descent algorithm. 
+The resulting WFs are written to .cube files, which allows them to be inspected using e.g. VESTA.
+
 .. literalinclude:: wannier_benzene.py
+   :language: python
 
-We can plot the projections of the Wannier functions on the energy eigenstates. The resulting plot shows how the 15 lowest bands, corresponding to the fixed states that we specified, are perfectly represented by the Wannier functions. Notice how the Wannier functions also include contributions from the unoccupied bands, but that none of these bands are perfectly represented. This is due to the optimization of the extra degrees of freedom that we wanted.
+Step 3 – Adding three extra degrees of freedom (18 WFs)
+-------------------------------------------------------
+
+To improve localization we augment the basis with three extra Wannier functions - so-called *extra degrees of freedom*
+(``nwannier = 18``, ``fixedstates = 15``). This will allow the Wannierization procedure to use the unoccupied states to minimize spread functional.
+
+.. literalinclude:: wannier_benzene_with_edf.py
+   :language: python
+
+
+Step 4 – Spectral-weight analysis
+---------------------------------
+
+The script below projects the WFs on the KS eigenstates. You should see
+the 15 lowest bands perfectly reconstructed (weight ≃ 1.0) while higher
+bands are only partially represented.
+
 .. literalinclude:: plot_spectral_weight.py
+   :language: python
 
+
+Polyacetylene chain (1-D periodic)
+==================================
+
+We now want to construct partially occupied Wannier functions to describe a polyacetylene chain.
+
+Step 1 – Structure & ground-state calculation
+---------------------------------------------
+
+Polyacetylene is modelled as an infinite chain; we therefore enable
+periodic boundary conditions along *x*.
 
 .. literalinclude:: polyacetylene.py
+   :language: python
+
+Step 2 – Wannierization
+-----------------------
+
+We repeat the localization procedure, keeping the five lowest
+bands fixed and adding one extra degree of freedom to aid localization.
+
 .. literalinclude:: wannier_polyacetylene.py
+   :language: python
+
+Step 3 – High-resolution band structure
+---------------------------------------
+
+Using the Wannier Hamiltonian we can interpolate the band structure on a
+fine 100-point *k* mesh and compare it to the original DFT result. 
+
 .. literalinclude:: plot_band_structure.py
+   :language: python
+
+Within the fixed-energy window—that is, for energies below the fixed-energy line—the Wannier-interpolated bands coincide perfectly with the DFT reference (red circles). Above this window the match is lost, because the degrees of freedom deliberately mix several Kohn–Sham states to achieve maximal real-space localisation.
