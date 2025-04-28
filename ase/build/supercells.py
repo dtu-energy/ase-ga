@@ -181,7 +181,9 @@ def _guess_initial_transformation(cell, target_shape,
 
 def _build_matrix_operations(starting_P, lower_limit, upper_limit):
     mat_dim = starting_P.shape[0]
-    assert mat_dim == starting_P.shape[1]
+
+    if not mat_dim == starting_P.shape[1]:
+        raise ValueError('Cell matrix should be quadratic.')
 
     # Build a big matrix of all admissible integer matrix operations.
     # (If this takes too much memory we could do blocking but there are
