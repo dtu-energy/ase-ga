@@ -17,7 +17,7 @@ def get_deviation_from_optimal_cell_shape(*args, **kwargs):
 
 def eval_shape_deviation(cell, target_shape="sc", target_length=None):
     r"""
-    Calculates the deviation of the given cell from the target   cell metric.
+    Calculates the deviation of the given cell from the target cell metric.
 
     Parameters
     ----------
@@ -38,12 +38,6 @@ def eval_shape_deviation(cell, target_shape="sc", target_length=None):
 
     cell = np.asarray(cell)
 
-    single = False
-    if len(cell.shape) < 3:
-        single = True
-        # append leading dimension
-        cell = cell[None, ...]
-
     eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
     if target_length is not None:
         eff_cubic_length = target_length * np.ones_like(eff_cubic_length)
@@ -62,23 +56,19 @@ def eval_shape_deviation(cell, target_shape="sc", target_length=None):
     else:
         raise ValueError(target_shape)
 
-    # calculate cell @ cell.T for (N,3,3)
+    # calculate cell @ cell.T for (... , 3, 3)
     # with cell  -> C_mij
     # and metric -> M_mkl
     # M_mkl = (sum_j C_mkj * C_mlj) / leff**2
-    metric = np.einsum('mkj,mlj->mkl', cell, cell)
+    metric = cell @ np.swapaxes(cell, -2, -1)
     # XXX problem: we favor small lengths to much
     # for the diagonals (= lengths ratio) we should have the inverse
-    normed = metric / target_len[:, None, None] ** 2
+    normed = metric / target_len[..., None, None] ** 2
 
     # offdiagonal ~ cos angle -> score = np.abs(cos angle - cos target_angle)
-    scores = np.add.reduce(np.abs(normed - target_metric[None, ...]),
-                           axis=(1, 2))
+    scores = np.add.reduce(np.abs(normed - target_metric), axis=(-2, -1))
 
-    if single:
-        return scores[0]
-    else:
-        return scores
+    return scores
 
 
 def eval_length_deviation(cell, target_shape="sc", target_length=None):
