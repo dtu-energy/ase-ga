@@ -218,10 +218,6 @@ def _optimal_transformation(operations, scores, ideal_P):
     # screen candidates with the same best score
     operations = operations[np.abs(scores - best_score) < 1e-6]
 
-    if not operations.size:
-        print("Failed to find a transformation matrix.")
-        return None
-
     # select the one whose cell orientation is the closest to the target
     # https://gitlab.com/ase/ase/-/merge_requests/3522
     imin = np.argmin(np.add.reduce((operations - ideal_P)**2, axis=(-2, -1)))
