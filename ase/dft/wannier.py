@@ -471,10 +471,12 @@ class CalcData:
 def get_calcdata(calc):
     kpt_kc = calc.get_bz_k_points()
     # Make sure there is no symmetry reduction
-    assert len(calc.get_ibz_k_points()) == len(kpt_kc), (
-        'K-point symmetry is not currently supported. '
-        "Please re-run your calculator with symmetry='off'."
-    )
+    if len(calc.get_ibz_k_points()) != len(kpt_kc):
+        raise RuntimeError(
+            'K-point symmetry is not currently supported. '
+            "Please re-run your calculator with symmetry='off'."
+        )
+
     lumo = calc.get_homo_lumo()[1]
     gap = bandgap(calc=calc)[0]
     return CalcData(
