@@ -821,12 +821,6 @@ def test_spread_contributions(wan):
 
 
 def test_symmetry_asserterror(wan):
-    # atoms = bulk('Si')
-    # gpw_path = _base_calculator_gpwfile(
-    #     atoms=atoms,
-    #    filename='wan_si.gpw',
-    #    nbands=8, kpts=(4, 1, 1))
     sym = {}
     with pytest.raises(AssertionError, match='K-point symmetry*'):
-        wanf = wan(kpts=(4, 1, 1), symmetry=sym)
-        return wanf  # return to avoid flake8 error
+        wan(kpts=(4, 1, 1), symmetry=sym)
