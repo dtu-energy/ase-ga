@@ -38,9 +38,10 @@ def eval_shape_deviation(cell, target_shape="sc", target_length=None):
 
     cell = np.asarray(cell)
 
-    eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
-    if target_length is not None:
-        eff_cubic_length = target_length * np.ones_like(eff_cubic_length)
+    if target_length is None:
+        eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
+    else:
+        eff_cubic_length = np.full(cell.shape[:-2], target_length)
 
     if target_shape == 'sc':
         target_len = eff_cubic_length
@@ -304,8 +305,8 @@ def find_optimal_cell_shape(
     if score_key in all_score_funcs:
         get_deviation_score = all_score_funcs[score_key]
     else:
-        msg = (f'Score func {score_func} not implemented.'
-               + f'Please select from {score_functions}.')
+        msg = (f'Score func key {score_key} not implemented.'
+               + f'Please select from {all_score_funcs}.')
         raise SupercellError(msg)
 
     scores = get_deviation_score(operations @ cell,
