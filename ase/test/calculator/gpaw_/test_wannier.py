@@ -149,6 +149,7 @@ def wan(rng, h2_calculator):
         rng=rng,
         full_calc=False,
         std_calc=True,
+        symmetry='off'
     ):
         """
         Generate a Wannier object.
@@ -179,7 +180,7 @@ def wan(rng, h2_calculator):
                 gpts=gpts,
                 nbands=nwannier,
                 kpts=kpts,
-                symmetry='off',
+                symmetry=symmetry,
                 txt=None
             )
 
@@ -543,7 +544,8 @@ def test_distances(wan, h2_calculator):
     dist1_ww = wanf.distances([1, 1, 1])
     for i in range(nwannier):
         assert dist_ww[i, i] == pytest.approx(0)
-        assert dist1_ww[i, i] == pytest.approx(np.linalg.norm(atoms.cell.array))
+        assert dist1_ww[i, i] == pytest.approx(
+            np.linalg.norm(atoms.cell.array))
         for j in range(i + 1, nwannier):
             assert dist_ww[i, j] == dist_ww[j, i]
             assert dist_ww[i, j] == \
@@ -572,8 +574,10 @@ def test_get_hopping_random(wan, rng):
     hop1_ww = wanf.get_hopping([1, 1, 1])
     for i in range(nwannier):
         for j in range(i + 1, nwannier):
-            assert np.abs(hop0_ww[i, j]) == pytest.approx(np.abs(hop0_ww[j, i]))
-            assert np.abs(hop1_ww[i, j]) == pytest.approx(np.abs(hop1_ww[j, i]))
+            assert np.abs(hop0_ww[i, j]) == pytest.approx(
+                np.abs(hop0_ww[j, i]))
+            assert np.abs(hop1_ww[i, j]) == pytest.approx(
+                np.abs(hop1_ww[j, i]))
 
 
 def test_get_hamiltonian_bloch(wan):
@@ -814,3 +818,15 @@ def test_spread_contributions(wan):
     test_values_w = wan1._spread_contributions()
     ref_values_w = [2.28535569, 0.04660427]
     assert test_values_w == pytest.approx(ref_values_w, abs=1e-4)
+
+
+def test_symmetry_asserterror(wan):
+    # atoms = bulk('Si')
+    # gpw_path = _base_calculator_gpwfile(
+    #     atoms=atoms,
+    #    filename='wan_si.gpw',
+    #    nbands=8, kpts=(4, 1, 1))
+    sym = {}
+    with pytest.raises(AssertionError, match='K-point symmetry*'):
+        wanf = wan(kpts=(4, 1, 1), symmetry=sym)
+        return wanf  # return to avoid flake8 error

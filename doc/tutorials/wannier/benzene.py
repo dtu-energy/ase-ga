@@ -5,7 +5,7 @@ from ase.build import molecule
 atoms = molecule('C6H6')
 atoms.center(vacuum=3.5)
 
-calc = GPAW(h=.21, xc='PBE', txt='benzene.txt', nbands=18)
+calc = GPAW(mode='fd', h=.21, xc='PBE', txt='benzene.txt', nbands=18)
 atoms.calc = calc
 atoms.get_potential_energy()
 
