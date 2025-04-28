@@ -67,7 +67,7 @@ def eval_shape_deviation(cell, target_shape="sc", target_length=None):
     normed = metric / target_len[..., None, None] ** 2
 
     # offdiagonal ~ cos angle -> score = np.abs(cos angle - cos target_angle)
-    scores = np.add.reduce(np.abs(normed - target_metric), axis=(-2, -1))
+    scores = np.add.reduce((normed - target_metric) ** 2, axis=(-2, -1))
 
     return scores
 
