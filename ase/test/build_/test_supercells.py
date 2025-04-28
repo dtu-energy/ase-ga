@@ -154,10 +154,10 @@ def test_cell_metric_twice_larger_lattice_vector(cell, target_shape):
 
     # cell_shape
     # (a0 / ai) - 1.0
-    dia1 = np.abs(1. / cb2 ** 2 - 1.)
-    dia2 = np.abs(4. / cb2 ** 2 - 1.)
-    ang1 = np.abs(1. / cb2 ** 2 / 2. - 0.5)
-    ang2 = np.abs(1. / cb2 ** 2 - 0.5)
+    dia1 = (1. / cb2 ** 2 - 1.) ** 2
+    dia2 = (4. / cb2 ** 2 - 1.) ** 2
+    ang1 = (1. / cb2 ** 2 / 2. - 0.5) ** 2
+    ang2 = (1. / cb2 ** 2 - 0.5) ** 2
     ref_score_shape = {}
     ref_score_shape['sc'] = 2. * dia1 + dia2
     ref_score_shape['fcc'] = 2. * dia1 + dia2 + 2. * ang1 + 4. * ang2
