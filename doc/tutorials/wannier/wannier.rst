@@ -6,8 +6,12 @@ Partly-occupied Wannier Functions
 
 This tutorial walks through building **partly-occupied Wannier
 functions** with the `ASE <https://wiki.fysik.dtu.dk/ase/>`_ *Wannier* module
-and the `GPAW <https://wiki.fysik.dtu.dk/gpaw/>`_ electronic structure code.
+and the `GPAW <https://wiki.fysik.dtu.dk/gpaw/>`_ electronic structure code. 
+For more information on the details of the method and the implementation, see
 
+   | K. S. Thygesen, L. B. Hansen, and K. W. Jacobsen
+   | :doi:`Partly occupied Wannier functions: Construction and applications <https://doi.org/10.1103/PhysRevB.72.125119 >`
+   | Phys. Rev. B 72, 125119, (2005)
 
 .. contents:: **Outline**
    :depth: 2
