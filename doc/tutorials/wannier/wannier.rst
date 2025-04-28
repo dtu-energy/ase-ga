@@ -1,11 +1,11 @@
 .. _wannier tutorial:
 
 ============================================
-Partly-occupied Wannier Functions
+Partly occupied Wannier Functions
 ============================================
 
-This tutorial walks through building **partly-occupied Wannier
-functions** with the `ASE <https://wiki.fysik.dtu.dk/ase/>`_ *Wannier* module
+This tutorial walks through building **partly occupied Wannier
+functions** with the :mod:`ase.dft.wannier` module
 and the `GPAW <https://wiki.fysik.dtu.dk/gpaw/>`_ electronic structure code. 
 For more information on the details of the method and the implementation, see
 
