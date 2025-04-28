@@ -822,5 +822,5 @@ def test_spread_contributions(wan):
 
 def test_symmetry_asserterror(wan):
     sym = {}
-    with pytest.raises(AssertionError, match='K-point symmetry*'):
+    with pytest.raises(RuntimeError, match='K-point symmetry*'):
         wan(kpts=(4, 1, 1), symmetry=sym)
