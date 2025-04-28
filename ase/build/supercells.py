@@ -112,9 +112,10 @@ def eval_length_deviation(cell, target_shape="sc", target_length=None):
     cell = np.asarray(cell)
     cell_lengths = np.sqrt(np.add.reduce(cell**2, axis=-1))
 
-    eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
-    if target_length is not None:
-        eff_cubic_length = target_length * np.ones_like(eff_cubic_length)
+    if target_length is None:
+        eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
+    else:
+        eff_cubic_length = np.full(cell.shape[:-2], target_length)
 
     if target_shape == 'sc':
         target_len = eff_cubic_length
@@ -241,12 +242,12 @@ def find_optimal_cell_shape(
     cell,
     target_size,
     target_shape,
-    target_length=None,
     lower_limit=-2,
     upper_limit=2,
-    minimal_size=False,
-    score_key='length',
     verbose=False,
+    target_length=None,
+    minimal_size=False,
+    score_key='length'
 ):
     """Obtain the optimal transformation matrix for a supercell of target size
     and shape.
@@ -276,6 +277,13 @@ def find_optimal_cell_shape(
     verbose: bool
         Set to True to obtain additional information regarding
         construction of transformation matrix.
+    target_length: None or flat
+        Desired target_length in Angstrom.
+        If None the effective cubic cell length is taken.
+    minimal_size: bool
+        If True also cells smaller than target_size will be considered.
+    score_key: str
+        key from all_score_funcs to select score function.
 
     Returns:
         2D array of integers: Transformation matrix that produces the
