@@ -1,10 +1,9 @@
-# fmt: off
+"""Partly occupied Wannier functions
 
-""" Partly occupied Wannier functions
-
-    Find the set of partly occupied Wannier functions using the method from
-    Thygesen, Hansen and Jacobsen PRB v72 i12 p125119 2005.
+Find the set of partly occupied Wannier functions using the method from
+Thygesen, Hansen and Jacobsen PRB v72 i12 p125119 2005.
 """
+
 import functools
 import warnings
 from math import pi, sqrt
@@ -36,8 +35,8 @@ def gram_schmidt(U):
 
 def lowdin(U, S=None):
     """Orthonormalize columns of U according to the symmetric Lowdin procedure.
-       The implementation uses SVD, like symm. Lowdin it returns the nearest
-       orthonormal matrix, but is more robust.
+    The implementation uses SVD, like symm. Lowdin it returns the nearest
+    orthonormal matrix, but is more robust.
     """
 
     L, _s, R = np.linalg.svd(U, full_matrices=False)
@@ -47,22 +46,36 @@ def lowdin(U, S=None):
 def neighbor_k_search(k_c, G_c, kpt_kc, tol=1e-4):
     # search for k1 (in kpt_kc) and k0 (in alldir), such that
     # k1 - k - G + k0 = 0
-    alldir_dc = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1],
-                          [1, 1, 0], [1, 0, 1], [0, 1, 1]], dtype=int)
+    alldir_dc = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [1, 1, 0],
+            [1, 0, 1],
+            [0, 1, 1],
+        ],
+        dtype=int,
+    )
     for k0_c in alldir_dc:
         for k1, k1_c in enumerate(kpt_kc):
             if np.linalg.norm(k1_c - k_c - G_c + k0_c) < tol:
                 return k1, k0_c
 
-    raise ValueError(f'Wannier: Did not find matching kpoint for kpt={k_c}.  '
-                     'Probably non-uniform k-point grid')
+    raise ValueError(
+        f'Wannier: Did not find matching kpoint for kpt={k_c}.  '
+        'Probably non-uniform k-point grid'
+    )
 
 
 def calculate_weights(cell_cc, normalize=True):
-    """ Weights are used for non-cubic cells, see PRB **61**, 10040
-        If normalized they lose the physical dimension."""
-    alldirs_dc = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1],
-                           [1, 1, 0], [1, 0, 1], [0, 1, 1]], dtype=int)
+    """Weights are used for non-cubic cells, see PRB **61**, 10040
+    If normalized they lose the physical dimension."""
+    alldirs_dc = np.array(
+        [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1], [0, 1, 1]],
+        dtype=int,
+    )
     g = cell_cc @ cell_cc.T
     # NOTE: Only first 3 of following 6 weights are presently used:
     w = np.zeros(6)
@@ -78,15 +91,15 @@ def calculate_weights(cell_cc, normalize=True):
     weight_d = w[:3]
     for d in range(3, 6):
         if abs(w[d]) > 1e-5:
-            Gdir_dc = np.concatenate((Gdir_dc, alldirs_dc[d:d + 1]))
-            weight_d = np.concatenate((weight_d, w[d:d + 1]))
+            Gdir_dc = np.concatenate((Gdir_dc, alldirs_dc[d : d + 1]))
+            weight_d = np.concatenate((weight_d, w[d : d + 1]))
     if normalize:
         weight_d /= max(abs(weight_d))
     return weight_d, Gdir_dc
 
 
-def steepest_descent(func, step=.005, tolerance=1e-6, log=silent, **kwargs):
-    fvalueold = 0.
+def steepest_descent(func, step=0.005, tolerance=1e-6, log=silent, **kwargs):
+    fvalueold = 0.0
     fvalue = fvalueold + 10
     count = 0
     while abs((fvalue - fvalueold) / fvalue) > tolerance:
@@ -98,14 +111,14 @@ def steepest_descent(func, step=.005, tolerance=1e-6, log=silent, **kwargs):
         log(f'SteepestDescent: iter={count}, value={fvalue}')
 
 
-def md_min(func, step=.25, tolerance=1e-6, max_iter=10000,
-           log=silent, **kwargs):
-
+def md_min(
+    func, step=0.25, tolerance=1e-6, max_iter=10000, log=silent, **kwargs
+):
     log('Localize with step =', step, 'and tolerance =', tolerance)
     finit = func.get_functional_value()
 
     t = -time()
-    fvalueold = 0.
+    fvalueold = 0.0
     fvalue = fvalueold + 10
     count = 0
     V = np.zeros(func.get_gradients().shape, dtype=complex)
@@ -125,14 +138,18 @@ def md_min(func, step=.25, tolerance=1e-6, max_iter=10000,
         log(f'MDmin: iter={count}, step={step}, value={fvalue}')
         if count > max_iter:
             t += time()
-            warnings.warn('Max iterations reached: '
-                          'iters=%s, step=%s, seconds=%0.2f, value=%0.4f'
-                          % (count, step, t, fvalue.real))
+            warnings.warn(
+                'Max iterations reached: '
+                'iters=%s, step=%s, seconds=%0.2f, value=%0.4f'
+                % (count, step, t, fvalue.real)
+            )
             break
 
     t += time()
-    log('%d iterations in %0.2f seconds (%0.2f ms/iter), endstep = %s' %
-        (count, t, t * 1000. / count, step))
+    log(
+        '%d iterations in %0.2f seconds (%0.2f ms/iter), endstep = %s'
+        % (count, t, t * 1000.0 / count, step)
+    )
     log(f'Initial value={finit}, Final value={fvalue}')
 
 
@@ -173,7 +190,7 @@ def rotation_from_projection(proj_nw, fixed, ortho=True):
         # Sort columns of eigenvectors matrix according to the eigenvalues
         # magnitude, select only the L largest ones. Then use them to obtain
         # the parameter C matrix.
-        C_ul[:] = proj_uw @ C_ww[:, np.argsort(- eig_w.real)[:L]]
+        C_ul[:] = proj_uw @ C_ww[:, np.argsort(-eig_w.real)[:L]]
 
         # Compute the section of the rotation matrix about 'non fixed' states
         U_ww[M:] = dag(C_ul) @ proj_uw
@@ -226,14 +243,18 @@ def scdm(pseudo_nkG, kpts, fixed_k, Nw):
     C_kul = []
 
     # compute factorization only at Gamma point
-    _, _, P = qr(pseudo_nkG[:, gamma_idx, :], mode='full',
-                 pivoting=True, check_finite=True)
+    _, _, P = qr(
+        pseudo_nkG[:, gamma_idx, :],
+        mode='full',
+        pivoting=True,
+        check_finite=True,
+    )
 
     for k in range(Nk):
         A_nw = pseudo_nkG[:, k, P[:Nw]]
-        U_ww, C_ul = rotation_from_projection(proj_nw=A_nw,
-                                              fixed=fixed_k[k],
-                                              ortho=True)
+        U_ww, C_ul = rotation_from_projection(
+            proj_nw=A_nw, fixed=fixed_k[k], ortho=True
+        )
         U_kww.append(U_ww)
         C_kul.append(C_ul)
 
@@ -263,9 +284,7 @@ def arbitrary_s_orbitals(atoms, Ns, rng=np.random):
             tmp_atoms.set_scaled_positions(s_pos)
 
             # Use dummy H atom to measure distance from any other atom
-            dists = tmp_atoms.get_distances(
-                a=-1,
-                indices=range(len(atoms)))
+            dists = tmp_atoms.get_distances(a=-1, indices=range(len(atoms)))
 
             # Check if it is close to at least one atom
             if (dists < 1.5).any():
@@ -287,8 +306,12 @@ def init_orbitals(atoms, ntot, rng=np.random):
 
     # List all the elements that should have occupied d-orbitals
     # in the valence states (according to GPAW setups)
-    d_metals = set(list(range(21, 31)) + list(range(39, 52)) +
-                   list(range(57, 84)) + list(range(89, 113)))
+    d_metals = set(
+        list(range(21, 31))
+        + list(range(39, 52))
+        + list(range(57, 84))
+        + list(range(89, 113))
+    )
     orbs = []
 
     # Start with zero orbitals
@@ -316,7 +339,7 @@ def square_modulus_of_Z_diagonal(Z_dww):
     Square modulus of the Z matrix diagonal, the diagonal is taken
     for the indexes running on the WFs.
     """
-    return np.abs(Z_dww.diagonal(0, 1, 2))**2
+    return np.abs(Z_dww.diagonal(0, 1, 2)) ** 2
 
 
 def get_kklst(kpt_kc, Gdir_dc):
@@ -345,8 +368,7 @@ def get_kklst(kpt_kc, Gdir_dc):
             slist = np.argsort(kpt_kc[:, c], kind='mergesort')
             skpoints_kc = np.take(kpt_kc, slist, axis=0)
             kdist_c[c] = max(
-                skpoints_kc[n + 1, c] - skpoints_kc[n, c]
-                for n in range(Nk - 1)
+                skpoints_kc[n + 1, c] - skpoints_kc[n, c] for n in range(Nk - 1)
             )
 
         for d, Gdir_c in enumerate(Gdir_dc):
@@ -357,8 +379,9 @@ def get_kklst(kpt_kc, Gdir_dc):
                     kklst_dk[d, k] = k
                     k0_dkc[d, k] = Gdir_c
                 else:
-                    kklst_dk[d, k], k0_dkc[d, k] = \
-                        neighbor_k_search(k_c, G_c, kpt_kc)
+                    kklst_dk[d, k], k0_dkc[d, k] = neighbor_k_search(
+                        k_c, G_c, kpt_kc
+                    )
     return kklst_dk, k0_dkc
 
 
@@ -372,7 +395,6 @@ def get_invkklst(kklst_dk):
 
 
 def choose_states(calcdata, fixedenergy, fixedstates, Nk, nwannier, log, spin):
-
     if fixedenergy is None and fixedstates is not None:
         if isinstance(fixedstates, int):
             fixedstates = [fixedstates] * Nk
@@ -394,16 +416,17 @@ def choose_states(calcdata, fixedenergy, fixedstates, Nk, nwannier, log, spin):
             tmp_fixedstates_k.append(kindex)
         fixedstates_k = np.array(tmp_fixedstates_k, int)
     elif fixedenergy is not None and fixedstates is not None:
-        raise RuntimeError(
-            'You can not set both fixedenergy and fixedstates')
+        raise RuntimeError('You can not set both fixedenergy and fixedstates')
 
     if nwannier == 'auto':
         if fixedenergy is None and fixedstates is None:
             # Assume the fixedexergy parameter equal to 0 and
             # find the states below the Fermi level at each k-point.
-            log("nwannier=auto but no 'fixedenergy' or 'fixedstates'",
-                "parameter was provided, using Fermi level as",
-                "energy cutoff.")
+            log(
+                "nwannier=auto but no 'fixedenergy' or 'fixedstates'",
+                'parameter was provided, using Fermi level as',
+                'energy cutoff.',
+            )
             tmp_fixedstates_k = []
             for k in range(Nk):
                 eps_n = calcdata.eps_skn[spin, k]
@@ -432,8 +455,7 @@ def get_eigenvalues(calc):
 
 
 class CalcData:
-    def __init__(self, kpt_kc, atoms, fermi_level, lumo, eps_skn,
-                 gap):
+    def __init__(self, kpt_kc, atoms, fermi_level, lumo, eps_skn, gap):
         self.kpt_kc = kpt_kc
         self.atoms = atoms
         self.fermi_level = fermi_level
@@ -449,9 +471,10 @@ class CalcData:
 def get_calcdata(calc):
     kpt_kc = calc.get_bz_k_points()
     # Make sure there is no symmetry reduction
-    assert len(calc.get_ibz_k_points()) == len(kpt_kc), \
-        'K-point symmetry is not currently supported. ' \
-        'Please re-run your calculator with symmetry=\'off\'.'
+    assert len(calc.get_ibz_k_points()) == len(kpt_kc), (
+        'K-point symmetry is not currently supported. '
+        "Please re-run your calculator with symmetry='off'."
+    )
     lumo = calc.get_homo_lumo()[1]
     gap = bandgap(calc=calc)[0]
     return CalcData(
@@ -460,7 +483,8 @@ def get_calcdata(calc):
         fermi_level=calc.get_fermi_level(),
         lumo=lumo,
         eps_skn=get_eigenvalues(calc),
-        gap=gap)
+        gap=gap,
+    )
 
 
 class Wannier:
@@ -470,16 +494,20 @@ class Wannier:
     Thygesen, Hansen and Jacobsen PRB v72 i12 p125119 2005.
     """
 
-    def __init__(self, nwannier, calc,
-                 file=None,
-                 nbands=None,
-                 fixedenergy=None,
-                 fixedstates=None,
-                 spin=0,
-                 initialwannier='orbitals',
-                 functional='std',
-                 rng=np.random,
-                 log=silent):
+    def __init__(
+        self,
+        nwannier,
+        calc,
+        file=None,
+        nbands=None,
+        fixedenergy=None,
+        fixedstates=None,
+        spin=0,
+        initialwannier='orbitals',
+        functional='std',
+        rng=np.random,
+        log=silent,
+    ):
         """
         Required arguments:
 
@@ -532,7 +560,7 @@ class Wannier:
           ``rng``: Random number generator for ``initialwannier``.
 
           ``log``: Function which logs, such as print().
-          """
+        """
         # Bloch phase sign convention.
         # May require special cases depending on which code is used.
         sign = -1
@@ -561,8 +589,14 @@ class Wannier:
         self.nbands = nbands
 
         self.fixedstates_k, self.nwannier = choose_states(
-            self.calcdata, fixedenergy, fixedstates, self.Nk, nwannier,
-            log, spin)
+            self.calcdata,
+            fixedenergy,
+            fixedstates,
+            self.Nk,
+            nwannier,
+            log,
+            spin,
+        )
 
         # Compute the number of extra degrees of freedom (EDF)
         self.edf_k = self.nwannier - self.fixedstates_k
@@ -608,8 +642,13 @@ class Wannier:
                 k1 = self.kklst_dk[d, k]
                 k0_c = k0_dkc[d, k]
                 Z_dknn[d, k] = calc.get_wannier_localization_matrix(
-                    nbands=Nb, dirG=dirG, kpoint=k, nextkpoint=k1,
-                    G_I=k0_c, spin=self.spin)
+                    nbands=Nb,
+                    dirG=dirG,
+                    kpoint=k,
+                    nextkpoint=k1,
+                    G_I=k0_c,
+                    spin=self.spin,
+                )
         return Z_dknn
 
     @property
@@ -631,8 +670,9 @@ class Wannier:
         """
         from ase.dft.wannierstate import WannierSpec, WannierState
 
-        spec = WannierSpec(self.Nk, self.nwannier, self.nbands,
-                           self.fixedstates_k)
+        spec = WannierSpec(
+            self.Nk, self.nwannier, self.nbands, self.fixedstates_k
+        )
 
         if file is not None:
             with paropen(file, 'r') as fd:
@@ -647,13 +687,14 @@ class Wannier:
         elif initialwannier == 'orbitals':
             orbitals = init_orbitals(self.atoms, self.nwannier, rng)
             wannier_state = spec.initial_orbitals(
-                self.calc, orbitals, self.kptgrid, self.edf_k, self.spin)
+                self.calc, orbitals, self.kptgrid, self.edf_k, self.spin
+            )
         elif initialwannier == 'scdm':
             wannier_state = spec.scdm(self.calc, self.kpt_kc, self.spin)
         else:
             wannier_state = spec.initial_wannier(
-                self.calc, initialwannier, self.kptgrid,
-                self.edf_k, self.spin)
+                self.calc, initialwannier, self.kptgrid, self.edf_k, self.spin
+            )
 
         self.wannier_state = wannier_state
         self.update()
@@ -676,8 +717,9 @@ class Wannier:
         for d in range(self.Ndir):
             for k in range(self.Nk):
                 k1 = self.kklst_dk[d, k]
-                self.Z_dkww[d, k] = dag(self.V_knw[k]) \
-                    @ (self.Z_dknn[d, k] @ self.V_knw[k1])
+                self.Z_dkww[d, k] = dag(self.V_knw[k]) @ (
+                    self.Z_dknn[d, k] @ self.V_knw[k1]
+                )
 
         # Update the new Z matrix
         self.Z_dww = self.Z_dkww.sum(axis=1) / self.Nk
@@ -704,8 +746,9 @@ class Wannier:
         # available bands we have.
         max_number_fixedstates = np.max(self.fixedstates_k)
 
-        min_range_value = max(self.nwannier - int(np.floor(nwrange / 2)),
-                              max_number_fixedstates)
+        min_range_value = max(
+            self.nwannier - int(np.floor(nwrange / 2)), max_number_fixedstates
+        )
         max_range_value = min(min_range_value + nwrange, self.nbands + 1)
         Nws = np.arange(min_range_value, max_range_value)
 
@@ -721,14 +764,16 @@ class Wannier:
 
             # Define once with the fastest 'initialwannier',
             # then initialize with random seeds in the for loop
-            wan = Wannier(nwannier=int(Nw),
-                          calc=self.calc,
-                          nbands=self.nbands,
-                          spin=self.spin,
-                          functional=self.functional,
-                          initialwannier='bloch',
-                          log=self.log,
-                          rng=self.rng)
+            wan = Wannier(
+                nwannier=int(Nw),
+                calc=self.calc,
+                nbands=self.nbands,
+                spin=self.spin,
+                functional=self.functional,
+                initialwannier='bloch',
+                log=self.log,
+                rng=self.rng,
+            )
             wan.fixedstates_k = self.fixedstates_k
             wan.edf_k = wan.nwannier - wan.fixedstates_k
 
@@ -770,8 +815,9 @@ class Wannier:
         Note that this function can fail with some Bravais lattices,
         see `get_spreads()` for a more robust alternative.
         """
-        r2 = - (self.largeunitcell_cc.diagonal()**2 / (2 * pi)**2) \
-            @ np.log(abs(self.Z_dww[:3].diagonal(0, 1, 2))**2)
+        r2 = -(self.largeunitcell_cc.diagonal() ** 2 / (2 * pi) ** 2) @ np.log(
+            abs(self.Z_dww[:3].diagonal(0, 1, 2)) ** 2
+        )
         return np.sqrt(r2)
 
     def get_spreads(self):
@@ -789,11 +835,11 @@ class Wannier:
         # compute weights without normalization, to keep physical dimension
         weight_d, _ = calculate_weights(self.largeunitcell_cc, normalize=False)
         Z2_dw = square_modulus_of_Z_diagonal(self.Z_dww)
-        spread_w = - (np.log(Z2_dw).T @ weight_d).real / (2 * np.pi)**2
+        spread_w = -(np.log(Z2_dw).T @ weight_d).real / (2 * np.pi) ** 2
         return spread_w
 
     def get_spectral_weight(self, w):
-        return abs(self.V_knw[:, :, w])**2 / self.Nk
+        return abs(self.V_knw[:, :, w]) ** 2 / self.Nk
 
     def get_pdos(self, w, energies, width):
         """Projected density of states (PDOS).
@@ -809,8 +855,8 @@ class Wannier:
             eig_n = self.calcdata.eps_skn[self.spin, k]
             for weight, eig in zip(spec_n, eig_n):
                 # Add gaussian centered at the eigenvalue
-                x = ((energies - eig) / width)**2
-                dos += weight * np.exp(-x.clip(0., 40.)) / (sqrt(pi) * width)
+                x = ((energies - eig) / width) ** 2
+                dos += weight * np.exp(-x.clip(0.0, 40.0)) / (sqrt(pi) * width)
         return dos
 
     def translate(self, w, R):
@@ -820,7 +866,7 @@ class Wannier:
         vectors of the small cell.
         """
         for kpt_c, U_ww in zip(self.kpt_kc, self.U_kww):
-            U_ww[:, w] *= np.exp(2.j * pi * (np.array(R) @ kpt_c))
+            U_ww[:, w] *= np.exp(2.0j * pi * (np.array(R) @ kpt_c))
         self.update()
 
     def translate_to_cell(self, w, cell):
@@ -846,11 +892,14 @@ class Wannier:
         the orbitals to the cell [2,2,2].  In this way the pbc
         boundary conditions will not be noticed.
         """
-        scaled_wc = (np.angle(self.Z_dww[:3].diagonal(0, 1, 2)).T *
-                     self.kptgrid / (2 * pi))
+        scaled_wc = (
+            np.angle(self.Z_dww[:3].diagonal(0, 1, 2)).T
+            * self.kptgrid
+            / (2 * pi)
+        )
         trans_wc = np.array(cell)[None] - np.floor(scaled_wc)
         for kpt_c, U_ww in zip(self.kpt_kc, self.U_kww):
-            U_ww *= np.exp(2.j * pi * (trans_wc @ kpt_c))
+            U_ww *= np.exp(2.0j * pi * (trans_wc @ kpt_c))
         self.update()
 
     def distances(self, R):
@@ -870,7 +919,7 @@ class Wannier:
             r2 += self.unitcell_cc[i] * R[i]
 
         r2 = np.swapaxes(r2.repeat(Nw, axis=0).reshape(Nw, Nw, 3), 0, 1)
-        return np.sqrt(np.sum((r1 - r2)**2, axis=-1))
+        return np.sqrt(np.sum((r1 - r2) ** 2, axis=-1))
 
     @functools.lru_cache(maxsize=10000)
     def _get_hopping(self, n1, n2, n3):
@@ -889,7 +938,7 @@ class Wannier:
         R = np.array([n1, n2, n3], float)
         H_ww = np.zeros([self.nwannier, self.nwannier], complex)
         for k, kpt_c in enumerate(self.kpt_kc):
-            phase = np.exp(-2.j * pi * (np.array(R) @ kpt_c))
+            phase = np.exp(-2.0j * pi * (np.array(R) @ kpt_c))
             H_ww += self.get_hamiltonian(k) * phase
         return H_ww / self.Nk
 
@@ -916,7 +965,7 @@ class Wannier:
           H(k) = V    diag(eps )  V
                   k           k    k
         """
-        eps_n = self.calcdata.eps_skn[self.spin, k, :self.nbands]
+        eps_n = self.calcdata.eps_skn[self.spin, k, : self.nbands]
         V_nw = self.V_knw[k]
         return (dag(V_nw) * eps_n) @ V_nw
 
@@ -941,7 +990,7 @@ class Wannier:
                 for n3 in range(-N3, N3 + 1):
                     R = np.array([n1, n2, n3], float)
                     hop_ww = self.get_hopping(R)
-                    phase = np.exp(+2.j * pi * (R @ kpt_c))
+                    phase = np.exp(+2.0j * pi * (R @ kpt_c))
                     Hk += hop_ww * phase
         return Hk
 
@@ -983,16 +1032,19 @@ class Wannier:
             wan_G = np.zeros(dim, complex)
             for n, coeff in enumerate(vec_n):
                 wan_G += coeff * self.calc.get_pseudo_wave_function(
-                    n, k, self.spin, pad=True)
+                    n, k, self.spin, pad=True
+                )
 
             # Distribute the small wavefunction over large cell:
             for n1 in range(N1):
                 for n2 in range(N2):
                     for n3 in range(N3):  # sign?
-                        e = np.exp(-2.j * pi * np.array([n1, n2, n3]) @ kpt_c)
-                        wanniergrid[n1 * dim[0]:(n1 + 1) * dim[0],
-                                    n2 * dim[1]:(n2 + 1) * dim[1],
-                                    n3 * dim[2]:(n3 + 1) * dim[2]] += e * wan_G
+                        e = np.exp(-2.0j * pi * np.array([n1, n2, n3]) @ kpt_c)
+                        wanniergrid[
+                            n1 * dim[0] : (n1 + 1) * dim[0],
+                            n2 * dim[1] : (n2 + 1) * dim[1],
+                            n3 * dim[2] : (n3 + 1) * dim[2],
+                        ] += e * wan_G
 
         # Normalization
         wanniergrid /= np.sqrt(self.Nk)
@@ -1030,17 +1082,24 @@ class Wannier:
             data = np.angle(func)
         else:
             if self.Nk == 1:
-                func *= np.exp(-1.j * np.angle(func.max()))
+                func *= np.exp(-1.0j * np.angle(func.max()))
             func = abs(func)
             data = func
 
         write(fname, atoms, data=data, format='cube')
 
-    def localize(self, step=0.25, tolerance=1e-08,
-                 updaterot=True, updatecoeff=True):
+    def localize(
+        self, step=0.25, tolerance=1e-08, updaterot=True, updatecoeff=True
+    ):
         """Optimize rotation to give maximal localization"""
-        md_min(self, step=step, tolerance=tolerance, log=self.log,
-               updaterot=updaterot, updatecoeff=updatecoeff)
+        md_min(
+            self,
+            step=step,
+            tolerance=tolerance,
+            log=self.log,
+            updaterot=updaterot,
+            updatecoeff=updatecoeff,
+        )
 
     def get_functional_value(self):
         """Calculate the value of the spread functional.
@@ -1064,8 +1123,10 @@ class Wannier:
             fun = np.sum(a_w)
         elif self.functional == 'var':
             fun = np.sum(a_w) - self.nwannier * np.var(a_w)
-            self.log(f'std: {np.sum(a_w):.4f}',
-                     f'\tvar: {self.nwannier * np.var(a_w):.4f}')
+            self.log(
+                f'std: {np.sum(a_w):.4f}',
+                f'\tvar: {self.nwannier * np.var(a_w):.4f}',
+            )
         return fun
 
     def get_gradients(self):
@@ -1129,25 +1190,36 @@ class Wannier:
 
                 if L > 0:
                     Ctemp_nw += weight * (
-                        ((Z_knn[k] @ V_knw[k1]) * diagZ_w.conj() +
-                         (dag(Z_knn[k2]) @ V_knw[k2]) * diagZ_w) @ dag(U_ww))
+                        (
+                            (Z_knn[k] @ V_knw[k1]) * diagZ_w.conj()
+                            + (dag(Z_knn[k2]) @ V_knw[k2]) * diagZ_w
+                        )
+                        @ dag(U_ww)
+                    )
 
                     if self.functional == 'var':
                         # Gradient of the variance term, split in two terms
                         def variance_term_computer(factor):
                             result = (
-                                self.nwannier * 2 * weight * (
-                                    ((Z_knn[k] @ V_knw[k1]) * factor.conj() +
-                                     (dag(Z_knn[k2]) @ V_knw[k2]) * factor) @
-                                    dag(U_ww)) / Nw**2
+                                self.nwannier
+                                * 2
+                                * weight
+                                * (
+                                    (
+                                        (Z_knn[k] @ V_knw[k1]) * factor.conj()
+                                        + (dag(Z_knn[k2]) @ V_knw[k2]) * factor
+                                    )
+                                    @ dag(U_ww)
+                                )
+                                / Nw**2
                             )
                             return result
 
-                        first_term = \
+                        first_term = (
                             O_sum * variance_term_computer(diagZ_w) / Nw**2
+                        )
 
-                        second_term = \
-                            - variance_term_computer(diagOZ_w) / Nw
+                        second_term = -variance_term_computer(diagOZ_w) / Nw
 
                         Ctemp_nw += first_term + second_term
 
@@ -1155,13 +1227,21 @@ class Wannier:
                 Utemp_ww += weight * (temp - dag(temp))
 
                 if self.functional == 'var':
-                    Utemp_ww += (self.nwannier * 2 * O_sum * weight *
-                                 (temp - dag(temp)) / Nw**2)
+                    Utemp_ww += (
+                        self.nwannier
+                        * 2
+                        * O_sum
+                        * weight
+                        * (temp - dag(temp))
+                        / Nw**2
+                    )
 
-                    temp = (OZii_ww.T * Z_kww[k].conj()
-                            - OZii_ww * Z_kww[k2].conj())
-                    Utemp_ww -= (self.nwannier * 2 * weight *
-                                 (temp - dag(temp)) / Nw)
+                    temp = (
+                        OZii_ww.T * Z_kww[k].conj() - OZii_ww * Z_kww[k2].conj()
+                    )
+                    Utemp_ww -= (
+                        self.nwannier * 2 * weight * (temp - dag(temp)) / Nw
+                    )
 
             dU.append(Utemp_ww.ravel())
 
@@ -1178,8 +1258,7 @@ class Wannier:
         """
         Compute the contribution of each WF to the spread functional.
         """
-        return (square_modulus_of_Z_diagonal(self.Z_dww).T
-                @ self.weight_d).real
+        return (square_modulus_of_Z_diagonal(self.Z_dww).T @ self.weight_d).real
 
     def step(self, dX, updaterot=True, updatecoeff=True):
         # dX is (A, dC) where U->Uexp(-A) and C->C+dC
@@ -1188,13 +1267,13 @@ class Wannier:
         M_k = self.fixedstates_k
         L_k = self.edf_k
         if updaterot:
-            A_kww = dX[:Nk * Nw**2].reshape(Nk, Nw, Nw)
+            A_kww = dX[: Nk * Nw**2].reshape(Nk, Nw, Nw)
             for U, A in zip(self.U_kww, A_kww):
-                H = -1.j * A.conj()
+                H = -1.0j * A.conj()
                 epsilon, Z = np.linalg.eigh(H)
                 # Z contains the eigenvectors as COLUMNS.
                 # Since H = iA, dU = exp(-A) = exp(iH) = ZDZ^d
-                dU = Z * np.exp(1.j * epsilon) @ dag(Z)
+                dU = Z * np.exp(1.0j * epsilon) @ dag(Z)
                 if U.dtype == float:
                     U[:] = (U @ dU).real
                 else:
@@ -1206,7 +1285,7 @@ class Wannier:
                 if L == 0 or unocc == 0:
                     continue
                 Ncoeff = L * unocc
-                deltaC = dX[Nk * Nw**2 + start: Nk * Nw**2 + start + Ncoeff]
+                deltaC = dX[Nk * Nw**2 + start : Nk * Nw**2 + start + Ncoeff]
                 C += deltaC.reshape(unocc, L)
                 gram_schmidt(C)
                 start += Ncoeff
