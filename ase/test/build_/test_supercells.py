@@ -5,7 +5,7 @@ import pytest
 
 from ase.build import bulk
 from ase.build.supercells import (
-    all_score_func,
+    all_score_funcs,
     find_optimal_cell_shape,
     make_supercell,
 )
@@ -118,7 +118,7 @@ def test_cell_metric_ideal(target_shape, cell):
     Test also cell vectors with permutation and elongation.
     """
 
-    for score_func in all_score_func:
+    for score_func in all_score_funcs.values():
 
         cell = np.asarray(cell)
         indices_permuted = itertools.permutations(range(3))
@@ -164,7 +164,7 @@ def test_cell_metric_twice_larger_lattice_vector(cell, target_shape):
 
     ref_scores = [ref_score_length, ref_score_shape[target_shape]]
 
-    for score_func, ref_score in zip(all_score_func, ref_scores):
+    for score_func, ref_score in zip(all_score_funcs.values(), ref_scores):
         score = score_func(cell, target_shape)
         assert np.isclose(score, ref_score)
 
@@ -173,7 +173,7 @@ def test_cell_metric_twice_larger_lattice_vector(cell, target_shape):
 def test_multiple_cells(target_shape: str) -> None:
     """Test if multiple cells can be evaluated at one time."""
 
-    for score_func in all_score_func:
+    for score_func in all_score_funcs.values():
 
         cells = np.array([
             [[1, 0, 0], [0, 1, 0], [0, 0, 2]],
@@ -200,7 +200,7 @@ def test_cell_metric_negative_determinant(cell, target_shape):
     negative determinants.
     """
 
-    for score_func in all_score_func:
+    for score_func in all_score_funcs.values():
         cell_metric = score_func(cell, target_shape)
         assert np.isclose(cell_metric, 0.0)
 
@@ -215,12 +215,13 @@ def test_find_optimal_cell_shape(
     """Test `find_optimal_cell_shape`.
 
     We test from sc to sc; from sc to fcc; and from fcc to sc."""
-    for score_func in all_score_func:
+    for score_key in all_score_funcs:
 
         sc_matrix = find_optimal_cell_shape(cell, target_size, target_shape,
-                                            score_func=score_func.__name__,
+                                            score_key=score_key,
                                             lower_limit=-1, upper_limit=1)
 
+        score_func = all_score_funcs[score_key]
         cell_metric = score_func(
             sc_matrix @ cell,
             target_shape,
@@ -249,7 +250,7 @@ def test_ideal_orientation(cell, target_shape,
                            target_size, sc_matrix_ref) -> None:
     """Test if the ideal orientation is selected among candidates."""
 
-    for score_func in all_score_func:
+    for score_key in all_score_funcs:
         sc_matrix = find_optimal_cell_shape(cell, target_size, target_shape,
-                                            score_func=score_func.__name__)
+                                            score_key=score_key)
         np.testing.assert_array_equal(sc_matrix, sc_matrix_ref)

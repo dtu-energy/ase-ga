@@ -232,7 +232,8 @@ def _optimal_transformation(operations, scores, ideal_P):
     return optimal_P, best_score
 
 
-all_score_func = [eval_length_deviation, eval_shape_deviation]
+all_score_funcs = {"length": eval_length_deviation,
+                   "metric": eval_shape_deviation}
 
 
 def find_optimal_cell_shape(
@@ -243,7 +244,7 @@ def find_optimal_cell_shape(
     lower_limit=-2,
     upper_limit=2,
     minimal_size=False,
-    score_func='eval_length_deviation',
+    score_key='length',
     verbose=False,
 ):
     """Obtain the optimal transformation matrix for a supercell of target size
@@ -300,10 +301,8 @@ def find_optimal_cell_shape(
                                         minimal_size=minimal_size)
 
     # evaluate derivations of the screened supercells
-    score_func_dict = {func.__name__: func for func in all_score_func}
-    score_functions = list(score_func_dict)
-    if score_func in score_functions:
-        get_deviation_score = score_func_dict[score_func]
+    if score_key in all_score_funcs:
+        get_deviation_score = all_score_funcs[score_key]
     else:
         msg = (f'Score func {score_func} not implemented.'
                + f'Please select from {score_functions}.')
