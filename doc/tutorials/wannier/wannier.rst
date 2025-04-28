@@ -1,4 +1,4 @@
-.. _wannier_tutorial:
+.. _wannier tutorial:
 
 ============================================
 Partly-occupied Wannier Functions
