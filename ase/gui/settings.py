@@ -44,6 +44,13 @@ class Settings:
             callback=self.scale_velocity_vectors
         )
         win.add([_('Scale velocity vectors:'), self.velocity_vector_scale])
+        self.spin_vector_scale = ui.SpinBox(
+            self.gui.spin_vector_scale,
+            0.0, 1e32, 0.1,
+            rounding=2,
+            callback=self.scale_spin_vectors
+        )
+        win.add([_('Scale spin vectors:'), self.spin_vector_scale])
 
     def scale_radii(self):
         self.gui.images.atom_scale = self.scale.value
@@ -57,6 +64,11 @@ class Settings:
 
     def scale_velocity_vectors(self):
         self.gui.velocity_vector_scale = float(self.velocity_vector_scale.value)
+        self.gui.draw()
+        return True
+    
+    def scale_spin_vectors(self):
+        self.gui.spin_vector_scale = float(self.spin_vector_scale.value)
         self.gui.draw()
         return True
 

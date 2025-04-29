@@ -18,6 +18,7 @@ gui_default_settings = {
     'radii_scale': 0.89,
     'force_vector_scale': 1.0,
     'velocity_vector_scale': 1.0,
+    'spin_vector_scale': 1.0,
     'show_unit_cell': True,
     'show_axes': True,
     'show_bonds': False,

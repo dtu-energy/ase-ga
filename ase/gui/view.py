@@ -110,6 +110,7 @@ class View:
         # scaling factors for vectors
         self.force_vector_scale = self.config['force_vector_scale']
         self.velocity_vector_scale = self.config['velocity_vector_scale']
+        self.spin_vector_scale = self.config['spin_vector_scale']
 
         # buttons
         self.b1 = 1  # left
@@ -251,6 +252,9 @@ class View:
         return np.zeros((len(self.atoms), 3))
 
     def toggle_show_forces(self, key=None):
+        self.draw()
+
+    def toggle_show_spins(self, key=None):
         self.draw()
 
     def hide_selected(self):
@@ -434,6 +438,22 @@ class View:
             f = self.get_forces()
             vector_arrays.append(f * self.force_vector_scale)
 
+        if self.window['toggle-show-spins']:
+            magmom = get_magmoms(self.atoms)
+            magmom_vector_scale = 0.25
+            if type(magmom[0]) == np.float64: # Turn this into a 3D vector if it is a scalar
+                magmom_temp = []
+                for i in range(len(magmom)):
+                    magmom_temp.append(np.array([0,0,magmom[i]]))
+                magmom = np.array(magmom_temp)
+                vector_arrays.append(magmom * self.spin_vector_scale)
+            elif isinstance(magmom, np.ndarray) and len(magmom[0]) == 3:
+                vector_arrays.append(magmom * self.spin_vector_scale)
+            else:
+                raise TypeError('Magmom is not a 3-component vector or a scalar')
+
+        #axes_constant = np.array([[0,0,0],[0,0,0],[0,-np.linalg.norm(axes[2,:]),0]]) # This is an example that shows arrows. Learn how to do this properly
+        
         for array in vector_arrays:
             array[:] = np.dot(array, axes) + X[:n]
 
@@ -517,7 +537,7 @@ class View:
                     for v in vector_arrays:
                         assert not np.isnan(v).any()
                         self.arrow((X[a, 0], X[a, 1], v[a, 0], v[a, 1]),
-                                   width=2)
+                                   width=4)
             else:
                 # Draw unit cell and/or bonds:
                 a -= n
