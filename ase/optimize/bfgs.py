@@ -38,10 +38,10 @@ class BFGS(Optimizer):
             such a name will be searched and hessian matrix stored will
             be used, if the file exists.
 
-        trajectory: str
+        trajectory: str or Path
             Trajectory file used to store optimisation path.
 
-        logfile: file object or str
+        logfile: file object, Path, or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 

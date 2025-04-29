@@ -124,6 +124,7 @@ def test_pass_path(testdir):
 
     fmax = 0.01
     path = Path('trajectory.traj')
-    with BFGS(atoms, trajectory=path) as opt:
+    log = Path('relax.log')
+    with BFGS(atoms, logfile=log, trajectory=path) as opt:
         is_converged = opt.run(fmax=fmax)
     assert is_converged  # check if opt.run() returns True when converged

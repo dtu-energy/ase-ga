@@ -76,8 +76,8 @@ class Dynamics(IOContext):
     def __init__(
         self,
         atoms: Atoms,
-        logfile: Optional[Union[IO, str]] = None,
-        trajectory: Optional[str] = None,
+        logfile: Optional[Union[IO, Path, str]] = None,
+        trajectory: Optional[Union[str, Path]] = None,
         append_trajectory: bool = False,
         master: Optional[bool] = None,
         comm=world,
@@ -91,7 +91,7 @@ class Dynamics(IOContext):
         atoms : Atoms object
             The Atoms object to operate on.
 
-        logfile : file object or str
+        logfile : file object, Path, or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
@@ -328,11 +328,11 @@ class Optimizer(Dynamics):
         restart: str
             Filename for restart file. Default value is *None*.
 
-        logfile: file object or str
+        logfile: file object, Path, or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        trajectory: Trajectory object or str
+        trajectory: Trajectory object, Path, or str
             Attach trajectory object. If *trajectory* is a string a
             Trajectory will be constructed. Use *None* for no
             trajectory.
