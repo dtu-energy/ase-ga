@@ -441,17 +441,17 @@ class View:
         if self.window['toggle-show-magmoms']:
             magmom = get_magmoms(self.atoms)
             # Turn this into a 3D vector if it is a scalar
-            if isinstance(magmom[0], np.float64):
-                magmom_temp = []
-                for i in range(len(magmom)):
-                    magmom_temp.append(np.array([0, 0, magmom[i]]))
-                magmom = np.array(magmom_temp)
-                vector_arrays.append(magmom * 0.25 * self.magmom_vector_scale)
-            elif isinstance(magmom, np.ndarray) and len(magmom[0]) == 3:
-                vector_arrays.append(magmom * 0.25 * self.magmom_vector_scale)
-            else:
-                raise TypeError('Magmom is not a 3-component vector '
+            magmom_vecs = []
+            for i in range(len(magmom)):
+                if isinstance(magmom[i], (int, float)):
+                    magmom_vecs.append(np.array([0, 0, magmom[i]]))
+                elif isinstance(magmom[i], np.ndarray) and len(magmom[i]) == 3:
+                    magmom_vecs.append(magmom[i])
+                else:
+                    raise TypeError('Magmom is not a 3-component vector '
                                 'or a scalar')
+            magmom_vecs = np.array(magmom_vecs)
+            vector_arrays.append(magmom_vecs * 0.25 * self.magmom_vector_scale)
 
         for array in vector_arrays:
             array[:] = np.dot(array, axes) + X[:n]
