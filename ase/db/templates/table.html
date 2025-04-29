@@ -3,9 +3,8 @@
     <div class="panel-heading">
 
     <!-- Database Table -->
-
-      <div class="row">
-        <div class="col-xs-6">
+      <div class="row mt-2">
+        <div class="col">
           <b>
           Displaying rows {{ session.row1 }}-{{ session.row2 }} out of {{ session.nrows }}
           (total # or rows: {{ session.nrows_total }})
@@ -15,38 +14,40 @@
           {% endif %}
         </div>
 
-        <div class="col-xs-6">
-          <div class="btn-group pull-right">
+        <div class="col">
+          <div class="btn-toolbar justify-content-end bg-white">
+            <div class="dropdown">
             <button type="button"
-                    class="btn btn-default dropdown-toggle btn-sm"
-                    data-toggle="dropdown" aria-haspopup="true"
+                    class="btn btn-secondary btn-sm dropdown-toggle"
+                    data-bs-toggle="dropdown"
                     aria-expanded="false">
-            Add Column <span class="caret"></span>
+            Add Column
             </button>
             <ul class="dropdown-menu">
             {% for key, value in project.key_descriptions|dictsort(false, "value") if key in table.addcolumns %}
-              <li><a href="javascript:update_table({{ session.id }},
+              <li><a class="dropdown-item" href="javascript:update_table({{ session.id }},
                                                    'toggle',
                                                    '{{ key }}')">
               {{ value.longdesc }} ({{key}}) </a></li>
             {% endfor %}
             </ul>
-          </div>
+            </div>
 
-          <div class="btn-group pull-right">
+            <div class="dropdown">
             <button type="button"
-                    class="btn btn-default dropdown-toggle btn-sm"
-                    data-toggle="dropdown" aria-haspopup="true"
+                    class="btn btn-secondary btn-sm dropdown-toggle"
+                    data-bs-toggle="dropdown"
                     aria-expanded="false">
-            Rows: {{ session.limit }} <span class="caret"></span>
+            Rows: {{ session.limit }}
             </button>
-            <ul class="dropdown-menu">
+            <ul class="dropdown-menu" id="dropinfo" role="menu">
             {% for n in [10, 25, 50, 100, 200] %}
-              <li><a href="javascript:update_table({{ session.id }},
+              <li><a class="dropdown-item" href="javascript:update_table({{ session.id }},
                                                    'limit',
                                                    {{ n }})">{{ n }}</a></li>
             {% endfor %}
             </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -56,7 +57,8 @@
     </div>
 
     <!-- Table -->
-    <table id="rows" class="table table-striped">
+    <div class="table-responsive mt-2">
+    <table id="rows" class="table table-hover table-striped">
 
     <tr>
     {%- for column in table.columns %}
@@ -70,7 +72,7 @@
       {% endif -%}
 
       {% if column == 'formula' %}
-        <span data-toggle="tooltip" title="key: formul">Formula</span>
+        <span data-toggle="tooltip" title="key: formula">Formula</span>
       {% else %}
         <a href="javascript:update_table({{ session.id }}, 'sort', '{{ column }}')"
            data-toggle="tooltip" title="key: {{column}}{{unit}}">
@@ -97,6 +99,7 @@
       </tr>
     {% endfor %}
     </table>
+    </div>
   </div>
 </div>
 
