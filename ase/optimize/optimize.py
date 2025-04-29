@@ -313,8 +313,8 @@ class Optimizer(Dynamics):
         self,
         atoms: Atoms,
         restart: Optional[str] = None,
-        logfile: Optional[Union[IO, str]] = None,
-        trajectory: Optional[str] = None,
+        logfile: Optional[Union[IO, str, Path]] = None,
+        trajectory: Optional[Union[str, Path]] = None,
         append_trajectory: bool = False,
         **kwargs,
     ):
