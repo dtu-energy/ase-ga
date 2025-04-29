@@ -7,6 +7,7 @@ from collections.abc import Callable
 from functools import cached_property
 from math import sqrt
 from os.path import isfile
+from pathlib import Path
 from typing import IO, Any, Dict, List, Optional, Tuple, Union
 
 from ase import Atoms
@@ -94,10 +95,9 @@ class Dynamics(IOContext):
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        trajectory : Trajectory object or str
-            Attach trajectory object.  If *trajectory* is a string a
-            Trajectory will be constructed.  Use *None* for no
-            trajectory.
+        trajectory : Trajectory object, str, or Path
+            Attach a trajectory object. If *trajectory* is a string/Path, a
+            Trajectory will be constructed. Use *None* for no trajectory.
 
         append_trajectory : bool
             Defaults to False, which causes the trajectory file to be
@@ -124,7 +124,7 @@ class Dynamics(IOContext):
         self.comm = comm
 
         if trajectory is not None:
-            if isinstance(trajectory, str):
+            if isinstance(trajectory, str) or isinstance(trajectory, Path):
                 from ase.io.trajectory import Trajectory
                 mode = "a" if append_trajectory else "w"
                 trajectory = self.closelater(Trajectory(

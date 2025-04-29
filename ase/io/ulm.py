@@ -477,7 +477,9 @@ class Reader:
         self.must_close_fd = False
         if not hasattr(fd, 'read'):
             self.must_close_fd = True
-            fd = Path(fd).open('rb')
+            if isinstance(fd, str):
+                fd = Path(fd)
+            fd.open('rb')
 
         self._fd = fd
         self._index = index

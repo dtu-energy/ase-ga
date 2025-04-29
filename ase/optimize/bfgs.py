@@ -2,6 +2,7 @@
 
 import warnings
 from typing import IO, Optional, Union
+from pathlib import Path
 
 import numpy as np
 from numpy.linalg import eigh
@@ -18,8 +19,8 @@ class BFGS(Optimizer):
         self,
         atoms: Atoms,
         restart: Optional[str] = None,
-        logfile: Optional[Union[IO, str]] = '-',
-        trajectory: Optional[str] = None,
+        logfile: Optional[Union[IO, str, Path]] = '-',
+        trajectory: Optional[Union[str, Path]] = None,
         append_trajectory: bool = False,
         maxstep: Optional[float] = None,
         alpha: Optional[float] = None,

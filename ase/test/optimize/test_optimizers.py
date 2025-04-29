@@ -111,3 +111,19 @@ def test_run_twice(optcls, atoms, kwargs):
         opt.run(fmax=fmax, steps=steps)
     assert opt.nsteps == 2 * steps
     assert opt.max_steps == 2 * steps
+
+
+def test_pass_path(testdir):
+    from pathlib import Path
+    from ase.optimize import BFGS
+    from ase.build import bulk
+    from ase.calculators.emt import EMT
+    atoms = bulk('Au')
+    atoms.calc = EMT()
+    atoms.get_potential_energy()
+
+    fmax = 0.01
+    path = Path('trajectory.traj')
+    with BFGS(atoms, trajectory=path) as opt:
+        is_converged = opt.run(fmax=fmax)
+    assert is_converged  # check if opt.run() returns True when converged
