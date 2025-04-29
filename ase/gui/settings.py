@@ -66,7 +66,7 @@ class Settings:
         self.gui.velocity_vector_scale = float(self.velocity_vector_scale.value)
         self.gui.draw()
         return True
-    
+
     def scale_magmom_vectors(self):
         self.gui.spin_vector_scale = float(self.magmom_vector_scale.value)
         self.gui.draw()
