@@ -1,8 +1,8 @@
 # fmt: off
 
 import warnings
-from typing import IO, Optional, Union
 from pathlib import Path
+from typing import IO, Optional, Union
 
 import numpy as np
 from numpy.linalg import eigh

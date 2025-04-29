@@ -1,6 +1,7 @@
 # fmt: off
-import pytest
 from pathlib import Path
+
+import pytest
 
 from ase.build import bulk
 from ase.calculators.emt import EMT
