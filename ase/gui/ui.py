@@ -224,8 +224,7 @@ class SpinBox(Widget):
 
     def create(self, parent):
         self.widget = self.creator(parent)
-        self.widget.bind('<Return>', lambda event: self.callback())
-        self.widget.bind('<KP_Enter>', lambda event: self.callback())
+        bind_enter(self.widget, lambda event: self.callback())
         self.value = self.initial
         return self.widget
 
@@ -270,8 +269,7 @@ class Entry(Widget):
         self.entry = self.creator(parent)
         self.value = self.initial
         if self.callback:
-            self.entry.bind('<Return>', self.callback)
-            self.entry.bind('<KP_Enter>', self.callback)
+            bind_enter(self.entry, self.callback)
         return self.entry
 
     @property
@@ -692,3 +690,13 @@ class ASEGUIWindow(MainWindow):
         id = self.win.after(int(time * 1000), callback)
         # Quick'n'dirty object with a cancel() method:
         return namedtuple('Timer', 'cancel')(lambda: self.win.after_cancel(id))
+
+
+def bind_enter(widget, callback):
+    """Preferred incantation for binding Return/Enter.
+
+    Bindings work differently on different OSes.  This ensures that
+    keypad and normal Return work the same on Linux particularly."""
+
+    widget.bind('<Return>', callback)
+    widget.bind('<KP_Enter>', callback)
