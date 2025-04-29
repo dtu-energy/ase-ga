@@ -519,7 +519,7 @@ class GUI(View, Status):
                 value=False),
               M(_('Show _forces'), self.toggle_show_forces, 'Ctrl+F',
                 value=False),
-              M(_('Show _spins'), self.toggle_show_spins, 'Ctrl+S',
+              M(_('Show _magmoms'), self.toggle_show_magmoms,
                 value=False),
               M(_('Show _Labels'), self.show_labels,
                 choices=[_('_None'),
