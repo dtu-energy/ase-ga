@@ -46,7 +46,6 @@ def eval_shape_deviation(cell, target_shape="sc", target_length=None):
     if target_shape == 'sc':
         target_len = eff_cubic_length
         target_cos = 0.0  # cos(+-pi/2) = 0.0
-        # the target metric is np.eye(3)
         target_metric = np.eye(3)
     elif target_shape == 'fcc':
         # FCC is characterised by 60 degree angles & lattice vectors = 2**(1/6)
@@ -194,14 +193,14 @@ def _build_matrix_operations(starting_P, lower_limit, upper_limit):
 def _screen_supercell_size(operations, target_size, minimal_size=False):
 
     # screen supercells with the target size
-    determinants = np.linalg.det(operations)
+    determinants = np.round(np.linalg.det(operations), 0).astype(int)
     if minimal_size:
         # but do not through away good candidates if they have smaller cell
         # assume that the score has minimum length criterium: here only for sc
-        good_indices = np.where((np.abs(determinants) < target_size)
+        good_indices = np.where((np.abs(determinants) <= target_size)
                                 & (np.abs(determinants) > 1))[0]
     else:
-        good_indices = np.where(abs(determinants - target_size) < 1e-12)[0]
+        good_indices = np.where(np.abs(determinants) == target_size)[0]
 
     if not good_indices.size:
         print("Failed to find a transformation matrix.")
