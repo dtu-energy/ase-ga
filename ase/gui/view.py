@@ -451,7 +451,7 @@ class View:
                     raise TypeError('Magmom is not a 3-component vector '
                                 'or a scalar')
             magmom_vecs = np.array(magmom_vecs)
-            vector_arrays.append(magmom_vecs * 0.25 * self.magmom_vector_scale)
+            vector_arrays.append(magmom_vecs * 0.5 * self.magmom_vector_scale)
 
         for array in vector_arrays:
             array[:] = np.dot(array, axes) + X[:n]
