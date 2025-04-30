@@ -1,9 +1,9 @@
 # fmt: off
 
 # type: ignore
-import platform
 import re
 import sys
+import platform
 import tkinter as tk
 import tkinter.ttk as ttk
 from collections import namedtuple
@@ -424,11 +424,16 @@ class MenuItem:
         self.underline = label.find('_')
         self.label = label.replace('_', '')
 
+        is_macos = platform.system() == 'Darwin'
+
         if key:
             if key[:4] == 'Ctrl':
                 self.keyname = f'<Control-{key[-1].lower()}>'
             elif key[:3] == 'Alt':
-                self.keyname = f'<Alt-{key[-1].lower()}>'
+                if is_macos:
+                    self.keyname = f'<Command-{key[-1].lower()}>'
+                else:
+                    self.keyname = f'<Alt-{key[-1].lower()}>'
             else:
                 self.keyname = {
                     'Home': '<Home>',

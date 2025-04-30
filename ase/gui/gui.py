@@ -6,6 +6,7 @@ import sys
 import weakref
 from functools import partial
 from time import time
+import platform
 
 import numpy as np
 
@@ -148,7 +149,12 @@ class GUI(View, Status):
         return Settings(self)
 
     def scroll(self, event):
-        CTRL = event.modifier == 'ctrl'
+        is_macos = platform.system() == 'Darwin'
+        if is_macos:
+            ALT = (event.state & 0x10) != 0
+            CTRL = False  # we don't use Command here anymore
+        else:
+            CTRL = event.modifier == 'ctrl'
 
         # Bug: Simultaneous CTRL + shift is the same as just CTRL.
         # Therefore movement in Z direction does not support the
@@ -157,6 +163,14 @@ class GUI(View, Status):
                   'down': (0, -1 + CTRL, -CTRL),
                   'right': (1, 0, 0),
                   'left': (-1, 0, 0)}.get(event.key, None)
+
+        if is_macos and ALT:
+            # Remap behavior: Option+Up acts like Control+Up
+            if event.key == 'up':
+                dxdydz = (0, 0, 1)
+            elif event.key == 'down':
+                dxdydz = (0, 0, -1)
+
 
         # Get scroll direction using shift + right mouse button
         # event.type == '6' is mouse motion, see:
