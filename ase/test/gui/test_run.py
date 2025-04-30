@@ -162,6 +162,7 @@ def test_magmom_arrows(gui):
     s.magmom_vector_scale.value = 0.5
     s.scale_magmom_vectors()
 
+
 def test_rotate(gui):
     gui.window['toggle-show-bonds'] = True
     gui.new_atoms(molecule('H2O'))
