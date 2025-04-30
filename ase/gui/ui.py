@@ -1,9 +1,9 @@
 # fmt: off
 
 # type: ignore
+import platform
 import re
 import sys
-import platform
 import tkinter as tk
 import tkinter.ttk as ttk
 from collections import namedtuple

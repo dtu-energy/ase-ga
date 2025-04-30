@@ -1,12 +1,12 @@
 # fmt: off
 
 import pickle
+import platform
 import subprocess
 import sys
 import weakref
 from functools import partial
 from time import time
-import platform
 
 import numpy as np
 
@@ -170,7 +170,6 @@ class GUI(View, Status):
                 dxdydz = (0, 0, 1)
             elif event.key == 'down':
                 dxdydz = (0, 0, -1)
-
 
         # Get scroll direction using shift + right mouse button
         # event.type == '6' is mouse motion, see:
