@@ -155,6 +155,13 @@ def test_settings(gui):
     s.scale_radii()
 
 
+def test_magmom_arrows(gui):
+    gui.window['toggle-show-magmoms'] = True
+    gui.new_atoms(molecule('O2'))
+    s = gui.settings()
+    s.magmom_vector_scale.value = 0.5
+    s.scale_magmom_vectors()
+
 def test_rotate(gui):
     gui.window['toggle-show-bonds'] = True
     gui.new_atoms(molecule('H2O'))
