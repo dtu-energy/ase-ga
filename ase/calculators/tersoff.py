@@ -6,6 +6,7 @@ import numpy as np
 
 from ase.calculators.calculator import Calculator, all_changes
 from ase.neighborlist import NeighborList
+from ase.stress import full_3x3_to_voigt_6_stress
 
 __author__ = 'Stefan Bringuier <stefanbringuier@gmail.com>'
 __description__ = 'LAMMPS-style native Tersoff potential for ASE'
@@ -261,8 +262,9 @@ class Tersoff(Calculator):
         self.results['energy'] = self.results['free_energy'] = energies.sum()
         self.results['forces'] = forces
         # Virial to stress (i.e., eV/A^3)
-        stress = virial / self.atoms.get_volume()
-        self.results['stress'] = stress.flat[[0, 4, 8, 5, 2, 1]]
+        if self.atoms.cell.rank == 3:
+            stress = virial / self.atoms.get_volume()
+            self.results['stress'] = full_3x3_to_voigt_6_stress(stress)
 
     def _calc_atom_contribution(
         self,

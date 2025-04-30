@@ -5,6 +5,7 @@ import pytest
 
 from ase import Atoms
 from ase.build import bulk
+from ase.calculators.calculator import PropertyNotImplementedError
 from ase.calculators.fd import (
     calculate_numerical_forces,
     calculate_numerical_stress,
@@ -93,6 +94,18 @@ def test_set_parameters(si_parameters: dict[tuple, TersoffParameters]) -> None:
     )
     calc.set_parameters(key, params=new_params)
     assert calc.parameters[key] == new_params
+
+
+def test_isolated_atom(si_parameters: dict) -> None:
+    """Test if an isolated atom can be computed correctly."""
+    atoms = Atoms('Si')
+    atoms.calc = Tersoff(si_parameters)
+    energy = atoms.get_potential_energy()
+    forces = atoms.get_forces()
+    np.testing.assert_almost_equal(energy, 0.0)
+    np.testing.assert_allclose(forces, [[0.0] * 3], rtol=1e-5)
+    with pytest.raises(PropertyNotImplementedError):
+        atoms.get_stress()
 
 
 def test_properties(atoms_si: Atoms) -> None:
