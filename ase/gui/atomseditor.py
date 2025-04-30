@@ -13,6 +13,7 @@ class Column:
     widget_width: int
     getvalue: Callable
     setvalue: Callable
+    format_value: Callable = lambda obj: str(obj)
 
 
 class AtomsEditor:
@@ -22,13 +23,16 @@ class AtomsEditor:
         win = ui.Window(_('Edit atoms'), wmtype='utility')
 
         tree = ui.ttk.Treeview(win.win, selectmode='extended')
+        edit_entry = ui.ttk.Entry(win.win)
+        edit_entry.pack(side='bottom', fill='x')#fill='x')
         tree.pack(side='left', fill='y')
         bar = ui.ttk.Scrollbar(win.win, orient='vertical', command=tree.yview)
         tree.configure(yscrollcommand=bar.set)
-        bar.pack(side='right', fill='y')
 
         tree.column('#0', width=40)
         tree.heading('#0', text=_('id'))
+
+        bar.pack(side='right', fill='y')
 
         def get_symbol(atoms, i):
             return atoms.symbols[i]
@@ -44,7 +48,7 @@ class AtomsEditor:
         self.tree = tree
         self.columns = []
 
-        self.add_column(
+        self.define_column(
             'symbol',
             _('symbol'),
             60,
@@ -52,10 +56,34 @@ class AtomsEditor:
             set_symbol,
         )
 
+        for c, axisname in enumerate('xyz'):
+            class GetSetPos:
+                def __init__(self, c):
+                    self.c = c
+
+                def set_position(self, atoms, i, value):
+                    atoms.positions[i, self.c] = float(value)
+                def get_position(self, atoms, i):
+                    return atoms.positions[i, self.c]
+
+            self.define_column(
+                axisname,
+                axisname,
+                92,
+                GetSetPos(c).get_position,
+                GetSetPos(c).set_position,
+                format_value=lambda val: f'{val:.4f}',
+            )
+
         self.update_table_from_atoms()
 
         tree.bind('<Return>', self.pressed_return)
         tree.bind('<Double-1>', self.doubleclick)
+
+        self.edit_entry = edit_entry
+
+    # notify when atoms are changed (new_atoms())
+    # be able to listen to any editing and update fields
 
     @property
     def atoms(self):
@@ -65,63 +93,74 @@ class AtomsEditor:
         for i in range(len(self.atoms)):
             values = self.get_row_values(i)
             self.tree.insert('', 'end', text=i, values=values)
+        self.add_columns_to_widget()
 
     def get_row_values(self, i):
-        return [column.getvalue(self.gui.atoms, i) for column in self.columns]
+        return [column.format_value(column.getvalue(self.gui.atoms, i))
+                for column in self.columns]
 
-    def add_column(self, name, heading, width, getvalue, setvalue):
-        column = Column(name, heading, width, getvalue, setvalue)
-
-        names = [column.name for column in self.columns]
-        names.append(name)
-
-        self.tree['columns'] = names
-        self.tree.column(name, width=width)
-        self.tree.heading(name, text=heading)
+    def define_column(self, *args, **kwargs):
+        column = Column(*args, **kwargs)
         self.columns.append(column)
+
+    def add_columns_to_widget(self):
+        self.tree['columns'] = [column.name for column in self.columns]
+        for column in self.columns:
+            self.tree.heading(column.name, text=column.displayname)
+            self.tree.column(column.name, width=column.widget_width,
+                             anchor='e')
 
     def pressed_return(self, event):
         print(event)
 
     def doubleclick(self, event):
-        print(event)
-
         row_id = self.tree.identify_row(event.y)
         column_id = self.tree.identify_column(event.x)
 
-        assert column_id[0] == '#'
-        assert row_id.startswith('I')
+        assert column_id.startswith('#'), repr(column_id)
+        assert row_id.startswith('I'), repr(row_id)
 
         column_no = int(column_id[1:]) - 1
         if column_no == -1:
             return  # This is the ID column.
-        row_no = int(row_id[1:].rstrip('0')) - 1
+
+        # WTF why in the name of the devil does it use hexadecimal
+        row_no = int(row_id[1:], base=16) - 1
 
         assert 0 <= column_no < len(self.columns)
         assert 0 <= row_no < len(self.atoms)
 
-        x, y, width, height = self.tree.bbox(row_id, column_id)
+        content = self.columns[column_no].getvalue(self.atoms, row_no)
 
-        item = self.tree.item(row_id, 'values')
-
-        content = item[column_no]
-
+        # entry = self.edit_entry
         entry = ui.ttk.Entry(self.tree)
+        # self.current_entry = entry
         entry.insert(0, content)
         entry.focus_force()
         entry.selection_range(0, 'end')
 
         def apply_change(event):
-            print('apply', event, entry, entry.get())
             column = self.columns[column_no]
-            print('Column', column)
             value = entry.get()
-            column.setvalue(self.atoms, row_no, value)
-            self.tree.set(row_id, column_id, value=value)
-            self.gui.set_frame()
-            entry.destroy()
+            try:
+                column.setvalue(self.atoms, row_no, value)
+            except Exception as ex:
+                pass
+            else:
+                text = column.format_value(column.getvalue(self.atoms, row_no))
+                self.tree.set(row_id, column_id, value=text)
+                self.gui.set_frame()
+            finally:
+                # pass
+                #entry.delete(0, 'end')
+                # entry.set('hello')
+                self.tree.focus_force()
+                entry.destroy()
 
+        entry.bind('<FocusOut>', apply_change)
         entry.bind('<Return>', apply_change)
         entry.bind('<Escape>', lambda *args: entry.destroy())
 
-        entry.place(x=x, y=y, width=width, height=height)
+        x, y, width, height = self.tree.bbox(row_id, column_id)
+        # entry.pack()
+        entry.place(x=x, y=y, height=height)#width=width)#, height=height)

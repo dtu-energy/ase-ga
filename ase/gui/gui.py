@@ -37,6 +37,7 @@ class GUI(View, Status):
 
         self.images = images
         self.observers = []
+        self.redraw_listeners = []
 
         self.config = read_defaults()
         if show_bonds:
@@ -460,6 +461,10 @@ class GUI(View, Status):
         self.move_atoms_mask = self.images.selected.copy()
         self.arrowkey_mode = self.ARROWKEY_MOVE
         self.draw()
+
+    def redraw_callback(self):
+        for listener in self.redraw_listeners:
+            listener.callback_redraw()
 
     def add_atoms_and_select(self, new_atoms):
         atoms = self.atoms

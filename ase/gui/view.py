@@ -404,6 +404,7 @@ class View:
         return self.images.get_radii(atoms)
 
     def draw(self, status=True):
+        self.redraw_callback()
         self.window.clear()
         axes = self.scale * self.axes * (1, -1, 1)
         offset = np.dot(self.center, axes)
