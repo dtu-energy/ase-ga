@@ -159,8 +159,11 @@ def test_magmom_arrows(gui):
     gui.window['toggle-show-magmoms'] = True
     gui.new_atoms(molecule('O2'))
     s = gui.settings()
-    s.magmom_vector_scale.value = 0.5
+    gui.magmom_vector_scale = 0.5
+    s.magmom_vector_scale.value = 2.1
     s.scale_magmom_vectors()
+    assert gui.magmom_vector_scale == 2.1
+
 
 
 def test_rotate(gui):
