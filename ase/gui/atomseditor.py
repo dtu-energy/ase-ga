@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from functools import partial
 from typing import Callable
 
 import ase.gui.ui as ui
@@ -31,8 +30,9 @@ class AtomsEditor:
         edit_entry = ui.ttk.Entry(win.win)
         edit_entry.pack(side='bottom', fill='x')
         tree.pack(side='left', fill='y')
-        bar = ui.ttk.Scrollbar(win.win, orient='vertical',
-                               command=self.scroll_via_scrollbar)
+        bar = ui.ttk.Scrollbar(
+            win.win, orient='vertical', command=self.scroll_via_scrollbar
+        )
         tree.configure(yscrollcommand=self.scroll_via_treeview)
 
         tree.column('#0', width=40)
@@ -65,12 +65,18 @@ class AtomsEditor:
         )
 
         for c, axisname in enumerate('xyz'):
+
             class GetSetPos:
                 def __init__(self, c):
                     self.c = c
 
                 def set_position(self, atoms, i, value):
-                    atoms.positions[i, self.c] = float(value)
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        return
+                    atoms.positions[i, self.c] = value
+
                 def get_position(self, atoms, i):
                     return atoms.positions[i, self.c]
 
@@ -85,7 +91,6 @@ class AtomsEditor:
 
         self.update_table_from_atoms()
 
-        tree.bind('<Return>', self.pressed_return)
         tree.bind('<Double-1>', self.doubleclick)
 
         self.edit_entry = edit_entry
@@ -118,8 +123,10 @@ class AtomsEditor:
         self.add_columns_to_widget()
 
     def get_row_values(self, i):
-        return [column.format_value(column.getvalue(self.gui.atoms, i))
-                for column in self.columns]
+        return [
+            column.format_value(column.getvalue(self.gui.atoms, i))
+            for column in self.columns
+        ]
 
     def define_column(self, *args, **kwargs):
         column = Column(*args, **kwargs)
@@ -129,11 +136,7 @@ class AtomsEditor:
         self.tree['columns'] = [column.name for column in self.columns]
         for column in self.columns:
             self.tree.heading(column.name, text=column.displayname)
-            self.tree.column(column.name, width=column.widget_width,
-                             anchor='e')
-
-    def pressed_return(self, event):
-        print(event)
+            self.tree.column(column.name, width=column.widget_width, anchor='e')
 
     def doubleclick(self, event):
         row_id = self.tree.identify_row(event.y)
@@ -165,9 +168,6 @@ class AtomsEditor:
             value = entry.get()
             try:
                 column.setvalue(self.atoms, row_no, value)
-            except Exception as ex:
-                pass
-            else:
                 text = column.format_value(column.getvalue(self.atoms, row_no))
                 self.tree.set(row_id, column_id, value=text)
                 self.gui.set_frame()
