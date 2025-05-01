@@ -17,6 +17,11 @@ class Column:
 
 
 class AtomsEditor:
+    # * We need to know whenever anything changes, so we can update the table.
+    # * Therefore, the main GUI should provide a listener for any atoms change.
+    # * Currently anything that changes the atoms also remembers to call
+    #   one or more of draw(), set_frame(), or new_atoms().
+
     def __init__(self, gui):
         gui.register_vulnerable(self)
 
@@ -24,15 +29,17 @@ class AtomsEditor:
 
         tree = ui.ttk.Treeview(win.win, selectmode='extended')
         edit_entry = ui.ttk.Entry(win.win)
-        edit_entry.pack(side='bottom', fill='x')#fill='x')
+        edit_entry.pack(side='bottom', fill='x')
         tree.pack(side='left', fill='y')
-        bar = ui.ttk.Scrollbar(win.win, orient='vertical', command=tree.yview)
-        tree.configure(yscrollcommand=bar.set)
+        bar = ui.ttk.Scrollbar(win.win, orient='vertical',
+                               command=self.scroll_via_scrollbar)
+        tree.configure(yscrollcommand=self.scroll_via_treeview)
 
         tree.column('#0', width=40)
         tree.heading('#0', text=_('id'))
 
         bar.pack(side='right', fill='y')
+        self.scrollbar = bar
 
         def get_symbol(atoms, i):
             return atoms.symbols[i]
@@ -47,6 +54,7 @@ class AtomsEditor:
         self.gui = gui
         self.tree = tree
         self.columns = []
+        self._current_entry = None
 
         self.define_column(
             'symbol',
@@ -82,8 +90,22 @@ class AtomsEditor:
 
         self.edit_entry = edit_entry
 
-    # notify when atoms are changed (new_atoms())
-    # be able to listen to any editing and update fields
+    def scroll_via_scrollbar(self, *args, **kwargs):
+        self.leave_edit_mode()
+        return self.tree.yview(*args, **kwargs)
+
+    def scroll_via_treeview(self, *args, **kwargs):
+        # Here it is important to leave edit mode, since scrolling
+        # invalidates the widget location.  Alternatively we could keep
+        # it open as long as we move it but that sounds like work
+        self.leave_edit_mode()
+        return self.scrollbar.set(*args, **kwargs)
+
+    def leave_edit_mode(self):
+        if self._current_entry is not None:
+            self._current_entry.destroy()
+            self._current_entry = None
+            self.tree.focus_force()
 
     @property
     def atoms(self):
@@ -124,7 +146,7 @@ class AtomsEditor:
         if column_no == -1:
             return  # This is the ID column.
 
-        # WTF why in the name of the devil does it use hexadecimal
+        # WTH why in the name of the devil does it use hexadecimal
         row_no = int(row_id[1:], base=16) - 1
 
         assert 0 <= column_no < len(self.columns)
@@ -132,9 +154,8 @@ class AtomsEditor:
 
         content = self.columns[column_no].getvalue(self.atoms, row_no)
 
-        # entry = self.edit_entry
+        assert self._current_entry is None
         entry = ui.ttk.Entry(self.tree)
-        # self.current_entry = entry
         entry.insert(0, content)
         entry.focus_force()
         entry.selection_range(0, 'end')
@@ -151,16 +172,13 @@ class AtomsEditor:
                 self.tree.set(row_id, column_id, value=text)
                 self.gui.set_frame()
             finally:
-                # pass
-                #entry.delete(0, 'end')
-                # entry.set('hello')
                 self.tree.focus_force()
-                entry.destroy()
+                self.leave_edit_mode()
 
         entry.bind('<FocusOut>', apply_change)
         entry.bind('<Return>', apply_change)
-        entry.bind('<Escape>', lambda *args: entry.destroy())
+        entry.bind('<Escape>', lambda *args: self.leave_edit_mode())
 
         x, y, width, height = self.tree.bbox(row_id, column_id)
-        # entry.pack()
-        entry.place(x=x, y=y, height=height)#width=width)#, height=height)
+        entry.place(x=x, y=y, height=height)
+        self._current_entry = entry
