@@ -108,8 +108,8 @@ def test_isolated_atom(si_parameters: dict) -> None:
         atoms.get_stress()
 
 
-def test_properties(atoms_si: Atoms) -> None:
-    """Test if energy, forces, and stress agree with LAMMPS.
+def test_unary(atoms_si: Atoms) -> None:
+    """Test if energy, forces, and stress of a unary system agree with LAMMPS.
 
     The reference values are obtained in the following way.
 
@@ -148,6 +148,63 @@ def test_properties(atoms_si: Atoms) -> None:
     energy = atoms_si.get_potential_energy()
     forces = atoms_si.get_forces()
     stress = atoms_si.get_stress()
+    np.testing.assert_almost_equal(energy, energy_ref)
+    np.testing.assert_allclose(forces, forces_ref, rtol=1e-5)
+    np.testing.assert_allclose(stress, stress_ref, rtol=1e-5)
+
+
+def test_binary(datadir) -> None:
+    """Test if energy, forces, and stress of a binary system agree with LAMMPS.
+
+    The reference values are obtained in the following way.
+
+    >>> from ase.calculators.lammpslib import LAMMPSlib
+    >>>
+    >>> atoms = bulk('Si', a=5.43, cubic=True)
+    >>> atoms.symbols[1] = 'C'
+    >>> atoms.symbols[2] = 'C'
+    >>> atoms.positions[0] += [0.03, 0.02, 0.01]
+    >>> lmpcmds = ['pair_style tersoff', 'pair_coeff * * SiC.tersoff Si C']
+    >>> atoms.calc = LAMMPSlib(lmpcmds=lmpcmds)
+    >>> energy = atoms.get_potential_energy()
+    >>> energies = atoms.get_potential_energies()
+    >>> forces = atoms.get_forces()
+    >>> stress = atoms.get_stress()
+
+    """
+    atoms = bulk('Si', a=5.43, cubic=True)
+    atoms.symbols[1] = 'C'
+    atoms.symbols[2] = 'C'
+
+    # pertubate first atom to get substantial forces
+    atoms.positions[0] += [0.03, 0.02, 0.01]
+
+    potential_file = datadir / 'tersoff' / 'SiC.tersoff'
+    atoms.calc = Tersoff.from_lammps(potential_file)
+
+    energy_ref = -28.780184609451915
+    forces_ref = [
+        [+6.40479511, +6.64830387, +6.83733140],
+        [+6.93259841, -7.29932178, -7.32986722],
+        [-7.09646214, +7.17384006, +7.15478087],
+        [-6.63906798, -6.62943844, -6.64034900],
+        [-6.48323569, +6.55237593, -6.52463929],
+        [+6.64668748, +6.56474714, -6.55390547],
+        [-6.47026652, -6.50615747, +6.53977908],
+        [+6.70495132, -6.50434930, +6.51686963],
+    ]
+    stress_ref = [
+        +0.35188635,
+        +0.35366730,
+        +0.35444532,
+        -0.11629806,
+        +0.11665436,
+        +0.11668285,
+    ]
+
+    energy = atoms.get_potential_energy()
+    forces = atoms.get_forces()
+    stress = atoms.get_stress()
     np.testing.assert_almost_equal(energy, energy_ref)
     np.testing.assert_allclose(forces, forces_ref, rtol=1e-5)
     np.testing.assert_allclose(stress, stress_ref, rtol=1e-5)
