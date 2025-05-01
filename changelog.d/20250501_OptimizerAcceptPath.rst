@@ -13,11 +13,11 @@
 ..
 .. - A bullet item for the Calculators category.
 ..
-.. Optimizers
-.. ----------
-..
-.. - A bullet item for the Optimizers category.
-..
+ Optimizers
+ ----------
+
+ - Logfile and trajectory inputs now accept both string and Path objects. 
+
 .. Molecular dynamics
 .. ------------------
 ..
