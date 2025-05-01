@@ -162,7 +162,7 @@ def test_magmom_arrows(gui):
     gui.magmom_vector_scale = 0.5
     s.magmom_vector_scale.value = 2.1
     s.scale_magmom_vectors()
-    assert gui.magmom_vector_scale == 2.1
+    assert gui.magmom_vector_scale == pytest.approx(2.1)
 
 
 def test_rotate(gui):
