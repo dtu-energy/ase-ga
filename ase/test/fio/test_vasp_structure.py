@@ -1,5 +1,4 @@
 # fmt: off
-# type: ignore
 import io
 import os
 import unittest
@@ -122,6 +121,14 @@ def poscar_roundtrip(atoms):
     """Write a POSCAR file, read it back and return the new atoms object"""
     atoms.write("POSCAR", direct=True)
     return ase.io.read("POSCAR")
+
+
+@pytest.mark.parametrize('whitespace', ['\n', '   ', '   \n\n  \n'])
+def test_with_whitespace(graphene_atoms, whitespace):
+    graphene_atoms.write('POSCAR', direct=True)
+    with open('POSCAR', 'a') as fd:
+        fd.write(whitespace)
+    assert str(ase.io.read('POSCAR').symbols) == str(graphene_atoms.symbols)
 
 
 def test_FixAtoms(graphene_atoms):

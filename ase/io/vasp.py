@@ -276,7 +276,7 @@ def read_vasp_configuration(fd):
 
 def read_velocities_if_present(fd, natoms) -> np.ndarray | None:
     """Read velocities from POSCAR/CONTCAR if present, return in ASE units."""
-    ac_type = fd.readline()
+    ac_type = fd.readline().strip()
 
     # Check if velocities are present
     if not ac_type:
