@@ -1,4 +1,3 @@
-# fmt: off
 import io
 import os
 import unittest
@@ -112,15 +111,15 @@ indices_to_constrain = [0, 2]
 
 @pytest.fixture()
 def graphene_atoms():
-    atoms = graphene_nanoribbon(2, 2, type="armchair", saturated=False)
+    atoms = graphene_nanoribbon(2, 2, type='armchair', saturated=False)
     atoms.cell = [[10, 0, 0], [0, 10, 0], [0, 0, 10]]
     return atoms
 
 
 def poscar_roundtrip(atoms):
     """Write a POSCAR file, read it back and return the new atoms object"""
-    atoms.write("POSCAR", direct=True)
-    return ase.io.read("POSCAR")
+    atoms.write('POSCAR', direct=True)
+    return ase.io.read('POSCAR')
 
 
 @pytest.mark.parametrize('whitespace', ['\n', '   ', '   \n\n  \n'])
