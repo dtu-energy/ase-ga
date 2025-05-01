@@ -1,4 +1,3 @@
-# fmt: off
 import os
 from pathlib import Path
 
@@ -60,6 +59,7 @@ def guifactory(display):
         gui = GUI(images)
         guis.append(gui)
         return gui
+
     yield factory
 
     for gui in guis:
@@ -155,6 +155,16 @@ def test_settings(gui):
     s.scale_radii()
 
 
+def test_magmom_arrows(gui):
+    gui.window['toggle-show-magmoms'] = True
+    gui.new_atoms(molecule('O2'))
+    s = gui.settings()
+    gui.magmom_vector_scale = 0.5
+    s.magmom_vector_scale.value = 2.1
+    s.scale_magmom_vectors()
+    assert gui.magmom_vector_scale == pytest.approx(2.1)
+
+
 def test_rotate(gui):
     gui.window['toggle-show-bonds'] = True
     gui.new_atoms(molecule('H2O'))
@@ -169,10 +179,17 @@ def test_open_and_save(gui, testdir):
     save_dialog(gui, 'h2o.cif@-1')
 
 
-@pytest.mark.parametrize('filename', [
-    None, 'output.png', 'output.eps',
-    'output.pov', 'output.traj', 'output.traj@0',
-])
+@pytest.mark.parametrize(
+    'filename',
+    [
+        None,
+        'output.png',
+        'output.eps',
+        'output.pov',
+        'output.traj',
+        'output.traj@0',
+    ],
+)
 def test_export_graphics(gui, testdir, with_bulk_ti, monkeypatch, filename):
     # Monkeypatch the blocking dialog:
     monkeypatch.setattr(ui.SaveFileDialog, 'go', lambda event: filename)
@@ -232,6 +249,7 @@ def test_select_atoms(gui, with_bulk_ti):
 def test_modify_element(gui, modify):
     class MockElement:
         Z = 79
+
     modify.set_element(MockElement())
     assert all(gui.atoms.symbols[:4] == 'Au')
     assert all(gui.atoms.symbols[4:] == 'Ti')
@@ -462,11 +480,14 @@ def test_wrap(gui):
     assert wrapped == pytest.approx(wrapped_ref)
 
 
-@pytest.mark.parametrize('text', [
-    '',
-    'invalid_atoms',
-    '[1, 2, 3]',  # valid JSON but not Atoms
-])
+@pytest.mark.parametrize(
+    'text',
+    [
+        '',
+        'invalid_atoms',
+        '[1, 2, 3]',  # valid JSON but not Atoms
+    ],
+)
 def test_clipboard_paste_invalid(gui, text):
     gui.clipboard.set_text(text)
     with pytest.raises(GUIError):
@@ -474,12 +495,13 @@ def test_clipboard_paste_invalid(gui, text):
 
 
 def window():
-
     def hello(event=None):
         print('hello', event)
 
-    menu = [('Hi', [ui.MenuItem('_Hello', hello, 'Ctrl+H')]),
-            ('Hell_o', [ui.MenuItem('ABC', hello, choices='ABC')])]
+    menu = [
+        ('Hi', [ui.MenuItem('_Hello', hello, 'Ctrl+H')]),
+        ('Hell_o', [ui.MenuItem('ABC', hello, choices='ABC')]),
+    ]
     win = ui.MainWindow('Test', menu=menu)
 
     win.add(ui.Label('Hello'))

@@ -110,6 +110,7 @@ class View:
         # scaling factors for vectors
         self.force_vector_scale = self.config['force_vector_scale']
         self.velocity_vector_scale = self.config['velocity_vector_scale']
+        self.magmom_vector_scale = self.config['magmom_vector_scale']
 
         # buttons
         self.b1 = 1  # left
@@ -251,6 +252,9 @@ class View:
         return np.zeros((len(self.atoms), 3))
 
     def toggle_show_forces(self, key=None):
+        self.draw()
+
+    def toggle_show_magmoms(self, key=None):
         self.draw()
 
     def hide_selected(self):
@@ -433,6 +437,21 @@ class View:
         if self.window['toggle-show-forces']:
             f = self.get_forces()
             vector_arrays.append(f * self.force_vector_scale)
+
+        if self.window['toggle-show-magmoms']:
+            magmom = get_magmoms(self.atoms)
+            # Turn this into a 3D vector if it is a scalar
+            magmom_vecs = []
+            for i in range(len(magmom)):
+                if isinstance(magmom[i], (int, float)):
+                    magmom_vecs.append(np.array([0, 0, magmom[i]]))
+                elif isinstance(magmom[i], np.ndarray) and len(magmom[i]) == 3:
+                    magmom_vecs.append(magmom[i])
+                else:
+                    raise TypeError('Magmom is not a 3-component vector '
+                                'or a scalar')
+            magmom_vecs = np.array(magmom_vecs)
+            vector_arrays.append(magmom_vecs * 0.5 * self.magmom_vector_scale)
 
         for array in vector_arrays:
             array[:] = np.dot(array, axes) + X[:n]
