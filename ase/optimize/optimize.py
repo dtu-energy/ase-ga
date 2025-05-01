@@ -7,6 +7,7 @@ from collections.abc import Callable
 from functools import cached_property
 from math import sqrt
 from os.path import isfile
+from pathlib import Path
 from typing import IO, Any, Dict, List, Optional, Tuple, Union
 
 from ase import Atoms
@@ -75,8 +76,8 @@ class Dynamics(IOContext):
     def __init__(
         self,
         atoms: Atoms,
-        logfile: Optional[Union[IO, str]] = None,
-        trajectory: Optional[str] = None,
+        logfile: Optional[Union[IO, Path, str]] = None,
+        trajectory: Optional[Union[str, Path]] = None,
         append_trajectory: bool = False,
         master: Optional[bool] = None,
         comm=world,
@@ -90,14 +91,13 @@ class Dynamics(IOContext):
         atoms : Atoms object
             The Atoms object to operate on.
 
-        logfile : file object or str
+        logfile : file object, Path, or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        trajectory : Trajectory object or str
-            Attach trajectory object.  If *trajectory* is a string a
-            Trajectory will be constructed.  Use *None* for no
-            trajectory.
+        trajectory : Trajectory object, str, or Path
+            Attach a trajectory object. If *trajectory* is a string/Path, a
+            Trajectory will be constructed. Use *None* for no trajectory.
 
         append_trajectory : bool
             Defaults to False, which causes the trajectory file to be
@@ -124,7 +124,7 @@ class Dynamics(IOContext):
         self.comm = comm
 
         if trajectory is not None:
-            if isinstance(trajectory, str):
+            if isinstance(trajectory, str) or isinstance(trajectory, Path):
                 from ase.io.trajectory import Trajectory
                 mode = "a" if append_trajectory else "w"
                 trajectory = self.closelater(Trajectory(
@@ -313,8 +313,8 @@ class Optimizer(Dynamics):
         self,
         atoms: Atoms,
         restart: Optional[str] = None,
-        logfile: Optional[Union[IO, str]] = None,
-        trajectory: Optional[str] = None,
+        logfile: Optional[Union[IO, str, Path]] = None,
+        trajectory: Optional[Union[str, Path]] = None,
         append_trajectory: bool = False,
         **kwargs,
     ):
@@ -328,11 +328,11 @@ class Optimizer(Dynamics):
         restart: str
             Filename for restart file. Default value is *None*.
 
-        logfile: file object or str
+        logfile: file object, Path, or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        trajectory: Trajectory object or str
+        trajectory: Trajectory object, Path, or str
             Attach trajectory object. If *trajectory* is a string a
             Trajectory will be constructed. Use *None* for no
             trajectory.

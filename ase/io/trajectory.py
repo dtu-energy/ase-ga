@@ -27,8 +27,8 @@ def Trajectory(filename, mode='r', atoms=None, properties=None, master=None,
 
     Parameters:
 
-    filename: str
-        The name of the file.  Traditionally ends in .traj.
+    filename: str | Path
+        The name/path of the file.  Traditionally ends in .traj.
     mode: str
         The mode.  'r' is read mode, the file should already exist, and
         no atoms argument should be specified.
@@ -68,7 +68,7 @@ class TrajectoryWriter:
 
         Parameters:
 
-        filename: str
+        filename: str | Path
             The name of the file.  Traditionally ends in .traj.
         mode: str
             The mode.  'r' is read mode, the file should already exist, and
