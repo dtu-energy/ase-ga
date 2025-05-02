@@ -13,9 +13,9 @@ from ase import Atoms, __version__
 from ase.gui.defaults import read_defaults
 from ase.gui.i18n import _
 from ase.gui.images import Images
-from ase.gui.observer import Observers
 from ase.gui.nanoparticle import SetupNanoparticle
 from ase.gui.nanotube import SetupNanotube
+from ase.gui.observer import Observers
 from ase.gui.save import save_dialog
 from ase.gui.settings import Settings
 from ase.gui.status import Status
