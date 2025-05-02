@@ -26,8 +26,8 @@ from ase.gui.view import View
 class GUIObservers:
     def __init__(self):
         self.new_atoms = Observers()
+        self.set_atoms = Observers()
         self.draw = Observers()
-        self.set_frame = Observers()
 
 
 class GUI(View):
