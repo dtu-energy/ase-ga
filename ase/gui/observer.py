@@ -1,3 +1,4 @@
+import warnings
 import weakref
 
 
@@ -32,7 +33,8 @@ class Observers:
                 try:
                     observer()
                 except Exception as ex:
-                    print(ex)
+                    import warnings
+                    warnings.warn(f'Suppressed exception in observer: {ex}')
                     continue
 
         self.observer_weakrefs = weakrefs_still_alive
