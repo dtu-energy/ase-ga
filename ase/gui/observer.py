@@ -33,7 +33,6 @@ class Observers:
                 try:
                     observer()
                 except Exception as ex:
-                    import warnings
                     warnings.warn(f'Suppressed exception in observer: {ex}')
                     continue
 
