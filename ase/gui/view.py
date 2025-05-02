@@ -273,7 +273,7 @@ class View:
 
     def colors_window(self, key=None):
         win = ColorWindow(self)
-        self.register_vulnerable(win)
+        self.obs.new_atoms.register(win.notify_atoms_changed)
         return win
 
     def focus(self, x=None):

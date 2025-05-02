@@ -45,11 +45,7 @@ class Movie:
         self.gui = gui
         self.direction = 1
         self.timer = None
-        gui.register_vulnerable(self)
-
-    def notify_atoms_changed(self):
-        """Called by gui object when the atoms have changed."""
-        self.close()
+        gui.obs.new_atoms.register(self.close)
 
     def close(self):
         self.stop()

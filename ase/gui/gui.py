@@ -23,6 +23,13 @@ from ase.gui.surfaceslab import SetupSurfaceSlab
 from ase.gui.view import View
 
 
+class GUIObservers:
+    def __init__(self):
+        self.new_atoms = Observers()
+        self.draw = Observers()
+        self.set_frame = Observers()
+
+
 class GUI(View):
     ARROWKEY_SCAN = 0
     ARROWKEY_MOVE = 1
@@ -39,10 +46,7 @@ class GUI(View):
 
         # Ordinary observers seem unused now, delete?
         self.observers = []
-
-        self.obs_new_atoms = Observers()
-        self.obs_redraw = Observers()
-        self.obs_set_frame = Observers()
+        self.obs = GUIObservers()
 
         self.config = read_defaults()
         if show_bonds:
@@ -62,7 +66,6 @@ class GUI(View):
 
         self.subprocesses = []  # list of external processes
         self.movie_window = None
-        self.vulnerable_windows = []
         self.simulation = {}  # Used by modules on Calculate menu.
         self.module_state = {}  # Used by modules to store their state.
 
@@ -369,16 +372,7 @@ class GUI(View):
         self.frame = 0  # Prevent crashes
         self.images.repeat_images(rpt)
         self.set_frame(frame=0, focus=True)
-        self.obs_new_atoms.notify()
-
-    def register_vulnerable(self, obj):
-        """Register windows that are vulnerable to changing the images.
-
-        Some windows will break if the atoms (and in particular the
-        number of images) are changed.  They can register themselves
-        and be closed when that happens.
-        """
-        self.obs_new_atoms.register(obj.notify_atoms_changed)
+        self.obs.new_atoms.notify()
 
     def exit(self, event=None):
         for process in self.subprocesses:
