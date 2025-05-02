@@ -23,7 +23,7 @@ from ase.gui.surfaceslab import SetupSurfaceSlab
 from ase.gui.view import View
 
 
-class GUI(View, Status):
+class GUI(View):
     ARROWKEY_SCAN = 0
     ARROWKEY_MOVE = 1
     ARROWKEY_ROTATE = 2
@@ -57,8 +57,8 @@ class GUI(View, Status):
                                       release=self.release,
                                       resize=self.resize)
 
-        View.__init__(self, rotations)
-        Status.__init__(self)
+        super().__init__(rotations)
+        self.status = Status(self)
 
         self.subprocesses = []  # list of external processes
         self.movie_window = None

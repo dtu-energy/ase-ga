@@ -557,7 +557,7 @@ class View:
         self.window.update()
 
         if status:
-            self.status(self.atoms)
+            self.status.status(self.atoms)
 
     def arrow(self, coords, width):
         line = self.window.line
