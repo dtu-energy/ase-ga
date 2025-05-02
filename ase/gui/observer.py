@@ -1,0 +1,38 @@
+import weakref
+
+
+class Observers:
+    def __init__(self):
+        self.observer_weakrefs = []
+
+    def register(self, observer):
+        # Since bound methods are shortlived we need to store the instance
+        # it is bound to:
+        if hasattr(observer ,'__self__'):
+            obj = observer.__self__
+            name = observer.__name__
+        else:
+            obj = observer
+            name = None
+        self.observer_weakrefs.append((weakref.ref(obj), name))
+
+    def notify(self):
+        # We should probably add an event class to these callbacks.
+        weakrefs_still_alive = []
+        for weakref, name in self.observer_weakrefs:
+            observer = weakref()
+            if observer is not None:
+                weakrefs_still_alive.append((weakref, name))
+                if name is not None:
+                    # If the observer is an instance method we stored
+                    # self, for garbage collection reasons, and now need to
+                    # get the actual method:
+                    observer = getattr(observer, name)
+
+                try:
+                    observer()
+                except Exception as ex:
+                    print(ex)
+                    continue
+
+        self.observer_weakrefs = weakrefs_still_alive

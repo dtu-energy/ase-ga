@@ -3,7 +3,6 @@
 import pickle
 import subprocess
 import sys
-import weakref
 from functools import partial
 from time import time
 
@@ -14,6 +13,7 @@ from ase import Atoms, __version__
 from ase.gui.defaults import read_defaults
 from ase.gui.i18n import _
 from ase.gui.images import Images
+from ase.gui.observer import Observers
 from ase.gui.nanoparticle import SetupNanoparticle
 from ase.gui.nanotube import SetupNanotube
 from ase.gui.save import save_dialog
@@ -36,7 +36,13 @@ class GUI(View, Status):
             images = Images(images)
 
         self.images = images
+
+        # Ordinary observers seem unused now, delete?
         self.observers = []
+
+        self.obs_new_atoms = Observers()
+        self.obs_redraw = Observers()
+        self.obs_set_frame = Observers()
 
         self.config = read_defaults()
         if show_bonds:
@@ -363,21 +369,7 @@ class GUI(View, Status):
         self.frame = 0  # Prevent crashes
         self.images.repeat_images(rpt)
         self.set_frame(frame=0, focus=True)
-        self.notify_vulnerable()
-
-    def notify_vulnerable(self):
-        """Notify windows that would break when new_atoms is called.
-
-        The notified windows may adapt to the new atoms.  If that is not
-        possible, they should delete themselves.
-        """
-        new_vul = []  # Keep weakrefs to objects that still exist.
-        for wref in self.vulnerable_windows:
-            ref = wref()
-            if ref is not None:
-                new_vul.append(wref)
-                ref.notify_atoms_changed()
-        self.vulnerable_windows = new_vul
+        self.obs_new_atoms.notify()
 
     def register_vulnerable(self, obj):
         """Register windows that are vulnerable to changing the images.
@@ -386,7 +378,7 @@ class GUI(View, Status):
         number of images) are changed.  They can register themselves
         and be closed when that happens.
         """
-        self.vulnerable_windows.append(weakref.ref(obj))
+        self.obs_new_atoms.register(obj.notify_atoms_changed)
 
     def exit(self, event=None):
         for process in self.subprocesses:
