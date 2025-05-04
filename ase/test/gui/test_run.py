@@ -464,8 +464,6 @@ def test_clipboard_paste_onto_existing(gui):
 
 def test_wrap(gui):
     """Test the Wrap atoms function."""
-    from ase.build import bulk
-
     atoms = bulk('Si')
     atoms.positions += 1234
     gui.new_atoms(atoms)
@@ -478,6 +476,15 @@ def test_wrap(gui):
     assert (wrapped < 1).all()
     assert (wrapped >= 0).all()
     assert wrapped == pytest.approx(wrapped_ref)
+
+
+def test_show_labels(gui):
+    atoms = molecule('CH3CH2OH')
+    gui.new_atoms(atoms)
+    assert gui.get_labels() is None
+    gui.window['show-labels'] = 3  # ugly: magical code for chemical symbols
+    gui.draw()
+    assert list(gui.get_labels()) == list(atoms.symbols)
 
 
 @pytest.mark.parametrize(
