@@ -29,6 +29,7 @@ neb = NEB(images)
 neb.interpolate()
 
 # Run NEB calculation.
-qn = QuasiNewton(neb, trajectory='ethane_linear.traj',
-                 logfile='ethane_linear.log')
+qn = QuasiNewton(
+    neb, trajectory='ethane_linear.traj', logfile='ethane_linear.log'
+)
 qn.run(fmax=0.05)

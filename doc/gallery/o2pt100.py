@@ -14,8 +14,8 @@ middle = atoms.positions[upper_layer_idx, :2].max(axis=0) / 2
 
 # the dissociating oxygen... fake some dissociation curve
 gas_dist = 1.1
-max_height = 8.
-min_height = 1.
+max_height = 8.0
+min_height = 1.0
 max_dist = 6
 
 # running index for the bonds
@@ -55,16 +55,20 @@ for i in multiples:
 
 bbox = [-30, 10, 5, 25]
 
-renderer = write('o2pt100.pov', atoms,
-                 rotation='90z,-75x',
-                 bbox=bbox,
-                 show_unit_cell=0,
-                 povray_settings=dict(
-                     pause=False,
-                     canvas_width=1024,
-                     bondatoms=bonded_atoms,
-                     camera_type='perspective',
-                     transmittances=transmittances,
-                     textures=textures))
+renderer = write(
+    'o2pt100.pov',
+    atoms,
+    rotation='90z,-75x',
+    bbox=bbox,
+    show_unit_cell=0,
+    povray_settings=dict(
+        pause=False,
+        canvas_width=1024,
+        bondatoms=bonded_atoms,
+        camera_type='perspective',
+        transmittances=transmittances,
+        textures=textures,
+    ),
+)
 
 renderer.render()

@@ -1,4 +1,5 @@
 """Tools for locally structure optimization."""
+
 import os
 from time import time
 
@@ -21,12 +22,19 @@ def relax(atoms):
     # "Phase Diagrams of Diatomic Molecules:
     #  Using the Gibbs Ensemble Monte Carlo Method",
     # Molecular Simulations, 13, 11 (1994).
-    calc = HarmonicPlusLennardJones(epsilon=37.3 * kB, sigma=3.31, rc=12.,
-                                    r0=1.12998, k=10.)
+    calc = HarmonicPlusLennardJones(
+        epsilon=37.3 * kB, sigma=3.31, rc=12.0, r0=1.12998, k=10.0
+    )
     atoms.calc = calc
 
-    dyn = PreconLBFGS(atoms, variable_cell=True, maxstep=0.2,
-                      use_armijo=True, logfile='opt.log', trajectory='opt.traj')
+    dyn = PreconLBFGS(
+        atoms,
+        variable_cell=True,
+        maxstep=0.2,
+        use_armijo=True,
+        logfile='opt.log',
+        trajectory='opt.traj',
+    )
     dyn.run(fmax=3e-2, smax=5e-4, steps=250)
 
     e = atoms.get_potential_energy()
@@ -44,8 +52,9 @@ def relax(atoms):
 def finalize(atoms, energy=None, forces=None, stress=None):
     niggli_reduce(atoms)
     atoms.wrap()
-    calc = SinglePointCalculator(atoms, energy=energy, forces=forces,
-                                 stress=stress)
+    calc = SinglePointCalculator(
+        atoms, energy=energy, forces=forces, stress=stress
+    )
     atoms.calc = calc
     raw_score = -atoms.get_potential_energy()
     set_raw_score(atoms, raw_score)
@@ -59,6 +68,7 @@ class HarmonicPlusLennardJones(LennardJones):
     Only works for structures consisting of a series
     of molecular dimers and with only one element.
     """
+
     implemented_properties = ['energy', 'forces', 'stress']
     default_parameters = {'k': 1.0, 'r0': 1.0}
     nolabel = True
@@ -66,9 +76,9 @@ class HarmonicPlusLennardJones(LennardJones):
     def __init__(self, **kwargs):
         LennardJones.__init__(self, **kwargs)
 
-    def calculate(self, atoms=None,
-                  properties=['energy'],
-                  system_changes=all_changes):
+    def calculate(
+        self, atoms=None, properties=['energy'], system_changes=all_changes
+    ):
         LennardJones.calculate(self, atoms, properties, system_changes)
 
         natoms = len(self.atoms)
@@ -100,9 +110,9 @@ class HarmonicPlusLennardJones(LennardJones):
             stress += np.dot(np.array([f]).T, np.array([d]))
 
             # Substracting intramolecular LJ part
-            r2 = r ** 2
-            c6 = (sigma**2 / r2)**3
-            c12 = c6 ** 2
+            r2 = r**2
+            c6 = (sigma**2 / r2) ** 3
+            c12 = c6**2
             energy += -4 * epsilon * (c12 - c6).sum()
             f = (24 * epsilon * (2 * c12 - c6) / r2) * d
             forces[a1] -= -f

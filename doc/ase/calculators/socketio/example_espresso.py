@@ -9,8 +9,7 @@ atoms = molecule('H2O', vacuum=3.0)
 atoms.rattle(stdev=0.1)
 
 # Environment-dependent parameters (please configure before running):
-pseudopotentials = {'H': 'H.pbe-rrkjus.UPF',
-                    'O': 'O.pbe-rrkjus.UPF'}
+pseudopotentials = {'H': 'H.pbe-rrkjus.UPF', 'O': 'O.pbe-rrkjus.UPF'}
 pseudo_dir = '.'
 
 # In this example we use a UNIX socket.  See other examples for INET socket.
@@ -27,19 +26,22 @@ unixsocket = 'ase_espresso'
 #
 #    https://www.quantum-espresso.org/Doc/pw_user_guide/node13.html
 #
-command = ('pw.x < PREFIX.pwi --ipi {unixsocket}:UNIX > PREFIX.pwo'
-           .format(unixsocket=unixsocket))
+command = 'pw.x < PREFIX.pwi --ipi {unixsocket}:UNIX > PREFIX.pwo'.format(
+    unixsocket=unixsocket
+)
 
-espresso = Espresso(command=command,
-                    ecutwfc=30.0,
-                    pseudopotentials=pseudopotentials,
-                    pseudo_dir=pseudo_dir)
+espresso = Espresso(
+    command=command,
+    ecutwfc=30.0,
+    pseudopotentials=pseudopotentials,
+    pseudo_dir=pseudo_dir,
+)
 
-opt = BFGS(atoms, trajectory='opt.traj',
-           logfile='opt.log')
+opt = BFGS(atoms, trajectory='opt.traj', logfile='opt.log')
 
-with SocketIOCalculator(espresso, log=sys.stdout,
-                        unixsocket=unixsocket) as calc:
+with SocketIOCalculator(
+    espresso, log=sys.stdout, unixsocket=unixsocket
+) as calc:
     atoms.calc = calc
     opt.run(fmax=0.05)
 

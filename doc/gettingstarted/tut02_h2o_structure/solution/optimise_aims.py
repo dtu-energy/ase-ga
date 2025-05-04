@@ -7,8 +7,7 @@ from ase.optimize import BFGS
 os.environ['ASE_AIMS_COMMAND'] = 'aims.x'
 os.environ['AIMS_SPECIES_DIR'] = '/home/myname/FHIaims/species_defaults/light'
 
-atoms = Atoms('HOH',
-              positions=[[0, 0, -1], [0, 1, 0], [0, 0, 1]])
+atoms = Atoms('HOH', positions=[[0, 0, -1], [0, 1, 0], [0, 0, 1]])
 
 calc = Aims(xc='LDA', compute_forces=True)
 atoms.calc = calc

@@ -10,9 +10,21 @@ from ase import Atoms
 from ase.build import fcc111, root_surface
 from ase.io import write
 
-surfaces = ['fcc100', 'fcc110', 'bcc100', 'hcp10m10', 'diamond100',
-            'fcc111', 'bcc110', 'bcc111', 'hcp0001', 'diamond111', 'fcc211',
-            'mx2', 'graphene']
+surfaces = [
+    'fcc100',
+    'fcc110',
+    'bcc100',
+    'hcp10m10',
+    'diamond100',
+    'fcc111',
+    'bcc110',
+    'bcc111',
+    'hcp0001',
+    'diamond111',
+    'fcc211',
+    'mx2',
+    'graphene',
+]
 
 symbols = {
     'fcc': 'Cu',
@@ -20,22 +32,28 @@ symbols = {
     'hcp': 'Ru',
     'dia': 'C',
     'mx2': 'MoS2',
-    'gra': 'C2'}
+    'gra': 'C2',
+}
 radii = {
     'fcc': 1.1,
     'bcc': 1.06,
     'hcp': 1.08,
     'dia': 0.5,
     'mx2': 1.0,
-    'gra': 1.0}
-adsorbates = {'ontop': 'H', 'hollow': 'O', 'fcc': 'N', 'hcp': 'C',
-              'bridge': 'F'}
+    'gra': 1.0,
+}
+adsorbates = {
+    'ontop': 'H',
+    'hollow': 'O',
+    'fcc': 'N',
+    'hcp': 'C',
+    'bridge': 'F',
+}
 
 
 def save(name, slab):
     print('save %s' % name)
-    write(name + '.png', slab, radii=radii[name[:3]],
-          scale=10)
+    write(name + '.png', slab, radii=radii[name[:3]], scale=10)
 
 
 for name in surfaces:

@@ -22,7 +22,8 @@ CALC_MM_RELAX = Gromacs(
     force_field='oplsaa',
     water_model='tip3p',
     base_filename='gromacs_mm-relax',
-    doing_qmmm=False, freeze_qm=True,
+    doing_qmmm=False,
+    freeze_qm=True,
     index_filename='index.ndx',
     extra_mdrun_parameters=' -nt 1 ',
     define='-DFLEXIBLE',
@@ -40,7 +41,8 @@ CALC_MM_RELAX = Gromacs(
     vdwtype='shift',
     rvdw='0.8',
     rvdw_switch='0.75',
-    DispCorr='Ener')
+    DispCorr='Ener',
+)
 CALC_MM_RELAX.generate_topology_and_g96file()
 CALC_MM_RELAX.generate_gromacs_run_file()
 CALC_MM_RELAX.run()

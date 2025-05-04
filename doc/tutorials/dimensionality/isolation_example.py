@@ -18,7 +18,7 @@ atoms.cell[2, 2] = 14.0
 
 # isolate each component in the whole material
 result = isolate_components(atoms)
-print("counts:", [(k, len(v)) for k, v in sorted(result.items())])
+print('counts:', [(k, len(v)) for k, v in sorted(result.items())])
 
 for dim, components in result.items():
     for atoms in components:

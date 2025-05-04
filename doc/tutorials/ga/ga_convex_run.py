@@ -41,7 +41,7 @@ def get_mixing_energy(atoms):
 
 
 def get_avg_lattice_constant(syms):
-    a = 0.
+    a = 0.0
     for m in set(syms):
         a += syms.count(m) * lattice_constants[m]
     return a / len(syms)
@@ -58,18 +58,19 @@ num_gens = 10
 # how often each is picked on average
 # The probability for an operator is the prepended integer divided by the sum
 # of integers
-oclist = [(3, CutSpliceSlabCrossover()),
-          (1, RandomSlabPermutation()),
-          (1, RandomCompositionMutation())
-          ]
+oclist = [
+    (3, CutSpliceSlabCrossover()),
+    (1, RandomSlabPermutation()),
+    (1, RandomCompositionMutation()),
+]
 operation_selector = OperationSelector(*zip(*oclist))
 
 # Pass parameters to the population instance
 # A variable_function is required to divide candidates into groups here we use
 # the chemical composition
-pop = RankFitnessPopulation(data_connection=db,
-                            population_size=pop_size,
-                            variable_function=get_comp)
+pop = RankFitnessPopulation(
+    data_connection=db, population_size=pop_size, variable_function=get_comp
+)
 
 # Evaluate the starting population
 # The only requirement of the evaluation is to set the raw_score

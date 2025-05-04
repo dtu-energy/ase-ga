@@ -46,8 +46,7 @@ kwargs = dict(
 
 abinit = Abinit(**kwargs)
 
-opt = BFGS(ExpCellFilter(atoms),
-           trajectory='opt.traj')
+opt = BFGS(ExpCellFilter(atoms), trajectory='opt.traj')
 
 with SocketIOCalculator(abinit, unixsocket=unixsocket) as atoms.calc:
     opt.run(fmax=0.01)

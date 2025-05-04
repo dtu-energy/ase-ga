@@ -6,7 +6,7 @@ atom.calc = EMT()
 e_atom = atom.get_potential_energy()
 
 d = 1.1
-molecule = Atoms('2N', [(0., 0., 0.), (0., 0., d)])
+molecule = Atoms('2N', [(0.0, 0.0, 0.0), (0.0, 0.0, d)])
 molecule.calc = EMT()
 e_molecule = molecule.get_potential_energy()
 

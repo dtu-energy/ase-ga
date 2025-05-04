@@ -53,7 +53,7 @@ mol.calc = calc
 if calc.dryrun_ok():
     print(f'{mol.calc._label} : {mol.get_potential_energy()} ')
 else:
-    print("Found error in input")
+    print('Found error in input')
     print(calc._error)
 
 

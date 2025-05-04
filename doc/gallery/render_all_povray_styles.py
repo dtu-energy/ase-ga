@@ -25,9 +25,9 @@ for style in styles:
 
     generic_projection_settings = {}
 
-    pov_object = io.write(pov_name, atoms,
-                          **generic_projection_settings,
-                          povray_settings=kwargs)
+    pov_object = io.write(
+        pov_name, atoms, **generic_projection_settings, povray_settings=kwargs
+    )
 
     if run_povray:
         pov_object.render()
