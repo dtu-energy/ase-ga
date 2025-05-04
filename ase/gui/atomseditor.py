@@ -22,7 +22,7 @@ class AtomsEditor:
     #   one or more of draw(), set_frame(), or new_atoms().
 
     def __init__(self, gui):
-        gui.register_vulnerable(self)
+        gui.obs.change_atoms.register(self.update_table_from_atoms)
 
         win = ui.Window(_('Edit atoms'), wmtype='utility')
 
@@ -89,9 +89,10 @@ class AtomsEditor:
                 format_value=lambda val: f'{val:.4f}',
             )
 
-        self.update_table_from_atoms()
-
         tree.bind('<Double-1>', self.doubleclick)
+
+        self.define_columns_on_widget()
+        self.update_table_from_atoms()
 
         self.edit_entry = edit_entry
 
@@ -117,10 +118,10 @@ class AtomsEditor:
         return self.gui.atoms
 
     def update_table_from_atoms(self):
+        self.tree.delete(*self.tree.get_children())
         for i in range(len(self.atoms)):
             values = self.get_row_values(i)
             self.tree.insert('', 'end', text=i, values=values)
-        self.add_columns_to_widget()
 
     def get_row_values(self, i):
         return [
@@ -132,7 +133,7 @@ class AtomsEditor:
         column = Column(*args, **kwargs)
         self.columns.append(column)
 
-    def add_columns_to_widget(self):
+    def define_columns_on_widget(self):
         self.tree['columns'] = [column.name for column in self.columns]
         for column in self.columns:
             self.tree.heading(column.name, text=column.displayname)
