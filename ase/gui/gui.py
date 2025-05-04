@@ -27,7 +27,7 @@ class GUIObservers:
     def __init__(self):
         self.new_atoms = Observers()
         self.set_atoms = Observers()
-        self.draw = Observers()
+        self.change_atoms = Observers()
 
 
 class GUI(View):

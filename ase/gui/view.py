@@ -562,7 +562,14 @@ class View:
         if status:
             self.status.status(self.atoms)
 
-        self.obs.draw.notify()
+        # Currently we change the atoms all over the place willy-nilly
+        # and then call draw().  For which reason we abuse draw() to notify
+        # the observers about general changes.
+        #
+        # We should refactor so change_atoms is only emitted
+        # when when atoms actually change, and maybe have a separate signal
+        # to listen to e.g. changes of view.
+        self.obs.change_atoms.notify()
 
     def arrow(self, coords, width):
         line = self.window.line
