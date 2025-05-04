@@ -6,6 +6,7 @@ import numpy as np
 
 from ase.calculators.calculator import Calculator, all_changes
 from ase.neighborlist import NeighborList
+from ase.stress import full_3x3_to_voigt_6_stress
 
 __author__ = 'Stefan Bringuier <stefanbringuier@gmail.com>'
 __description__ = 'LAMMPS-style native Tersoff potential for ASE'
@@ -54,7 +55,13 @@ class Tersoff(Calculator):
     .. versionadded:: 3.25.0
     """
 
-    implemented_properties = ['free_energy', 'energy', 'forces', 'stress']
+    implemented_properties = [
+        'free_energy',
+        'energy',
+        'energies',
+        'forces',
+        'stress',
+    ]
 
     def __init__(
         self,
@@ -258,11 +265,13 @@ class Tersoff(Calculator):
         for i in range(len(atoms)):
             self._calc_atom_contribution(i, energies, forces, virial)
 
+        self.results['energies'] = energies
         self.results['energy'] = self.results['free_energy'] = energies.sum()
         self.results['forces'] = forces
         # Virial to stress (i.e., eV/A^3)
-        stress = virial / self.atoms.get_volume()
-        self.results['stress'] = stress.flat[[0, 4, 8, 5, 2, 1]]
+        if self.atoms.cell.rank == 3:
+            stress = virial / self.atoms.get_volume()
+            self.results['stress'] = full_3x3_to_voigt_6_stress(stress)
 
     def _calc_atom_contribution(
         self,
@@ -309,14 +318,16 @@ class Tersoff(Calculator):
             if fc == 0.0:
                 continue
 
-            zeta = self._calc_zeta(j, indices, distances, vectors, params)
+            zeta = self._calc_zeta(type_i, j, indices, distances, vectors)
             bij = self._calc_bij(zeta, params.beta, params.n)
             bij_d = self._calc_bij_d(zeta, params.beta, params.n)
 
             repulsive = params.A * np.exp(-params.lambda1 * abs_rij)
             attractive = -params.B * np.exp(-params.lambda2 * abs_rij)
 
-            energies[idx_i] += 0.5 * fc * (repulsive + bij * attractive)
+            # distribute the pair energy evenly to be consistent with LAMMPS
+            energies[idx_i] += 0.25 * fc * (repulsive + bij * attractive)
+            energies[idx_j] += 0.25 * fc * (repulsive + bij * attractive)
 
             dfc = self._calc_fc_d(abs_rij, params.R, params.D)
             rep_deriv = -params.lambda1 * repulsive
@@ -336,6 +347,10 @@ class Tersoff(Calculator):
             for k, idx_k in enumerate(indices):
                 if k == j:
                     continue
+
+                type_k = self.atoms.symbols[idx_k]
+                key = (type_i, type_j, type_k)
+                params = self.parameters[key]
 
                 if distances[k] > params.R + params.D:
                     continue
@@ -371,20 +386,26 @@ class Tersoff(Calculator):
 
     def _calc_zeta(
         self,
+        type_i: str,
         j: int,
         neighbors: np.ndarray,
         distances: np.ndarray,
         vectors: np.ndarray,
-        params,
     ) -> float:
         """Calculate ``zeta_ij``."""
+        idx_j = neighbors[j]
+        type_j = self.atoms.symbols[idx_j]
         abs_rij = distances[j]
 
         zeta = 0.0
 
-        for k in range(len(neighbors)):
+        for k, idx_k in enumerate(neighbors):
             if k == j:
                 continue
+
+            type_k = self.atoms.symbols[idx_k]
+            key = (type_i, type_j, type_k)
+            params = self.parameters[key]
 
             abs_rik = distances[k]
             if abs_rik > params.R + params.D:

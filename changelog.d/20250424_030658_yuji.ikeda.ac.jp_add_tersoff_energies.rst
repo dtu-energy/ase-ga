@@ -1,0 +1,5 @@
+Calculators
+-----------
+
+- Added per-atom ``energies`` consistent with LAMMPS to
+  :class:`~ase.calculators.tersoff.Tersoff` (:mr:`3656`)

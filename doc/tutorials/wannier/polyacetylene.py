@@ -4,9 +4,9 @@ from gpaw import GPAW
 from ase import Atoms
 from ase.dft.kpoints import monkhorst_pack
 
-kpts = monkhorst_pack((13, 1, 1)) + [1e-5, 0, 0]
-calc = GPAW(h=.21, xc='PBE', kpts=kpts, nbands=12, txt='poly.txt',
-            eigensolver='cg', convergence={'bands': 9})
+kpts = monkhorst_pack((13, 1, 1))
+calc = GPAW(mode='fd', h=.21, xc='PBE', kpts=kpts, nbands=12, txt='poly.txt',
+            eigensolver='cg', convergence={'bands': 9}, symmetry='off')
 
 CC = 1.38
 CH = 1.094

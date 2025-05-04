@@ -1,6 +1,7 @@
 # fmt: off
 
 import warnings
+from pathlib import Path
 from typing import IO, Optional, Union
 
 import numpy as np
@@ -18,8 +19,8 @@ class BFGS(Optimizer):
         self,
         atoms: Atoms,
         restart: Optional[str] = None,
-        logfile: Optional[Union[IO, str]] = '-',
-        trajectory: Optional[str] = None,
+        logfile: Optional[Union[IO, str, Path]] = '-',
+        trajectory: Optional[Union[str, Path]] = None,
         append_trajectory: bool = False,
         maxstep: Optional[float] = None,
         alpha: Optional[float] = None,
@@ -37,10 +38,10 @@ class BFGS(Optimizer):
             such a name will be searched and hessian matrix stored will
             be used, if the file exists.
 
-        trajectory: str
+        trajectory: str or Path
             Trajectory file used to store optimisation path.
 
-        logfile: file object or str
+        logfile: file object, Path, or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 

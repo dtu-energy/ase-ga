@@ -3,7 +3,6 @@
 import pickle
 import subprocess
 import sys
-import weakref
 from functools import partial
 from time import time
 
@@ -16,6 +15,7 @@ from ase.gui.i18n import _
 from ase.gui.images import Images
 from ase.gui.nanoparticle import SetupNanoparticle
 from ase.gui.nanotube import SetupNanotube
+from ase.gui.observer import Observers
 from ase.gui.save import save_dialog
 from ase.gui.settings import Settings
 from ase.gui.status import Status
@@ -23,7 +23,14 @@ from ase.gui.surfaceslab import SetupSurfaceSlab
 from ase.gui.view import View
 
 
-class GUI(View, Status):
+class GUIObservers:
+    def __init__(self):
+        self.new_atoms = Observers()
+        self.set_atoms = Observers()
+        self.draw = Observers()
+
+
+class GUI(View):
     ARROWKEY_SCAN = 0
     ARROWKEY_MOVE = 1
     ARROWKEY_ROTATE = 2
@@ -36,8 +43,10 @@ class GUI(View, Status):
             images = Images(images)
 
         self.images = images
+
+        # Ordinary observers seem unused now, delete?
         self.observers = []
-        self.redraw_listeners = []
+        self.obs = GUIObservers()
 
         self.config = read_defaults()
         if show_bonds:
@@ -52,12 +61,11 @@ class GUI(View, Status):
                                       release=self.release,
                                       resize=self.resize)
 
-        View.__init__(self, rotations)
-        Status.__init__(self)
+        super().__init__(rotations)
+        self.status = Status(self)
 
         self.subprocesses = []  # list of external processes
         self.movie_window = None
-        self.vulnerable_windows = []
         self.simulation = {}  # Used by modules on Calculate menu.
         self.module_state = {}  # Used by modules to store their state.
 
@@ -368,30 +376,7 @@ class GUI(View, Status):
         self.frame = 0  # Prevent crashes
         self.images.repeat_images(rpt)
         self.set_frame(frame=0, focus=True)
-        self.notify_vulnerable()
-
-    def notify_vulnerable(self):
-        """Notify windows that would break when new_atoms is called.
-
-        The notified windows may adapt to the new atoms.  If that is not
-        possible, they should delete themselves.
-        """
-        new_vul = []  # Keep weakrefs to objects that still exist.
-        for wref in self.vulnerable_windows:
-            ref = wref()
-            if ref is not None:
-                new_vul.append(wref)
-                ref.notify_atoms_changed()
-        self.vulnerable_windows = new_vul
-
-    def register_vulnerable(self, obj):
-        """Register windows that are vulnerable to changing the images.
-
-        Some windows will break if the atoms (and in particular the
-        number of images) are changed.  They can register themselves
-        and be closed when that happens.
-        """
-        self.vulnerable_windows.append(weakref.ref(obj))
+        self.obs.new_atoms.notify()
 
     def exit(self, event=None):
         for process in self.subprocesses:
@@ -462,10 +447,6 @@ class GUI(View, Status):
         self.arrowkey_mode = self.ARROWKEY_MOVE
         self.draw()
 
-    def redraw_callback(self):
-        for listener in self.redraw_listeners:
-            listener.callback_redraw()
-
     def add_atoms_and_select(self, new_atoms):
         atoms = self.atoms
         atoms += new_atoms
@@ -528,6 +509,8 @@ class GUI(View, Status):
               M(_('Show _velocities'), self.toggle_show_velocities, 'Ctrl+G',
                 value=False),
               M(_('Show _forces'), self.toggle_show_forces, 'Ctrl+F',
+                value=False),
+              M(_('Show _magmoms'), self.toggle_show_magmoms,
                 value=False),
               M(_('Show _Labels'), self.show_labels,
                 choices=[_('_None'),

@@ -1,4 +1,6 @@
 # fmt: off
+from pathlib import Path
+
 import pytest
 
 from ase.build import bulk
@@ -111,3 +113,13 @@ def test_run_twice(optcls, atoms, kwargs):
         opt.run(fmax=fmax, steps=steps)
     assert opt.nsteps == 2 * steps
     assert opt.max_steps == 2 * steps
+
+
+@pytest.mark.optimize()
+@pytest.mark.filterwarnings("ignore: estimate_mu")
+def test_path(testdir, optcls, atoms, kwargs):
+    fmax = 0.01
+    traj, log = Path('trajectory.traj'), Path('relax.log')
+    with optcls(atoms, logfile=log, trajectory=traj, **kwargs) as opt:
+        is_converged = opt.run(fmax=fmax)
+    assert is_converged  # check if opt.run() returns True when converged

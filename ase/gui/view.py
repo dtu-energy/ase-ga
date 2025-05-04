@@ -96,7 +96,6 @@ def get_bonds(atoms, covalent_radii):
 class View:
     def __init__(self, rotations):
         self.colormode = 'jmol'  # The default colors
-        self.labels = None
         self.axes = rotate(rotations)
         self.configured = False
         self.frame = None
@@ -110,6 +109,7 @@ class View:
         # scaling factors for vectors
         self.force_vector_scale = self.config['force_vector_scale']
         self.velocity_vector_scale = self.config['velocity_vector_scale']
+        self.magmom_vector_scale = self.config['magmom_vector_scale']
 
         # buttons
         self.b1 = 1  # left
@@ -206,6 +206,8 @@ class View:
             b[bonds[:, 2:].any(1)] *= 0.5
             self.B[ncellparts:] = self.X_bonds + b
 
+        self.obs.set_atoms.notify()
+
     def showing_bonds(self):
         return self.window['toggle-show-bonds']
 
@@ -215,22 +217,24 @@ class View:
     def toggle_show_unit_cell(self, key=None):
         self.set_frame()
 
-    def update_labels(self):
+    def get_labels(self):
         index = self.window['show-labels']
         if index == 0:
-            self.labels = None
-        elif index == 1:
-            self.labels = list(range(len(self.atoms)))
-        elif index == 2:
-            self.labels = list(get_magmoms(self.atoms))
-        elif index == 4:
+            return None
+
+        if index == 1:
+            return list(range(len(self.atoms)))
+
+        if index == 2:
+            return list(get_magmoms(self.atoms))
+
+        if index == 4:
             Q = self.atoms.get_initial_charges()
-            self.labels = [f'{q:.4g}' for q in Q]
-        else:
-            self.labels = self.atoms.get_chemical_symbols()
+            return [f'{q:.4g}' for q in Q]
+
+        return self.atoms.symbols
 
     def show_labels(self):
-        self.update_labels()
         self.draw()
 
     def toggle_show_axes(self, key=None):
@@ -253,6 +257,9 @@ class View:
     def toggle_show_forces(self, key=None):
         self.draw()
 
+    def toggle_show_magmoms(self, key=None):
+        self.draw()
+
     def hide_selected(self):
         self.images.visible[self.images.selected] = False
         self.draw()
@@ -269,7 +276,7 @@ class View:
 
     def colors_window(self, key=None):
         win = ColorWindow(self)
-        self.register_vulnerable(win)
+        self.obs.new_atoms.register(win.notify_atoms_changed)
         return win
 
     def focus(self, x=None):
@@ -404,7 +411,6 @@ class View:
         return self.images.get_radii(atoms)
 
     def draw(self, status=True):
-        self.redraw_callback()
         self.window.clear()
         axes = self.scale * self.axes * (1, -1, 1)
         offset = np.dot(self.center, axes)
@@ -435,6 +441,21 @@ class View:
             f = self.get_forces()
             vector_arrays.append(f * self.force_vector_scale)
 
+        if self.window['toggle-show-magmoms']:
+            magmom = get_magmoms(self.atoms)
+            # Turn this into a 3D vector if it is a scalar
+            magmom_vecs = []
+            for i in range(len(magmom)):
+                if isinstance(magmom[i], (int, float)):
+                    magmom_vecs.append(np.array([0, 0, magmom[i]]))
+                elif isinstance(magmom[i], np.ndarray) and len(magmom[i]) == 3:
+                    magmom_vecs.append(magmom[i])
+                else:
+                    raise TypeError('Magmom is not a 3-component vector '
+                                'or a scalar')
+            magmom_vecs = np.array(magmom_vecs)
+            vector_arrays.append(magmom_vecs * 0.5 * self.magmom_vector_scale)
+
         for array in vector_arrays:
             array[:] = np.dot(array, axes) + X[:n]
 
@@ -449,7 +470,7 @@ class View:
         ncell = len(self.X_cell)
         bond_linewidth = self.scale * 0.15
 
-        self.update_labels()
+        labels = self.get_labels()
 
         if self.arrowkey_mode == self.ARROWKEY_MOVE:
             movecolor = GREEN
@@ -500,10 +521,10 @@ class View:
                                A[a, 0], A[a, 1], A[a, 0] + ra, A[a, 1] + ra)
 
                     # Draw labels on the atoms
-                    if self.labels is not None:
+                    if labels is not None:
                         self.window.text(A[a, 0] + ra / 2,
                                          A[a, 1] + ra / 2,
-                                         str(self.labels[a]))
+                                         str(labels[a]))
 
                     # Draw cross on constrained atoms
                     if constrained[a]:
@@ -539,7 +560,9 @@ class View:
         self.window.update()
 
         if status:
-            self.status(self.atoms)
+            self.status.status(self.atoms)
+
+        self.obs.draw.notify()
 
     def arrow(self, coords, width):
         line = self.window.line
