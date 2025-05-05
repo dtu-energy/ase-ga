@@ -13,8 +13,8 @@
 ..
 .. - A bullet item for the Calculators category.
 ..
- Optimizers
- ----------
+Optimizers
+----------
 
  - Logfile and trajectory inputs now accept both string and Path objects. 
 
