@@ -188,11 +188,10 @@ doc:
     - pip install --no-deps .[docs]
     - ase info
     - which sphinx-build
-    - cd $CI_PROJECT_DIR/doc
   script:
     - scriv collect --keep || echo Not compiling changelog then  # Avoid error
     - python -m ase.utils.sphinx run # test scripts
-    - sphinx-build -W . build
+    - sphinx-build -W doc doc/build
   cache:
     paths:
       - $PIP_CACHE_DIR
