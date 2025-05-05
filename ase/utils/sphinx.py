@@ -37,6 +37,9 @@ def mol_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
 def git_role_tmpl(urlroot,
                   role,
                   rawtext, text, lineno, inliner, options={}, content=[]):
+    import ase
+    ase_root = Path(ase.__file__).parent.parent
+
     if text[-1] == '>':
         i = text.index('<')
         name = text[:i - 1]
@@ -50,9 +53,8 @@ def git_role_tmpl(urlroot,
             name = name[:name.index('?')]
     # Check if the link is broken
     is_tag = text.startswith('..')  # Tags are like :git:`3.19.1 <../3.19.1>`
-    path = os.path.join('..', text)
-    do_exists = os.path.exists(path)
-    if not (is_tag or do_exists):
+    path = ase_root / text
+    if not (is_tag or path.exists()):
         msg = f'Broken link: {rawtext}: Non-existing path: {path}'
         msg = inliner.reporter.error(msg, line=lineno)
         prb = inliner.problematic(rawtext, rawtext, msg)
