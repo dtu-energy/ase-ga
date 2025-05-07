@@ -39,9 +39,9 @@ def git_role_tmpl(urlroot,
                   rawtext, text, lineno, inliner, options={}, content=[]):
     env = inliner.document.settings.env
     srcdir = Path(env.srcdir)
-    ase_root = srcdir.parent
+    project_root = srcdir.parent
     assert srcdir.name == 'doc'
-    assert ase_root.name == 'ase'
+    # assert project_root.name == 'ase'  # also used by GPAW
 
     if text[-1] == '>':
         i = text.index('<')
@@ -57,7 +57,7 @@ def git_role_tmpl(urlroot,
 
     # Check if the link is broken
     is_tag = text.startswith('..')  # Tags are like :git:`3.19.1 <../3.19.1>`
-    path = ase_root / text
+    path = project_root / text
 
     if not (is_tag or path.exists()):
         msg = f'Broken link: {rawtext}: Non-existing path: {path}'
