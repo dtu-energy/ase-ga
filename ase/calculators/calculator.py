@@ -197,6 +197,8 @@ def get_calculator_class(name):
         from asap3 import EMT as Calculator
     elif name == 'gpaw':
         from gpaw import GPAW as Calculator
+    elif name == 'gpaw-new':
+        from gpaw.new.ase_interface import GPAW as Calculator
     elif name == 'hotbit':
         from hotbit import Calculator
     elif name == 'vasp2':
@@ -205,6 +207,10 @@ def get_calculator_class(name):
         from ase.calculators.acemolecule import ACE as Calculator
     elif name == 'Psi4':
         from ase.calculators.psi4 import Psi4 as Calculator
+    elif name == 'mattersim':
+        from mattersim.forcefield import MatterSimCalculator as Calculator
+    elif name == 'mace':
+        from mace.calculators import mace_mp as Calculator
     elif name in external_calculators:
         Calculator = external_calculators[name]
     else:
