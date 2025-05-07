@@ -1,3 +1,5 @@
+"""Module for `FiniteDifferenceCalculator`."""
+
 from collections.abc import Iterable
 from functools import partial
 from typing import Optional
@@ -21,8 +23,8 @@ class FiniteDifferenceCalculator(BaseCalculator):
     def __init__(
         self,
         calc: BaseCalculator,
-        eps_disp: float = 1e-6,
-        eps_strain: float = 1e-6,
+        eps_disp: Optional[float] = 1e-6,
+        eps_strain: Optional[float] = 1e-6,
         *,
         force_consistent: bool = True,
     ) -> None:
@@ -32,10 +34,12 @@ class FiniteDifferenceCalculator(BaseCalculator):
         ----------
         calc : :class:`~ase.calculators.calculator.BaseCalculator`
             ASE Calculator object to be wrapped.
-        eps_disp : float, default 1e-6
+        eps_disp : Optional[float], default 1e-6
             Displacement used for computing forces.
-        eps_strain : float, default 1e-6
+            If :py:obj:`None`, analytical forces are computed.
+        eps_strain : Optional[float], default 1e-6
             Strain used for computing stress.
+            If :py:obj:`None`, analytical stress is computed.
         force_consistent : bool, default :py:obj:`True`
             If :py:obj:`True`, the energies consistent with the forces are used
             for finite-difference calculations.
@@ -51,18 +55,26 @@ class FiniteDifferenceCalculator(BaseCalculator):
         atoms = atoms.copy()  # copy to not mess up original `atoms`
         atoms.calc = self.calc
         self.results = {}
-        self.results['energy'] = atoms.get_potential_energy()
-        self.results['free_energy'] = self.results['energy']
-        self.results['forces'] = calculate_numerical_forces(
-            atoms,
-            eps=self.eps_disp,
-            force_consistent=self.force_consistent,
-        )
-        self.results['stress'] = calculate_numerical_stress(
-            atoms,
-            eps=self.eps_strain,
-            force_consistent=self.force_consistent,
-        )
+        self.results['energy'] = self.calc.get_potential_energy(atoms)
+        for key in ['free_energy']:
+            if key in self.calc.results:
+                self.results[key] = self.calc.results[key]
+        if self.eps_disp is None:
+            self.results['forces'] = self.calc.get_forces(atoms)
+        else:
+            self.results['forces'] = calculate_numerical_forces(
+                atoms,
+                eps=self.eps_disp,
+                force_consistent=self.force_consistent,
+            )
+        if self.eps_strain is None:
+            self.results['stress'] = self.calc.get_stress(atoms)
+        else:
+            self.results['stress'] = calculate_numerical_stress(
+                atoms,
+                eps=self.eps_strain,
+                force_consistent=self.force_consistent,
+            )
 
 
 def _numeric_force(
