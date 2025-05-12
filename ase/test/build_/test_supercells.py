@@ -206,8 +206,8 @@ def test_cell_metric_negative_determinant(cell, target_shape, score_func):
 @pytest.mark.parametrize('score_key', all_score_funcs.keys())
 @pytest.mark.parametrize('cell, target_shape, target_size, ref_cellpar', [
     (np.diag([1.0, 2.0, 4.0]), 'sc', 8, [4.0, 4.0, 4.0, 90., 90., 90.]),
-    ([[1, 0, 0], [0, 1, 0], [0, 0, 1]], 'fcc', 2, sq2),
     ([[0, 1, 1], [1, 0, 1], [1, 1, 0]], 'sc', 4, [2., 2., 2., 90., 90., 90.]),
+    (np.eye(3), 'fcc', 2, [sq2, sq2, sq2, 60.0, 60.0, 60.0])
 ])
 def test_find_optimal_cell_shape(
         cell, target_shape, target_size, ref_cellpar, score_key):
@@ -226,16 +226,10 @@ def test_find_optimal_cell_shape(
     )
 
     sc = np.dot(sc_matrix, cell)
-    sc_cellpar = cell_to_cellpar(sc)
-    cell_lengths = np.linalg.norm(np.dot(sc_matrix, cell), axis=1)
+    cellpar = cell_to_cellpar(sc)
 
-    if target_shape == 'fcc':
-        # old metrics is absolute metrics
-        assert np.isclose(cell_metric, 0.0)
-        assert np.allclose(cell_lengths, ref_cellpar)
-    elif target_shape == 'sc':
-        # new score is relative
-        assert np.allclose(sc_cellpar, ref_cellpar)
+    assert np.isclose(cell_metric, 0.0)
+    assert np.allclose(cellpar, ref_cellpar)
 
 
 @pytest.mark.parametrize('score_key', all_score_funcs.keys())
