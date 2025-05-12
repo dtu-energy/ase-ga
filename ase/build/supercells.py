@@ -61,8 +61,6 @@ def eval_shape_deviation(cell, target_shape="sc", target_length=None):
     # and metric -> M_mkl
     # M_mkl = (sum_j C_mkj * C_mlj) / leff**2
     metric = cell @ np.swapaxes(cell, -2, -1)
-    # XXX problem: we favor small lengths to much
-    # for the diagonals (= lengths ratio) we should have the inverse
     normed = metric / target_len[..., None, None] ** 2
 
     # offdiagonal ~ cos angle -> score = np.abs(cos angle - cos target_angle)
@@ -190,17 +188,11 @@ def _build_matrix_operations(starting_P, lower_limit, upper_limit):
     return operations
 
 
-def _screen_supercell_size(operations, target_size, minimal_size=False):
+def _screen_supercell_size(operations, target_size):
 
     # screen supercells with the target size
     determinants = np.round(np.linalg.det(operations), 0).astype(int)
-    if minimal_size:
-        # but do not through away good candidates if they have smaller cell
-        # assume that the score has minimum length criterium: here only for sc
-        good_indices = np.where((np.abs(determinants) <= target_size)
-                                & (np.abs(determinants) > 1))[0]
-    else:
-        good_indices = np.where(np.abs(determinants) == target_size)[0]
+    good_indices = np.where(np.abs(determinants) == target_size)[0]
 
     if not good_indices.size:
         print("Failed to find a transformation matrix.")
@@ -240,8 +232,6 @@ def find_optimal_cell_shape(
     lower_limit=-2,
     upper_limit=2,
     verbose=False,
-    target_length=None,
-    minimal_size=False,
     score_key='length'
 ):
     """Obtain the optimal transformation matrix for a supercell of target size
@@ -272,11 +262,6 @@ def find_optimal_cell_shape(
     verbose: bool
         Set to True to obtain additional information regarding
         construction of transformation matrix.
-    target_length: None or flat
-        Desired target_length in Angstrom.
-        If None the effective cubic cell length is taken.
-    minimal_size: bool
-        If True also cells smaller than target_size will be considered.
     score_key: str
         key from all_score_funcs to select score function.
 
@@ -300,9 +285,7 @@ def find_optimal_cell_shape(
                                           lower_limit, upper_limit)
 
     # pre-screen operations based on target_size
-    # minimal_size selects all non-zero operations smaller than target_size
-    operations = _screen_supercell_size(operations, target_size,
-                                        minimal_size=minimal_size)
+    operations = _screen_supercell_size(operations, target_size)
 
     # evaluate derivations of the screened supercells
     if score_key in all_score_funcs:
@@ -313,8 +296,7 @@ def find_optimal_cell_shape(
         raise SupercellError(msg)
 
     scores = get_deviation_score(operations @ cell,
-                                 target_shape,
-                                 target_length=target_length)
+                                 target_shape)
 
     # obtain optimal transformation from scores
     optimal_P, best_score = _optimal_transformation(operations, scores, ideal_P)
