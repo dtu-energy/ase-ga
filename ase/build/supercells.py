@@ -15,7 +15,7 @@ def get_deviation_from_optimal_cell_shape(*args, **kwargs):
     return eval_length_deviation(*args, **kwargs)
 
 
-def eval_shape_deviation(cell, target_shape="sc", target_length=None):
+def eval_shape_deviation(cell, target_shape="sc"):
     r"""
     Calculates the deviation of the given cell from the target cell metric.
 
@@ -26,8 +26,6 @@ def eval_shape_deviation(cell, target_shape="sc", target_length=None):
         Multiple cells can also be given as a higher-dimensional array.
     target_shape : {'sc', 'fcc'}
         Desired supercell shape.
-    target_length : float
-        Desired effective cubic cell length.
 
     Returns
     -------
@@ -38,10 +36,7 @@ def eval_shape_deviation(cell, target_shape="sc", target_length=None):
 
     cell = np.asarray(cell)
 
-    if target_length is None:
-        eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
-    else:
-        eff_cubic_length = np.full(cell.shape[:-2], target_length)
+    eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
 
     if target_shape == 'sc':
         target_len = eff_cubic_length
@@ -69,7 +64,7 @@ def eval_shape_deviation(cell, target_shape="sc", target_length=None):
     return scores
 
 
-def eval_length_deviation(cell, target_shape="sc", target_length=None):
+def eval_length_deviation(cell, target_shape="sc"):
     r"""Calculate the deviation from the target cell shape.
 
     Calculates the deviation of the given cell metric from the ideal
@@ -93,8 +88,6 @@ def eval_length_deviation(cell, target_shape="sc", target_length=None):
     target_shape : {'sc', 'fcc'}
         Desired supercell shape. Can be 'sc' for simple cubic or
         'fcc' for face-centered cubic.
-    target_length : float
-        Desired effective cubic cell length.
 
     Returns
     -------
@@ -109,10 +102,7 @@ def eval_length_deviation(cell, target_shape="sc", target_length=None):
     cell = np.asarray(cell)
     cell_lengths = np.sqrt(np.add.reduce(cell**2, axis=-1))
 
-    if target_length is None:
-        eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
-    else:
-        eff_cubic_length = np.full(cell.shape[:-2], target_length)
+    eff_cubic_length = np.cbrt(np.abs(np.linalg.det(cell)))  # 'a_0'
 
     if target_shape == 'sc':
         target_len = eff_cubic_length
