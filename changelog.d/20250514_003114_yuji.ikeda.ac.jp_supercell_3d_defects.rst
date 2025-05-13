@@ -1,0 +1,5 @@
+Structure tools
+---------------
+
+- Added ``score_key='metric'`` to :func:`~ase.build.find_optimal_cell_shape`
+  for scoring a cell based on its metric tensor (:mr:`3616`)
