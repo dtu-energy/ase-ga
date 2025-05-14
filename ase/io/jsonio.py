@@ -42,6 +42,8 @@ def default(obj):
                                 flatobj.tolist())}
     if isinstance(obj, np.integer):
         return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
     if isinstance(obj, np.bool_):
         return bool(obj)
     if isinstance(obj, datetime.datetime):
