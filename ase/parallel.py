@@ -25,9 +25,11 @@ def paropen(name, mode='r', buffering=-1, encoding=None, comm=None):
     return open(name, mode, buffering, encoding)
 
 
-def parprint(*args, **kwargs):
+def parprint(*args, comm=None, **kwargs):
     """MPI-safe print - prints only from master. """
-    if world.rank == 0:
+    if comm is None:
+        comm = world
+    if comm.rank == 0:
         print(*args, **kwargs)
 
 
