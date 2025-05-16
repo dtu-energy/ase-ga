@@ -192,7 +192,7 @@ Calculators / IO
 
 * MixingCalculator: remove requirement that mixed calculators have common ``implemented_properties`` (:mr:`3480`)
 * MOPAC: Improve version-number parsing (:mr:`3483`)
-* MorsePotential: Add stress (by finite differences) (:mr:`3485`)
+* MorsePotential: Add stress (:mr:`3485`)
 * NWChem: fixed reading files from other directories (:mr:`3418`)
 * Octopus: Improved IO testing (:mr:`3465`)
 * ONETEP calculator: allow ``pseudo_path`` to be set in config (:mr:`3385`)
