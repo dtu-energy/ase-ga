@@ -149,27 +149,18 @@ class GUI(View, Status):
         return Settings(self)
 
     def scroll(self, event):
-        is_macos = platform.system() == 'Darwin'
-        if is_macos:
-            ALT = (event.state & 0x10) != 0
-            CTRL = False  # we don't use Command here anymore
-        else:
-            CTRL = event.modifier == 'ctrl'
+        shift = 0x1
+        ctrl = 0x4
+        alt_l = 0x8
+        mac_option_key = 0x10
 
-        # Bug: Simultaneous CTRL + shift is the same as just CTRL.
-        # Therefore movement in Z direction does not support the
-        # shift modifier.
-        dxdydz = {'up': (0, 1 - CTRL, CTRL),
-                  'down': (0, -1 + CTRL, -CTRL),
+        use_small_step = bool(event.state & shift)
+        rotate_into_plane = bool(event.state & (ctrl | alt_l | mac_option_key))
+
+        dxdydz = {'up': (0, 1 - rotate_into_plane, rotate_into_plane),
+                  'down': (0, -1 + rotate_into_plane, -rotate_into_plane),
                   'right': (1, 0, 0),
                   'left': (-1, 0, 0)}.get(event.key, None)
-
-        if is_macos and ALT:
-            # Remap behavior: Option+Up acts like Control+Up
-            if event.key == 'up':
-                dxdydz = (0, 0, 1)
-            elif event.key == 'down':
-                dxdydz = (0, 0, -1)
 
         # Get scroll direction using shift + right mouse button
         # event.type == '6' is mouse motion, see:
@@ -190,7 +181,7 @@ class GUI(View, Status):
             return
 
         vec = 0.1 * np.dot(self.axes, dxdydz)
-        if event.modifier == 'shift':
+        if use_small_step:
             vec *= 0.1
 
         if self.arrowkey_mode == self.ARROWKEY_MOVE:
