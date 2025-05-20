@@ -23,11 +23,6 @@ __all__ = [
     'showinfo', 'showwarning', 'SpinBox', 'Text', 'set_windowtype']
 
 
-if sys.platform == 'darwin':
-    mouse_buttons = {2: 3, 3: 2}
-else:
-    mouse_buttons = {}
-
 
 def error(title, message=None):
     if message is None:
@@ -558,7 +553,7 @@ class MainWindow(BaseWindow):
 
 def bind(callback, modifier=None):
     def handle(event):
-        event.button = mouse_buttons.get(event.num, event.num)
+        event.button = event.num
         event.key = event.keysym.lower()
         event.modifier = modifier
         callback(event)
@@ -624,17 +619,17 @@ class ASEGUIWindow(MainWindow):
         self.status = tk.Label(self.win, text='', anchor=tk.W)
         self.status.pack(side=tk.BOTTOM, fill=tk.X)
 
-        right = mouse_buttons.get(3, 3)
         self.canvas.bind('<ButtonPress>', bind(press))
-        self.canvas.bind('<B1-Motion>', bind(move))
-        self.canvas.bind(f'<B{right}-Motion>', bind(move))
+        for button in range(1, 4):
+            self.canvas.bind(f'<B{button}-Motion>', bind(move))
         self.canvas.bind('<ButtonRelease>', bind(release))
         self.canvas.bind('<Control-ButtonRelease>', bind(release, 'ctrl'))
         self.canvas.bind('<Shift-ButtonRelease>', bind(release, 'shift'))
         self.canvas.bind('<Configure>', resize)
         if not config['swap_mouse']:
-            self.canvas.bind(f'<Shift-B{right}-Motion>',
-                             bind(scroll))
+            for button in (2, 3):
+                self.canvas.bind(f'<Shift-B{button}-Motion>',
+                                 bind(scroll))
         else:
             self.canvas.bind('<Shift-B1-Motion>',
                              bind(scroll))
