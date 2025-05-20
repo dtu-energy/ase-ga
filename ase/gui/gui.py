@@ -1,7 +1,6 @@
 # fmt: off
 
 import pickle
-import platform
 import subprocess
 import sys
 import weakref
