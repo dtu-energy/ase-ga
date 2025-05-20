@@ -3,7 +3,6 @@
 # type: ignore
 import platform
 import re
-import sys
 import tkinter as tk
 import tkinter.ttk as ttk
 from collections import namedtuple
@@ -21,7 +20,6 @@ __all__ = [
     'ASEGUIWindow', 'Button', 'CheckButton', 'ComboBox', 'Entry', 'Label',
     'Window', 'MenuItem', 'RadioButton', 'RadioButtons', 'Rows', 'Scale',
     'showinfo', 'showwarning', 'SpinBox', 'Text', 'set_windowtype']
-
 
 
 def error(title, message=None):
