@@ -444,7 +444,10 @@ class MenuItem:
         else:
             self.callback = callback
 
-        self.key = key
+        if is_macos and key is not None:
+            self.key = key.replace('Alt', 'Command')
+        else:
+            self.key = key
         self.value = value
         self.choices = choices
         self.submenu = submenu
