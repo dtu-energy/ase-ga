@@ -46,6 +46,8 @@ html_last_updated_fmt = '%a, %d %b %Y %H:%M:%S'
 html_theme_options = {
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html
     'gitlab_url': 'https://gitlab.com/ase/ase',
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/indices.html
+    'primary_sidebar_end': ['indices.html'],
 }
 
 latex_elements = {'papersize': 'a4paper'}
