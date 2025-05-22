@@ -1,5 +1,6 @@
-import numpy as np
+# fmt: off
 
+import numpy as np
 
 delta = 1e-10
 
@@ -13,31 +14,36 @@ def wulff_construction(symbol, surfaces, energies, size, structure,
     specified, following the Wulff construction, i.e. minimizing the
     surface energy of the cluster.
 
-    Parameters:
+    Parameters
+    ----------
+    symbol : str or int
+        The chemical symbol (or atomic number) of the desired element.
 
-    symbol: The chemical symbol (or atomic number) of the desired element.
+    surfaces : list
+        A list of surfaces. Each surface is an (h, k, l) tuple or list of
+        integers.
 
-    surfaces: A list of surfaces. Each surface is an (h, k, l) tuple or
-    list of integers.
+    energies : list
+        A list of surface energies for the surfaces.
 
-    energies: A list of surface energies for the surfaces.
+    size : int
+        The desired number of atoms.
 
-    size: The desired number of atoms.
+    structure : {'fcc', bcc', 'sc'}
+        The desired crystal structure.
 
-    structure: The desired crystal structure.  One of the strings
-    "fcc", "bcc", or "sc".
+    rounding : {'closest', 'above', 'below'}
+        Specifies what should be done if no Wulff construction corresponds
+        to exactly the requested number of atoms. 'above', 'below', and
+        'closest' mean that the nearest cluster above or below - or the
+        closest one - is created instead.
 
-    rounding (optional): Specifies what should be done if no Wulff
-    construction corresponds to exactly the requested number of atoms.
-    Should be a string, either "above", "below" or "closest" (the
-    default), meaning that the nearest cluster above or below - or the
-    closest one - is created instead.
+    latticeconstant : float (optional)
+        The lattice constant. If not given, extracted from `ase.data`.
 
-    latticeconstant (optional): The lattice constant.  If not given,
-    extracted from ase.data.
-
-    debug (optional): If non-zero, information about the iteration towards
-    the right cluster size is printed.
+    debug : bool, default False
+        If True, information about the iteration towards the right cluster
+        size is printed.
     """
 
     if debug:
@@ -45,7 +51,7 @@ def wulff_construction(symbol, surfaces, energies, size, structure,
               (size, rounding))
 
         if rounding not in ['above', 'below', 'closest']:
-            raise ValueError('Invalid rounding: %s' % rounding)
+            raise ValueError(f'Invalid rounding: {rounding}')
 
     # Interpret structure, if it is a string.
     if isinstance(structure, str):
@@ -56,12 +62,11 @@ def wulff_construction(symbol, surfaces, energies, size, structure,
         elif structure == 'sc':
             from ase.cluster.cubic import SimpleCubic as structure
         elif structure == 'hcp':
-            from ase.cluster.hexagonal import \
-                HexagonalClosedPacked as structure
+            from ase.cluster.hexagonal import HexagonalClosedPacked as structure
         elif structure == 'graphite':
             from ase.cluster.hexagonal import Graphite as structure
         else:
-            error = 'Crystal structure %s is not supported.' % structure
+            error = f'Crystal structure {structure} is not supported.'
             raise NotImplementedError(error)
 
     # Check number of surfaces
@@ -86,7 +91,7 @@ def wulff_construction(symbol, surfaces, energies, size, structure,
     for i, s in enumerate(surfaces):
         d = atoms.get_layer_distance(s)
         energies[i] /= d
-        
+
     # First guess a size that is not too large.
     wanted_size = size ** (1.0 / 3.0)
     max_e = max(energies)

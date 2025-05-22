@@ -1,21 +1,39 @@
-
+# fmt: off
 import copy
 from io import StringIO
 
 import numpy as np
 import pytest
+
 from ase.atoms import Atoms
 from ase.calculators.calculator import InputError
 from ase.calculators.gaussian import Gaussian
 from ase.io import ParseError
-from ase.io.gaussian import (_get_atoms_info, _get_cartesian_atom_coords,
-                             _get_zmatrix_line, _re_chgmult, _re_link0,
-                             _re_method_basis, _re_nuclear_props,
-                             _re_output_type, _validate_symbol_string,
-                             read_gaussian_in)
+from ase.io.gaussian import (
+    _get_atoms_info,
+    _get_cartesian_atom_coords,
+    _get_zmatrix_line,
+    _re_chgmult,
+    _re_link0,
+    _re_method_basis,
+    _re_nuclear_props,
+    _re_output_type,
+    _validate_symbol_string,
+    read_gaussian_in,
+)
 
 
-@pytest.fixture
+# Refactoring needed.
+#
+# Lots of calculators are instantiated here even though no calculations
+# are taking place.  These tests should instead use the GaussianConfiguration
+# class to ensure that all the formatting/parsing works well.
+@pytest.fixture(autouse=True)
+def hack_gaussian_command(monkeypatch):
+    monkeypatch.setenv('ASE_GAUSSIAN_COMMAND', '_does_not_exist_')
+
+
+@pytest.fixture()
 def fd_cartesian():
     # make an example input string with cartesian coords:
     fd_cartesian = StringIO('''
@@ -61,7 +79,7 @@ SP   1   1.00
 ****'''
 
 
-@pytest.fixture
+@pytest.fixture()
 def fd_cartesian_basis_set():
     # make an example input string with cartesian coords and a basis set
     # definition:
@@ -129,14 +147,14 @@ _zmatrix_file_text = '''
     '''
 
 
-@pytest.fixture
+@pytest.fixture()
 def fd_zmatrix():
     # make an example input string with a z-matrix:
     fd_zmatrix = StringIO(_zmatrix_file_text)
     return fd_zmatrix
 
 
-@pytest.fixture
+@pytest.fixture()
 def fd_incorrect_zmatrix_var():
     # Make an example input string with a z-matrix with
     # incorrect variable definitions
@@ -193,7 +211,7 @@ def fd_no_charge_mult():
     return StringIO(unsupported_text)
 
 
-@pytest.fixture
+@pytest.fixture()
 def fd_command_set():
     # Make an example input string where command is set in link0:
     unsupported_text = ""
@@ -251,11 +269,11 @@ def _check_atom_properties(atoms, atoms_new, params):
         params_equal = new_params_to_check.get(
             key) == params_to_check.get(key)
         if isinstance(params_equal, np.ndarray):
-            assert((new_params_to_check.get(
-                key) == params_to_check.get(key)).all())
+            assert (new_params_to_check.get(key)
+                    == params_to_check.get(key)).all()
         else:
-            assert(new_params_to_check.get(
-                key) == params_to_check.get(key))
+            assert (new_params_to_check.get(key)
+                    == params_to_check.get(key))
 
 
 def _get_iso_masses(atoms):
@@ -263,7 +281,7 @@ def _get_iso_masses(atoms):
         return list(atoms.calc.parameters['isolist'])
 
 
-@pytest.fixture
+@pytest.fixture()
 def cartesian_setup():
     positions = [[-0.464, 0.177, 0.0],
                  [-0.464, 1.137, 0.0],
@@ -516,8 +534,8 @@ def test_write_gaussian_calc():
 
     # Test case where we have the basis set in a separate file:
     basisfilename = 'basis.txt'
-    with open(basisfilename, 'w+') as f:
-        f.write(_basis_set_text)
+    with open(basisfilename, 'w+') as fd:
+        fd.write(_basis_set_text)
     calc = Gaussian(basisfile=basisfilename, output_type='p',
                     mult=0, charge=1, basis='gen')
     atoms.calc = calc
@@ -531,42 +549,42 @@ def test_read_gaussian_regex():
     # Test link0 regex:
     link0_line = '%chk=example.chk'
     link0_match = _re_link0.match(link0_line)
-    assert(link0_match.group(1) == 'chk')
-    assert(link0_match.group(2) == 'example.chk')
+    assert link0_match.group(1) == 'chk'
+    assert link0_match.group(2) == 'example.chk'
     link0_line = '%chk'
     link0_match = _re_link0.match(link0_line)
-    assert(link0_match.group(1) == 'chk')
-    assert(link0_match.group(2) is None)
+    assert link0_match.group(1) == 'chk'
+    assert link0_match.group(2) is None
 
     # Test output type regex:
     output_type_lines = ['#P B3LYP', ' #P', '# P']
     for line in output_type_lines:
         output_type_match = _re_output_type.match(line)
-        assert(output_type_match.group(1) == 'P')
+        assert output_type_match.group(1) == 'P'
 
     # Test method and basis regex:
     # On line with method/basis/fitting basis
     method_basis_line = 'g1/Gen/TZVPFit ! ASE formatted method and basis'
     method_basis_match = _re_method_basis.match(method_basis_line)
-    assert(method_basis_match.group(1) == 'g1')
-    assert(method_basis_match.group(2) == 'Gen')
-    assert(method_basis_match.group(4) == 'TZVPFit ')
-    assert(method_basis_match.group(5) == '! ASE formatted method and basis')
+    assert method_basis_match.group(1) == 'g1'
+    assert method_basis_match.group(2) == 'Gen'
+    assert method_basis_match.group(4) == 'TZVPFit '
+    assert method_basis_match.group(5) == '! ASE formatted method and basis'
     # On line with method/basis
     method_basis_line = 'g1/Gen ! ASE formatted method and basis'
     method_basis_match = _re_method_basis.match(method_basis_line)
-    assert(method_basis_match.group(1) == 'g1')
-    assert(method_basis_match.group(2) == 'Gen ')
-    assert(method_basis_match.group(5) == '! ASE formatted method and basis')
+    assert method_basis_match.group(1) == 'g1'
+    assert method_basis_match.group(2) == 'Gen '
+    assert method_basis_match.group(5) == '! ASE formatted method and basis'
 
     # Test charge and multiplicity regex - here we are just interested in
     #  whether we get a match
     chgmult_lines = ['0 1', ' 0 1', '0, 2']
     for line in chgmult_lines:
-        assert(_re_chgmult.match(line).group(0) == line)
+        assert _re_chgmult.match(line).group(0) == line
 
     # Test nuclear properties regex:
     nuclear_props = '(iso=0.1134289259, NMagM=-8.89, ZEff=-1)'
-    nuclear_prop_line = '1{}, -0.464,   1.137,   0.0'.format(nuclear_props)
-    assert(_re_nuclear_props.search(nuclear_prop_line).group(0)
-           == nuclear_props)
+    nuclear_prop_line = f'1{nuclear_props}, -0.464,   1.137,   0.0'
+    assert (_re_nuclear_props.search(nuclear_prop_line).group(0)
+            == nuclear_props)

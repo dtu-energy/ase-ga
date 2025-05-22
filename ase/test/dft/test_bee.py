@@ -1,3 +1,4 @@
+# fmt: off
 import numpy as np
 import pytest
 
@@ -25,7 +26,7 @@ class BEECalculator:
 
 
 @pytest.mark.parametrize('xc', ['mBEEF', 'BEEF-vdW', 'mBEEF-vdW'])
-def test_bee(xc):
+def test_bee(xc, testdir):
     """Check BEEF ensemble code."""
     size = 7  # size of ensemble
 
@@ -37,7 +38,7 @@ def test_bee(xc):
 
     # From a file:
     ens.write(f'{xc}.bee')
-    e, de, contribs, seed, xc = readbee(f'{xc}.bee', all=True)
+    e, de, contribs, _seed, xc = readbee(f'{xc}.bee', all=True)
     assert e + de == pytest.approx(energies, abs=1e-12)
     e2000 = ensemble(e, contribs, xc)
     assert e2000.shape == (2000,)

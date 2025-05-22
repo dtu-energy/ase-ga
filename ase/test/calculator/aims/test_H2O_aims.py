@@ -1,4 +1,6 @@
+# fmt: off
 import pytest
+
 from ase import Atoms
 from ase.calculators.aims import AimsCube
 from ase.optimize import QuasiNewton

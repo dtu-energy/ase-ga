@@ -1,4 +1,8 @@
+# fmt: off
+
 import numpy as np
+
+from ase.build.niggli import niggli_reduce_cell
 
 
 def cut(atoms, a=(1, 0, 0), b=(0, 1, 0), c=None, clength=None,
@@ -70,23 +74,25 @@ def cut(atoms, a=(1, 0, 0), b=(0, 1, 0), c=None, clength=None,
         *nlayers* atomic layers is obtained, when the number of atoms
         exceeds *maxatoms*.
 
-    Example:
+    Example: Create an aluminium (111) slab with three layers.
 
     >>> import ase
     >>> from ase.spacegroup import crystal
-    >>>
-    # Create an aluminium (111) slab with three layers
-    #
-    # First an unit cell of Al
+    >>> from ase.build.tools import cut
+
+    # First, a unit cell of Al
     >>> a = 4.05
     >>> aluminium = crystal('Al', [(0,0,0)], spacegroup=225,
     ...                     cellpar=[a, a, a, 90, 90, 90])
-    >>>
+
     # Then cut out the slab
     >>> al111 = cut(aluminium, (1,-1,0), (0,1,-1), nlayers=3)
-    >>>
-    # Visualisation of the skutterudite unit cell
-    #
+
+    Example: Visualisation of the skutterudite unit cell
+
+    >>> from ase.spacegroup import crystal
+    >>> from ase.build.tools import cut
+
     # Again, create a skutterudite unit cell
     >>> a = 9.04
     >>> skutterudite = crystal(
@@ -94,11 +100,11 @@ def cut(atoms, a=(1, 0, 0), b=(0, 1, 0), c=None, clength=None,
     ...     basis=[(0.25,0.25,0.25), (0.0, 0.335, 0.158)],
     ...     spacegroup=204,
     ...     cellpar=[a, a, a, 90, 90, 90])
-    >>>
+
     # Then use *origo* to put 'Co' at the corners and *extend* to
     # include all corner and edge atoms.
     >>> s = cut(skutterudite, origo=(0.25, 0.25, 0.25), extend=1.01)
-    >>> ase.view(s)  # doctest: +SKIP
+    >>> ase.view(s)  # doctest:+SKIP
     """
     atoms = atoms.copy()
     cell = atoms.cell
@@ -144,7 +150,7 @@ def cut(atoms, a=(1, 0, 0), b=(0, 1, 0), c=None, clength=None,
                 tags = np.cumsum(mask)[ikeys] - 1
                 levels = d[keys][mask]
                 if (maxatoms is None or len(at) < maxatoms or
-                    len(levels) > nlayers):
+                        len(levels) > nlayers):
                     break
                 tol *= 0.9
             if len(levels) > nlayers:
@@ -166,7 +172,7 @@ def cut(atoms, a=(1, 0, 0), b=(0, 1, 0), c=None, clength=None,
                                  [1., 1., 0.], [1., 1., 1.]])
     corners = np.dot(scorners_newcell, newcell * extend)
     scorners = np.linalg.solve(cell.T, corners.T).T
-    rep = np.ceil(scorners.ptp(axis=0)).astype('int') + 1
+    rep = np.ceil(np.ptp(scorners, axis=0)).astype('int') + 1
     trans = np.dot(np.floor(scorners.min(axis=0)), cell)
     atoms = atoms.repeat(rep)
     atoms.translate(trans)
@@ -184,7 +190,6 @@ def cut(atoms, a=(1, 0, 0), b=(0, 1, 0), c=None, clength=None,
 class IncompatibleCellError(ValueError):
     """Exception raised if stacking fails due to incompatible cells
     between *atoms1* and *atoms2*."""
-    pass
 
 
 def stack(atoms1, atoms2, axis=2, cell=None, fix=0.5,
@@ -223,13 +228,13 @@ def stack(atoms1, atoms2, axis=2, cell=None, fix=0.5,
     *atoms1* and *atoms2* are returned in addition to the stacked
     structure.
 
-    Example:
+    Example: Create an Ag(110)-Si(110) interface with three atomic layers
+    on each side.
 
     >>> import ase
     >>> from ase.spacegroup import crystal
+    >>> from ase.build.tools import cut, stack
     >>>
-    # Create an Ag(110)-Si(110) interface with three atomic layers
-    # on each side.
     >>> a_ag = 4.09
     >>> ag = crystal(['Ag'], basis=[(0,0,0)], spacegroup=225,
     ...              cellpar=[a_ag, a_ag, a_ag, 90., 90., 90.])
@@ -259,7 +264,7 @@ def stack(atoms1, atoms2, axis=2, cell=None, fix=0.5,
             atoms.center(vacuum=0.0, axis=axis)
 
     if (np.sign(np.linalg.det(atoms1.cell)) !=
-        np.sign(np.linalg.det(atoms2.cell))):
+            np.sign(np.linalg.det(atoms2.cell))):
         raise IncompatibleCellError('Cells of *atoms1* and *atoms2* must have '
                                     'same handedness.')
 
@@ -406,7 +411,7 @@ def minimize_tilt_ij(atoms, modified=1, fixed=0, fold_atoms=True):
     def volume(cell):
         return np.abs(np.dot(cell[2], np.cross(cell[0], cell[1])))
     V = volume(cell_cc)
-    assert(abs(volume(orgcell_cc) - V) / V < 1.e-10)
+    assert abs(volume(orgcell_cc) - V) / V < 1.e-10
 
     atoms.set_cell(cell_cc)
 
@@ -424,168 +429,13 @@ def minimize_tilt(atoms, order=range(3), fold_atoms=True):
                 minimize_tilt_ij(atoms, c1, c2, fold_atoms)
 
 
-def niggli_reduce_cell(cell, epsfactor=None):
-    from ase.geometry import cellpar_to_cell
-
-    if epsfactor is None:
-        epsfactor = 1e-5
-    eps = epsfactor * abs(np.linalg.det(cell))**(1./3.)
-
-    cell = np.asarray(cell)
-
-    I3 = np.eye(3, dtype=int)
-    I6 = np.eye(6, dtype=int)
-
-    C = I3.copy()
-    D = I6.copy()
-
-    g0 = np.zeros(6, dtype=float)
-    g0[0] = np.dot(cell[0], cell[0])
-    g0[1] = np.dot(cell[1], cell[1])
-    g0[2] = np.dot(cell[2], cell[2])
-    g0[3] = 2 * np.dot(cell[1], cell[2])
-    g0[4] = 2 * np.dot(cell[0], cell[2])
-    g0[5] = 2 * np.dot(cell[0], cell[1])
-
-    g = np.dot(D, g0)
-
-    def lt(x, y, eps=eps):
-        return x < y - eps
-
-    def gt(x, y, eps=eps):
-        return lt(y, x, eps)
-
-    def eq(x, y, eps=eps):
-        return not (lt(x, y, eps) or gt(x, y, eps))
-
-    for _ in range(10000):
-        if (gt(g[0], g[1])
-                or (eq(g[0], g[1]) and gt(abs(g[3]), abs(g[4])))):
-            C = np.dot(C, -I3[[1, 0, 2]])
-            D = np.dot(I6[[1, 0, 2, 4, 3, 5]], D)
-            g = np.dot(D, g0)
-            continue
-        elif (gt(g[1], g[2])
-                or (eq(g[1], g[2]) and gt(abs(g[4]), abs(g[5])))):
-            C = np.dot(C, -I3[[0, 2, 1]])
-            D = np.dot(I6[[0, 2, 1, 3, 5, 4]], D)
-            g = np.dot(D, g0)
-            continue
-
-        lmn = np.array(gt(g[3:], 0, eps=eps/2), dtype=int)
-        lmn -= np.array(lt(g[3:], 0, eps=eps/2), dtype=int)
-
-        if lmn.prod() == 1:
-            ijk = lmn.copy()
-            for idx in range(3):
-                if ijk[idx] == 0:
-                    ijk[idx] = 1
-        else:
-            ijk = np.ones(3, dtype=int)
-            if np.any(lmn != -1):
-                r = None
-                for idx in range(3):
-                    if lmn[idx] == 1:
-                        ijk[idx] = -1
-                    elif lmn[idx] == 0:
-                        r = idx
-                if ijk.prod() == -1:
-                    ijk[r] = -1
-
-        C *= ijk[np.newaxis]
-
-        D[3] *= ijk[1] * ijk[2]
-        D[4] *= ijk[0] * ijk[2]
-        D[5] *= ijk[0] * ijk[1]
-        g = np.dot(D, g0)
-
-        if (gt(abs(g[3]), g[1])
-                or (eq(g[3], g[1]) and lt(2 * g[4], g[5]))
-                or (eq(g[3], -g[1]) and lt(g[5], 0))):
-            s = int(np.sign(g[3]))
-
-            A = I3.copy()
-            A[1, 2] = -s
-            C = np.dot(C, A)
-
-            B = I6.copy()
-            B[2, 1] = 1
-            B[2, 3] = -s
-            B[3, 1] = -2 * s
-            B[4, 5] = -s
-            D = np.dot(B, D)
-            g = np.dot(D, g0)
-        elif (gt(abs(g[4]), g[0])
-                or (eq(g[4], g[0]) and lt(2 * g[3], g[5]))
-                or (eq(g[4], -g[0]) and lt(g[5], 0))):
-            s = int(np.sign(g[4]))
-
-            A = I3.copy()
-            A[0, 2] = -s
-            C = np.dot(C, A)
-
-            B = I6.copy()
-            B[2, 0] = 1
-            B[2, 4] = -s
-            B[3, 5] = -s
-            B[4, 0] = -2 * s
-            D = np.dot(B, D)
-            g = np.dot(D, g0)
-        elif (gt(abs(g[5]), g[0])
-                or (eq(g[5], g[0]) and lt(2 * g[3], g[4]))
-                or (eq(g[5], -g[0]) and lt(g[4], 0))):
-            s = int(np.sign(g[5]))
-
-            A = I3.copy()
-            A[0, 1] = -s
-            C = np.dot(C, A)
-
-            B = I6.copy()
-            B[1, 0] = 1
-            B[1, 5] = -s
-            B[3, 4] = -s
-            B[5, 0] = -2 * s
-            D = np.dot(B, D)
-            g = np.dot(D, g0)
-        elif (lt(g[[0, 1, 3, 4, 5]].sum(), 0)
-                or (eq(g[[0, 1, 3, 4, 5]].sum(), 0)
-                    and gt(2 * (g[0] + g[4]) + g[5], 0))):
-            A = I3.copy()
-            A[:, 2] = 1
-            C = np.dot(C, A)
-
-            B = I6.copy()
-            B[2, :] = 1
-            B[3, 1] = 2
-            B[3, 5] = 1
-            B[4, 0] = 2
-            B[4, 5] = 1
-            D = np.dot(B, D)
-            g = np.dot(D, g0)
-        else:
-            break
-    else:
-        raise RuntimeError('Niggli reduction not done in 10000 steps!\n'
-                           'cell={}\n'
-                           'operation={}'
-                           .format(cell.tolist(), C.tolist()))
-
-    abc = np.sqrt(g[:3])
-    # Prevent division by zero e.g. for cell==zeros((3, 3)):
-    abcprod = max(abc.prod(), 1e-100)
-    cosangles = abc * g[3:] / (2 * abcprod)
-    angles = 180 * np.arccos(cosangles) / np.pi
-    newcell = np.array(cellpar_to_cell(np.concatenate([abc, angles])),
-                       dtype=float)
-
-    return newcell, C
-
-
 def update_cell_and_positions(atoms, new_cell, op):
     """Helper method for transforming cell and positions of atoms object."""
     scpos = np.linalg.solve(op, atoms.get_scaled_positions().T).T
-    scpos %= 1.0
-    scpos %= 1.0
+
+    # We do this twice because -1e-20 % 1 == 1:
+    scpos[:, atoms.pbc] %= 1.0
+    scpos[:, atoms.pbc] %= 1.0
 
     atoms.set_cell(new_cell)
     atoms.set_scaled_positions(scpos)
@@ -609,10 +459,34 @@ def niggli_reduce(atoms):
     stable algorithms for the computation of reduced unit cells", Acta Cryst.
     2004, A60, 1-6.
     """
+    from ase.geometry.geometry import permute_axes
 
-    assert all(atoms.pbc), 'Can only reduce 3d periodic unit cells!'
-    new_cell, op = niggli_reduce_cell(atoms.cell)
+    # Make sure non-periodic cell vectors are orthogonal
+    non_periodic_cv = atoms.cell[~atoms.pbc]
+    periodic_cv = atoms.cell[atoms.pbc]
+    if not np.isclose(np.dot(non_periodic_cv, periodic_cv.T), 0).all():
+        raise ValueError('Non-orthogonal cell along non-periodic dimensions')
+
+    input_atoms = atoms
+
+    # Permute axes, such that the non-periodic are along the last dimensions,
+    # since niggli_reduce_cell will change the order of axes.
+    permutation = np.argsort(~atoms.pbc)
+    ipermutation = np.empty_like(permutation)
+    ipermutation[permutation] = np.arange(len(permutation))
+    atoms = permute_axes(atoms, permutation)
+
+    # Perform the Niggli reduction on the cell
+    nonpbc = ~atoms.pbc
+    uncompleted_cell = atoms.cell.uncomplete(atoms.pbc)
+    new_cell, op = niggli_reduce_cell(uncompleted_cell)
+    new_cell[nonpbc] = atoms.cell[nonpbc]
     update_cell_and_positions(atoms, new_cell, op)
+
+    # Undo the prior permutation.
+    atoms = permute_axes(atoms, ipermutation)
+    input_atoms.cell[:] = atoms.cell
+    input_atoms.positions[:] = atoms.positions
 
 
 def reduce_lattice(atoms, eps=2e-4):
@@ -622,7 +496,7 @@ def reduce_lattice(atoms, eps=2e-4):
     the canonical form used for defining band paths but is otherwise
     physically equivalent.  The eps parameter is used as a tolerance
     for determining the cell's Bravais lattice."""
-    from ase.geometry.bravais_type_engine import identify_lattice
+    from ase.lattice import identify_lattice
     niggli_reduce(atoms)
     lat, op = identify_lattice(atoms.cell, eps=eps)
     update_cell_and_positions(atoms, lat.tocell(), np.linalg.inv(op))
@@ -636,6 +510,7 @@ def sort(atoms, tags=None):
     Example:
 
     >>> from ase.build import bulk
+    >>> from ase.build.tools import sort
     >>> # Two unit cells of NaCl:
     >>> a = 5.64
     >>> nacl = bulk('NaCl', 'rocksalt', a=a) * (2, 1, 1)

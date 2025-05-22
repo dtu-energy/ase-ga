@@ -1,39 +1,63 @@
+# fmt: off
+
 import datetime
 import json
 
 import numpy as np
+
 from ase.utils import reader, writer
+
+# Note: We are converting JSON classes to the recommended mechanisms
+# by the json module.  That means instead of classes, we will use the
+# functions default() and object_hook().
+#
+# The encoder classes are to be deprecated (but maybe not removed, if
+# widely used).
+
+
+def default(obj):
+    if hasattr(obj, 'todict'):
+        dct = obj.todict()
+
+        if not isinstance(dct, dict):
+            raise RuntimeError('todict() of {} returned object of type {} '
+                               'but should have returned dict'
+                               .format(obj, type(dct)))
+        if hasattr(obj, 'ase_objtype'):
+            # We modify the dictionary, so it is wise to take a copy.
+            dct = dct.copy()
+            dct['__ase_objtype__'] = obj.ase_objtype
+
+        return dct
+    if isinstance(obj, np.ndarray):
+        flatobj = obj.ravel()
+        if np.iscomplexobj(obj):
+            flatobj.dtype = obj.real.dtype
+        # We use str(obj.dtype) here instead of obj.dtype.name, because
+        # they are not always the same (e.g. for numpy arrays of strings).
+        # Using obj.dtype.name can break the ability to recursively decode/
+        # encode such arrays.
+        return {'__ndarray__': (obj.shape,
+                                str(obj.dtype),
+                                flatobj.tolist())}
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    if isinstance(obj, datetime.datetime):
+        return {'__datetime__': obj.isoformat()}
+    if isinstance(obj, complex):
+        return {'__complex__': (obj.real, obj.imag)}
+
+    raise TypeError(f'Cannot convert object of type {type(obj)} to '
+                    'dictionary for JSON')
 
 
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
-        if hasattr(obj, 'todict'):
-            d = obj.todict()
-
-            if not isinstance(d, dict):
-                raise RuntimeError('todict() of {} returned object of type {} '
-                                   'but should have returned dict'
-                                   .format(obj, type(d)))
-            if hasattr(obj, 'ase_objtype'):
-                d['__ase_objtype__'] = obj.ase_objtype
-
-            return d
-        if isinstance(obj, np.ndarray):
-            flatobj = obj.ravel()
-            if np.iscomplexobj(obj):
-                flatobj.dtype = obj.real.dtype
-            return {'__ndarray__': (obj.shape,
-                                    obj.dtype.name,
-                                    flatobj.tolist())}
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.bool_):
-            return bool(obj)
-        if isinstance(obj, datetime.datetime):
-            return {'__datetime__': obj.isoformat()}
-        if isinstance(obj, complex):
-            return {'__complex__': (obj.real, obj.imag)}
-        return json.JSONEncoder.default(self, obj)
+        # (Note the name "default" comes from the outer namespace, so
+        # not actually recursive)
+        return default(obj)
 
 
 encode = MyEncoder().encode
@@ -90,6 +114,9 @@ def create_ase_object(objtype, dct):
     elif objtype == 'atoms':
         from ase import Atoms
         obj = Atoms.fromdict(dct)
+    elif objtype == 'vibrationsdata':
+        from ase.vibrations import VibrationsData
+        obj = VibrationsData.fromdict(dct)
     else:
         raise ValueError('Do not know how to decode object type {} '
                          'into an actual object'.format(objtype))

@@ -1,5 +1,10 @@
+# fmt: off
+
+from typing import IO, Optional, Union
+
 import numpy as np
 
+from ase import Atoms
 from ase.optimize.optimize import Optimizer
 from ase.utils.linesearch import LineSearch
 
@@ -12,17 +17,29 @@ class LBFGS(Optimizer):
     Hessian is represented only as a diagonal matrix to save memory
 
     """
-    def __init__(self, atoms, restart=None, logfile='-', trajectory=None,
-                 maxstep=None, memory=100, damping=1.0, alpha=70.0,
-                 use_line_search=False, master=None,
-                 force_consistent=None):
-        """Parameters:
 
-        atoms: Atoms object
+    def __init__(
+        self,
+        atoms: Atoms,
+        restart: Optional[str] = None,
+        logfile: Union[IO, str] = '-',
+        trajectory: Optional[str] = None,
+        maxstep: Optional[float] = None,
+        memory: int = 100,
+        damping: float = 1.0,
+        alpha: float = 70.0,
+        use_line_search: bool = False,
+        **kwargs,
+    ):
+        """
+
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
-            Pickle file used to store vectors for updating the inverse of
+        restart: str
+            JSON file used to store vectors for updating the inverse of
             Hessian matrix. If set, file with such a name will be searched
             and information stored will be used, if the file exists.
 
@@ -31,7 +48,7 @@ class LBFGS(Optimizer):
             Use '-' for stdout.
 
         trajectory: string
-            Pickle file used to store trajectory of atomic movement.
+            Trajectory file used to store optimisation path.
 
         maxstep: float
             How far is a single atom allowed to move. This is useful for DFT
@@ -52,18 +69,12 @@ class LBFGS(Optimizer):
             steps to converge might be less if a lower value is used. However,
             a lower value also means risk of instability.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
 
-        force_consistent: boolean or None
-            Use force-consistent energy calls (as opposed to the energy
-            extrapolated to 0 K).  By default (force_consistent=None) uses
-            force-consistent energies if available in the calculator, but
-            falls back to force_consistent=False if not.
         """
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory, master,
-                           force_consistent=force_consistent)
+        Optimizer.__init__(self, atoms, restart, logfile, trajectory, **kwargs)
 
         if maxstep is not None:
             self.maxstep = maxstep
@@ -73,7 +84,7 @@ class LBFGS(Optimizer):
         if self.maxstep > 1.0:
             raise ValueError('You are using a much too large value for ' +
                              'the maximum step size: %.1f Angstrom' %
-                             maxstep)
+                             self.maxstep)
 
         self.memory = memory
         # Initial approximation of inverse Hessian 1./70. is to emulate the
@@ -106,18 +117,18 @@ class LBFGS(Optimizer):
             self.r0, self.f0, self.e0, self.task = self.load()
         self.load_restart = True
 
-    def step(self, f=None):
+    def step(self, forces=None):
         """Take a single step
 
         Use the given forces, update the history and calculate the next step --
         then take it"""
 
-        if f is None:
-            f = self.atoms.get_forces()
+        if forces is None:
+            forces = self.optimizable.get_forces()
 
-        r = self.atoms.get_positions()
+        pos = self.optimizable.get_positions()
 
-        self.update(r, f, self.r0, self.f0)
+        self.update(pos, forces, self.r0, self.f0)
 
         s = self.s
         y = self.y
@@ -128,7 +139,7 @@ class LBFGS(Optimizer):
         a = np.empty((loopmax,), dtype=np.float64)
 
         # ## The algorithm itself:
-        q = -f.reshape(-1)
+        q = -forces.reshape(-1)
         for i in range(loopmax - 1, -1, -1):
             a[i] = rho[i] * np.dot(s[i], q)
             q -= a[i] * y[i]
@@ -141,19 +152,19 @@ class LBFGS(Optimizer):
         self.p = - z.reshape((-1, 3))
         # ##
 
-        g = -f
+        g = -forces
         if self.use_line_search is True:
-            e = self.func(r)
-            self.line_search(r, g, e)
-            dr = (self.alpha_k * self.p).reshape(len(self.atoms), -1)
+            e = self.func(pos)
+            self.line_search(pos, g, e)
+            dr = (self.alpha_k * self.p).reshape(len(self.optimizable), -1)
         else:
             self.force_calls += 1
             self.function_calls += 1
             dr = self.determine_step(self.p) * self.damping
-        self.atoms.set_positions(r + dr)
+        self.optimizable.set_positions(pos + dr)
 
         self.iteration += 1
-        self.r0 = r
+        self.r0 = pos
         self.f0 = -g
         self.dump((self.iteration, self.s, self.y,
                    self.rho, self.r0, self.f0, self.e0, self.task))
@@ -171,17 +182,17 @@ class LBFGS(Optimizer):
 
         return dr
 
-    def update(self, r, f, r0, f0):
+    def update(self, pos, forces, r0, f0):
         """Update everything that is kept in memory
 
         This function is mostly here to allow for replay_trajectory.
         """
         if self.iteration > 0:
-            s0 = r.reshape(-1) - r0.reshape(-1)
+            s0 = pos.reshape(-1) - r0.reshape(-1)
             self.s.append(s0)
 
             # We use the gradient which is minus the force!
-            y0 = f0.reshape(-1) - f.reshape(-1)
+            y0 = f0.reshape(-1) - forces.reshape(-1)
             self.y.append(y0)
 
             rho0 = 1.0 / np.dot(y0, s0)
@@ -201,35 +212,34 @@ class LBFGS(Optimizer):
         f0 = None
         # The last element is not added, as we get that for free when taking
         # the first qn-step after the replay
-        for i in range(0, len(traj) - 1):
-            r = traj[i].get_positions()
-            f = traj[i].get_forces()
-            self.update(r, f, r0, f0)
-            r0 = r.copy()
-            f0 = f.copy()
+        for i in range(len(traj) - 1):
+            pos = traj[i].get_positions()
+            forces = traj[i].get_forces()
+            self.update(pos, forces, r0, f0)
+            r0 = pos.copy()
+            f0 = forces.copy()
             self.iteration += 1
         self.r0 = r0
         self.f0 = f0
 
     def func(self, x):
         """Objective function for use of the optimizers"""
-        self.atoms.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_positions(x.reshape(-1, 3))
         self.function_calls += 1
-        return self.atoms.get_potential_energy(
-            force_consistent=self.force_consistent)
+        return self.optimizable.get_potential_energy()
 
     def fprime(self, x):
         """Gradient of the objective function for use of the optimizers"""
-        self.atoms.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_positions(x.reshape(-1, 3))
         self.force_calls += 1
         # Remember that forces are minus the gradient!
-        return - self.atoms.get_forces().reshape(-1)
+        return - self.optimizable.get_forces().reshape(-1)
 
     def line_search(self, r, g, e):
         self.p = self.p.ravel()
         p_size = np.sqrt((self.p**2).sum())
-        if p_size <= np.sqrt(len(self.atoms) * 1e-10):
-            self.p /= (p_size / np.sqrt(len(self.atoms) * 1e-10))
+        if p_size <= np.sqrt(len(self.optimizable) * 1e-10):
+            self.p /= (p_size / np.sqrt(len(self.optimizable) * 1e-10))
         g = g.ravel()
         r = r.ravel()
         ls = LineSearch()

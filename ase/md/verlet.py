@@ -1,62 +1,22 @@
-import numpy as np
+# fmt: off
 
+"""Velocity Verlet."""
 from ase.md.md import MolecularDynamics
-import warnings
+
 
 class VelocityVerlet(MolecularDynamics):
-    def __init__(self, atoms, timestep=None, trajectory=None, logfile=None,
-                 loginterval=1, dt=None, append_trajectory=False):
-        """Molecular Dynamics object.
-
-        Parameters:
-
-        atoms: Atoms object
-            The Atoms object to operate on.
-
-        timestep: float
-            The time step in ASE time units.
-
-        trajectory: Trajectory object or str  (optional)
-            Attach trajectory object.  If *trajectory* is a string a
-            Trajectory will be constructed.  Default: None.
-
-        logfile: file object or str (optional)
-            If *logfile* is a string, a file with that name will be opened.
-            Use '-' for stdout.  Default: None.
-
-        loginterval: int (optional)
-            Only write a log line for every *loginterval* time steps.  
-            Default: 1
-
-        append_trajectory: boolean
-            Defaults to False, which causes the trajectory file to be
-            overwriten each time the dynamics is restarted from scratch.
-            If True, the new structures are appended to the trajectory
-            file instead.
-
-        dt: float (deprecated)
-            Alias for timestep.
-        """
-        if dt is not None:
-            warnings.warn(FutureWarning('dt variable is deprecated; please use timestep.'))
-            timestep = dt
-        if timestep is None:
-            raise TypeError('Missing timestep argument')
-
-        MolecularDynamics.__init__(self, atoms, timestep, trajectory, logfile,
-                                   loginterval,
-                                   append_trajectory=append_trajectory)
+    """MD with NVE ensemble and velocity Verlet time integration."""
 
     def step(self, forces=None):
 
         atoms = self.atoms
 
         if forces is None:
-            forces = atoms.get_forces()
+            forces = atoms.get_forces(md=True)
 
         p = atoms.get_momenta()
         p += 0.5 * self.dt * forces
-        masses = atoms.get_masses()[:, np.newaxis]
+        masses = atoms.get_masses()[:, None]
         r = atoms.get_positions()
 
         # if we have constraints then this will do the first part of the

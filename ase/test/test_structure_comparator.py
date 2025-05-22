@@ -1,13 +1,19 @@
+# fmt: off
 from random import randint
+
 import numpy as np
 import pytest
-from ase.utils.structure_comparator import SymmetryEquivalenceCheck
-from ase.utils.structure_comparator import SpgLibNotFoundError
-from ase.build import bulk
+
 from ase import Atoms
-from ase.spacegroup import spacegroup, crystal
+from ase.build import bulk
+from ase.spacegroup import crystal, spacegroup
+from ase.utils.structure_comparator import (
+    SpgLibNotFoundError,
+    SymmetryEquivalenceCheck,
+)
 
 heavy_test = False
+
 
 @pytest.fixture(scope='module')
 def comparator():
@@ -95,10 +101,12 @@ def test_rotations_to_standard(comparator):
     s1 = Atoms("Al")
     tol = 1E-6
     num_tests = 4
+    rng = np.random.RandomState(42)
+
     if heavy_test:
         num_tests = 20
     for _ in range(num_tests):
-        cell = np.random.rand(3, 3) * 4.0 - 4.0
+        cell = rng.random((3, 3)) * 4.0 - 4.0
         s1.set_cell(cell)
         new_cell = comparator._standarize_cell(s1).get_cell().T
         assert abs(new_cell[1, 0]) < tol

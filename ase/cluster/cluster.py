@@ -1,4 +1,7 @@
+# fmt: off
+
 import math
+
 import numpy as np
 
 from ase import Atoms
@@ -38,9 +41,9 @@ class Cluster(Atoms, ClusterBase):
             c = self.get_positions().mean(axis=0)
             r = np.dot(self.get_positions() - c, n).max()
             d = self.get_layer_distance(s, 2)
-            l = 2 * np.round(r / d).astype(int)
+            l_ = 2 * np.round(r / d).astype(int)
 
-            ls = np.arange(l - 1, l + 2)
+            ls = np.arange(l_ - 1, l_ + 2)
             ds = np.array([self.get_layer_distance(s, i) for i in ls])
 
             mask = (np.abs(ds - r) < 1e-10)
@@ -53,11 +56,12 @@ class Cluster(Atoms, ClusterBase):
         """Returns an estimate of the cluster diameter based on two different
         methods.
 
-        method = 'volume': Returns the diameter of a sphere with the
-                           same volume as the atoms. (Default)
-        
-        method = 'shape': Returns the averaged diameter calculated from the
-                          directions given by the defined surfaces.
+        Parameters
+        ----------
+        method : {'volume', 'shape'}
+            'volume' (default) returns the diameter of a sphere with the same
+            volume as the atoms. 'shape' returns the averaged diameter
+            calculated from the directions given by the defined surfaces.
         """
 
         if method == 'shape':

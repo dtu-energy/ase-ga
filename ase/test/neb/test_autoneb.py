@@ -1,11 +1,18 @@
-from ase.autoneb import AutoNEB
-from ase.build import fcc211, add_adsorbate
+# fmt: off
+from pathlib import Path
+
+import pytest
+
+from ase import Atoms
+from ase.build import add_adsorbate, fcc211
+from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
-from ase.neb import NEBTools
-from ase.optimize import QuasiNewton
+from ase.mep import AutoNEB, NEBTools
+from ase.optimize import BFGS, QuasiNewton
 
 
-def test_autoneb(asap3):
+@pytest.mark.optimize()
+def test_autoneb(asap3, testdir):
     EMT = asap3.EMT
     fmax = 0.02
 
@@ -39,7 +46,7 @@ def test_autoneb(asap3):
 
     autoneb = AutoNEB(attach_calculators,
                       prefix='neb',
-                      optimizer='BFGS',
+                      optimizer=BFGS,
                       n_simul=3,
                       n_max=7,
                       fmax=fmax,
@@ -50,3 +57,49 @@ def test_autoneb(asap3):
 
     nebtools = NEBTools(autoneb.all_images)
     assert abs(nebtools.get_barrier()[0] - 0.937) < 1e-3
+
+
+@pytest.mark.optimize()
+def test_Au2Ag(testdir):
+    def attach_calculators(images):
+        for i in range(len(images)):
+            images[i].calc = EMT()
+
+    d = 4
+    initial = Atoms('Au2Ag',
+                    positions=((-d, 0, 0), (-d / 2, 0, 0), (d, 0, 0)))
+
+    middle = initial.copy()
+    middle[1].position[0] = 0
+
+    final = initial.copy()
+    final[1].position[0] += d
+
+    attach_calculators([initial, middle, final])
+    for i, image in enumerate([initial, middle, final]):
+        image.set_constraint(FixAtoms([0, 2]))
+
+    fmax = 0.05
+    for i, image in enumerate([initial, final]):
+        opt = QuasiNewton(image)
+        opt.run(fmax=fmax)
+    middle.get_forces()
+
+    prefix = Path('subdir') / 'neb'
+    prefix.parent.mkdir()
+    for i, image in enumerate([initial, middle, final]):
+        image.write(f'{prefix}00{i}.traj')
+
+    autoneb = AutoNEB(attach_calculators,
+                      prefix=prefix,
+                      optimizer=QuasiNewton,
+                      n_simul=1,
+                      n_max=5,
+                      fmax=fmax,
+                      k=0.5,
+                      parallel=False,
+                      maxsteps=[20, 1000])
+    autoneb.run()
+
+    nebtools = NEBTools(autoneb.all_images)
+    assert nebtools.get_barrier()[0] == pytest.approx(4.185, 1e-3)

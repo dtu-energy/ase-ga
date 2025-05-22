@@ -1,3 +1,5 @@
+# fmt: off
+
 import os
 
 import ase.db
@@ -26,7 +28,7 @@ def dcdft():
         words = line.split()
         symbol = words.pop(0)
         vol, B, Bp = (float(x) for x in words)
-        filename = 'primCIFs/' + symbol + '.cif'
+        filename = f'primCIFs/{symbol}.cif'
         atoms = read(filename)
         if symbol in ['Li', 'Na']:
             niggli_reduce(atoms)
@@ -42,10 +44,8 @@ def dcdft():
                 magmoms[len(atoms) // 2:] = [-M] * (len(atoms) // 2)
             atoms.set_initial_magnetic_moments(magmoms)
 
-        extra = {}
         exp = experiment.get(symbol, [])
-        for key, val in zip(['exp_volume', 'exp_B', 'exp_Bp'], exp):
-            extra[key] = val
+        extra = dict(zip(['exp_volume', 'exp_B', 'exp_Bp'], exp))
         con.write(atoms, name=symbol,
                   wien2k_B=B, wien2k_Bp=Bp, wien2k_volume=vol,
                   **extra)

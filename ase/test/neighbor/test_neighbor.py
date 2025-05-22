@@ -1,13 +1,58 @@
-import numpy.random as random
+# fmt: off
+"""Tests for NeighborList"""
 import numpy as np
 import pytest
+
 from ase import Atoms
-from ase.neighborlist import (NeighborList, PrimitiveNeighborList,
-                              NewPrimitiveNeighborList)
 from ase.build import bulk
+from ase.neighborlist import (
+    NeighborList,
+    NewPrimitiveNeighborList,
+    PrimitiveNeighborList,
+)
 
 
-def count(nl, atoms):
+@pytest.mark.parametrize(
+    'primitive',
+    [PrimitiveNeighborList, NewPrimitiveNeighborList],
+)
+@pytest.mark.parametrize('bothways', [False, True])
+@pytest.mark.parametrize('self_interaction', [False, True])
+@pytest.mark.parametrize('sorted', [False, True])
+def test_unique(
+    sorted: bool,
+    self_interaction: bool,
+    bothways: bool,
+    primitive,
+):
+    """Test if there are no duplicates in the neighbor lists"""
+    atoms = Atoms('H2', positions=[(0, 0, 0), (0, 0, 1)])
+    nl = NeighborList(
+        [0.5, 0.5],
+        skin=0.1,
+        sorted=sorted,
+        self_interaction=self_interaction,
+        bothways=bothways,
+        primitive=primitive,
+    )
+    nl.update(atoms)
+    tmp = []
+    for i in range(len(atoms)):
+        neighbors, offsets = nl.get_neighbors(i)
+        tmp += [(i, n, *o) for n, o in zip(neighbors, offsets)]
+    assert len(set(tmp)) == len(tmp)
+
+
+def count(nl: NeighborList, atoms: Atoms):
+    """Count the numbers of neighboring atoms for all the atoms
+
+    Returns
+    -------
+    d : float
+        Sum of distances over all nearest-neighbor pairs
+    c : npt.NDArray[np.int_]
+        Numbers of neighboring atoms for all the atoms
+    """
     c = np.zeros(len(atoms), int)
     R = atoms.get_positions()
     cell = atoms.get_cell()
@@ -23,33 +68,42 @@ def count(nl, atoms):
 
 # scipy sparse uses matrix subclass internally
 @pytest.mark.filterwarnings('ignore:the matrix subclass')
-@pytest.mark.slow
-def test_supercell():
+@pytest.mark.slow()
+@pytest.mark.parametrize('sorted', [False, True])
+def test_supercell(sorted):
+    """Test if NeighborList works for a supercell as expected"""
     atoms = Atoms(numbers=range(10),
                   cell=[(0.2, 1.2, 1.4),
                         (1.4, 0.1, 1.6),
                         (1.3, 2.0, -0.1)])
-    atoms.set_scaled_positions(3 * random.random((10, 3)) - 1)
+    rng = np.random.RandomState(42)
+    atoms.set_scaled_positions(3 * rng.random((10, 3)) - 1)
 
-    for sorted in [False, True]:
-        for p1 in range(2):
-            for p2 in range(2):
-                for p3 in range(2):
-                    # print(p1, p2, p3)
-                    atoms.set_pbc((p1, p2, p3))
-                    nl = NeighborList(atoms.numbers * 0.2 + 0.5,
-                                      skin=0.0, sorted=sorted)
-                    nl.update(atoms)
-                    d, c = count(nl, atoms)
-                    atoms2 = atoms.repeat((p1 + 1, p2 + 1, p3 + 1))
-                    nl2 = NeighborList(atoms2.numbers * 0.2 + 0.5,
-                                       skin=0.0, sorted=sorted)
-                    nl2.update(atoms2)
-                    d2, c2 = count(nl2, atoms2)
-                    c2.shape = (-1, 10)
-                    dd = d * (p1 + 1) * (p2 + 1) * (p3 + 1) - d2
-                    assert abs(dd) < 1e-10
-                    assert not (c2 - c).any()
+    for p1 in range(2):
+        for p2 in range(2):
+            for p3 in range(2):
+                # print(p1, p2, p3)
+                atoms.set_pbc((p1, p2, p3))
+                cutoffs = atoms.numbers * 0.2 + 0.5
+                nl = NeighborList(cutoffs, skin=0.0, sorted=sorted)
+                nl.update(atoms)
+                d, c = count(nl, atoms)
+
+                atoms2 = atoms.repeat((p1 + 1, p2 + 1, p3 + 1))
+                cutoffs2 = atoms2.numbers * 0.2 + 0.5
+                nl2 = NeighborList(cutoffs2, skin=0.0, sorted=sorted)
+                nl2.update(atoms2)
+                d2, c2 = count(nl2, atoms2)
+
+                c2.shape = (-1, 10)  # row: images, column: atoms
+
+                # if the sum of nearest-neighbor distances gets larger
+                # according to the supercell size
+                dd = d * (p1 + 1) * (p2 + 1) * (p3 + 1) - d2
+                assert abs(dd) < 1e-10
+
+                # if each repeated image has the same numbers of neighbors
+                assert not (c2 - c).any()
 
 
 def test_H2():
@@ -102,6 +156,8 @@ def test_fcc():
         assert len(nl.get_neighbors(a)[0]) == 12
     assert not np.any(nl.get_neighbors(13)[1])
 
+
+def test_use_scaled_positions():
     c = 0.0058
     for NeighborListClass in [PrimitiveNeighborList, NewPrimitiveNeighborList]:
         nl = NeighborListClass([c, c],
@@ -128,61 +184,56 @@ def test_empty_neighbor_list():
               np.zeros((0, 3)))
 
 
-def test_hexagonal_cell_and_large_cutoff():
-    # Test hexagonal cell and large cutoff
+@pytest.mark.parametrize('bothways', [False, True])
+@pytest.mark.parametrize('self_interaction', [False, True])
+@pytest.mark.parametrize('sort', [False, True])
+def test_equivalence_of_primitive_classes(sort, self_interaction, bothways):
+    """Test if two primitive neighbor-list classes make the same naighbors"""
+    # diamond structure in the primitive cell
     pbc_c = np.array([True, True, True])
-    cutoff_a = np.array([8.0, 8.0])
     cell_cv = np.array([[0., 3.37316113, 3.37316113],
                         [3.37316113, 0., 3.37316113],
                         [3.37316113, 3.37316113, 0.]])
     spos_ac = np.array([[0., 0., 0.],
                         [0.25, 0.25, 0.25]])
+    natoms = len(spos_ac)
 
-    nl = PrimitiveNeighborList(cutoff_a, skin=0.0, sorted=True,
-                               use_scaled_positions=True)
-    nl2 = NewPrimitiveNeighborList(cutoff_a, skin=0.0, sorted=True,
-                                   use_scaled_positions=True)
-    nl.update(pbc_c, cell_cv, spos_ac)
-    nl2.update(pbc_c, cell_cv, spos_ac)
+    cutoff_a = np.array([8.0, 8.0])
 
-    a0, offsets0 = nl.get_neighbors(0)
-    b0 = np.zeros_like(a0)
-    d0 = np.dot(spos_ac[a0] + offsets0 - spos_ac[0], cell_cv)
-    a1, offsets1 = nl.get_neighbors(1)
-    d1 = np.dot(spos_ac[a1] + offsets1 - spos_ac[1], cell_cv)
-    b1 = np.ones_like(a1)
+    info = [[] for _ in range(2)]  # neighbor info collector for each primitive
+    primitives = [PrimitiveNeighborList, NewPrimitiveNeighborList]
+    for ip, primitive in enumerate(primitives):
+        nl = primitive(
+            cutoff_a,
+            skin=0.0,
+            sorted=sort,
+            self_interaction=self_interaction,
+            bothways=bothways,
+            use_scaled_positions=True,
+        )
+        nl.update(pbc_c, cell_cv, spos_ac)
 
-    a = np.concatenate([a0, a1])
-    b = np.concatenate([b0, b1])
-    d = np.concatenate([d0, d1])
-    _a = np.concatenate([a, b])
-    _b = np.concatenate([b, a])
-    a = _a
-    b = _b
-    d = np.concatenate([d, -d])
+        # collect neighbor info into a list of tuples
+        # each tuple has the form (i1, i2, o1, o2, o3)
+        # i1: 1st atom
+        # i2: 2nd atom
+        # o1: offset along 1st cell vector
+        # o2: offset along 2nd cell vector
+        # o3: offset along 3rd cell vector
+        for i in range(natoms):
+            info[ip].extend([(i, n, *o) for n, o in zip(*nl.get_neighbors(i))])
 
-    a0, offsets0 = nl2.get_neighbors(0)
-    d0 = np.dot(spos_ac[a0] + offsets0 - spos_ac[0], cell_cv)
-    b0 = np.zeros_like(a0)
-    a1, offsets1 = nl2.get_neighbors(1)
-    d1 = np.dot(spos_ac[a1] + offsets1 - spos_ac[1], cell_cv)
-    b1 = np.ones_like(a1)
+    def reverse(t: tuple):
+        return t[1], t[0], -t[2], -t[3], -t[4]
 
-    a2 = np.concatenate([a0, a1])
-    b2 = np.concatenate([b0, b1])
-    d2 = np.concatenate([d0, d1])
-    _a2 = np.concatenate([a2, b2])
-    _b2 = np.concatenate([b2, a2])
-    a2 = _a2
-    b2 = _b2
-    d2 = np.concatenate([d2, -d2])
+    for ip in range(2):
+        # (i1, i2, +o1, +o2, +o3) and (i2, i1, -o1, -o2, -o3) is the same pair
+        # the following guarantees i0 <= i1
+        info[ip] = [t if t[0] <= t[1] else reverse(t) for t in info[ip]]
+        info[ip] = sorted(info[ip])  # sort by i1, i2, o1, o2, o3
 
-    i = np.argsort(d[:, 0] + d[:, 1] * 1e2 + d[:, 2] * 1e4 + a * 1e6)
-    i2 = np.argsort(d2[:, 0] + d2[:, 1] * 1e2 + d2[:, 2] * 1e4 + a2 * 1e6)
-
-    assert np.all(a[i] == a2[i2])
-    assert np.all(b[i] == b2[i2])
-    assert np.allclose(d[i], d2[i2])
+    # check if the both primitive classes provide the same neighbors
+    assert np.all(info[0] == info[1])
 
 
 def test_small_cell_and_large_cutoff():

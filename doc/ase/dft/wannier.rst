@@ -12,7 +12,7 @@ class :class:`Wannier`. The page is organized as follows:
 * `The Wannier class`_ : A description of how the Wannier class is
   used, and the methods defined within.
 
-  
+
 Introduction
 ============
 
@@ -48,9 +48,19 @@ eigenvalues (this is irrelevant, as the fixed space is usually chosen
 large enough, i.e. high enough above the fermilevel, that the
 remaining DFT eigenvalues are meaningless anyway).
 
-For the theory behind this method see the paper "Partly Occupied
-Wannier Functions" Thygesen, Hansen and Jacobsen, *Phys. Rev. Lett*,
-Vol. **94**, 26405 (2005).
+The theory behind this method can be found in
+"Partly Occupied Wannier Functions" Thygesen, Hansen, and Jacobsen,
+*Phys. Rev. Lett*, Vol. **94**, 26405 (2005),
+:doi:`10.1103/PhysRevLett.94.026405`.
+
+An improved localization method based on penalizing the
+spread functional proportionally to the variance of spread distributions
+has since been published as
+"Spread-balanced Wannier functions:
+Robust and automatable orbital localization"
+Fontana, Larsen, Olsen, and Thygesen,
+*Phys. Rev. B* **104**, 125140 (2021),
+:doi:`10.1103/PhysRevB.104.125140`.
 
 
 The Wannier class
@@ -61,10 +71,10 @@ Usual invocation::
   from ase.dft import Wannier
   wan = Wannier(nwannier=18, calc=GPAW('save.gpw'), fixedstates=15)
   wan.localize() # Optimize rotation to give maximal localization
-  wan.save('file.pickle') # Save localization and rotation matrix
+  wan.save('wannier.json') # Save localization and rotation matrix
 
   # Re-load using saved wannier data
-  wan = Wannier(nwannier=18, calc=calc, fixedstates=15, file='file.pickle')
+  wan = Wannier(nwannier=18, calc=calc, fixedstates=15, file='wannier.json')
 
   # Write a cube file
   wan.write_cube(index=5, fname='wannierfunction5.cube')
@@ -72,36 +82,13 @@ Usual invocation::
 For examples of how to use the **Wannier** class, see the
 :ref:`wannier tutorial` tutorial.
 
+To enable the improved localization method from the 2021 paper,
+use ``Wannier(functional='var', ...)``.
+Computations from the 2021 paper were performed using
+``Wannier(functional='var', initialwannier='orbitals', ...)``.
+
 .. autoclass:: Wannier
    :members:
-
-In Dacapo, the inialwannier keyword can be a list as described below:
-
-    Setup an initial set of Wannier orbitals.
-    *initialwannier* can set up a starting guess for the Wannier
-    functions.  This is important to speed up convergence in
-    particular for large systems For transition elements with **d**
-    electrons you will always find 5 highly localized **d**-orbitals
-    centered at the atom.  Placing 5 **d**-like orbitals with a radius
-    of 0.4 Angstroms and center at atom no. 7, and 3 **p**-like
-    orbitals with a radius of 0.4 Angstroms and center at atom no. 27
-    looks like this::
-
-       initialwannier = [[[7],2,0.4],[[27],1,0.4]]
-
-    Placing only the l=2, m=-2 and m=-1 orbitals at atom no. 7 looks
-    like this::
-
-       initialwannier = [[[7],2,-2,0.4],[[7],2,-1,0.4]]
-
-    I.e. if you do not specify the m quantum number all allowed values
-    are used.  Instead of placing an orbital at an atom, you can place
-    it at a specified position. For example the following::
-
-       initialwannier = [[[0.5,0.5,0.5],0,0.5]]
-
-    places an **s** orbital with radius 0.5 Angstroms at the position
-    (0.5, 0.5, 0.5) in scaled coordinates of the unit cell.
 
 .. note:: For calculations using **k**-points, make sure that the
    `\Gamma`-point is included in the **k**-point grid.

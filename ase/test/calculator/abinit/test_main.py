@@ -1,8 +1,10 @@
-import pytest
+# fmt: off
 import numpy as np
-from ase.build import bulk, molecule
-from ase.units import Hartree
+import pytest
 
+from ase.build import bulk, molecule
+from ase.io.abinit import read_abinit_gsr
+from ase.units import Hartree
 
 calc = pytest.mark.calculator
 
@@ -32,16 +34,15 @@ def run(atoms):
     return atoms.calc.results
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @calc('abinit')
-@calc('abinit', v8_legacy_format=False)
 def test_si(factory):
     atoms = bulk('Si')
     atoms.calc = factory.calc(nbands=4 * len(atoms), kpts=[4, 4, 4])
     run(atoms)
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.parametrize('pps', ['fhi', 'paw'])
 @calc('abinit')
 def test_au(factory, pps):
@@ -56,41 +57,50 @@ def test_au(factory, pps):
     )
     # Somewhat awkward to set pawecutdg also when we are not doing paw,
     # but it's an error to pass None as pawecutdg.
-    run(atoms)
+    dict_abo = run(atoms)
+
+    # test the read_abinit_gsr function
+    dict_gsr = read_abinit_gsr(atoms.calc.directory / 'abinito_GSR.nc')
+
+    atoms_gsr = dict_gsr["atoms"]
+    assert atoms_gsr.cell == pytest.approx(atoms.cell, 1e-5)
+    assert atoms_gsr.positions == pytest.approx(atoms.positions, 1e-5)
+    assert atoms_gsr.get_potential_energy() == pytest.approx(dict_gsr['energy'])
+    assert atoms_gsr.get_forces() == pytest.approx(dict_gsr['forces'])
+    assert atoms_gsr.get_stress() == pytest.approx(dict_gsr['stress'])
+
+    for key in required_quantities:
+        assert dict_gsr[key] == pytest.approx(dict_abo[key], 1e-3)
 
 
-@pytest.fixture
-def fe_atoms(abinit_factory):
-    atoms = bulk('Fe')
-    atoms.set_initial_magnetic_moments([1])
-    calc = abinit_factory.calc(nbands=8,
-                               kpts=[2, 2, 2])
-    atoms.calc = calc
-    return atoms
+@pytest.fixture()
+def fe_atoms():
+    return bulk('Fe')
 
 
-def test_fe_fixed_magmom(fe_atoms):
-    fe_atoms.calc.set(spinmagntarget=2.3)
+def getkwargs(**kw):
+    return dict(nbands=8, kpts=[2, 2, 2])
+
+
+@pytest.mark.calculator_lite()
+@calc('abinit', occopt=7, **getkwargs())
+@calc('abinit', spinmagntarget=2.3, **getkwargs())
+def test_fe_magmom(factory, fe_atoms):
+    fe_atoms.calc = factory.calc()
     run(fe_atoms)
 
 
-@pytest.mark.calculator_lite
-def test_fe_any_magmom(fe_atoms):
-    fe_atoms.calc.set(occopt=7)
-    run(fe_atoms)
-
-
-@calc('abinit')
+@calc('abinit', nbands=8)
 def test_h2o(factory):
     atoms = molecule('H2O', vacuum=2.5)
-    atoms.calc = factory.calc(nbands=8)
+    atoms.calc = factory.calc()
     run(atoms)
 
 
-@calc('abinit')
+@calc('abinit', nbands=8, occopt=7)
 def test_o2(factory):
     atoms = molecule('O2', vacuum=2.5)
-    atoms.calc = factory.calc(nbands=8, occopt=7)
+    atoms.calc = factory.calc()
     run(atoms)
     magmom = atoms.get_magnetic_moment()
     assert magmom == pytest.approx(2, 1e-2)

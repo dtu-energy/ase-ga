@@ -1,4 +1,6 @@
+# fmt: off
 from numpy.testing import assert_allclose
+
 import ase.build
 from ase.calculators.emt import EMT
 

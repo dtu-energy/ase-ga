@@ -236,7 +236,7 @@ of code::
 or::
 
   import stuff
-  print(stuff.f(1, 2)(
+  print(stuff.f(1, 2))
   print(stuff.C(1).m(2))
 
 or::

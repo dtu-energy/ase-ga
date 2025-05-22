@@ -1,3 +1,5 @@
+# fmt: off
+
 # flake8: noqa
 """Definition of the XrDebye class.
 
@@ -8,28 +10,28 @@ Also contains routine for calculation of atomic form factors and
 X-ray wavelength dict.
 """
 
-from math import exp, pi, sin, sqrt, cos, acos
-import numpy as np
+from math import acos, cos, exp, pi, sin, sqrt
 
+import numpy as np
 
 from ase.data import atomic_numbers
 
 # Table (1) of
 # D. WAASMAIER AND A. KIRFEL, Acta Cryst. (1995). A51, 416-431
 waasmaier = {
-     #       a1         b1         a2         b2         a3         b3          a4         b4         a5         b5         c
-     'C': [ 2.657506, 14.780758,  1.078079,  0.776775,  1.490909, 42.086843, -4.241070,  -0.000294,  0.713791, 0.239535,   4.297983],
-     'N': [11.893780,  0.000158,  3.277479, 10.232723,  1.858092, 30.344690,  0.858927,   0.656065,  0.912985, 0.217287, -11.804902],
-     'O': [ 2.960427, 14.182259,  2.5088111, 5.936858,  0.637053,  0.112726,  0.722838,  34.958481,  1.142756, 0.390240,   0.027014],
-     'P': [ 1.950541,  0.908139,  4.146930, 27.044953,  1.494560,  0.071280,  1.522042,  67.520190,  5.729711, 1.981173,   0.155233],
-     'S': [ 6.372157,  1.514347,  5.154568, 22.092528,  1.473732,  0.061373,  1.635073,  55.445176,  1.209372, 0.646925,   0.154722],
-    'Cl': [ 1.446071,  0.052357,  6.870609,  1.193165,  6.151801, 18.343416,  1.750347,  46.398394,  0.634168, 0.401005,   0.146773],
-    'Ni': [13.521865,  4.077277,  6.947285,  0.286763,  3.866028, 14.622634,  2.135900,  71.966078,  4.284731, 0.004437,  -2.762697],
-    'Cu': [14.014192,  3.738280,  4.784577,  0.003744,  5.056806, 13.034982,  1.457971,  72.554793,  6.932996, 0.265666,  -3.774477],
-    'Pd': [ 6.121511,  0.062549,  4.784063,  0.784031, 16.631683,  8.751391,  4.318258,  34.489983, 13.246773, 0.784031,   0.883099],
-    'Ag': [ 6.073874,  0.055333, 17.155437,  7.896512,  4.173344, 28.443739,  0.852238, 110.376108, 17.988685, 0.716809,   0.756603],
-    'Pt': [31.273891,  1.316992, 18.445441,  8.797154, 17.063745,  0.124741,  5.555933,  40.177994,  1.575270, 1.316997,   4.050394],
-    'Au': [16.777389,  0.122737, 19.317156,  8.621570, 32.979682,  1.256902,  5.595453,  38.008821, 10.576854, 0.000601,  -6.279078],
+    #       a1         b1         a2         b2         a3         b3          a4         b4         a5         b5         c
+    'C': [2.657506, 14.780758, 1.078079, 0.776775, 1.490909, 42.086843, -4.241070, -0.000294, 0.713791, 0.239535, 4.297983],
+    'N': [11.893780, 0.000158, 3.277479, 10.232723, 1.858092, 30.344690, 0.858927, 0.656065, 0.912985, 0.217287, -11.804902],
+    'O': [2.960427, 14.182259, 2.5088111, 5.936858, 0.637053, 0.112726, 0.722838, 34.958481, 1.142756, 0.390240, 0.027014],
+    'P': [1.950541, 0.908139, 4.146930, 27.044953, 1.494560, 0.071280, 1.522042, 67.520190, 5.729711, 1.981173, 0.155233],
+    'S': [6.372157, 1.514347, 5.154568, 22.092528, 1.473732, 0.061373, 1.635073, 55.445176, 1.209372, 0.646925, 0.154722],
+    'Cl': [1.446071, 0.052357, 6.870609, 1.193165, 6.151801, 18.343416, 1.750347, 46.398394, 0.634168, 0.401005, 0.146773],
+    'Ni': [13.521865, 4.077277, 6.947285, 0.286763, 3.866028, 14.622634, 2.135900, 71.966078, 4.284731, 0.004437, -2.762697],
+    'Cu': [14.014192, 3.738280, 4.784577, 0.003744, 5.056806, 13.034982, 1.457971, 72.554793, 6.932996, 0.265666, -3.774477],
+    'Pd': [6.121511, 0.062549, 4.784063, 0.784031, 16.631683, 8.751391, 4.318258, 34.489983, 13.246773, 0.784031, 0.883099],
+    'Ag': [6.073874, 0.055333, 17.155437, 7.896512, 4.173344, 28.443739, 0.852238, 110.376108, 17.988685, 0.716809, 0.756603],
+    'Pt': [31.273891, 1.316992, 18.445441, 8.797154, 17.063745, 0.124741, 5.555933, 40.177994, 1.575270, 1.316997, 4.050394],
+    'Au': [16.777389, 0.122737, 19.317156, 8.621570, 32.979682, 1.256902, 5.595453, 38.008821, 10.576854, 0.000601, -6.279078],
 }
 
 wavelengths = {
@@ -45,6 +47,7 @@ class XrDebye:
     """
     Class for calculation of XRD or SAXS patterns.
     """
+
     def __init__(self, atoms, wavelength, damping=0.04,
                  method='Iwasa', alpha=1.01, warn=True):
         """
@@ -120,6 +123,7 @@ class XrDebye:
             pre *= costh / (1. + self.alpha * cos2th**2)
 
         f = {}
+
         def atomic(symbol):
             """
             get atomic factor, using cache.
@@ -141,7 +145,8 @@ class XrDebye:
 
         for i in range(len(self.atoms)):
             vr = pos - pos[i]
-            I += np.sum(fa[i] * fa * np.sinc(2 * s * np.sqrt(np.sum(vr * vr, axis=1))))
+            I += np.sum(fa[i] * fa * np.sinc(2 * s *
+                        np.sqrt(np.sum(vr * vr, axis=1))))
 
         return pre * I
 
@@ -197,7 +202,7 @@ class XrDebye:
             list of intensities calculated for values given in ``x``.
         """
         self.mode = mode.upper()
-        assert(mode in ['XRD', 'SAXS'])
+        assert (mode in ['XRD', 'SAXS'])
 
         result = []
         if mode == 'XRD':
@@ -212,7 +217,7 @@ class XrDebye:
                 s = 2 * sin(twotheta * pi / 180 / 2.0) / self.wavelength
                 result.append(self.get(s))
                 if verbose:
-                    print('%.3f\t%f' % (twotheta, result[-1]))
+                    print(f'{twotheta:.3f}\t{result[-1]:f}')
         elif mode == 'SAXS':
             if x is None:
                 self.twotheta_list = np.logspace(-3, -0.3, 100)
@@ -225,29 +230,28 @@ class XrDebye:
                 s = q / (2 * pi)
                 result.append(self.get(s))
                 if verbose:
-                    print('%.4f\t%f' % (q, result[-1]))
+                    print(f'{q:.4f}\t{result[-1]:f}')
         self.intensity_list = np.array(result)
         return self.intensity_list
 
     def write_pattern(self, filename):
         """ Save calculated data to file specified by ``filename`` string."""
-        f = open(filename, 'w')
-        f.write('# Wavelength = %f\n' % self.wavelength)
+        with open(filename, 'w') as fd:
+            self._write_pattern(fd)
+
+    def _write_pattern(self, fd):
+        fd.write('# Wavelength = %f\n' % self.wavelength)
         if self.mode == 'XRD':
             x, y = self.twotheta_list, self.intensity_list
-            f.write('# 2theta \t Intesity\n')
+            fd.write('# 2theta \t Intesity\n')
         elif self.mode == 'SAXS':
             x, y = self.q_list, self.intensity_list
-            f = open(filename, 'w')
-            f.write('# q(1/A)\tIntesity\n')
+            fd.write('# q(1/A)\tIntesity\n')
         else:
-            f.close()
             raise Exception('No data available, call calc_pattern() first.')
 
         for i in range(len(x)):
-            f.write('  %f\t%f\n' % (x[i], y[i]))
-
-        f.close()
+            fd.write(f'  {x[i]:f}\t{y[i]:f}\n')
 
     def plot_pattern(self, filename=None, show=False, ax=None):
         """ Plot XRD or SAXS depending on filled data

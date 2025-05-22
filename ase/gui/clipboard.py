@@ -1,5 +1,5 @@
 from ase import Atoms
-from ase.io.jsonio import encode, decode
+from ase.io.jsonio import decode, encode
 
 
 class AtomsClipboard:

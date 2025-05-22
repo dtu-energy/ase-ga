@@ -1,14 +1,15 @@
+# fmt: off
 import os
 import sys
 import threading
 
-import pytest
 import numpy as np
+import pytest
 
-from ase.calculators.socketio import SocketClient, SocketIOCalculator
 from ase.calculators.emt import EMT
-from ase.optimize import BFGS
+from ase.calculators.socketio import SocketClient, SocketIOCalculator
 from ase.cluster.icosahedron import Icosahedron
+from ase.optimize import BFGS
 
 # If multiple test suites are running, we don't want port clashes.
 # Thus we generate a port from the pid.
@@ -18,8 +19,9 @@ pid = os.getpid()
 inet_port = (3141 + pid) % 65536
 # We could also use a Unix port perhaps, but not yet implemented
 
-#unixsocket = 'grumble'
+# unixsocket = 'grumble'
 timeout = 20.0
+
 
 def getatoms():
     return Icosahedron('Au', 3)
@@ -43,8 +45,8 @@ def run_server(launchclient=True, sockettype='unix'):
         if launchclient:
             thread = launch_client_thread(port=port, unixsocket=unixsocket)
         atoms.calc = calc
-        opt = BFGS(atoms)
-        opt.run()
+        with BFGS(atoms) as opt:
+            opt.run()
 
     if launchclient:
         thread.join()
@@ -62,17 +64,19 @@ def run_server(launchclient=True, sockettype='unix'):
     ferr = np.abs(forces - ref_forces).max()
 
     perr = np.abs(refatoms.positions - atoms.positions).max()
-    print('errs e={} f={} pos={}'.format(eerr, ferr, perr))
+    print(f'errs e={eerr} f={ferr} pos={perr}')
     assert eerr < 1e-11, eerr
     assert ferr < 1e-11, ferr
     assert perr < 1e-11, perr
 
+
 def run_normal():
     atoms = getatoms()
     atoms.calc = EMT()
-    opt = BFGS(atoms)
-    opt.run()
+    with BFGS(atoms) as opt:
+        opt.run()
     return atoms
+
 
 def run_client(port, unixsocket):
     atoms = getatoms()
@@ -98,11 +102,14 @@ def launch_client_thread(port, unixsocket):
 
 unix_only = pytest.mark.skipif(os.name != 'posix',
                                reason='requires unix platform')
+
+
+@pytest.mark.optimize()
 @pytest.mark.parametrize('sockettype', [
     'inet',
     pytest.param('unix', marks=unix_only),
 ])
-def test_ipi_protocol(sockettype):
+def test_ipi_protocol(sockettype, testdir):
     try:
         run_server(sockettype=sockettype)
     except OSError as err:

@@ -1,13 +1,17 @@
+# fmt: off
 from math import sqrt
-from ase import Atoms, Atom
-from ase.constraints import FixAtoms
+
+import pytest
+
+from ase import Atom, Atoms
 from ase.calculators.emt import EMT
-from ase.optimize import QuasiNewton
+from ase.constraints import FixAtoms
 from ase.io import read
-from ase.visualize import view
+from ase.optimize import QuasiNewton
 
 
-def test_replay():
+@pytest.mark.optimize()
+def test_replay(testdir):
     # Distance between Cu atoms on a (100) surface:
     d = 3.6 / sqrt(2)
     a = Atoms('Cu',
@@ -19,9 +23,6 @@ def test_replay():
     # Approximate height of Ag atom on Cu(100) surfece:
     h0 = 2.0
     a += Atom('Ag', (d / 2, d / 2, h0))
-
-    if 0:
-        view(a)
 
     constraint = FixAtoms(range(len(a) - 1))
     a.calc = EMT()

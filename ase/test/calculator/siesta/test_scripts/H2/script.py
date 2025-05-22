@@ -1,7 +1,8 @@
-from ase.calculators.siesta import Siesta
-from ase.calculators.siesta.parameters import Species, PAOBasisBlock
-from ase.optimize import QuasiNewton
+# fmt: off
 from ase import Atoms
+from ase.calculators.siesta import Siesta
+from ase.calculators.siesta.parameters import PAOBasisBlock, Species
+from ase.optimize import QuasiNewton
 
 atoms = Atoms(
     '3H',

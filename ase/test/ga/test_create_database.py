@@ -1,15 +1,14 @@
-def test_create_database():
-    from ase.ga.data import PrepareDB
-    from ase.ga.data import DataConnection
-    import os
-    import numpy as np
+# fmt: off
+import os
 
-    db_file = 'gadb.db'
-    if os.path.isfile(db_file):
-        os.remove(db_file)
+import numpy as np
+
+from ase.build import fcc111
+from ase.ga.data import DataConnection, PrepareDB
 
 
-    from ase.build import fcc111
+def test_create_database(tmp_path):
+    db_file = tmp_path / 'gadb.db'
 
     atom_numbers = np.array([78, 78, 79, 79])
     slab = fcc111('Ag', size=(4, 4, 2), vacuum=10.)
@@ -29,5 +28,3 @@ def test_create_database():
     assert np.all(slab.numbers == slab_get.numbers)
     assert np.all(slab.get_positions() == slab_get.get_positions())
     assert np.all(an_get == atom_numbers)
-
-    os.remove(db_file)

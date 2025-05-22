@@ -1,13 +1,20 @@
+# fmt: off
+
 """A collection of mutations that can be used."""
+from math import cos, pi, sin
+
 import numpy as np
-from math import cos, sin, pi
-from ase.calculators.lammpslib import convert_cell
-from ase.ga.utilities import (atoms_too_close,
-                              atoms_too_close_two_sets,
-                              gather_atoms_by_tag,
-                              get_rotation_matrix)
-from ase.ga.offspring_creator import OffspringCreator, CombinationMutation
+
 from ase import Atoms
+from ase.calculators.lammps.coordinatetransform import calc_rotated_cell
+from ase.cell import Cell
+from ase.ga.offspring_creator import CombinationMutation, OffspringCreator
+from ase.ga.utilities import (
+    atoms_too_close,
+    atoms_too_close_two_sets,
+    gather_atoms_by_tag,
+    get_rotation_matrix,
+)
 
 
 class RattleMutation(OffspringCreator):
@@ -38,6 +45,7 @@ class RattleMutation(OffspringCreator):
     rng: Random number generator
         By default numpy.random.
     """
+
     def __init__(self, blmin, n_top, rattle_strength=0.8,
                  rattle_prop=0.4, test_dist_to_slab=True, use_tags=False,
                  verbose=False, rng=np.random):
@@ -85,9 +93,9 @@ class RattleMutation(OffspringCreator):
             ok = False
             for tag in np.unique(tags):
                 select = np.where(tags == tag)
-                if self.rng.rand() < self.rattle_prop:
+                if self.rng.random() < self.rattle_prop:
                     ok = True
-                    r = self.rng.rand(3)
+                    r = self.rng.random(3)
                     pos[select] += st * (r - 0.5)
 
             if not ok:
@@ -132,6 +140,7 @@ class PermutationMutation(OffspringCreator):
     rng: Random number generator
         By default numpy.random.
     """
+
     def __init__(self, n_top, probability=0.33, test_dist_to_slab=True,
                  use_tags=False, blmin=None, rng=np.random, verbose=False):
         OffspringCreator.__init__(self, verbose, rng=rng)
@@ -237,6 +246,7 @@ class MirrorMutation(OffspringCreator):
     rng: Random number generator
         By default numpy.random.
     """
+
     def __init__(self, blmin, n_top, reflect=False, rng=np.random,
                  verbose=False):
         OffspringCreator.__init__(self, verbose, rng=rng)
@@ -267,10 +277,7 @@ class MirrorMutation(OffspringCreator):
         top = atoms[len(atoms) - self.n_top: len(atoms)]
         num = top.numbers
         unique_types = list(set(num))
-        nu = dict()
-        for u in unique_types:
-            nu[u] = sum(num == u)
-
+        nu = {u: sum(num == u) for u in unique_types}
         n_tries = 1000
         counter = 0
         changed = False
@@ -283,8 +290,8 @@ class MirrorMutation(OffspringCreator):
             cm = np.average(top.get_positions(), axis=0)
 
             # first select a randomly oriented cutting plane
-            theta = pi * self.rng.rand()
-            phi = 2. * pi * self.rng.rand()
+            theta = pi * self.rng.random()
+            phi = 2. * pi * self.rng.random()
             n = (cos(phi) * sin(theta), sin(phi) * sin(theta), cos(theta))
             n = np.array(n)
 
@@ -296,7 +303,7 @@ class MirrorMutation(OffspringCreator):
 
             # Sort the atoms by their signed distance
             D.sort(key=lambda x: x[1])
-            nu_taken = dict()
+            nu_taken = {}
 
             # Select half of the atoms needed for a full cluster
             p_use = []
@@ -322,7 +329,7 @@ class MirrorMutation(OffspringCreator):
 
             # In the case of an uneven number of
             # atoms we need to add one extra
-            for n in nu.keys():
+            for n in nu:
                 if nu[n] % 2 == 0:
                     continue
                 while sum(n_use == n) > nu[n]:
@@ -371,13 +378,11 @@ class StrainMutation(OffspringCreator):
 
     For more information, see also:
 
-      * `Glass, Oganov, Hansen, Comp. Phys. Comm. 175 (2006) 713-720`__
+      * :doi:`Glass, Oganov, Hansen, Comp. Phys. Comm. 175 (2006) 713-720
+        <10.1016/j.cpc.2006.07.020>`
 
-        __ https://doi.org/10.1016/j.cpc.2006.07.020
-
-      * `Lonie, Zurek, Comp. Phys. Comm. 182 (2011) 372-387`__
-
-        __ https://doi.org/10.1016/j.cpc.2010.07.048
+      * :doi:`Lonie, Zurek, Comp. Phys. Comm. 182 (2011) 372-387
+        <10.1016/j.cpc.2010.07.048>`
 
     After initialization of the mutation, a scaling volume
     (to which each mutated structure is scaled before checking the
@@ -412,6 +417,7 @@ class StrainMutation(OffspringCreator):
     rng: Random number generator
         By default numpy.random.
     """
+
     def __init__(self, blmin, cellbounds=None, stddev=0.7,
                  number_of_variable_cell_vectors=3, use_tags=False,
                  rng=np.random, verbose=False):
@@ -462,7 +468,13 @@ class StrainMutation(OffspringCreator):
         """ Does the actual mutation. """
         cell_ref = atoms.get_cell()
         pos_ref = atoms.get_positions()
-        vol_ref = atoms.get_volume()
+
+        if self.scaling_volume is None:
+            # The scaling_volume has not been set (yet),
+            # so we give it the same volume as the parent
+            vol_ref = atoms.get_volume()
+        else:
+            vol_ref = self.scaling_volume
 
         if self.use_tags:
             tags = atoms.get_tags()
@@ -492,18 +504,17 @@ class StrainMutation(OffspringCreator):
             # applying the strain:
             cell_new = np.dot(strain, cell_ref)
 
-            # convert to lower triangular form
-            cell_new = convert_cell(cell_new)[0].T
+            # convert the submatrix with the variable cell vectors
+            # to a lower triangular form
+            cell_new = calc_rotated_cell(cell_new)
+            for i in range(self.number_of_variable_cell_vectors, 3):
+                cell_new[i] = cell_ref[i]
+
+            cell_new = Cell(cell_new)
 
             # volume scaling:
             if self.number_of_variable_cell_vectors > 0:
-                volume = abs(np.linalg.det(cell_new))
-                if self.scaling_volume is None:
-                    # The scaling_volume has not been set (yet),
-                    # so we give it the same volume as the parent
-                    scaling = vol_ref / volume
-                else:
-                    scaling = self.scaling_volume / volume
+                scaling = vol_ref / cell_new.volume
                 scaling **= 1. / self.number_of_variable_cell_vectors
                 cell_new[:self.number_of_variable_cell_vectors] *= scaling
 
@@ -514,6 +525,9 @@ class StrainMutation(OffspringCreator):
             # ensure non-variable cell vectors are indeed unchanged
             for i in range(self.number_of_variable_cell_vectors, 3):
                 assert np.allclose(cell_new[i], cell_ref[i])
+
+            # check that the volume is correct
+            assert np.isclose(vol_ref, cell_new.volume)
 
             # apply the new unit cell and scale
             # the atomic positions accordingly
@@ -547,9 +561,8 @@ class PermuStrainMutation(CombinationMutation):
 
     For more information, see also:
 
-      * `Lonie, Zurek, Comp. Phys. Comm. 182 (2011) 372-387`__
-
-        __ https://doi.org/10.1016/j.cpc.2010.07.048
+      * :doi:`Lonie, Zurek, Comp. Phys. Comm. 182 (2011) 372-387
+        <10.1016/j.cpc.2010.07.048>`
 
     Parameters:
 
@@ -559,10 +572,11 @@ class PermuStrainMutation(CombinationMutation):
     strainmutation: OffspringCreator instance
         A mutation that mutates by straining.
     """
+
     def __init__(self, permutationmutation, strainmutation, verbose=False):
-        super(PermuStrainMutation, self).__init__(permutationmutation,
-                                                  strainmutation,
-                                                  verbose=verbose)
+        super().__init__(permutationmutation,
+                         strainmutation,
+                         verbose=verbose)
         self.descriptor = 'permustrain'
 
 
@@ -608,6 +622,7 @@ class RotationalMutation(OffspringCreator):
     rng: Random number generator
         By default numpy.random.
     """
+
     def __init__(self, blmin, n_top=None, fraction=0.33, tags=None,
                  min_angle=1.57, test_dist_to_slab=True, rng=np.random,
                  verbose=False):
@@ -667,17 +682,17 @@ class RotationalMutation(OffspringCreator):
                 if len(p) == 2:
                     line = (p[1] - p[0]) / np.linalg.norm(p[1] - p[0])
                     while True:
-                        axis = self.rng.rand(3)
+                        axis = self.rng.random(3)
                         axis /= np.linalg.norm(axis)
                         a = np.arccos(np.dot(axis, line))
                         if np.pi / 4 < a < np.pi * 3 / 4:
                             break
                 else:
-                    axis = self.rng.rand(3)
+                    axis = self.rng.random(3)
                     axis /= np.linalg.norm(axis)
 
                 angle = self.min_angle
-                angle += 2 * (np.pi - self.min_angle) * self.rng.rand()
+                angle += 2 * (np.pi - self.min_angle) * self.rng.random()
 
                 m = get_rotation_matrix(axis, angle)
                 newpos[indices[tag]] = np.dot(m, (p - cop).T).T + cop
@@ -709,8 +724,9 @@ class RattleRotationalMutation(CombinationMutation):
     rotationalmutation: OffspringCreator instance
         A mutation that rotates moieties.
     """
+
     def __init__(self, rattlemutation, rotationalmutation, verbose=False):
-        super(RattleRotationalMutation, self).__init__(rattlemutation,
-                                                       rotationalmutation,
-                                                       verbose=verbose)
+        super().__init__(rattlemutation,
+                         rotationalmutation,
+                         verbose=verbose)
         self.descriptor = 'rattlerotational'

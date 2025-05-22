@@ -1,17 +1,20 @@
+# fmt: off
+
 '''celleditor.py - Window for editing the cell of an atoms object
 '''
-from ase.cell import Cell
-from ase.gui.i18n import _
+import numpy as np
 
 import ase.gui.ui as ui
-import numpy as np
+from ase.cell import Cell
+from ase.gui.i18n import _
 
 
 class CellEditor:
     '''Window for editing the cell of an atoms object.'''
+
     def __init__(self, gui):
         self.gui = gui
-        self.gui.register_vulnerable(self)
+        self.gui.obs.set_atoms.register(self.notify_atoms_changed)
 
         # Create grid control for cells
         # xx xy xz ||x|| pbc
@@ -28,9 +31,9 @@ class CellEditor:
         angles = cell.angles()
         pbc = atoms.pbc
 
-        for i in [0, 1, 2]: # x_ y_ z_
+        for i in [0, 1, 2]:  # x_ y_ z_
             row = []
-            for j in [0, 1, 2]: # _x _y _z
+            for j in [0, 1, 2]:  # _x _y _z
                 row.append(ui.SpinBox(cell[i][j], -30, 30, 0.1,
                            self.apply_vectors, rounding=7, width=9))
             row.append(ui.SpinBox(mags[i], -30, 30, 0.1, self.apply_magnitudes,
@@ -45,7 +48,7 @@ class CellEditor:
         self.vacuum = ui.SpinBox(5, 0, 15, 0.1, self.apply_vacuum)
 
         # TRANSLATORS: This is a title of a window.
-        win = self.win = ui.Window(_('Cell Editor'))
+        win = self.win = ui.Window(_('Cell Editor'), wmtype='utility')
 
         x, y, z = self.cell_grid
 
@@ -62,7 +65,7 @@ class CellEditor:
                  ui.Button(_('Apply Magnitudes'), self.apply_magnitudes),
                  ui.Button(_('Apply Angles'), self.apply_angles)])
         win.add([_('Pressing 〈Enter〉 as you enter values will '
-                    'automatically apply correctly')])
+                   'automatically apply correctly')])
         # TRANSLATORS: verb
         win.add([ui.Button(_('Center'), self.apply_center),
                  ui.Button(_('Wrap'), self.apply_wrap),

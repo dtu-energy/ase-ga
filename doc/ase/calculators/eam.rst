@@ -14,4 +14,4 @@ EAM
 Example:
 ========
 
-.. literalinclude:: ../../../ase/test/test_eam.py
+.. literalinclude:: ../../../ase/test/calculator/test_eam.py

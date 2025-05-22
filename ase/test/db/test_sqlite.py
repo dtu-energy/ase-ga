@@ -1,6 +1,11 @@
+# fmt: off
 import os
+
+import pytest
+
 from ase.db import connect
 
+pytestmark = pytest.mark.usefixtures('testdir')
 db_name = "test_vacuum.db"
 
 
@@ -11,7 +16,7 @@ def write_entries_to_db(db, n_entries_db=30):
 
 def update_keys_in_db(db):
     new_keys = {}
-    for i in range(50):   
+    for i in range(50):
         new_keys.update({f'mynewkey_{i}': 'test'})
     for row in db.select():
         db.update(row.id, **new_keys)

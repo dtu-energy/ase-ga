@@ -1,17 +1,18 @@
+# fmt: off
+
 import os
 import re
 
 import numpy as np
 
 from ase import Atoms
+from ase.calculators.calculator import kpts2ndarray
 from ase.data import atomic_numbers
 from ase.io import read
-from ase.calculators.calculator import kpts2ndarray
 from ase.units import Bohr, Hartree
 from ase.utils import reader
 
-
-special_ase_keywords = set(['kpts'])
+special_ase_keywords = {'kpts'}
 
 
 def process_special_kwargs(atoms, kwargs):
@@ -54,7 +55,7 @@ def octbool2bool(value):
     elif value in ['no', 'f', 'false', '0']:
         return False
     else:
-        raise ValueError('Failed to interpret "%s" as a boolean.' % value)
+        raise ValueError(f'Failed to interpret "{value}" as a boolean.')
 
 
 def list2block(name, rows):
@@ -153,7 +154,7 @@ class OctNamespace:
             pass
 
         if ('*' in value or '/' in value
-            and not any(char in value for char in '()+')):
+                and not any(char in value for char in '()+')):
             floatvalue = 1.0
             op = '*'
             for token in re.split(r'([\*/])', value):
@@ -224,7 +225,7 @@ def kwargs2cell(kwargs):
             if not isinstance(Lsize, list):
                 Lsize = [[Lsize] * 3]
             assert len(Lsize) == 1
-            cell = np.array([2 * float(l) for l in Lsize[0]])
+            cell = np.array([2 * float(x) for x in Lsize[0]])
         elif 'latticeparameters' in kwargs:
             # Eval latparam and latvec
             latparam = np.array(kwargs.pop('latticeparameters'), float).T
@@ -420,7 +421,7 @@ def kwargs2atoms(kwargs, directory=None):
         atoms.pbc = pbc
 
     if (cell is not None and cell.shape == (3,)
-        and adjust_positions_by_half_cell):
+            and adjust_positions_by_half_cell):
         nonpbc = (atoms.pbc == 0)
         atoms.positions[:, nonpbc] += np.array(cell)[None, nonpbc] / 2.0
 
@@ -431,6 +432,8 @@ def generate_input(atoms, kwargs):
     """Convert atoms and keyword arguments to Octopus input file."""
     _lines = []
 
+    kwargs = {key.lower(): value for key, value in kwargs.items()}
+
     def append(line):
         _lines.append(line)
 
@@ -439,22 +442,26 @@ def generate_input(atoms, kwargs):
         append('')
 
     def setvar(key, var):
-        append('%s = %s' % (key, var))
+        append(f'{key} = {var}')
 
     for kw in ['lsize', 'latticevectors', 'latticeparameters']:
         assert kw not in kwargs
 
-    defaultboxshape = 'parallelepiped' if atoms.pbc.any() else 'minimum'
-    boxshape = kwargs.get('boxshape', defaultboxshape).lower()
+    defaultboxshape = 'parallelepiped' if atoms.cell.rank > 0 else 'minimum'
+    boxshape = kwargs.pop('boxshape', defaultboxshape).lower()
     use_ase_cell = (boxshape == 'parallelepiped')
     atomskwargs = atoms2kwargs(atoms, use_ase_cell)
 
+    setvar('boxshape', boxshape)
+
     if use_ase_cell:
-        if 'lsize' in atomskwargs:
-            block = list2block('LSize', atomskwargs['lsize'])
-        elif 'latticevectors' in atomskwargs:
+        if 'reducedcoordinates' in atomskwargs:
             extend(list2block('LatticeParameters', [[1., 1., 1.]]))
             block = list2block('LatticeVectors', atomskwargs['latticevectors'])
+        else:
+            assert 'lsize' in atomskwargs
+            block = list2block('LSize', atomskwargs['lsize'])
+
         extend(block)
 
     # Allow override or issue errors?
@@ -465,23 +472,12 @@ def generate_input(atoms, kwargs):
                              'with that of Atoms object')
     setvar('periodicdimensions', atomskwargs[pdim])
 
-    # We like to output forces
-    if 'output' in kwargs:
-        output_string = kwargs.pop('output')
-        output_tokens = [token.strip()
-                         for token in output_string.lower().split('+')]
-    else:
-        output_tokens = []
-
-    if 'forces' not in output_tokens:
-        output_tokens.append('forces')
-    setvar('output', ' + '.join(output_tokens))
-    # It is illegal to have output forces without any OutputFormat.
-    # Even though the forces are written in the same format no matter
-    # OutputFormat.  Thus we have to make one up:
-
-    if 'outputformat' not in kwargs:
-        setvar('outputformat', 'xcrysden')
+    # We should say that we want the forces if the user requests forces.
+    # However the Output keyword has changed between Octopus 10.1 and 11.4.
+    # We'll leave it to the user to manually set keywords correctly.
+    # The most complicated part is that the user probably needs to tell
+    # Octopus to save the forces in xcrysden format in order for us to
+    # parse them.
 
     for key, val in kwargs.items():
         # Most datatypes are straightforward but blocks require some attention.
@@ -493,7 +489,11 @@ def generate_input(atoms, kwargs):
             setvar(key, str(val))
     append('')
 
-    coord_block = list2block('Coordinates', atomskwargs['coordinates'])
+    if 'reducedcoordinates' in atomskwargs:
+        coord_block = list2block('ReducedCoordinates',
+                                 atomskwargs['reducedcoordinates'])
+    else:
+        coord_block = list2block('Coordinates', atomskwargs['coordinates'])
     extend(coord_block)
     return '\n'.join(_lines)
 
@@ -501,15 +501,24 @@ def generate_input(atoms, kwargs):
 def atoms2kwargs(atoms, use_ase_cell):
     kwargs = {}
 
-    positions = atoms.positions / Bohr
+    if any(atoms.pbc):
+        coordtype = 'reducedcoordinates'
+        coords = atoms.get_scaled_positions(wrap=False)
+    else:
+        coordtype = 'coordinates'
+        coords = atoms.positions / Bohr
 
     if use_ase_cell:
         cell = atoms.cell / Bohr
-        cell_offset = 0.5 * cell.sum(axis=0)
-        positions -= cell_offset
+        if coordtype == 'coordinates':
+            cell_offset = 0.5 * cell.sum(axis=0)
+            coords -= cell_offset
+        else:
+            assert coordtype == 'reducedcoordinates'
+
         if atoms.cell.orthorhombic:
             Lsize = 0.5 * np.diag(cell)
-            kwargs['lsize'] = [[repr(size) for size in Lsize]]
+            kwargs['lsize'] = [[str(size) for size in Lsize]]
             # ASE uses (0...cell) while Octopus uses -L/2...L/2.
             # Lsize is really cell / 2, and we have to adjust our
             # positions by subtracting Lsize (see construction of the coords
@@ -520,16 +529,15 @@ def atoms2kwargs(atoms, use_ase_cell):
     types = atoms.info.get('types', {})
 
     coord_block = []
-    for sym, pos, tag in zip(atoms.get_chemical_symbols(),
-                             positions, atoms.get_tags()):
+    for sym, pos, tag in zip(atoms.symbols, coords, atoms.get_tags()):
         if sym == 'X':
             sym = types.get((sym, tag))
             if sym is None:
                 raise ValueError('Cannot represent atom X without tags and '
                                  'species info in atoms.info')
-        coord_block.append([repr(sym)] + [repr(x) for x in pos])
+        coord_block.append([repr(sym)] + [str(x) for x in pos])
 
-    kwargs['coordinates'] = coord_block
+    kwargs[coordtype] = coord_block
     npbc = sum(atoms.pbc)
     for c in range(npbc):
         if not atoms.pbc[c]:

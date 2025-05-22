@@ -7,13 +7,13 @@ def write_findsym(fileobj, images):
         accuracy = 1.0e-4
 
         # Write Comment
-        fileobj.write('%s\n' % formula)
+        fileobj.write(f'{formula}\n')
         fileobj.write('%f   accuracy\n' % accuracy)
         fileobj.write('1    vectors in cartesian coordinates\n')
 
         # Write cartesian coordinates of vectors
         for x, y, z in atoms.cell:
-            fileobj.write('%22.15f %22.15f %22.15f\n' % (x, y, z))
+            fileobj.write(f'{x:22.15f} {y:22.15f} {z:22.15f}\n')
 
         fileobj.write('1    no known centering\n')
 
@@ -30,4 +30,4 @@ def write_findsym(fileobj, images):
         fileobj.write('\n')
 
         for x, y, z in atoms.get_positions():
-            fileobj.write('%22.15f %22.15f %22.15f\n' % (x, y, z))
+            fileobj.write(f'{x:22.15f} {y:22.15f} {z:22.15f}\n')

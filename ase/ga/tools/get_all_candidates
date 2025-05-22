@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """ Program for extracting all relaxed structures from a GA run. """
+from optparse import OptionParser
+
 from ase.ga.data import DataConnection
 from ase.io import write
-from optparse import OptionParser
 
 description = 'Extracts all relaxed structures and ' + \
     'saves them to all_candidates.traj'

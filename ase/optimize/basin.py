@@ -1,10 +1,14 @@
+# fmt: off
+
+from typing import IO, Type, Union
+
 import numpy as np
 
-from ase.optimize.optimize import Dynamics
-from ase.optimize.fire import FIRE
-from ase.units import kB
-from ase.parallel import world
+from ase import Atoms, units
 from ase.io.trajectory import Trajectory
+from ase.optimize.fire import FIRE
+from ase.optimize.optimize import Dynamics, Optimizer
+from ase.parallel import world
 
 
 class BasinHopping(Dynamics):
@@ -17,23 +21,26 @@ class BasinHopping(Dynamics):
     David J. Wales and Harold A. Scheraga, Science, Vol. 285, 1368 (1999)
     """
 
-    def __init__(self, atoms,
-                 temperature=100 * kB,
-                 optimizer=FIRE,
-                 fmax=0.1,
-                 dr=0.1,
-                 logfile='-',
-                 trajectory='lowest.traj',
-                 optimizer_logfile='-',
-                 local_minima_trajectory='local_minima.traj',
-                 adjust_cm=True):
+    def __init__(
+        self,
+        atoms: Atoms,
+        temperature: float = 100 * units.kB,
+        optimizer: Type[Optimizer] = FIRE,
+        fmax: float = 0.1,
+        dr: float = 0.1,
+        logfile: Union[IO, str] = '-',
+        trajectory: str = 'lowest.traj',
+        optimizer_logfile: str = '-',
+        local_minima_trajectory: str = 'local_minima.traj',
+        adjust_cm: bool = True,
+    ):
         """Parameters:
 
         atoms: Atoms object
             The Atoms object to operate on.
 
         trajectory: string
-            Pickle file used to store trajectory of atomic movement.
+            Trajectory file used to store optimisation path.
 
         logfile: file object or str
             If *logfile* is a string, a file with that name will be opened.
@@ -51,8 +58,8 @@ class BasinHopping(Dynamics):
         self.optimizer_logfile = optimizer_logfile
         self.lm_trajectory = local_minima_trajectory
         if isinstance(local_minima_trajectory, str):
-            self.lm_trajectory = Trajectory(local_minima_trajectory,
-                                            'w', atoms)
+            self.lm_trajectory = self.closelater(
+                Trajectory(local_minima_trajectory, 'w', atoms))
 
         Dynamics.__init__(self, atoms, logfile, trajectory)
         self.initialize()
@@ -67,10 +74,11 @@ class BasinHopping(Dynamics):
         return d
 
     def initialize(self):
-        self.positions = 0.0 * self.atoms.get_positions()
-        self.Emin = self.get_energy(self.atoms.get_positions()) or 1.e32
-        self.rmin = self.atoms.get_positions()
-        self.positions = self.atoms.get_positions()
+        positions = self.optimizable.get_positions()
+        self.positions = np.zeros_like(positions)
+        self.Emin = self.get_energy(positions) or 1.e32
+        self.rmin = self.optimizable.get_positions()
+        self.positions = self.optimizable.get_positions()
         self.call_observers()
         self.log(-1, self.Emin, self.Emin)
 
@@ -89,7 +97,7 @@ class BasinHopping(Dynamics):
             if En < self.Emin:
                 # new minimum found
                 self.Emin = En
-                self.rmin = self.atoms.get_positions()
+                self.rmin = self.optimizable.get_positions()
                 self.call_observers()
             self.log(step, En, self.Emin)
 
@@ -106,9 +114,17 @@ class BasinHopping(Dynamics):
                            % (name, step, En, Emin))
         self.logfile.flush()
 
+    def _atoms(self):
+        from ase.optimize.optimize import OptimizableAtoms
+        assert isinstance(self.optimizable, OptimizableAtoms)
+        # Some parts of the basin code cannot work on Filter objects.
+        # They evidently need an actual Atoms object - at least until
+        # someone changes the code so it doesn't need that.
+        return self.optimizable.atoms
+
     def move(self, ro):
         """Move atoms by a random step."""
-        atoms = self.atoms
+        atoms = self._atoms()
         # displace coordinates
         disp = np.random.uniform(-1., 1., (len(atoms), 3))
         rn = ro + self.dr * disp
@@ -123,22 +139,22 @@ class BasinHopping(Dynamics):
 
     def get_minimum(self):
         """Return minimal energy and configuration."""
-        atoms = self.atoms.copy()
+        atoms = self._atoms().copy()
         atoms.set_positions(self.rmin)
         return self.Emin, atoms
 
     def get_energy(self, positions):
         """Return the energy of the nearest local minimum."""
-        if np.sometrue(self.positions != positions):
+        if np.any(self.positions != positions):
             self.positions = positions
-            self.atoms.set_positions(positions)
+            self.optimizable.set_positions(positions)
 
-            opt = self.optimizer(self.atoms,
-                                 logfile=self.optimizer_logfile)
-            opt.run(fmax=self.fmax)
+            with self.optimizer(self.optimizable,
+                                logfile=self.optimizer_logfile) as opt:
+                opt.run(fmax=self.fmax)
             if self.lm_trajectory is not None:
-                self.lm_trajectory.write(self.atoms)
+                self.lm_trajectory.write(self.optimizable)
 
-            self.energy = self.atoms.get_potential_energy()
+            self.energy = self.optimizable.get_potential_energy()
 
         return self.energy

@@ -1,9 +1,9 @@
-from ase.gui.i18n import _
+# fmt: off
 
 import ase.data
 import ase.gui.ui as ui
-
 from ase import Atoms
+from ase.gui.i18n import _
 
 
 class Element(list):
@@ -94,5 +94,5 @@ def pywindow(title, callback):
             _('No Python code'),
             _('You have not (yet) specified a consistent set of parameters.'))
     else:
-        win = ui.Window(title)
+        win = ui.Window(title, wmtype='utility')
         win.add(ui.Text(code))

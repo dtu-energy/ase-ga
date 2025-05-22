@@ -5,7 +5,7 @@ Surface diffusion energy barriers using ASE constraints
 =======================================================
 
 In this tutorial, we will calculate the energy barrier that was found
-using the :mod:`NEB <ase.neb>` method in the :ref:`diffusion tutorial`
+using the :mod:`NEB <ase.mep.neb>` method in the :ref:`diffusion tutorial`
 tutorial.  Here, we use a simple :class:`~ase.constraints.FixedPlane`
 constraint that forces the Au atom to relax in the *yz*-plane only:
 
@@ -23,7 +23,7 @@ Here is a side-view of the path (unit cell repeated twice):
 
 .. seealso::
 
-   * :mod:`ase.neb`
+   * :mod:`ase.mep.neb`
    * :mod:`ase.constraints`
    * :ref:`diffusion tutorial`
    * :func:`~ase.build.fcc100`

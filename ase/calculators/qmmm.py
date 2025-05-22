@@ -1,10 +1,15 @@
+# fmt: off
+
+from typing import Sequence
+
 import numpy as np
 
 from ase.calculators.calculator import Calculator
-from ase.data import atomic_numbers
-from ase.utils import convert_string_to_fd
-from ase.geometry import get_distances
 from ase.cell import Cell
+from ase.data import atomic_numbers
+from ase.geometry import get_distances
+from ase.parallel import world
+from ase.utils import IOContext
 
 
 class SimpleQMMM(Calculator):
@@ -45,9 +50,10 @@ class SimpleQMMM(Calculator):
         self.qmatoms = None
         self.center = None
 
-        self.name = '{0}-{1}+{1}'.format(qmcalc.name, mmcalc1.name)
-
         Calculator.__init__(self)
+
+    def _get_name(self):
+        return f'{self.qmcalc.name}-{self.mmcalc1.name}+{self.mmcalc1.name}'
 
     def initialize_qm(self, atoms):
         constraints = atoms.constraints
@@ -86,12 +92,12 @@ class SimpleQMMM(Calculator):
         self.results['forces'] = forces
 
 
-class EIQMMM(Calculator):
+class EIQMMM(Calculator, IOContext):
     """Explicit interaction QMMM calculator."""
     implemented_properties = ['energy', 'forces']
 
     def __init__(self, selection, qmcalc, mmcalc, interaction,
-                 vacuum=None, embedding=None, output=None):
+                 vacuum=None, embedding=None, output=None, comm=world):
         """EIQMMM object.
 
         The energy is calculated as::
@@ -134,13 +140,12 @@ class EIQMMM(Calculator):
         self.mask = None
         self.center = None  # center of QM atoms in QM-box
 
-        self.name = '{0}+{1}+{2}'.format(qmcalc.name,
-                                         interaction.name,
-                                         mmcalc.name)
-
-        self.output = convert_string_to_fd(output)
+        self.output = self.openfile(file=output, comm=comm)
 
         Calculator.__init__(self)
+
+    def _get_name(self):
+        return f'{self.qmcalc.name}+{self.interaction.name}+{self.mmcalc.name}'
 
     def initialize(self, atoms):
         self.mask = np.zeros(len(atoms), bool)
@@ -193,7 +198,7 @@ class EIQMMM(Calculator):
         mmenergy = self.mmatoms.get_potential_energy()
         energy = ienergy + qmenergy + mmenergy
 
-        print('Energies: {0:12.3f} {1:+12.3f} {2:+12.3f} = {3:12.3f}'
+        print('Energies: {:12.3f} {:+12.3f} {:+12.3f} = {:12.3f}'
               .format(ienergy, qmenergy, mmenergy, energy), file=self.output)
 
         qmforces = self.qmatoms.get_forces()
@@ -228,7 +233,7 @@ class Embedding:
         self.parameters = parameters
 
     def __repr__(self):
-        return 'Embedding(molecule_size={0})'.format(self.molecule_size)
+        return f'Embedding(molecule_size={self.molecule_size})'
 
     def initialize(self, qmatoms, mmatoms):
         """Hook up embedding object to QM and MM atoms objects."""
@@ -323,7 +328,7 @@ def combine_lj_lorenz_berthelot(sigmaqm, sigmamm,
     sigma = []
     epsilon = []
     # check if input is tuple of vals for more than 1 mm calc, or only for 1.
-    if type(sigmamm) == tuple:
+    if isinstance(sigmamm, Sequence):
         numcalcs = len(sigmamm)
     else:
         numcalcs = 1  # if only 1 mm calc, eps and sig are simply np arrays
@@ -351,7 +356,7 @@ class LJInteractionsGeneral:
 
     def __init__(self, sigmaqm, epsilonqm, sigmamm, epsilonmm,
                  qm_molecule_size, mm_molecule_size=3,
-                 rc=np.Inf, width=1.0):
+                 rc=np.inf, width=1.0):
         """General Lennard-Jones type explicit interaction.
 
         sigmaqm: array
@@ -454,7 +459,7 @@ class LJInteractionsGeneral:
                     e = 4 * eps[qa, :] * (c12 - c6)
                     energy += np.dot(e.sum(1), t)
                     f = t[:, None, None] * (24 * eps[qa, :] *
-                         (2 * c12 - c6) / d2)[:, :, None] * R
+                                            (2 * c12 - c6) / d2)[:, :, None] * R
                     f00 = - (e.sum(1) * dt / d00)[:, None] * R00
                     mmforces += f.reshape((-1, 3))
                     qmforces[q * self.qms + qa, :] -= f.sum(0).sum(0)
@@ -688,9 +693,9 @@ class ForceQMMM(Calculator):
         # calculate the distances between all atoms and qm atoms
         # qm_distance_matrix is a [N_QM_atoms x N_atoms] matrix
         _, qm_distance_matrix = get_distances(
-                            atoms.positions[self.qm_selection_mask],
-                            atoms.positions,
-                            atoms.cell, atoms.pbc)
+            atoms.positions[self.qm_selection_mask],
+            atoms.positions,
+            atoms.cell, atoms.pbc)
 
         self.qm_buffer_mask = np.zeros(len(atoms), dtype=bool)
 

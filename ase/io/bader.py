@@ -1,7 +1,9 @@
+# fmt: off
+
 import numpy as np
 
-from ase.units import Bohr
 from ase.data import atomic_numbers
+from ase.units import Bohr
 
 
 def attach_charges(atoms, fileobj='ACF.dat', displacement=1e-4):
@@ -34,13 +36,13 @@ def attach_charges(atoms, fileobj='ACF.dat', displacement=1e-4):
             if k == 1:
                 break
             k += 1
-        if not i > 1:
+        if i <= 1:
             pass
         else:
             words = line.split()
             if assume6columns is True:
                 if len(words) != 6:
-                    raise IOError('Number of columns in ACF file incorrect!\n'
+                    raise OSError('Number of columns in ACF file incorrect!\n'
                                   'Check that Bader program version >= 0.25')
 
             atom = atoms[int(words[0]) - 1]

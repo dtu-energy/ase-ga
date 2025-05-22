@@ -9,16 +9,7 @@ Genetic algorithms (GA) have proven a good alternative to Monte Carlo
 type optimization methods for global structure and materials properties optimization. A GA has
 recently been implemented into ase.
 
-The use of the GA is best learned through tutorials:
-
-.. toctree::
-   :maxdepth: 1
-			  
-   ../../tutorials/ga/ga_optimize
-   ../../tutorials/ga/ga_convex_hull
-   ../../tutorials/ga/ga_fcc_alloys
-   ../../tutorials/ga/ga_bulk
-   ../../tutorials/ga/ga_molecular_crystal
+The use of the GA is best learned through :ref:`tutorials`.
 
 The GA implementation is diverse. It (or previous versions of it) has been used in publications with differing subjects such as structure of gold clusters on surfaces, composition of alloy nanoparticles, ammonia storage in mixed metal ammines and more. The implementation is structured such that it can be tailored to the specific problem investigated and to the computational resources available (single computer or a large computer cluster).
    

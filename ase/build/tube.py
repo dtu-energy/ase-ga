@@ -1,4 +1,6 @@
-from math import sqrt, gcd
+# fmt: off
+
+from math import gcd, sqrt
 
 import numpy as np
 
@@ -48,7 +50,7 @@ def nanotube(n, m, length=1, bond=1.42, symbol='C', verbose=False,
     sq3 = sqrt(3.0)
     a = sq3 * bond
     l2 = n * n + m * m + n * m
-    l = sqrt(l2)
+    l1 = sqrt(l2)
 
     nd = gcd(n, m)
     if (n - m) % (3 * nd) == 0:
@@ -92,7 +94,7 @@ def nanotube(n, m, length=1, bond=1.42, symbol='C', verbose=False,
 
     lp = nnnp * nnnp + nnnq * nnnq + nnnp * nnnq
     r = a * sqrt(lp)
-    c = a * l
+    c = a * l1
     t = sq3 * c / ndr
 
     if 2 * nn > nk:

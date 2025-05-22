@@ -1,9 +1,12 @@
+# fmt: off
+
 from math import pi
 
 import numpy as np
 
 from ase.atoms import Atoms
 from ase.calculators.calculator import Calculator, kpts2ndarray
+from ase.calculators.fd import calculate_numerical_forces
 from ase.units import Bohr, Ha
 
 
@@ -130,7 +133,7 @@ class FreeElectrons(Calculator):
         K-point specification.
 
     Example:
-
+    >>> from ase.calculators.test import FreeElectrons
     >>> calc = FreeElectrons(nvalence=1, kpts={'path': 'GXL'})
     """
 
@@ -167,22 +170,6 @@ class FreeElectrons(Calculator):
         return 1
 
 
-def numeric_force(atoms, a, i, d=0.001):
-    """Compute numeric force on atom with index a, Cartesian component i,
-    with finite step of size d
-    """
-    p0 = atoms.get_positions()
-    p = p0.copy()
-    p[a, i] += d
-    atoms.set_positions(p, apply_constraint=False)
-    eplus = atoms.get_potential_energy()
-    p[a, i] -= 2 * d
-    atoms.set_positions(p, apply_constraint=False)
-    eminus = atoms.get_potential_energy()
-    atoms.set_positions(p0, apply_constraint=False)
-    return (eminus - eplus) / (2 * d)
-
-
 def gradient_test(atoms, indices=None):
     """
     Use numeric_force to compare analytical and numerical forces on atoms
@@ -192,11 +179,8 @@ def gradient_test(atoms, indices=None):
     if indices is None:
         indices = range(len(atoms))
     f = atoms.get_forces()[indices]
-    print('{0:>16} {1:>20}'.format('eps', 'max(abs(df))'))
+    print('{:>16} {:>20}'.format('eps', 'max(abs(df))'))
     for eps in np.logspace(-1, -8, 8):
-        fn = np.zeros((len(indices), 3))
-        for idx, i in enumerate(indices):
-            for j in range(3):
-                fn[idx, j] = numeric_force(atoms, i, j, eps)
-        print('{0:16.12f} {1:20.12f}'.format(eps, abs(fn - f).max()))
+        fn = calculate_numerical_forces(atoms, eps, indices)
+        print(f'{eps:16.12f} {abs(fn - f).max():20.12f}')
     return f, fn

@@ -1,3 +1,4 @@
+# fmt: off
 from ase import Atom, Atoms
 
 """The documentation says:

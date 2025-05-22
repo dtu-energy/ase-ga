@@ -6,42 +6,90 @@ import os
 import re
 import warnings
 from time import time
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import numpy as np
 
 from ase.atoms import Atoms
-from ase.calculators.calculator import all_properties, all_changes
+from ase.calculators.calculator import all_changes, all_properties
 from ase.data import atomic_numbers
 from ase.db.row import AtomsRow
 from ase.formula import Formula
 from ase.io.jsonio import create_ase_object
-from ase.parallel import world, DummyMPI, parallel_function, parallel_generator
+from ase.parallel import DummyMPI, parallel_function, parallel_generator, world
 from ase.utils import Lock, PurePath
-
 
 T2000 = 946681200.0  # January 1. 2000
 YEAR = 31557600.0  # 365.25 days
 
 
-# Format of key description: ('short', 'long', 'unit')
-default_key_descriptions = {
-    'id': ('ID', 'Uniqe row ID', ''),
-    'age': ('Age', 'Time since creation', ''),
-    'formula': ('Formula', 'Chemical formula', ''),
-    'pbc': ('PBC', 'Periodic boundary conditions', ''),
-    'user': ('Username', '', ''),
-    'calculator': ('Calculator', 'ASE-calculator name', ''),
-    'energy': ('Energy', 'Total energy', 'eV'),
-    'natoms': ('Number of atoms', '', ''),
-    'fmax': ('Maximum force', '', 'eV/Ang'),
-    'smax': ('Maximum stress', 'Maximum stress on unit cell',
-             '`\\text{eV/Ang}^3`'),
-    'charge': ('Charge', 'Net charge in unit cell', '|e|'),
-    'mass': ('Mass', 'Sum of atomic masses in unit cell', 'au'),
-    'magmom': ('Magnetic moment', '', 'au'),
-    'unique_id': ('Unique ID', 'Random (unique) ID', ''),
-    'volume': ('Volume', 'Volume of unit cell', '`\\text{Ang}^3`')}
+@functools.total_ordering
+class KeyDescription:
+    _subscript = re.compile(r'`(.)_(.)`')
+    _superscript = re.compile(r'`(.*)\^\{?(.*?)\}?`')
+
+    def __init__(self, key, shortdesc=None, longdesc=None, unit=''):
+        self.key = key
+
+        if shortdesc is None:
+            shortdesc = key
+
+        if longdesc is None:
+            longdesc = shortdesc
+
+        self.shortdesc = shortdesc
+        self.longdesc = longdesc
+
+        # Somewhat arbitrary that we do this conversion.  Can we avoid that?
+        # Previously done in create_key_descriptions().
+        unit = self._subscript.sub(r'\1<sub>\2</sub>', unit)
+        unit = self._superscript.sub(r'\1<sup>\2</sup>', unit)
+        unit = unit.replace(r'\text{', '').replace('}', '')
+
+        self.unit = unit
+
+    def __repr__(self):
+        cls = type(self).__name__
+        return (
+            f'{cls}({self.key!r}, {self.shortdesc!r}, {self.longdesc!r}, '
+            f'unit={self.unit!r})'
+        )
+
+    # The templates like to sort key descriptions by shortdesc.
+    def __eq__(self, other):
+        return self.shortdesc == getattr(other, 'shortdesc', None)
+
+    def __lt__(self, other):
+        return self.shortdesc < getattr(other, 'shortdesc', self.shortdesc)
+
+
+def get_key_descriptions():
+    KD = KeyDescription
+    return {
+        keydesc.key: keydesc
+        for keydesc in [
+            KD('id', 'ID', 'Uniqe row ID'),
+            KD('age', 'Age', 'Time since creation'),
+            KD('formula', 'Formula', 'Chemical formula'),
+            KD('pbc', 'PBC', 'Periodic boundary conditions'),
+            KD('user', 'Username'),
+            KD('calculator', 'Calculator', 'ASE-calculator name'),
+            KD('energy', 'Energy', 'Total energy', unit='eV'),
+            KD('natoms', 'Number of atoms'),
+            KD('fmax', 'Maximum force', unit='eV/Å'),
+            KD(
+                'smax',
+                'Maximum stress',
+                'Maximum stress on unit cell',
+                unit='eV/Å³',
+            ),
+            KD('charge', 'Charge', 'Net charge in unit cell', unit='|e|'),
+            KD('mass', 'Mass', 'Sum of atomic masses in unit cell', unit='au'),
+            KD('magmom', 'Magnetic moment', unit='μ_B'),
+            KD('unique_id', 'Unique ID', 'Random (unique) ID'),
+            KD('volume', 'Volume', 'Volume of unit cell', unit='Å³'),
+        ]
+    }
 
 
 def now():
@@ -49,54 +97,75 @@ def now():
     return (time() - T2000) / YEAR
 
 
-seconds = {'s': 1,
-           'm': 60,
-           'h': 3600,
-           'd': 86400,
-           'w': 604800,
-           'M': 2629800,
-           'y': YEAR}
+seconds = {
+    's': 1,
+    'm': 60,
+    'h': 3600,
+    'd': 86400,
+    'w': 604800,
+    'M': 2629800,
+    'y': YEAR,
+}
 
-longwords = {'s': 'second',
-             'm': 'minute',
-             'h': 'hour',
-             'd': 'day',
-             'w': 'week',
-             'M': 'month',
-             'y': 'year'}
+longwords = {
+    's': 'second',
+    'm': 'minute',
+    'h': 'hour',
+    'd': 'day',
+    'w': 'week',
+    'M': 'month',
+    'y': 'year',
+}
 
-ops = {'<': operator.lt,
-       '<=': operator.le,
-       '=': operator.eq,
-       '>=': operator.ge,
-       '>': operator.gt,
-       '!=': operator.ne}
+ops = {
+    '<': operator.lt,
+    '<=': operator.le,
+    '=': operator.eq,
+    '>=': operator.ge,
+    '>': operator.gt,
+    '!=': operator.ne,
+}
 
 invop = {'<': '>=', '<=': '>', '>=': '<', '>': '<=', '=': '!=', '!=': '='}
 
 word = re.compile('[_a-zA-Z][_0-9a-zA-Z]*$')
 
-reserved_keys = set(all_properties +
-                    all_changes +
-                    list(atomic_numbers) +
-                    ['id', 'unique_id', 'ctime', 'mtime', 'user',
-                     'fmax', 'smax',
-                     'momenta', 'constraints', 'natoms', 'formula', 'age',
-                     'calculator', 'calculator_parameters',
-                     'key_value_pairs', 'data'])
+reserved_keys = set(
+    all_properties
+    + all_changes
+    + list(atomic_numbers)
+    + [
+        'id',
+        'unique_id',
+        'ctime',
+        'mtime',
+        'user',
+        'fmax',
+        'smax',
+        'momenta',
+        'constraints',
+        'natoms',
+        'formula',
+        'age',
+        'calculator',
+        'calculator_parameters',
+        'key_value_pairs',
+        'data',
+    ]
+)
 
-numeric_keys = set(['id', 'energy', 'magmom', 'charge', 'natoms'])
+numeric_keys = {'id', 'energy', 'magmom', 'charge', 'natoms'}
 
 
 def check(key_value_pairs):
     for key, value in key_value_pairs.items():
-        if key == "external_tables":
+        if key == 'external_tables':
             # Checks for external_tables are not
             # performed
             continue
 
         if not word.match(key) or key in reserved_keys:
-            raise ValueError('Bad key: {}'.format(key))
+            raise ValueError(f'Bad key: {key}')
         try:
             Formula(key, strict=True)
         except ValueError:
@@ -106,45 +175,54 @@ def check(key_value_pairs):
                 'It is best not to use keys ({0}) that are also a '
                 'chemical formula.  If you do a "db.select({0!r})",'
                 'you will not find rows with your key.  Instead, you wil get '
-                'rows containing the atoms in the formula!'.format(key))
+                'rows containing the atoms in the formula!'.format(key)
+            )
         if not isinstance(value, (numbers.Real, str, np.bool_)):
-            raise ValueError('Bad value for {!r}: {}'.format(key, value))
+            raise ValueError(f'Bad value for {key!r}: {value}')
         if isinstance(value, str):
-            for t in [int, float]:
+            for t in [bool, int, float]:
                 if str_represents(value, t):
                     raise ValueError(
-                        'Value ' + value + ' is put in as string ' +
-                        'but can be interpreted as ' +
-                        '{}! Please convert '.format(t.__name__) +
-                        'to {} using '.format(t.__name__) +
-                        '{}(value) before '.format(t.__name__) +
-                        'writing to the database OR change ' +
-                        'to a different string.')
+                        'Value '
+                        + value
+                        + ' is put in as string '
+                        + 'but can be interpreted as '
+                        + f'{t.__name__}! Please convert '
+                        + f'to {t.__name__} before '
+                        + 'writing to the database OR change '
+                        + 'to a different string.'
+                    )
 
 
 def str_represents(value, t=int):
-    try:
-        t(value)
-    except ValueError:
-        return False
-    return True
+    new_value = convert_str_to_int_float_bool_or_str(value)
+    return isinstance(new_value, t)
 
 
-def connect(name, type='extract_from_name', create_indices=True,
-            use_lock_file=True, append=True, serial=False):
+def connect(
+    name,
+    type='extract_from_name',
+    create_indices=True,
+    use_lock_file=True,
+    append=True,
+    serial=False,
+    **db_kwargs,
+):
     """Create connection to database.
 
     name: str
         Filename or address of database.
     type: str
-        One of 'json', 'db', 'postgresql',
-        (JSON, SQLite, PostgreSQL).
+        One of 'json', 'db', 'postgresql', 'mysql', 'aselmdb'
+        (JSON, SQLite, PostgreSQL, MYSQL, ASELMDB).
         Default is 'extract_from_name', which will guess the type
         from the name.
     use_lock_file: bool
         You can turn this off if you know what you are doing ...
     append: bool
         Use append=False to start a new database.
+    db_kwargs: dict
+        Optional extra kwargs to pass on to the underlying db
     """
 
     if isinstance(name, PurePath):
@@ -155,8 +233,7 @@ def connect(name, type='extract_from_name', create_indices=True,
             type = None
         elif not isinstance(name, str):
             type = 'json'
-        elif (name.startswith('postgresql://') or
-              name.startswith('postgres://')):
+        elif name.startswith('postgresql://') or name.startswith('postgres://'):
             type = 'postgresql'
         elif name.startswith('mysql://') or name.startswith('mariadb://'):
             type = 'mysql'
@@ -166,7 +243,7 @@ def connect(name, type='extract_from_name', create_indices=True,
                 raise ValueError('No file extension or database type given')
 
     if type is None:
-        return Database()
+        return Database(**db_kwargs)
 
     if not append and world.rank == 0:
         if isinstance(name, str) and os.path.isfile(name):
@@ -177,23 +254,37 @@ def connect(name, type='extract_from_name', create_indices=True,
 
     if type == 'json':
         from ase.db.jsondb import JSONDatabase
-        return JSONDatabase(name, use_lock_file=use_lock_file, serial=serial)
+
+        return JSONDatabase(
+            name, use_lock_file=use_lock_file, serial=serial, **db_kwargs
+        )
     if type == 'db':
         from ase.db.sqlite import SQLite3Database
-        return SQLite3Database(name, create_indices, use_lock_file,
-                               serial=serial)
+
+        return SQLite3Database(
+            name, create_indices, use_lock_file, serial=serial, **db_kwargs
+        )
     if type == 'postgresql':
-        from ase.db.postgresql import PostgreSQLDatabase
-        return PostgreSQLDatabase(name)
+        from ase_db_backends.postgresql import PostgreSQLDatabase
+
+        return PostgreSQLDatabase(name, **db_kwargs)
 
     if type == 'mysql':
-        from ase.db.mysql import MySQLDatabase
-        return MySQLDatabase(name)
+        from ase_db_backends.mysql import MySQLDatabase
+
+        return MySQLDatabase(name, **db_kwargs)
+
+    if type == 'aselmdb':
+        from ase_db_backends.aselmdb import LMDBDatabase
+
+        return LMDBDatabase(name, **db_kwargs)
+
     raise ValueError('Unknown database type: ' + type)
 
 
 def lock(method):
     """Decorator for using a lock-file."""
+
     @functools.wraps(method)
     def new_method(self, *args, **kwargs):
         if self.lock is None:
@@ -201,10 +292,11 @@ def lock(method):
         else:
             with self.lock:
                 return method(self, *args, **kwargs)
+
     return new_method
 
 
-def convert_str_to_int_float_or_str(value):
+def convert_str_to_int_float_bool_or_str(value):
     """Safe eval()"""
     try:
         return int(value)
@@ -252,8 +344,9 @@ def parse_selection(selection, **kwargs):
                 except ValueError:
                     keys.append(expression)
                 else:
-                    comparisons.extend((symbol, '>', n - 1)
-                                       for symbol, n in count.items())
+                    comparisons.extend(
+                        (symbol, '>', n - 1) for symbol, n in count.items()
+                    )
             continue
         key, value = expression.split(op)
         comparisons.append((key, op, value))
@@ -272,15 +365,17 @@ def parse_selection(selection, **kwargs):
                 raise ValueError('Use fomula=...')
             f = Formula(value)
             count = f.count()
-            cmps.extend((atomic_numbers[symbol], '=', n)
-                        for symbol, n in count.items())
+            cmps.extend(
+                (atomic_numbers[symbol], '=', n) for symbol, n in count.items()
+            )
             key = 'natoms'
             value = len(f)
         elif key in atomic_numbers:
             key = atomic_numbers[key]
             value = int(value)
         elif isinstance(value, str):
-            value = convert_str_to_int_float_or_str(value)
+            if key != 'unique_id':
+                value = convert_str_to_int_float_bool_or_str(value)
         if key in numeric_keys and not isinstance(value, (int, float)):
             msg = 'Wrong type for "{}{}{}" - must be a number'
             raise ValueError(msg.format(key, op, value))
@@ -291,8 +386,14 @@ def parse_selection(selection, **kwargs):
 
 class Database:
     """Base class for all databases."""
-    def __init__(self, filename=None, create_indices=True,
-                 use_lock_file=False, serial=False):
+
+    def __init__(
+        self,
+        filename=None,
+        create_indices=True,
+        use_lock_file=False,
+        serial=False,
+    ):
         """Database object.
 
         serial: bool
@@ -367,9 +468,9 @@ class Database:
         anything and return None.
         """
 
-        for dct in self._select([],
-                                [(key, '=', value)
-                                 for key, value in key_value_pairs.items()]):
+        for _ in self._select(
+            [], [(key, '=', value) for key, value in key_value_pairs.items()]
+        ):
             return None
 
         atoms = Atoms()
@@ -399,15 +500,13 @@ class Database:
     def __delitem__(self, id):
         self.delete([id])
 
-    def get_atoms(self, selection=None, attach_calculator=False,
-                  add_additional_information=False, **kwargs):
+    def get_atoms(
+        self, selection=None, add_additional_information=False, **kwargs
+    ):
         """Get Atoms object.
 
         selection: int, str or list
             See the select() method.
-        attach_calculator: bool
-            Attach calculator object to Atoms object (default value is
-            False).
         add_additional_information: bool
             Put key-value pairs and data into Atoms.info dictionary.
 
@@ -416,7 +515,7 @@ class Database:
         """
 
         row = self.get(selection, **kwargs)
-        return row.toatoms(attach_calculator, add_additional_information)
+        return row.toatoms(add_additional_information)
 
     def __getitem__(self, selection):
         return self.get(selection)
@@ -434,9 +533,19 @@ class Database:
         return rows[0]
 
     @parallel_generator
-    def select(self, selection=None, filter=None, explain=False,
-               verbosity=1, limit=None, offset=0, sort=None,
-               include_data=True, columns='all', **kwargs):
+    def select(
+        self,
+        selection=None,
+        filter=None,
+        explain=False,
+        verbosity=1,
+        limit=None,
+        offset=0,
+        sort=None,
+        include_data=True,
+        columns='all',
+        **kwargs,
+    ):
         """Select rows.
 
         Return AtomsRow iterator with results.  Selection is done
@@ -483,11 +592,17 @@ class Database:
                 sort += 'name'
 
         keys, cmps = parse_selection(selection, **kwargs)
-        for row in self._select(keys, cmps, explain=explain,
-                                verbosity=verbosity,
-                                limit=limit, offset=offset, sort=sort,
-                                include_data=include_data,
-                                columns=columns):
+        for row in self._select(
+            keys,
+            cmps,
+            explain=explain,
+            verbosity=verbosity,
+            limit=limit,
+            offset=offset,
+            sort=sort,
+            include_data=include_data,
+            columns=columns,
+        ):
             if filter is None or filter(row):
                 yield row
 
@@ -498,7 +613,7 @@ class Database:
         len(db) to count all rows.
         """
         n = 0
-        for row in self.select(selection, **kwargs):
+        for _ in self.select(selection, **kwargs):
             n += 1
         return n
 
@@ -507,8 +622,9 @@ class Database:
 
     @parallel_function
     @lock
-    def update(self, id, atoms=None, delete_keys=[], data=None,
-               **add_key_value_pairs):
+    def update(
+        self, id, atoms=None, delete_keys=[], data=None, **add_key_value_pairs
+    ):
         """Update and/or delete key-value pairs of row(s).
 
         id: int
@@ -527,11 +643,13 @@ class Database:
 
         if not isinstance(id, numbers.Integral):
             if isinstance(id, list):
-                err = ('First argument must be an int and not a list.\n'
-                       'Do something like this instead:\n\n'
-                       'with db:\n'
-                       '    for id in ids:\n'
-                       '        db.update(id, ...)')
+                err = (
+                    'First argument must be an int and not a list.\n'
+                    'Do something like this instead:\n\n'
+                    'with db:\n'
+                    '    for id in ids:\n'
+                    '        db.update(id, ...)'
+                )
                 raise ValueError(err)
             raise TypeError('id must be an int')
 
@@ -598,9 +716,9 @@ def float_to_time_string(t, long=False):
         if x > 5:
             break
     if long:
-        return '{:.3f} {}s'.format(x, longwords[s])
+        return f'{x:.3f} {longwords[s]}s'
     else:
-        return '{:.0f}{}'.format(round(x), s)
+        return f'{round(x):.0f}{s}'
 
 
 def object_to_bytes(obj: Any) -> bytes:
@@ -634,24 +752,24 @@ def o2b(obj: Any, parts: List[bytes]):
     if isinstance(obj, (list, tuple)):
         return [o2b(value, parts) for value in obj]
     if isinstance(obj, np.ndarray):
-        assert obj.dtype != object, \
+        assert obj.dtype != object, (
             'Cannot convert ndarray of type "object" to bytes.'
+        )
         offset = sum(len(part) for part in parts)
         if not np.little_endian:
             obj = obj.byteswap()
         parts.append(obj.tobytes())
-        return {'__ndarray__': [obj.shape,
-                                obj.dtype.name,
-                                offset]}
+        return {'__ndarray__': [obj.shape, obj.dtype.name, offset]}
     if isinstance(obj, complex):
         return {'__complex__': [obj.real, obj.imag]}
-    objtype = getattr(obj, 'ase_objtype')
+    objtype = obj.ase_objtype
     if objtype:
         dct = o2b(obj.todict(), parts)
         dct['__ase_objtype__'] = objtype
         return dct
-    raise ValueError('Objects of type {type} not allowed'
-                     .format(type=type(obj)))
+    raise ValueError(
+        'Objects of type {type} not allowed'.format(type=type(obj))
+    )
 
 
 def b2o(obj: Any, b: bytes) -> Any:
@@ -672,7 +790,7 @@ def b2o(obj: Any, b: bytes) -> Any:
         shape, name, offset = x
         dtype = np.dtype(name)
         size = dtype.itemsize * np.prod(shape).astype(int)
-        a = np.frombuffer(b[offset:offset + size], dtype)
+        a = np.frombuffer(b[offset : offset + size], dtype)
         a.shape = shape
         if not np.little_endian:
             a = a.byteswap()

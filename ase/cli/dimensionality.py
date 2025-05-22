@@ -1,7 +1,8 @@
-import os
-import warnings
-from ase.io import iread
-from ase.geometry.dimensionality import analyze_dimensionality
+# fmt: off
+
+# Note:
+# Try to avoid module level import statements here to reduce
+# import time during CLI execution
 
 
 class CLICommand:
@@ -48,9 +49,14 @@ class CLICommand:
 
     @staticmethod
     def run(args, parser):
+        import os
+        import warnings
+
+        from ase.geometry.dimensionality import analyze_dimensionality
+        from ase.io import iread
 
         files = [os.path.split(path)[1] for path in args.filenames]
-        lmax = max([len(f) for f in files]) + 2
+        lmax = max(len(f) for f in files) + 2
 
         print('file'.ljust(lmax) +
               'type   score     a      b      component counts')
@@ -69,9 +75,9 @@ class CLICommand:
 
                     for i, entry in enumerate(result):
                         dimtype = entry.dimtype.rjust(4)
-                        score = '{:.3f}'.format(entry.score).ljust(5)
-                        a = '{:.3f}'.format(entry.a).ljust(5)
-                        b = '{:.3f}'.format(entry.b).ljust(5)
+                        score = f'{entry.score:.3f}'.ljust(5)
+                        a = f'{entry.a:.3f}'.ljust(5)
+                        b = f'{entry.b:.3f}'.ljust(5)
                         if i == 0:
                             name = f.ljust(lmax)
                         else:

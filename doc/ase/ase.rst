@@ -4,52 +4,50 @@
 Modules
 =======
 
-Quick links:
+.. hlist::
+   :columns: 4
 
-.. list-table::
-
-  * - :mod:`ase (Atom) <ase.atom>`
-    - :mod:`ase (Atoms) <ase.atoms>`
-    - :mod:`~ase.build`
-    - :mod:`~ase.cell`
-  * - :mod:`~ase.calculators`
-    - :mod:`~ase.collections`
-    - :mod:`~ase.constraints`
-    - :mod:`~ase.db`
-  * - :mod:`~ase.dft`
-    - :mod:`~ase.data`
-    - :mod:`~ase.formula`
-    - :mod:`~ase.ga`
-  * - :mod:`~ase.geometry`
-    - :mod:`~ase.gui`
-    - :mod:`~ase.io`
-    - :mod:`~ase.lattice`
-  * - :mod:`~ase.md`
-    - :mod:`~ase.neb`
-    - :mod:`~ase.neighborlist`
-    - :mod:`~ase.optimize`
-  * - :mod:`~ase.parallel`
-    - :mod:`~ase.phasediagram`
-    - :mod:`~ase.phonons`
-    - :mod:`~ase.spacegroup`
-  * - :mod:`~ase.spectrum`
-    - :mod:`~ase.symbols`
-    - :mod:`~ase.transport`
-    - :mod:`~ase.thermochemistry`
-  * - :mod:`~ase.units`
-    - :mod:`~ase.utils`
-    - :mod:`~ase.vibrations`
-    - :mod:`~ase.visualize`
+   * :mod:`ase (Atom) <ase.atom>`
+   * :mod:`ase (Atoms) <ase.atoms>`
+   * :mod:`~ase.build`
+   * :mod:`~ase.cell`
+   * :mod:`~ase.calculators`
+   * :mod:`~ase.collections`
+   * :mod:`~ase.constraints`
+   * :mod:`~ase.db`
+   * :mod:`~ase.dft`
+   * :mod:`~ase.data`
+   * :mod:`~ase.filters`
+   * :mod:`~ase.formula`
+   * :mod:`~ase.ga`
+   * :mod:`~ase.geometry`
+   * :mod:`~ase.gui`
+   * :mod:`~ase.io`
+   * :mod:`~ase.lattice`
+   * :mod:`~ase.md`
+   * :mod:`~ase.mep`
+   * :mod:`~ase.neighborlist`
+   * :mod:`~ase.optimize`
+   * :mod:`~ase.parallel`
+   * :mod:`~ase.phasediagram`
+   * :mod:`~ase.phonons`
+   * :mod:`~ase.spacegroup`
+   * :mod:`~ase.spectrum`
+   * :mod:`~ase.symbols`
+   * :mod:`~ase.transport`
+   * :mod:`~ase.thermochemistry`
+   * :mod:`~ase.units`
+   * :mod:`~ase.utils`
+   * :mod:`~ase.vibrations`
+   * :mod:`~ase.visualize`
 
 .. seealso::
 
    * :ref:`tutorials`
    * :ref:`cli`
    * :git:`Source code <>`
-   * Presentation about ASE: :download:`ase-talk.pdf`
-   * List of :ref:`removed features <removed_features>`
-
-List of all modules:
+   * Presentation about ASE:
+     `ase-talk.pdf <https://wiki.fysik.dtu.dk/ase-files/ase-talk.pdf>`__
 
 .. toctree::
    :maxdepth: 2
@@ -67,11 +65,12 @@ List of all modules:
    optimize
    md
    constraints
+   filters
    spacegroup/spacegroup
    neighborlist
    geometry
    db/db
-   neb
+   mep
    ga/ga
    gui/gui
    lattice
@@ -86,8 +85,5 @@ List of all modules:
    thermochemistry/thermochemistry
    utils
    parallel
-   dimer
    atom
    transport/transport
-   calculators/qmmm
-   legacy

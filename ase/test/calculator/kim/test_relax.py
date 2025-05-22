@@ -1,17 +1,19 @@
+# fmt: off
 import numpy as np
-from ase.cluster import Icosahedron
 from pytest import mark
+
+from ase.cluster import Icosahedron
+from ase.optimize import BFGS
 
 
 @mark.calculator_lite
-def test_relax(KIM):
+def test_relax(KIM, testdir):
     """
     Test that a static relaxation that requires multiple neighbor list
     rebuilds can be carried out successfully.  This is verified by relaxing
     an icosahedral cluster of atoms and checking that the relaxed energy
     matches a known precomputed value for an example model.
     """
-    from ase.optimize import BFGS
 
     energy_ref = -0.56  # eV
 
@@ -20,7 +22,7 @@ def test_relax(KIM):
     calc = KIM("ex_model_Ar_P_Morse_07C")
     atoms.calc = calc
 
-    opt = BFGS(atoms, maxstep=0.04, alpha=70.0, logfile=None)
-    opt.run(fmax=0.01)  # eV/angstrom
+    with BFGS(atoms, maxstep=0.04, alpha=70.0, logfile=None) as opt:
+        opt.run(fmax=0.01)  # eV/angstrom
 
     assert np.isclose(atoms.get_potential_energy(), energy_ref, atol=0.05)

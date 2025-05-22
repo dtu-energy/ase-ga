@@ -1,3 +1,4 @@
+# fmt: off
 import numpy as np
 
 from ase.build import molecule
@@ -7,7 +8,7 @@ from ase.calculators.gamess_us import GAMESSUS
 # Obtained from https://www.basissetexchange.org
 
 
-basis = dict()
+basis = {}
 
 basis['Na'] = """S   2
 1         0.4972000             -0.2753574
@@ -31,7 +32,7 @@ P   2
 P   1
 1         0.1819000              1.0000000"""
 
-ecp = dict()
+ecp = {}
 
 ecp['Na'] = """NA-ECP GEN    10    2
 5     ----- d-ul potential -----
@@ -76,7 +77,7 @@ ecp['Cl'] = """CL-ECP GEN    10    2
      15.3439560       2       3.1831000"""
 
 
-def test_gamess_us_basis_ecp():
+def test_gamess_us_basis_ecp(gamess_us_factory):
     atoms = molecule('NaCl')
     atoms.calc = GAMESSUS(basis=basis, ecp=ecp, label='NaCl')
     e = atoms.get_potential_energy()

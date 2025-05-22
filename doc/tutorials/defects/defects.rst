@@ -35,9 +35,11 @@ procedure can be schematically depicted as follows:
 The calculation thus corresponds to a periodic arrangement of
 defects. Accordingly, care must be taken to keep the interactions
 between defects as small as possible, which generally calls for large
-supercells. It is furthermore indicated to maximize the defect-defect
-separation in *all* directions, which is in principle achieved if the
-supercell used has a suitable shape. Consider for illustration the
+supercells. Thus the typical goal for generating the simulation supercell
+for defect calculations is to maximize the defect-defect separation in
+*all* directions, for a reasonable number of atoms (and thus computational
+cost). In principle, we can do a good job of this by using a supercell
+with a suitable shape. Consider for illustration the
 following three 2D lattices with identical unit cell area but
 different lattice symmetry:
 
@@ -52,18 +54,19 @@ In the case of the square lattice, each defect has `Z_1=4`
 nearest neighbors at a distance of `r_1=a_0`, where
 `a_0=\sqrt{A}` with `A` being the unit cell area. By
 comparison in a rectangular lattice with an aspect ratio of 2:1, the
-defects are much closer to each other with `r_1 = 0.5 a_0` and
-`Z_1=2`. The largest defect-defect distance (at constant unit
+defects are much closer to each other with `r_1 = a_0/\sqrt{2}` and
+`Z_1=2`, where again `a_0` = `\sqrt{A}` (the 'effective cubic length').
+The largest defect-defect distance (at constant unit
 cell area) is obtained for the hexagonal lattice, which also
 correponds to the most closely packed 2D arrangement. Here, one
 obtains `r_1=\sqrt{2}/\sqrt[4]{3}=1.075 a_0` and
-`Z_1=6`. For defect calculation supercells corresponding to
+`Z_1=6`. For defect calculations, supercells corresponding to
 hexagonal or square lattices have thus clear advantages. This argument
 can be extended to 3D: Square lattices in 2D correspond to cubic
 lattices (supercells) in 3D with `r_1=a_0` and
 `Z_1=6`. The 3D analogue of the hexagonal 2D lattice are
-hexagonal and cubic close packed structures, both of which yield
-`r_1 = \sqrt{3}/2 a_0` and `Z_1=12`.
+hexagonal and cubic close packed structures (i.e. FCC, HCP), both of which
+yield `r_1 = \sqrt[6]{2} a_0 \approx 1.1225 a_0` and `Z_1=12`.
 
 It is straightforward to construct cubic or face-centered cubic (fcc,
 cubic closed packed) supercells for cubic materials (including e.g,
@@ -171,17 +174,17 @@ repeating this exercise with::
 
 yields a less obvious result, namely
 
-.. math:: \mathbf{P}_2 = \left(\begin{array}{rrr} -5 & 5 & 5 \\ 5 & -4 & 5 \\ 5 & 5 & -4 \end{array}\right) \quad
+.. math:: \mathbf{P}_2 = \left(\begin{array}{rrr} -6 & 5 & 5 \\ 5 & -6 & 5 \\ 5 & 5 & -5 \end{array}\right) \quad
           \mathbf{h}_2 = a_0 \left(\begin{array}{ccc}  5 & 0 & 0 \\ 0.5 & 5 & 0.5 \\ 0.5 & 0.5 & 5 \end{array}\right),
 
 which indeed corresponds to a reasonably cubic cell shape. One can
 also obtain the optimality measure `\bar{\Delta}` by executing::
 
-   dev1 = get_deviation_from_optimal_cell_shape(np.dot(P1, conf.cell)
-   dev2 = get_deviation_from_optimal_cell_shape(np.dot(P2, conf.cell)
+   dev1 = get_deviation_from_optimal_cell_shape(np.dot(P1, conf.cell))
+   dev2 = get_deviation_from_optimal_cell_shape(np.dot(P2, conf.cell))
 
 which yields `\bar{\Delta}(\mathbf{P}_1)=0` and
-`\bar{\Delta}(\mathbf{P}_2)=0.201`.
+`\bar{\Delta}(\mathbf{P}_2)=0.0178`.
 
 Since this procedure requires only knowledge of the cell metric (and
 not the atomic positions) for standard metrics, e.g., fcc, bcc, and
@@ -191,41 +194,26 @@ simple cubic one can generate series of shapes that are usable for
 supercell build using a primitive FCC cell are directly applicable to
 diamond and zincblende lattices.
 
-For convenience the `\mathbf{P}_\text{opt}` matrices for the
-aforementioned lattices have already been generated for
-`N_{uc}\leq2000` and are provided here as dictionaries in `json
-<https://en.wikipedia.org/wiki/JSON>`_ format.
-
- * Transformation of face-centered cubic metric to simple cubic-like shapes: :download:`Popt-fcc2sc.json`
- * Transformation of face-centered cubic metric to face-centered cubic-like shapes: :download:`Popt-fcc2fcc.json`
- * Transformation of body-centered cubic metric to simple cubic-like shapes: :download:`Popt-bcc2sc.json`
- * Transformation of body-centered cubic metric to face-centered cubic-like shapes: :download:`Popt-bcc2fcc.json`
- * Transformation of simple cubic metric to simple cubic-like shapes: :download:`Popt-sc2sc.json`
- * Transformation of simple cubic metric to face-centered cubic-like shapes: :download:`Popt-sc2fcc.json`
-
-The thus obtained `\bar{\Delta}` values are shown as a function
-of the number of unit cells `N_{uc}` in the panel below, which
-demonstrates that this approach provides access to a large number of
-supercells with e.g., simple cubic or face-centered cubic shapes that
-span the range between the "exact" solutions, for which
-`\bar{\Delta}=0`. The algorithm is, however, most useful for
+For illustration, the `\bar{\Delta}` values for supercells of SC, FCC
+and BCC lattices with SC/FCC target shapes are shown as a function of
+the number of unit cells `N_{uc}\leq2000` in the panel below (taken
+from :mr:`3404`). The algorithm is, however, most useful for
 non-cubic cell shapes, for which finding several reasonably sized cell
-shapes is more challenging as illustrated for a hexagonal material
+shapes is more challenging, as illustrated for a hexagonal material
 (LaBr\ :sub:`3`) in [Erhart]_.
 
-.. image:: score-size-sc2sc.svg
-   :width: 30%
-.. image:: score-size-fcc2sc.svg
-   :width: 30%
-.. image:: score-size-bcc2sc.svg
-   :width: 30%
-.. image:: score-size-sc2fcc.svg
-   :width: 30%
-.. image:: score-size-fcc2fcc.svg
-   :width: 30%
-.. image:: score-size-bcc2fcc.svg
-   :width: 30%
+.. image:: https://gitlab.com/-/project/470007/uploads/5c52f1b09cfd8f82c3b8453f45762d4f/image.png
 
+
+.. note::
+    For unit cells with more complex space groups, this approach can be cumbersome due
+    to the implementation which loops over many possible transformation matrices. The
+    `find_optimal_cell_shape <https://doped.readthedocs.io/en/latest/doped.utils.html#doped.utils.supercells.find_optimal_cell_shape>`_
+    function in `doped <https://doped.readthedocs.io>`_ implements the same algorithm with
+    some efficiency improvements (~100x compute time speedup), and offers an efficient
+    `algorithm <https://doped.readthedocs.io/en/latest/doped.utils.html#doped.utils.supercells.find_ideal_supercell>`_
+    for *directly* optimising the periodic defect-defect distance (~10-50% improvements);
+    see [Kavanagh]_ or the ``doped`` `tutorials <https://doped.readthedocs.io/en/latest/generation_tutorial.html>`_.
    
 Generation of supercell
 -----------------------
@@ -249,3 +237,8 @@ follows::
    First-principles study of codoping in lanthanum bromide,
    Phys. Rev. B, Vol **91**, 165206 (2012),
    :doi:`10.1103/PhysRevB.91.165206`; Appendix C
+
+.. [Kavanagh] S. R. Kavanagh et al.
+   doped: Python toolkit for robust and repeatable charged defect supercell calculations
+   J. Open Source Softw, 9(**96**), 6433 (2024),
+   :doi:`10.21105/joss.06433`

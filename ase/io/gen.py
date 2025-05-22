@@ -1,9 +1,12 @@
+# fmt: off
+
 """Extension to ASE: read and write structures in GEN format
 
 Refer to DFTB+ manual for GEN format description.
 
 Note: GEN format only supports single snapshot.
 """
+from typing import Dict, Sequence, Union
 
 from ase.atoms import Atoms
 from ase.utils import reader, writer
@@ -19,24 +22,23 @@ def read_gen(fileobj):
     natoms = int(line[0])
     pb_flag = line[1]
     if line[1] not in ['C', 'F', 'S']:
-        raise IOError('Error in line #1: only C (Cluster), S (Supercell) '
-                      'or F (Fraction) are valid options')
+        if line[1] == 'H':
+            raise OSError('Error in line #1: H (Helical) is valid but not '
+                          'supported. Only C (Cluster), S (Supercell) '
+                          'or F (Fraction) are supported options')
+        else:
+            raise OSError('Error in line #1: only C (Cluster), S (Supercell) '
+                          'or F (Fraction) are supported options')
 
     # Read atomic symbols
     line = lines[1].split()
-    # Define a dictionary with symbols-id
-    symboldict = dict()
-    symbolid = 1
-    for symb in line:
-        symboldict[symbolid] = symb
-        symbolid += 1
-
+    symboldict = {symbolid: symb for symbolid, symb in enumerate(line, start=1)}
     # Read atoms (GEN format supports only single snapshot)
     del lines[:2]
     positions = []
     symbols = []
     for line in lines[:natoms]:
-        dummy, symbolid, x, y, z = line.split()[:5]
+        _dummy, symbolid, x, y, z = line.split()[:5]
         symbols.append(symboldict[int(symbolid)])
         positions.append([float(x), float(y), float(z)])
     image = Atoms(symbols=symbols, positions=positions)
@@ -65,32 +67,36 @@ def read_gen(fileobj):
 
 
 @writer
-def write_gen(fileobj, images):
+def write_gen(
+    fileobj,
+    images: Union[Atoms, Sequence[Atoms]],
+    fractional: bool = False,
+):
     """Write structure in GEN format (refer to DFTB+ manual).
        Multiple snapshots are not allowed. """
-    if not isinstance(images, (list, tuple)):
-        images = [images]
+    if isinstance(images, (list, tuple)):
+        # GEN format doesn't support multiple snapshots
+        if len(images) != 1:
+            raise ValueError(
+                '"images" contains more than one structure. '
+                'GEN format supports only single snapshot output.'
+            )
+        atoms = images[0]
+    else:
+        atoms = images
 
-    # Images is kept in a list but a size > 0 is not allowed
-    # as GEN format doesn't support multiple snapshots.
-    # Images is used as a list for consistency with the other
-    # output modules
-    if len(images) != 1:
-        raise ValueError('images contains more than one structure\n' +
-                         'GEN format supports only single snapshot output')
-
-    symbols = images[0].get_chemical_symbols()
+    symbols = atoms.get_chemical_symbols()
 
     # Define a dictionary with symbols-id
-    symboldict = dict()
+    symboldict: Dict[str, int] = {}
     for sym in symbols:
-        if not (sym in symboldict):
+        if sym not in symboldict:
             symboldict[sym] = len(symboldict) + 1
     # An ordered symbol list is needed as ordered dictionary
     # is just available in python 2.7
     orderedsymbols = list(['null'] * len(symboldict.keys()))
-    for sym in symboldict.keys():
-        orderedsymbols[symboldict[sym] - 1] = sym
+    for sym, num in symboldict.items():
+        orderedsymbols[num - 1] = sym
 
     # Check whether the structure is periodic
     # GEN cannot describe periodicity in one or two direction,
@@ -98,34 +104,36 @@ def write_gen(fileobj, images):
     # directions. If your structure is not periodical in all
     # the directions, be sure you have set big periodicity
     # vectors in the non-periodic directions
-    if images[0].pbc.any():
+    if fractional:
+        pb_flag = 'F'
+    elif atoms.pbc.any():
         pb_flag = 'S'
     else:
         pb_flag = 'C'
 
     natoms = len(symbols)
     ind = 0
-    for atoms in images:
-        fileobj.write('%d  %-5s\n' % (natoms, pb_flag))
-        for s in orderedsymbols:
-            fileobj.write('%-5s' % s)
-        fileobj.write('\n')
-        for sym, (x, y, z) in zip(symbols, atoms.get_positions()):
-            ind += 1
-            symbolid = symboldict[sym]
-            fileobj.write('%-6d %d %22.15f %22.15f %22.15f\n' % (ind,
-                          symbolid, x, y, z))
-    if images[0].pbc.any():
-        fileobj.write('%22.15f %22.15f %22.15f \n' % (0.0, 0.0, 0.0))
-        fileobj.write('%22.15f %22.15f %22.15f \n' %
-                      (images[0].get_cell()[0][0],
-                       images[0].get_cell()[0][1],
-                       images[0].get_cell()[0][2]))
-        fileobj.write('%22.15f %22.15f %22.15f \n' %
-                      (images[0].get_cell()[1][0],
-                       images[0].get_cell()[1][1],
-                       images[0].get_cell()[1][2]))
-        fileobj.write('%22.15f %22.15f %22.15f \n' %
-                      (images[0].get_cell()[2][0],
-                       images[0].get_cell()[2][1],
-                       images[0].get_cell()[2][2]))
+
+    fileobj.write(f'{natoms:d}  {pb_flag:<5s}\n')
+    for sym in orderedsymbols:
+        fileobj.write(f'{sym:<5s}')
+    fileobj.write('\n')
+
+    if fractional:
+        coords = atoms.get_scaled_positions(wrap=False)
+    else:
+        coords = atoms.get_positions(wrap=False)
+
+    for sym, (x, y, z) in zip(symbols, coords):
+        ind += 1
+        symbolid = symboldict[sym]
+        fileobj.write(
+            f'{ind:-6d} {symbolid:d} {x:22.15f} {y:22.15f} {z:22.15f}\n')
+
+    if atoms.pbc.any() or fractional:
+        fileobj.write(f'{0.0:22.15f} {0.0:22.15f} {0.0:22.15f} \n')
+        cell = atoms.get_cell()
+        for i in range(3):
+            for j in range(3):
+                fileobj.write(f'{cell[i, j]:22.15f} ')
+            fileobj.write('\n')

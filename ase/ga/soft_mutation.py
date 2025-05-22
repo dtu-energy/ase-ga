@@ -1,18 +1,23 @@
+# fmt: off
+
 """Soft-mutation operator and associated tools"""
 import inspect
 import json
+
 import numpy as np
+from scipy.spatial.distance import cdist
+
 from ase.data import covalent_radii
-from ase.neighborlist import NeighborList
 from ase.ga.offspring_creator import OffspringCreator
 from ase.ga.utilities import atoms_too_close, gather_atoms_by_tag
-from scipy.spatial.distance import cdist
+from ase.neighborlist import NeighborList
 
 
 class TagFilter:
     """Filter which constrains same-tag atoms to behave
     like internally rigid moieties.
     """
+
     def __init__(self, atoms):
         self.atoms = atoms
         gather_atoms_by_tag(self.atoms)
@@ -62,6 +67,7 @@ class PairwiseHarmonicPotential:
     """Parent class for interatomic potentials of the type
     E(r_ij) = 0.5 * k_ij * (r_ij - r0_ij) ** 2
     """
+
     def __init__(self, atoms, rcut=10.):
         self.atoms = atoms
         self.pos0 = atoms.get_positions()
@@ -135,6 +141,7 @@ class BondElectroNegativityModel(PairwiseHarmonicPotential):
 
       __ https://dx.doi.org/10.1103/PhysRevB.84.092103
     """
+
     def calculate_force_constants(self):
         cell = self.atoms.get_cell()
         pos = self.atoms.get_positions()
@@ -236,6 +243,7 @@ class SoftMutation(OffspringCreator):
     use_tags: boolean
         Whether to use the atomic tags to preserve molecular identity.
     """
+
     def __init__(self, blmin, bounds=[0.5, 2.0],
                  calculator=BondElectroNegativityModel, rcut=10.,
                  used_modes_file='used_modes.json', use_tags=False,
@@ -253,7 +261,7 @@ class SoftMutation(OffspringCreator):
         if self.used_modes_file is not None:
             try:
                 self.read_used_modes(self.used_modes_file)
-            except IOError:
+            except OSError:
                 # file doesn't exist (yet)
                 pass
 
@@ -310,15 +318,15 @@ class SoftMutation(OffspringCreator):
 
     def read_used_modes(self, filename):
         """Read used modes from json file."""
-        with open(filename, 'r') as f:
-            modes = json.load(f)
+        with open(filename) as fd:
+            modes = json.load(fd)
             self.used_modes = {int(k): modes[k] for k in modes}
         return
 
     def write_used_modes(self, filename):
         """Dump used modes to json file."""
-        with open(filename, 'w') as f:
-            json.dump(self.used_modes, f)
+        with open(filename, 'w') as fd:
+            json.dump(self.used_modes, fd)
         return
 
     def get_new_individual(self, parents):

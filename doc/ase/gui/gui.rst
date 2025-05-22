@@ -15,7 +15,7 @@ and render molecular systems and atoms objects. It also allows to
 setup and run a number of calculations and can be used to transfer
 between different file formats.
 
-.. image:: ag.png
+.. image:: https://wiki.fysik.dtu.dk/ase-files/ag.png
    :height: 200 pt
 
 .. toctree::

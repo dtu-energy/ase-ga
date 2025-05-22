@@ -1,4 +1,7 @@
+# fmt: off
+
 import numpy as np
+
 from ase.atoms import Atoms
 
 
@@ -31,7 +34,7 @@ class Quaternions(Atoms):
 class Quaternion:
 
     def __init__(self, qin=[1, 0, 0, 0]):
-        assert(len(qin) == 4)
+        assert len(qin) == 4
         self.q = np.array(qin)
 
     def __str__(self):
@@ -97,55 +100,42 @@ class Quaternion:
         if sinth_2 == 0:
             # The angle is zero
             theta = 0.0
-            n = np.array([0,0,1])
+            n = np.array([0, 0, 1])
         else:
-            theta = np.arctan2(sinth_2, self.q[0])*2
-            n = self.q[1:]/sinth_2
+            theta = np.arctan2(sinth_2, self.q[0]) * 2
+            n = self.q[1:] / sinth_2
 
         return n, theta
 
     def euler_angles(self, mode='zyz'):
         """Return three Euler angles describing the rotation, in radians.
         Mode can be zyz or zxz. Default is zyz."""
-
+        # https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0276302
         if mode == 'zyz':
-            # These are (a+c)/2 and (a-c)/2 respectively
-            apc = np.arctan2(self.q[3], self.q[0])
-            amc = np.arctan2(self.q[1], self.q[2])
-
-            a, c = (apc+amc), (apc-amc)
-            cos_amc = np.cos(amc)
-            if cos_amc != 0:
-                sinb2 = self.q[2]/cos_amc
-            else:
-                sinb2 = self.q[1]/np.sin(amc)
-            cos_apc = np.cos(apc)
-            if cos_apc != 0:
-                cosb2 = self.q[0]/cos_apc
-            else:
-                cosb2 = self.q[3]/np.sin(apc)
-            b = np.arctan2(sinb2, cosb2)*2
+            a, b, c, d = self.q[0], self.q[3], self.q[2], -self.q[1]
         elif mode == 'zxz':
-            # These are (a+c)/2 and (a-c)/2 respectively
-            apc = np.arctan2(self.q[3], self.q[0])
-            amc = np.arctan2(-self.q[2], self.q[1])
-
-            a, c = (apc+amc), (apc-amc)
-            cos_amc = np.cos(amc)
-            if cos_amc != 0:
-                sinb2 = self.q[1]/cos_amc
-            else:
-                sinb2 = self.q[2]/np.sin(amc)
-            cos_apc = np.cos(apc)
-            if cos_apc != 0:
-                cosb2 = self.q[0]/cos_apc
-            else:
-                cosb2 = self.q[3]/np.sin(apc)
-            b = np.arctan2(sinb2, cosb2)*2
+            a, b, c, d = self.q[0], self.q[3], self.q[1], self.q[2]
         else:
-            raise ValueError('Invalid Euler angles mode {0}'.format(mode))
+            raise ValueError(f'Invalid Euler angles mode {mode}')
 
-        return np.array([a, b, c])
+        beta = 2 * np.arccos(
+            np.sqrt((a**2 + b**2) / (a**2 + b**2 + c**2 + d**2))
+        )
+        gap = np.arctan2(b, a)  # (gamma + alpha) / 2
+        gam = np.arctan2(d, c)  # (gamma - alpha) / 2
+        if np.isclose(beta, 0):
+            # gam is meaningless here
+            alpha = 0
+            gamma = 2 * gap - alpha
+        elif np.isclose(beta, np.pi):
+            # gap is meaningless here
+            alpha = 0
+            gamma = 2 * gam + alpha
+        else:
+            alpha = gap - gam
+            gamma = gap + gam
+
+        return np.array([alpha, beta, gamma])
 
     def arc_distance(self, other):
         """Gives a metric of the distance between two quaternions,
@@ -223,9 +213,9 @@ class Quaternion:
         """Build quaternion from axis (n, vector of 3 components) and angle
         (theta, in radianses)."""
 
-        n = np.array(n, float)/np.linalg.norm(n)
-        return Quaternion(np.concatenate([[np.cos(theta/2.0)],
-                                           np.sin(theta/2.0)*n]))
+        n = np.array(n, float) / np.linalg.norm(n)
+        return Quaternion(np.concatenate([[np.cos(theta / 2.0)],
+                                          np.sin(theta / 2.0) * n]))
 
     @staticmethod
     def from_euler_angles(a, b, c, mode='zyz'):
@@ -240,6 +230,6 @@ class Quaternion:
         elif mode == 'zxz':
             q_b = Quaternion.from_axis_angle([1, 0, 0], b)
         else:
-            raise ValueError('Invalid Euler angles mode {0}'.format(mode))
+            raise ValueError(f'Invalid Euler angles mode {mode}')
 
-        return q_c*q_b*q_a
+        return q_c * q_b * q_a

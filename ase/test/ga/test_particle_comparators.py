@@ -1,14 +1,17 @@
+# fmt: off
 import numpy as np
+
 from ase.cluster import Icosahedron
 from ase.ga.particle_comparator import NNMatComparator
-from ase.ga.utilities import get_nnmat
 from ase.ga.particle_mutations import RandomPermutation
+from ase.ga.utilities import get_nnmat
 
 
 def make_ico(sym):
     atoms = Icosahedron(sym, 4)
     atoms.center(vacuum=4.0)
     return atoms
+
 
 def test_particle_comparators(seed):
 
@@ -29,7 +32,7 @@ def test_particle_comparators(seed):
     assert not comp.looks_like(ico1, ico2)
 
     op = RandomPermutation(rng=rng)
-    a3, desc = op.get_new_individual([ico1])
+    a3, _desc = op.get_new_individual([ico1])
 
     assert a3.get_chemical_formula() == ico1.get_chemical_formula()
 

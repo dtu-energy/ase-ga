@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module provides I/O functions for the MAGRES file format, introduced
 by CASTEP as an output format to store structural data and ab-initio
 calculated NMR parameters.
@@ -6,14 +8,15 @@ Authors: Simone Sturniolo (ase implementation), Tim Green (original magres
 """
 
 import re
-import numpy as np
 from collections import OrderedDict
+
+import numpy as np
 
 import ase.units
 from ase.atoms import Atoms
+from ase.calculators.singlepoint import SinglePointDFTCalculator
 from ase.spacegroup import Spacegroup
 from ase.spacegroup.spacegroup import SpacegroupNotFoundError
-from ase.calculators.singlepoint import SinglePointDFTCalculator
 
 _mprops = {
     'ms': ('sigma', 1),
@@ -113,14 +116,13 @@ def read_magres(fd, include_unrecognised=False):
                          'isc_orbital_p': '10^19.T^2.J^-1',
                          'isc_orbital_d': '10^19.T^2.J^-1',
                          'isc_spin': '10^19.T^2.J^-1',
-                         'isc': '10^19.T^2.J^-1',
                          'sus': '10^-6.cm^3.mol^-1',
                          'calc_cutoffenergy': 'Hartree', }
 
         if d[0] in d and d[1] == allowed_units[d[0]]:
             pass
         else:
-            raise RuntimeError('Unrecognized units: %s %s' % (d[0], d[1]))
+            raise RuntimeError(f'Unrecognized units: {d[0]} {d[1]}')
 
         return d
 
@@ -130,7 +132,7 @@ def read_magres(fd, include_unrecognised=False):
             tuples.
         """
 
-        name, records = block
+        _name, records = block
 
         # 3x3 tensor
         def ntensor33(name):
@@ -179,7 +181,7 @@ def read_magres(fd, include_unrecognised=False):
             Parse atoms block into data dictionary given list of record tuples.
         """
 
-        name, records = block
+        _name, records = block
 
         # Lattice record: a1, a2 a3, b1, b2, b3, c1, c2 c3
         def lattice(d):
@@ -216,7 +218,7 @@ def read_magres(fd, include_unrecognised=False):
             tuples.
         """
 
-        name, records = block
+        _name, records = block
 
         data_dict = {}
 
@@ -239,6 +241,12 @@ def read_magres(fd, include_unrecognised=False):
                      'calculation': parse_generic_block, }
 
     file_contents = fd.read()
+
+    # Solve incompatibility for atomic indices above 100
+    pattern_ms = r'(ms [a-zA-Z]{1,2})(\d+)'
+    file_contents = re.sub(pattern_ms, r'\g<1> \g<2>', file_contents)
+    pattern_efg = r'(efg [a-zA-Z]{1,2})(\d+)'
+    file_contents = re.sub(pattern_efg, r'\g<1> \g<2>', file_contents)
 
     # This works as a validity check
     version = get_version(file_contents)
@@ -509,7 +517,7 @@ def write_magres(fd, image):
     def write_units(data, out):
         if 'units' in data:
             for tag, units in data['units']:
-                out.append('  units %s %s' % (tag, units))
+                out.append(f'  units {tag} {units}')
 
     def write_magres_block(data):
         """
@@ -567,11 +575,11 @@ def write_magres(fd, image):
 
         if 'lattice' in data:
             for lat in data['lattice']:
-                out.append("  lattice %s" % tensor_string(lat))
+                out.append(f"  lattice {tensor_string(lat)}")
 
         if 'symmetry' in data:
             for sym in data['symmetry']:
-                out.append('  symmetry %s' % sym)
+                out.append(f'  symmetry {sym}')
 
         if 'atom' in data:
             for a in data['atom']:
@@ -588,7 +596,7 @@ def write_magres(fd, image):
 
         for tag, data in data.items():
             for value in data:
-                out.append('%s %s' % (tag, ' '.join(str(x) for x in value)))
+                out.append('{} {}'.format(tag, ' '.join(str(x) for x in value)))
 
         return '\n'.join(out)
 
@@ -603,15 +611,15 @@ def write_magres(fd, image):
 
     for b in block_writers:
         if b in image_data:
-            fd.write('[{0}]\n'.format(b))
+            fd.write(f'[{b}]\n')
             fd.write(block_writers[b](image_data[b]))
-            fd.write('\n[/{0}]\n'.format(b))
+            fd.write(f'\n[/{b}]\n')
 
     # Now on to check for any non-standard blocks...
     for i in image.info:
         if '_' in i:
             ismag, b = i.split('_', 1)
             if ismag == 'magresblock' and b not in block_writers:
-                fd.write('[{0}]\n'.format(b))
+                fd.write(f'[{b}]\n')
                 fd.write(image.info[i])
-                fd.write('[/{0}]\n'.format(b))
+                fd.write(f'[/{b}]\n')

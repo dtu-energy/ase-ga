@@ -1,6 +1,10 @@
+# fmt: off
+import math
+
+from ase.utils.parsemath import eval_expression
+
+
 def test_parsemath():
-    from ase.utils.parsemath import eval_expression
-    import math
 
     param_dct = {
         "param_1": 1,
@@ -9,7 +13,7 @@ def test_parsemath():
         "param_4": 1.58e-5,
         "param_5": -2.48757,
         "param_6": -2.0,
-        "param_7": math.pi/4.0,
+        "param_7": math.pi / 4.0,
     }
 
     expressions = [
@@ -52,11 +56,12 @@ def test_parsemath():
     ]
 
     solutions = [
-        3*param_dct["param_1"],
+        3 * param_dct["param_1"],
         param_dct["param_2"]**-2.0,
         (param_dct["param_6"])**2.0,
         param_dct["param_1"] / param_dct["param_5"],
-        param_dct["param_1"] + param_dct["param_2"] * 30.0 - param_dct["param_5"],
+        param_dct["param_1"] + param_dct["param_2"] *
+        30.0 - param_dct["param_5"],
         (param_dct["param_1"] + 1) / param_dct["param_2"],
         math.sqrt(param_dct["param_2"]),
         math.fmod(param_dct["param_4"], param_dct["param_1"]),
@@ -83,8 +88,8 @@ def test_parsemath():
         math.floor(param_dct["param_5"]),
         round(param_dct["param_5"]),
         math.exp(param_dct["param_1"]),
-        2.0*math.e,
-        math.pi+1,
+        2.0 * math.e,
+        math.pi + 1,
         2.0,
         param_dct["param_5"] % param_dct["param_6"],
     ]
@@ -94,19 +99,24 @@ def test_parsemath():
 
     try:
         eval_expression("99**99**99*99**99**99")
-        raise RuntimeError("This should not be reached, the parser is now vulnerable to computational time based DNS attack")
+        raise RuntimeError(
+            "This should not be reached, the parser is now vulnerable "
+            "to computational time based DOS attack")
     except ValueError:
         pass
 
     try:
-        eval_expression("e"*10000000, dict())
-        raise RuntimeError("This should not be reached, the parser is now vulnerable to memory based DNS attack")
+        eval_expression("e" * 10000000, {})
+        raise RuntimeError(
+            "This should not be reached, the parser is now vulnerable "
+            "to memory based DOS attack")
     except ValueError:
         pass
 
     try:
         eval_expression("__import__('os').system('echo $HOME')")
-        raise RuntimeError("This should not be reached, the parser can execute malicious code")
+        raise RuntimeError(
+            "This should not be reached, "
+            "the parser can execute malicious code")
     except TypeError:
         pass
-

@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 IO functions for DMol3 file formats.
 
@@ -47,6 +49,7 @@ multiple images of car format separated with $end
 """
 
 from datetime import datetime
+
 import numpy as np
 
 from ase import Atom, Atoms
@@ -81,11 +84,11 @@ def write_dmol_car(fd, atoms):
         positions = np.dot(atoms.positions, R)
 
         fd.write('PBC=ON\n\n')
-        fd.write('!DATE     %s\n' % dt.strftime('%b %d %H:%m:%S %Y'))
+        fd.write('!DATE     %s\n' % dt.strftime('%b %d %H:%M:%S %Y'))
         fd.write('PBC %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f\n' % tuple(cellpar))
     elif not np.any(atoms.pbc):  # [False,False,False]
         fd.write('PBC=OFF\n\n')
-        fd.write('!DATE     %s\n' % dt.strftime('%b %d %H:%m:%S %Y'))
+        fd.write('!DATE     %s\n' % dt.strftime('%b %d %H:%M:%S %Y'))
         positions = atoms.positions
     else:
         raise ValueError('PBC must be all true or all false for .car format')
@@ -155,11 +158,11 @@ def write_dmol_incoor(fd, atoms, bohr=True):
         positions = atoms.positions
 
     fd.write('$cell vectors\n')
-    fd.write('            %18.14f  %18.14f  %18.14f\n' % (
+    fd.write('            {:18.14f}  {:18.14f}  {:18.14f}\n'.format(
         cell[0, 0], cell[0, 1], cell[0, 2]))
-    fd.write('            %18.14f  %18.14f  %18.14f\n' % (
+    fd.write('            {:18.14f}  {:18.14f}  {:18.14f}\n'.format(
         cell[1, 0], cell[1, 1], cell[1, 2]))
-    fd.write('            %18.14f  %18.14f  %18.14f\n' % (
+    fd.write('            {:18.14f}  {:18.14f}  {:18.14f}\n'.format(
         cell[2, 0], cell[2, 1], cell[2, 2]))
 
     fd.write('$coordinates\n')
@@ -237,8 +240,9 @@ def write_dmol_arc(fd, images):
             raise ValueError(
                 'PBC must be all true or all false for .arc format')
         for i, (sym, pos) in enumerate(zip(symbols, positions)):
-            fd.write('%-6s  %12.8f   %12.8f   %12.8f XXXX 1      xx      %-2s  '
-                    '0.000\n' % (sym + str(i + 1), pos[0], pos[1], pos[2], sym))
+            fd.write(
+                '%-6s  %12.8f   %12.8f   %12.8f XXXX 1      xx      %-2s  '
+                '0.000\n' % (sym + str(i + 1), pos[0], pos[1], pos[2], sym))
         fd.write('end\nend\n')
         fd.write('\n')
 

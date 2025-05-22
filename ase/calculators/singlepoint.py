@@ -1,7 +1,16 @@
+# fmt: off
+
+from functools import cached_property
+
 import numpy as np
 
-from ase.calculators.calculator import Calculator, all_properties
-from ase.calculators.calculator import PropertyNotImplementedError
+from ase.calculators.calculator import (
+    Calculator,
+    PropertyNotImplementedError,
+    PropertyNotPresent,
+    all_properties,
+)
+from ase.outputs import Properties
 
 
 class SinglePointCalculator(Calculator):
@@ -19,7 +28,7 @@ class SinglePointCalculator(Calculator):
         Calculator.__init__(self)
         self.results = {}
         for property, value in results.items():
-            assert property in all_properties
+            assert property in all_properties, property
             if value is None:
                 continue
             if property in ['energy', 'magmom', 'free_energy']:
@@ -32,9 +41,9 @@ class SinglePointCalculator(Calculator):
         tokens = []
         for key, val in sorted(self.results.items()):
             if np.isscalar(val):
-                txt = '{}={}'.format(key, val)
+                txt = f'{key}={val}'
             else:
-                txt = '{}=...'.format(key)
+                txt = f'{key}=...'
             tokens.append(txt)
         return '{}({})'.format(self.__class__.__name__, ', '.join(tokens))
 
@@ -44,7 +53,7 @@ class SinglePointCalculator(Calculator):
         if name not in self.results or self.check_state(atoms):
             if allow_calculation:
                 raise PropertyNotImplementedError(
-                    'The property "{0}" is not available.'.format(name))
+                    f'The property "{name}" is not available.')
             return None
 
         result = self.results[name]
@@ -54,11 +63,15 @@ class SinglePointCalculator(Calculator):
 
 
 class SinglePointKPoint:
-    def __init__(self, weight, s, k, eps_n=[], f_n=[]):
+    def __init__(self, weight, s, k, eps_n=None, f_n=None):
         self.weight = weight
         self.s = s  # spin index
         self.k = k  # k-point index
+        if eps_n is None:
+            eps_n = []
         self.eps_n = eps_n
+        if f_n is None:
+            f_n = []
         self.f_n = f_n
 
 
@@ -67,7 +80,7 @@ def arrays_to_kpoints(eigenvalues, occupations, weights):
 
     Convert eigenvalue, occupation, and weight arrays to list of
     SinglePointKPoint objects."""
-    nspins, nkpts, nbands = eigenvalues.shape
+    nspins, nkpts, _nbands = eigenvalues.shape
     assert eigenvalues.shape == occupations.shape
     assert len(weights) == nkpts
     kpts = []
@@ -83,6 +96,7 @@ def arrays_to_kpoints(eigenvalues, occupations, weights):
 class SinglePointDFTCalculator(SinglePointCalculator):
     def __init__(self, atoms,
                  efermi=None, bzkpts=None, ibzkpts=None, bz2ibz=None,
+                 kpts=None,
                  **results):
         self.bz_kpts = bzkpts
         self.ibz_kpts = ibzkpts
@@ -90,7 +104,7 @@ class SinglePointDFTCalculator(SinglePointCalculator):
         self.eFermi = efermi
 
         SinglePointCalculator.__init__(self, atoms, **results)
-        self.kpts = None
+        self.kpts = kpts
 
     def get_fermi_level(self):
         """Return the Fermi-level(s)."""
@@ -113,6 +127,15 @@ class SinglePointDFTCalculator(SinglePointCalculator):
                 nspin.add(kpt.s)
             return len(nspin)
         return None
+
+    def get_number_of_bands(self):
+        values = {len(kpt.eps_n) for kpt in self.kpts}
+        if not values:
+            return None
+        elif len(values) == 1:
+            return values.pop()
+        else:
+            raise RuntimeError('Multiple array sizes')
 
     def get_spin_polarized(self):
         """Is it a spin-polarized calculation?"""
@@ -149,7 +172,8 @@ class SinglePointDFTCalculator(SinglePointCalculator):
         """Return occupation number array."""
         kpoint = self.get_kpt(kpt, spin)
         if kpoint is not None:
-            return kpoint.f_n
+            if len(kpoint.f_n):
+                return kpoint.f_n
         return None
 
     def get_eigenvalues(self, kpt=0, spin=0):
@@ -163,13 +187,13 @@ class SinglePointDFTCalculator(SinglePointCalculator):
         """Return HOMO and LUMO energies."""
         if self.kpts is None:
             raise RuntimeError('No kpts')
-        eHs = []
-        eLs = []
-        for kpt in self.kpts:
-            eH, eL = self.get_homo_lumo_by_spin(kpt.s)
-            eHs.append(eH)
-            eLs.append(eL)
-        return np.array(eHs).max(), np.array(eLs).min()
+        eH = -np.inf
+        eL = np.inf
+        for spin in range(self.get_number_of_spins()):
+            homo, lumo = self.get_homo_lumo_by_spin(spin)
+            eH = max(eH, homo)
+            eL = min(eL, lumo)
+        return eH, eL
 
     def get_homo_lumo_by_spin(self, spin=0):
         """Return HOMO and LUMO energies for a given spin."""
@@ -179,7 +203,7 @@ class SinglePointDFTCalculator(SinglePointCalculator):
             if kpt.s == spin:
                 break
         else:
-            raise RuntimeError('No k-point with spin {0}'.format(spin))
+            raise RuntimeError(f'No k-point with spin {spin}')
         if self.eFermi is None:
             raise RuntimeError('Fermi level is not available')
         eH = -1.e32
@@ -192,3 +216,81 @@ class SinglePointDFTCalculator(SinglePointCalculator):
                     else:
                         eL = min(eL, e)
         return eH, eL
+
+    def properties(self) -> Properties:
+        return OutputPropertyWrapper(self).properties()
+
+
+def propertygetter(func):
+    from functools import wraps
+
+    @wraps(func)
+    def getter(self):
+        value = func(self)
+        if value is None:
+            raise PropertyNotPresent(func.__name__)
+        return value
+    return cached_property(getter)
+
+
+class OutputPropertyWrapper:
+    def __init__(self, calc):
+        self.calc = calc
+
+    @propertygetter
+    def nspins(self):
+        return self.calc.get_number_of_spins()
+
+    @propertygetter
+    def nbands(self):
+        return self.calc.get_number_of_bands()
+
+    @propertygetter
+    def nkpts(self):
+        return len(self.calc.kpts) // self.nspins
+
+    def _build_eig_occ_array(self, getter):
+        arr = np.empty((self.nspins, self.nkpts, self.nbands))
+        for s in range(self.nspins):
+            for k in range(self.nkpts):
+                value = getter(spin=s, kpt=k)
+                if value is None:
+                    return None
+                arr[s, k, :] = value
+        return arr
+
+    @propertygetter
+    def eigenvalues(self):
+        return self._build_eig_occ_array(self.calc.get_eigenvalues)
+
+    @propertygetter
+    def occupations(self):
+        return self._build_eig_occ_array(self.calc.get_occupation_numbers)
+
+    @propertygetter
+    def fermi_level(self):
+        return self.calc.get_fermi_level()
+
+    @propertygetter
+    def kpoint_weights(self):
+        return self.calc.get_k_point_weights()
+
+    @propertygetter
+    def ibz_kpoints(self):
+        return self.calc.get_ibz_k_points()
+
+    def properties(self) -> Properties:
+        dct = {}
+        for name in ['eigenvalues', 'occupations', 'fermi_level',
+                     'kpoint_weights', 'ibz_kpoints']:
+            try:
+                value = getattr(self, name)
+            except PropertyNotPresent:
+                pass
+            else:
+                dct[name] = value
+
+        for name, value in self.calc.results.items():
+            dct[name] = value
+
+        return Properties(dct)

@@ -1,16 +1,22 @@
-def test_qmmm():
-    from math import cos, sin, pi
+# fmt: off
+from math import cos, pi, sin
 
-    import numpy as np
+import numpy as np
 
-    import ase.units as units
-    from ase import Atoms
-    from ase.calculators.tip3p import TIP3P, epsilon0, sigma0, rOH, angleHOH
-    from ase.calculators.qmmm import (SimpleQMMM, EIQMMM, LJInteractions,
-                                      LJInteractionsGeneral)
-    from ase.constraints import FixInternals
-    from ase.optimize import GPMin
+import ase.units as units
+from ase import Atoms
+from ase.calculators.qmmm import (
+    EIQMMM,
+    LJInteractions,
+    LJInteractionsGeneral,
+    SimpleQMMM,
+)
+from ase.calculators.tip3p import TIP3P, angleHOH, epsilon0, rOH, sigma0
+from ase.constraints import FixInternals
+from ase.optimize import GPMin
 
+
+def test_qmmm(testdir):
     r = rOH
     a = angleHOH * pi / 180
 
@@ -65,10 +71,13 @@ def test_qmmm():
         dimer.constraints = FixInternals(
             bonds=[(r, (0, 2)), (r, (1, 2)),
                    (r, (3, 5)), (r, (4, 5))],
-            angles_deg=[(np.degrees(a), (0, 2, 1)), (np.degrees(a), (3, 5, 4))])
-        opt = GPMin(dimer,
-                    trajectory=calc.name + '.traj', logfile=calc.name + 'd.log')
-        opt.run(0.01)
+            angles_deg=[(np.degrees(a), (0, 2, 1)), (np.degrees(a),
+                                                     (3, 5, 4))])
+
+        with GPMin(dimer,
+                   trajectory=calc.name + '.traj',
+                   logfile=calc.name + 'd.log') as opt:
+            opt.run(0.01)
 
         e0 = dimer.get_potential_energy()
         d0 = dimer.get_distance(2, 5)

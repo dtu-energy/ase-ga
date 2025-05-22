@@ -1,6 +1,7 @@
+# fmt: off
 """Test ase.io.ulm file stuff."""
-import pytest
 import numpy as np
+import pytest
 
 import ase.io.ulm as ulm
 
@@ -16,7 +17,7 @@ class A:
         return a
 
 
-@pytest.fixture
+@pytest.fixture()
 def ulmfile(tmp_path):
     path = tmp_path / 'a.ulm'
 
@@ -29,6 +30,18 @@ def ulmfile(tmp_path):
         w.write(s='abc3', z=np.ones(7, int))
 
     return path
+
+
+class MyFile:
+    def __fspath__(self):
+        return 'hello'
+
+
+def test_open_anypathlike():
+    # File does not exist, but we still want to test that it is correctly
+    # converted into a (nonexistent) path
+    with pytest.raises(FileNotFoundError):
+        ulm.open(MyFile())
 
 
 def test_ulm(ulmfile):

@@ -1,14 +1,18 @@
+# fmt: off
+
 """Various utility methods used troughout the GA."""
+import itertools
 import os
 import time
-import math
-import itertools
+
 import numpy as np
 from scipy.spatial.distance import cdist
-from ase.io import write, read
-from ase.geometry.cell import cell_to_cellpar
+
 from ase.data import covalent_radii
 from ase.ga import get_neighbor_list
+from ase.geometry.cell import cell_to_cellpar
+from ase.geometry.rdf import get_rdf
+from ase.io import read, write
 
 
 def closest_distances_generator(atom_numbers, ratio_of_covalent_radii):
@@ -18,13 +22,13 @@ def closest_distances_generator(atom_numbers, ratio_of_covalent_radii):
     cr = covalent_radii
     ratio = ratio_of_covalent_radii
 
-    blmin = dict()
+    blmin = {}
     for i in atom_numbers:
         blmin[(i, i)] = cr[i] * 2 * ratio
         for j in atom_numbers:
             if i == j:
                 continue
-            if (i, j) in blmin.keys():
+            if (i, j) in blmin:
                 continue
             blmin[(i, j)] = blmin[(j, i)] = ratio * (cr[i] + cr[j])
     return blmin
@@ -61,15 +65,13 @@ def db_call_with_error_tol(db_cursor, expression, args=[]):
     employed.
     """
     import sqlite3
-    i = 0
-    while i < 10:
+    for _ in range(10):
         try:
             db_cursor.execute(expression, args)
             return
         except sqlite3.OperationalError as e:
             print(e)
             time.sleep(2.)
-        i += 1
     raise sqlite3.OperationalError(
         'Database still locked after 10 attempts (20 s)')
 
@@ -89,7 +91,7 @@ def get_trajectory(fname):
     fname = str(fname)
     try:
         t = read(fname)
-    except IOError as e:
+    except OSError as e:
         print('get_trajectory error ' + e)
     return t
 
@@ -234,91 +236,6 @@ def get_distance_matrix(atoms, self_distance=1000):
             dm[i][j] = rij
             dm[j][i] = rij
     return dm
-
-
-def get_rdf(atoms, rmax, nbins, distance_matrix=None,
-            elements=None, no_dists=False):
-    """Returns two numpy arrays; the radial distribution function
-    and the corresponding distances of the supplied atoms object.
-    If no_dists = True then only the first array is returned.
-
-    Note that the rdf is computed following the standard solid state
-    definition which uses the cell volume in the normalization.
-    This may or may not be appropriate in cases where one or more
-    directions is non-periodic.
-
-    Parameters:
-
-    rmax : float
-        The maximum distance that will contribute to the rdf.
-        The unit cell should be large enough so that it encloses a
-        sphere with radius rmax in the periodic directions.
-
-    nbins : int
-        Number of bins to divide the rdf into.
-
-    distance_matrix : numpy.array
-        An array of distances between atoms, typically
-        obtained by atoms.get_all_distances().
-        Default None meaning that it will be calculated.
-
-    elements : list or tuple
-        List of two atomic numbers. If elements is not None the partial
-        rdf for the supplied elements will be returned.
-
-    no_dists : bool
-        If True then the second array with rdf distances will not be returned
-    """
-    # First check whether the cell is sufficiently large
-    cell = atoms.get_cell()
-    vol = atoms.get_volume()
-    pbc = atoms.get_pbc()
-    for i in range(3):
-        if pbc[i]:
-            axb = np.cross(cell[(i + 1) % 3, :], cell[(i + 2) % 3, :])
-            h = vol / np.linalg.norm(axb)
-            assert h > 2 * rmax, 'The cell is not large enough in ' \
-                 'direction %d: %.3f < 2*rmax=%.3f' % (i, h, 2 * rmax)
-
-    dm = distance_matrix
-    if dm is None:
-        dm = atoms.get_all_distances(mic=True)
-    rdf = np.zeros(nbins + 1)
-    dr = float(rmax / nbins)
-
-    if elements is None:
-        # Coefficients to use for normalization
-        phi = len(atoms) / vol
-        norm = 2.0 * math.pi * dr * phi * len(atoms)
-
-        for i in range(len(atoms)):
-            for j in range(i + 1, len(atoms)):
-                rij = dm[i][j]
-                index = int(math.ceil(rij / dr))
-                if index <= nbins:
-                    rdf[index] += 1
-    else:
-        i_indices = np.where(atoms.numbers == elements[0])[0]
-        phi = len(i_indices) / vol
-        norm = 4.0 * math.pi * dr * phi * len(atoms)
-
-        for i in i_indices:
-            for j in np.where(atoms.numbers == elements[1])[0]:
-                rij = dm[i][j]
-                index = int(math.ceil(rij / dr))
-                if index <= nbins:
-                    rdf[index] += 1
-
-    dists = []
-    for i in range(1, nbins + 1):
-        rrr = (i - 0.5) * dr
-        dists.append(rrr)
-        # Normalize
-        rdf[i] /= (norm * ((rrr**2) + (dr**2) / 12.))
-
-    if no_dists:
-        return rdf[1:]
-    return rdf[1:], np.array(dists)
 
 
 def get_nndist(atoms, distance_matrix):
@@ -630,6 +547,7 @@ class CellBounds:
     ...                    'psi': [20, 160],
     ...                    'a': [2, 20], 'b': [2, 20], 'c': [2, 20]})
     """
+
     def __init__(self, bounds={}):
         self.bounds = {'alpha': [0, np.pi], 'beta': [0, np.pi],
                        'gamma': [0, np.pi], 'phi': [0, np.pi],

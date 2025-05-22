@@ -1,30 +1,19 @@
-import os
-import sys
-import errno
-import pickle
-import warnings
+# fmt: off
+
 import collections
-
-# Python 3 stuff:
-try:
-    unicode
-except NameError:
-    unicode = str
-
-# pass for WindowsError on non-Win platforms
-try:
-    WindowsError
-except NameError:
-    class WindowsError(OSError):
-        pass
+import errno
+import os
+import pickle
+import sys
+import warnings
 
 import numpy as np
 
 from ase.atoms import Atoms
-from ase.calculators.singlepoint import SinglePointCalculator
 from ase.calculators.calculator import PropertyNotImplementedError
+from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms
-from ase.parallel import world, barrier
+from ase.parallel import barrier, world
 
 
 class PickleTrajectory:
@@ -80,7 +69,8 @@ class PickleTrajectory:
                 msg += ('\nConvert to the new future-proof format like this:\n'
                         '\n    $ python3 -m ase.io.trajectory ' +
                         filename + '\n')
-            raise DeprecationWarning(msg)
+
+            raise RuntimeError(msg)
 
         self.numbers = None
         self.pbc = None
@@ -130,7 +120,7 @@ class PickleTrajectory:
                     if self.backup and os.path.isfile(filename):
                         try:
                             os.rename(filename, filename + '.bak')
-                        except WindowsError as e:
+                        except OSError as e:
                             # this must run on Win only! Not atomic!
                             if e.errno != errno.EEXIST:
                                 raise
@@ -159,7 +149,7 @@ class PickleTrajectory:
         self.fd.seek(0)
         try:
             if self.fd.read(len('PickleTrajectory')) != b'PickleTrajectory':
-                raise IOError('This is not a trajectory file!')
+                raise OSError('This is not a trajectory file!')
             d = pickle.load(self.fd)
         except EOFError:
             raise EOFError('Bad trajectory file.')
@@ -356,7 +346,7 @@ class PickleTrajectory:
 
         All other arguments are stored, and passed to the function.
         """
-        if not isinstance(function, collections.Callable):
+        if not isinstance(function, collections.abc.Callable):
             raise ValueError('Callback object must be callable.')
         self.pre_observers.append((function, interval, args, kwargs))
 
@@ -369,7 +359,7 @@ class PickleTrajectory:
 
         All other arguments are stored, and passed to the function.
         """
-        if not isinstance(function, collections.Callable):
+        if not isinstance(function, collections.abc.Callable):
             raise ValueError('Callback object must be callable.')
         self.post_observers.append((function, interval, args, kwargs))
 
@@ -404,7 +394,7 @@ def stringnify_info(info):
             s = pickle.dumps(v, protocol=0)
         except pickle.PicklingError:
             warnings.warn('Skipping not picklable info-dict item: ' +
-                          '"%s" (%s)' % (k, sys.exc_info()[1]), UserWarning)
+                          f'"{k}" ({sys.exc_info()[1]})', UserWarning)
         else:
             stringnified[k] = s
     return stringnified
@@ -420,7 +410,7 @@ def unstringnify_info(stringnified):
             v = pickle.loads(s)
         except pickle.UnpicklingError:
             warnings.warn('Skipping not unpicklable info-dict item: ' +
-                          '"%s" (%s)' % (k, sys.exc_info()[1]), UserWarning)
+                          f'"{k}" ({sys.exc_info()[1]})', UserWarning)
         else:
             info[k] = v
     return info

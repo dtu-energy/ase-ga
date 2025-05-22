@@ -1,3 +1,5 @@
+# fmt: off
+
 """ write gromos96 geometry files
 (the exact file format is copied from the freely available
 gromacs package, http://www.gromacs.org
@@ -20,7 +22,6 @@ def read_gromos(fileobj):
     tries to set atom types
     """
 
-
     lines = fileobj.readlines()
     read_pos = False
     read_box = False
@@ -33,7 +34,7 @@ def read_gromos(fileobj):
         if (read_box and ('END' in line)):
             read_box = False
         if read_pos:
-            symbol, dummy, x, y, z = line.split()[2:7]
+            symbol, _dummy, x, y, z = line.split()[2:7]
             tmp_pos.append((10 * float(x), 10 * float(y), 10 * float(z)))
             if (len(symbol) != 2):
                 symbols.append(symbol[0].lower().capitalize())
@@ -83,7 +84,7 @@ def write_gromos(fileobj, atoms):
         gromos_residuenames = atoms.get_array('residuenames')
     except KeyError:
         gromos_residuenames = []
-        for idum in range(natoms):
+        for _ in range(natoms):
             gromos_residuenames.append('1DUM')
     try:
         gromos_atomtypes = atoms.get_array('atomtypes')
@@ -123,5 +124,5 @@ def write_gromos(fileobj, atoms):
         fileobj.write('BOX\n')
         mycell = atoms.get_cell()
         grocell = mycell.flat[[0, 4, 8, 1, 2, 3, 5, 6, 7]] * 0.1
-        fileobj.write(''.join(['{:15.9f}'.format(x) for x in grocell]))
+        fileobj.write(''.join([f'{x:15.9f}' for x in grocell]))
         fileobj.write('\nEND\n')

@@ -1,18 +1,20 @@
+# fmt: off
+
 """
 Module for povray file format support.
 
 See http://www.povray.org/ for details on the format.
 """
-from collections.abc import Mapping, Sequence
-from subprocess import check_call, DEVNULL
+from collections.abc import Sequence
 from os import unlink
 from pathlib import Path
+from subprocess import DEVNULL, check_call
 
 import numpy as np
 
-from ase.io.utils import PlottingVariables
-from ase.constraints import FixAtoms
 from ase import Atoms
+from ase.constraints import FixAtoms
+from ase.io.utils import PlottingVariables
 
 
 def pa(array):
@@ -26,9 +28,9 @@ def pc(array):
         return 'color ' + array
     if isinstance(array, float):
         return f'rgb <{array:.2f}>*3'.format(array)
-    l = len(array)
-    if l > 2 and l < 6:
-        return f"rgb{'' if l == 3 else 't' if l == 4 else 'ft'} <" +\
+    L = len(array)
+    if L > 2 and L < 6:
+        return f"rgb{'' if L == 3 else 't' if L == 4 else 'ft'} <" +\
             ', '.join(f"{x:.2f}" for x in tuple(array)) + '>'
 
 
@@ -84,7 +86,7 @@ def set_high_bondorder_pairs(bondpairs, high_bondorder_pairs=None):
                           3rd value is bond_offset """
 
     if high_bondorder_pairs is None:
-        high_bondorder_pairs = dict()
+        high_bondorder_pairs = {}
     bondpairs_ = []
     for pair in bondpairs:
         (a, b) = (pair[0], pair[1])
@@ -100,7 +102,35 @@ def set_high_bondorder_pairs(bondpairs, high_bondorder_pairs=None):
 
 
 class POVRAY:
+    # These new styles were an attempt to port the old styles o the correct
+    # gamma, many had or still have unphysical light properties inorder to
+    # acheive a certain look.
     material_styles_dict = dict(
+        simple='finish {phong 0.7 ambient 0.4 diffuse 0.55}',
+        # In general, 'pale' doesn't conserve energy and can look
+        # strange in many cases.
+        pale=('finish {ambient 0.9 diffuse 0.30 roughness 0.001 '
+              'specular 0.2 }'),
+        intermediate=('finish {ambient 0.4 diffuse 0.6 specular 0.1 '
+                      'roughness 0.04}'),
+        vmd=(
+            'finish {ambient 0.2 diffuse 0.80 phong 0.25 phong_size 10.0 '
+            'specular 0.2 roughness 0.1}'),
+        jmol=('finish {ambient 0.4 diffuse 0.6 specular 1 roughness 0.001 '
+              'metallic}'),
+        ase2=('finish {ambient 0.2 brilliance 3 diffuse 0.6 metallic '
+              'specular 0.7 roughness 0.04 reflection 0.15}'),
+        ase3=('finish {ambient 0.4 brilliance 2 diffuse 0.6 metallic '
+              'specular 1.0 roughness 0.001 reflection 0.0}'),
+        glass=('finish {ambient 0.4 diffuse 0.35 specular 1.0 '
+               'roughness 0.001}'),
+        glass2=('finish {ambient 0.3 diffuse 0.3 specular 1.0 '
+                'reflection 0.25 roughness 0.001}'),
+    )
+
+    # These styles were made when assumed_gamma was 1.0 which gives poor color
+    # reproduction, the correct gamma is 2.2 for the sRGB standard.
+    material_styles_dict_old = dict(
         simple='finish {phong 0.7}',
         pale=('finish {ambient 0.5 diffuse 0.85 roughness 0.001 '
               'specular 0.200 }'),
@@ -121,7 +151,7 @@ class POVRAY:
     )
 
     def __init__(self, cell, cell_vertices, positions, diameters, colors,
-                 image_width, image_height, constraints=tuple(), isosurfaces=[],
+                 image_width, image_height, constraints=(), isosurfaces=[],
                  display=False, pause=True, transparent=True, canvas_width=None,
                  canvas_height=None, camera_dist=50., image_plane=None,
                  camera_type='orthographic', point_lights=[],
@@ -270,7 +300,7 @@ class POVRAY:
     def from_PlottingVariables(cls, pvars, **kwargs):
         cell = pvars.cell
         cell_vertices = pvars.cell_vertices
-        if 'colors' in kwargs.keys():
+        if 'colors' in kwargs:
             colors = kwargs.pop('colors')
         else:
             colors = pvars.colors
@@ -298,12 +328,13 @@ Output_to_File=True
 Output_File_Type=N
 Output_Alpha={'on' if self.transparent else 'off'}
 ; if you adjust Height, and width, you must preserve the ratio
-; Width / Height = {self.canvas_width/self.canvas_height:f}
+; Width / Height = {self.canvas_width / self.canvas_height:f}
 Width={self.canvas_width}
 Height={self.canvas_height}
 Antialias=True
 Antialias_Threshold=0.1
 Display={self.display}
+Display_Gamma=2.2
 Pause_When_Done={self.pause}
 Verbose=False
 """
@@ -352,7 +383,7 @@ Verbose=False
                         continue
 
                     cell_vertices += f'cylinder {{{pa(p1)}, {pa(p2)}, '\
-                                     f'Rcell pigment {{Black}}}}\n'
+                                     'Rcell pigment {Black}}\n'
                     # all strings are f-strings for consistency
             cell_vertices = cell_vertices.strip('\n')
 
@@ -366,7 +397,7 @@ Verbose=False
                 tex = self.textures[a]
             if self.transmittances is not None:
                 trans = self.transmittances[a]
-            atoms += f'atom({pa(loc)}, {dia/2.:.2f}, {pc(col)}, '\
+            atoms += f'atom({pa(loc)}, {dia / 2.:.2f}, {pc(col)}, '\
                      f'{trans}, {tex}) // #{a:n}\n'
             a += 1
         atoms = atoms.strip('\n')
@@ -461,24 +492,27 @@ Verbose=False
             colb = self.colors[b]
 
             if bond_order == 1:
-                draw_tuples = (posa, mida, cola, transa, texa),\
-                              (posb, midb, colb, transb, texb)
+                draw_tuples = (
+                    (posa, mida, cola, transa, texa),
+                    (posb, midb, colb, transb, texb))
 
             elif bond_order == 2:
                 bs = [x / 2 for x in bond_offset]
-                draw_tuples = (posa - bs, mida - bs, cola, transa, texa),\
-                              (posb - bs, midb - bs, colb, transb, texb),\
-                              (posa + bs, mida + bs, cola, transa, texa),\
-                              (posb + bs, midb + bs, colb, transb, texb)
+                draw_tuples = (
+                    (posa - bs, mida - bs, cola, transa, texa),
+                    (posb - bs, midb - bs, colb, transb, texb),
+                    (posa + bs, mida + bs, cola, transa, texa),
+                    (posb + bs, midb + bs, colb, transb, texb))
 
             elif bond_order == 3:
                 bs = bond_offset
-                draw_tuples = (posa, mida, cola, transa, texa),\
-                              (posb, midb, colb, transb, texb),\
-                              (posa + bs, mida + bs, cola, transa, texa),\
-                              (posb + bs, midb + bs, colb, transb, texb),\
-                              (posa - bs, mida - bs, cola, transa, texa),\
-                              (posb - bs, midb - bs, colb, transb, texb)
+                draw_tuples = (
+                    (posa, mida, cola, transa, texa),
+                    (posb, midb, colb, transb, texb),
+                    (posa + bs, mida + bs, cola, transa, texa),
+                    (posb + bs, midb + bs, colb, transb, texb),
+                    (posa - bs, mida - bs, cola, transa, texa),
+                    (posb - bs, midb - bs, colb, transb, texb))
 
             bondatoms += ''.join(f'cylinder {{{pa(p)}, '
                                  f'{pa(m)}, Rbond texture{{pigment '
@@ -498,14 +532,15 @@ Verbose=False
                 trans = 0.0
                 if self.transmittances is not None:
                     trans = self.transmittances[a]
-                constraints += f'constrain({pa(loc)}, {dia/2.:.2f}, Black, '\
+                constraints += f'constrain({pa(loc)}, {dia / 2.:.2f}, Black, '\
                     f'{trans}, {tex}) // #{a:n} \n'
         constraints = constraints.strip('\n')
 
-        pov = f"""#include "colors.inc"
+        pov = f"""#version 3.6;
+#include "colors.inc"
 #include "finish.inc"
 
-global_settings {{assumed_gamma 1 max_trace_level 6}}
+global_settings {{assumed_gamma 2.2 max_trace_level 6}}
 background {{{pc(self.background)}{' transmit 1.0' if self.transparent else ''}}}
 camera {{{self.camera_type}
   right -{self.image_width:.2f}*x up {self.image_height:.2f}*y
@@ -637,7 +672,7 @@ class POVRAYIsosurface:
         self.density_grid = density_grid
         self.spacing = tuple(1.0 / np.array(self.density_grid.shape))
 
-        scaled_verts, faces, normals, values = self.compute_mesh(
+        scaled_verts, faces, _normals, _values = self.compute_mesh(
             self.density_grid,
             self.cut_off,
             self.spacing,
@@ -725,8 +760,15 @@ class POVRAYIsosurface:
 
         """
 
-        from skimage import measure
-        return measure.marching_cubes_lewiner(
+        # marching_cubes name was changed in skimage v0.19
+        try:
+            # New skimage
+            from skimage.measure import marching_cubes
+        except ImportError:
+            # Old skimage (remove at some point)
+            from skimage.measure import marching_cubes_lewiner as marching_cubes
+
+        return marching_cubes(
             density_grid,
             level=cut_off,
             spacing=spacing,
@@ -818,11 +860,18 @@ def write_pov(filename, atoms, *,
     pvars = PlottingVariables(atoms, scale=1.0, **generic_projection_settings)
     pov_obj = POVRAY.from_PlottingVariables(pvars, **povray_settings)
 
-    if isinstance(isosurface_data, Mapping):
-        pov_obj.isosurfaces = [POVRAYIsosurface.from_POVRAY(
-            pov_obj, **isosurface_data)]
-    elif isinstance(isosurface_data, Sequence):
-        pov_obj.isosurfaces = [POVRAYIsosurface.from_POVRAY(
-            pov_obj, **isodata) for isodata in isosurface_data]
+    if isosurface_data is None:
+        isosurface_data = []
+    elif not isinstance(isosurface_data, Sequence):
+        isosurface_data = [isosurface_data]
+
+    isosurfaces = []
+    for isodata in isosurface_data:
+        if isinstance(isodata, POVRAYIsosurface):
+            iso = isodata
+        else:
+            iso = POVRAYIsosurface.from_POVRAY(pov_obj, **isodata)
+        isosurfaces.append(iso)
+    pov_obj.isosurfaces = isosurfaces
 
     return pov_obj.write(filename)

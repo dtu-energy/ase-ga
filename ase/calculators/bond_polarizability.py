@@ -1,9 +1,14 @@
+# fmt: off
+
 from typing import Tuple
+
 import numpy as np
 
-from ase.units import Bohr, Ha
 from ase.data import covalent_radii
 from ase.neighborlist import NeighborList
+from ase.units import Bohr, Ha
+
+from .polarizability import StaticPolarizabilityCalculator
 
 
 class LippincottStuttman:
@@ -15,23 +20,31 @@ class LippincottStuttman:
     #   DOI: 10.1103/PhysRevB.55.2938
     # unit: Angstrom^3
     atomic_polarizability = {
+        'H': 0.592,
+        'Be': 3.802,
         'B': 1.358,
         'C': 0.978,
         'N': 0.743,
         'O': 0.592,
         'Al': 3.918,
         'Si': 2.988,
+        'P': 2.367,
+        'S': 1.820,
     }
     # reduced electronegativity Table I
     reduced_eletronegativity = {
-        'B': 0.538,
+        'H': 1.0,
+        'Be': 0.538,
+        'B': 0.758,
         'C': 0.846,
         'N': 0.927,
         'O': 1.0,
         'Al': 0.533,
         'Si': 0.583,
+        'P': 0.630,
+        'S': 0.688,
     }
-    
+
     def __call__(self, el1: str, el2: str,
                  length: float) -> Tuple[float, float]:
         """Bond polarizability
@@ -105,17 +118,13 @@ class Linearized:
         length0, al, ald, ap, apd = self._data[bond]
 
         return al + ald * (length - length0), ap + apd * (length - length0)
-        
 
-class BondPolarizability:
+
+class BondPolarizability(StaticPolarizabilityCalculator):
     def __init__(self, model=LippincottStuttman()):
         self.model = model
-    
-    def __call__(self, *args, **kwargs):
-        """Shorthand for calculate"""
-        return self.calculate(*args, **kwargs)
 
-    def calculate(self, atoms, radiicut=1.5):
+    def __call__(self, atoms, radiicut=1.5):
         """Sum up the bond polarizability from all bonds
 
         Parameters

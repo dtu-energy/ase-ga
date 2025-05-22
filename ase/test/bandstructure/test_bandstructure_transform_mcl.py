@@ -1,18 +1,21 @@
-def test_bandstructure_transform_mcl():
+# fmt: off
+import numpy as np
+
+from ase import Atoms
+from ase.calculators.test import FreeElectrons
+from ase.cell import Cell
+from ase.spectrum.band_structure import calculate_band_structure
+from ase.utils import workdir
+
+
+def test_bandstructure_transform_mcl(testdir):
     # Test that bandpath() correctly transforms the band path from
     # reference (canonical) cell to actual cell provided by user.
-    import numpy as np
-    from ase import Atoms
-    from ase.utils import workdir
-    from ase.spectrum.band_structure import calculate_band_structure
-    from ase.calculators.test import FreeElectrons
-    from ase.cell import Cell
 
     def _atoms(cell):
         atoms = Atoms(cell=cell, pbc=True)
         atoms.calc = FreeElectrons()
         return atoms
-
 
     # MCL with beta > 90, which is a common convention -- but ours is
     # alpha < 90.  We want the bandpath returned by that cell to yield the

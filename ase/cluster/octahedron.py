@@ -1,11 +1,13 @@
+# fmt: off
+
 """
 Function-like objects that creates cubic clusters.
 """
 
 import numpy as np
 
-from ase.cluster.cubic import FaceCenteredCubic
 from ase.cluster.compounds import L1_2
+from ase.cluster.cubic import FaceCenteredCubic
 
 
 def Octahedron(symbol, length, cutoff=0, latticeconstant=None, alloy=False):
@@ -23,23 +25,23 @@ def Octahedron(symbol, length, cutoff=0, latticeconstant=None, alloy=False):
     ============================    =======================
 
 
-    Parameters:
-
-    symbol: string or sequence of int
+    Parameters
+    ----------
+    symbol : str or list
         The chemical symbol or atomic number of the element(s).
 
-    length: int
+    length : int
         Number of atoms on the square edges of the complete octahedron.
 
-    cutoff (optional): int
+    cutoff : int, default 0
         Number of layers cut at each vertex.
 
-    latticeconstant (optional): float
-        The lattice constant. If not given,
-        then it is extracted form ase.data.
+    latticeconstant : float, optional
+        The lattice constant. If not given, then it is extracted from
+        `ase.data`.
 
-    alloy (optional): bool
-        If true the L1_2 structure is used. Default is False.
+    alloy : bool, default False
+        If True the L1_2 structure is used.
 
     """
 

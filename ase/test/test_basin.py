@@ -1,14 +1,17 @@
+# fmt: off
 import numpy as np
 import pytest
+
 from ase import Atoms, io
 from ase.calculators.lj import LennardJones
-from ase.optimize.basin import BasinHopping
 from ase.io import read
+from ase.optimize.basin import BasinHopping
 from ase.units import kB
 
 
-@pytest.mark.slow
-def test_basin():
+@pytest.mark.optimize()
+@pytest.mark.slow()
+def test_basin(testdir):
     # Global minima from
     # Wales and Doye, J. Phys. Chem. A, vol 101 (1997) 5111-5116
     E_global = {
@@ -18,8 +21,8 @@ def test_basin():
         7: -16.505384}
     N = 7
     R = N**(1. / 3.)
-    np.random.seed(42)
-    pos = np.random.uniform(-R, R, (N, 3))
+    rng = np.random.RandomState(42)
+    pos = rng.uniform(-R, R, (N, 3))
     s = Atoms('He' + str(N),
               positions=pos)
     s.calc = LennardJones()
@@ -27,19 +30,13 @@ def test_basin():
 
     ftraj = 'lowest.traj'
 
-    for GlobalOptimizer in [BasinHopping(s,
-                                         temperature=100 * kB,
-                                         dr=0.5,
-                                         trajectory=ftraj,
-                                         optimizer_logfile=None)]:
-
-        if isinstance(GlobalOptimizer, BasinHopping):
-            GlobalOptimizer.run(10)
-            Emin, smin = GlobalOptimizer.get_minimum()
-        else:
-            GlobalOptimizer(totalsteps=10)
-            Emin = s.get_potential_energy()
-            smin = s
+    with BasinHopping(s,
+                      temperature=100 * kB,
+                      dr=0.5,
+                      trajectory=ftraj,
+                      optimizer_logfile=None) as GlobalOptimizer:
+        GlobalOptimizer.run(10)
+        Emin, smin = GlobalOptimizer.get_minimum()
         print("N=", N, 'minimal energy found', Emin,
               ' global minimum:', E_global[N])
 

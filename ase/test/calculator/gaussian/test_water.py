@@ -1,10 +1,11 @@
-def test_water():
-    from ase.calculators.gaussian import Gaussian
-    from ase.atoms import Atoms
-    from ase.optimize.lbfgs import LBFGS
-    from ase.io import read
+# fmt: off
+from ase.atoms import Atoms
+from ase.calculators.gaussian import Gaussian
+from ase.io import read
+from ase.optimize.lbfgs import LBFGS
 
 
+def test_water(gaussian_factory):
     # First test to make sure Gaussian works
     calc = Gaussian(xc='pbe', chk='water.chk', label='water')
     calc.clean()
@@ -13,8 +14,8 @@ def test_water():
                   positions=[(0, 0, 0), (1, 0, 0), (0, 1, 0)],
                   calculator=calc)
 
-    opt = LBFGS(water)
-    opt.run(fmax=0.05)
+    with LBFGS(water) as opt:
+        opt.run(fmax=0.05)
 
     forces = water.get_forces()
     energy = water.get_potential_energy()

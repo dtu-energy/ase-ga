@@ -1,9 +1,8 @@
 from ase.build import bulk
-from ase.optimize import BFGS
 from ase.calculators.abinit import Abinit
 from ase.calculators.socketio import SocketIOCalculator
 from ase.constraints import ExpCellFilter
-
+from ase.optimize import BFGS
 
 atoms = bulk('Si')
 atoms.rattle(stdev=0.1, seed=42)
@@ -21,7 +20,6 @@ command = f'{exe} PREFIX.in --ipi {unixsocket}:UNIX > PREFIX.log'
 configuration_kwargs = dict(
     command=command,
     pp_paths=[pps],
-    v8_legacy_format=False,
 )
 
 
@@ -48,8 +46,7 @@ kwargs = dict(
 
 abinit = Abinit(**kwargs)
 
-opt = BFGS(ExpCellFilter(atoms),
-           trajectory='opt.traj')
+opt = BFGS(ExpCellFilter(atoms), trajectory='opt.traj')
 
 with SocketIOCalculator(abinit, unixsocket=unixsocket) as atoms.calc:
     opt.run(fmax=0.01)

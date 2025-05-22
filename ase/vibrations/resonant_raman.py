@@ -1,13 +1,14 @@
+# fmt: off
+
 """Resonant Raman intensities"""
 
-import pickle
-import os
 import sys
+from pathlib import Path
 
 import numpy as np
 
 import ase.units as u
-from ase.parallel import world, paropen, parprint
+from ase.parallel import paropen, parprint, world
 from ase.vibrations import Vibrations
 from ase.vibrations.raman import Raman, RamanCalculatorBase
 
@@ -15,8 +16,9 @@ from ase.vibrations.raman import Raman, RamanCalculatorBase
 class ResonantRamanCalculator(RamanCalculatorBase, Vibrations):
     """Base class for resonant Raman calculators using finite differences.
     """
+
     def __init__(self, atoms, ExcitationsCalculator, *args,
-                 exkwargs={}, exext='.ex.gz', overlap=False,
+                 exkwargs=None, exext='.ex.gz', overlap=False,
                  **kwargs):
         """
         Parameters
@@ -49,44 +51,43 @@ class ResonantRamanCalculator(RamanCalculatorBase, Vibrations):
         This produces all necessary data for further analysis.
         """
         self.exobj = ExcitationsCalculator
+        if exkwargs is None:
+            exkwargs = {}
         self.exkwargs = exkwargs
         self.overlap = overlap
+
         super().__init__(atoms, *args, exext=exext, **kwargs)
 
-    def calculate(self, atoms, filename, fd):
+    def _new_exobj(self):
+        # XXXX I have to duplicate this because there are two objects
+        # which have exkwargs, why are they not unified?
+        return self.exobj(**self.exkwargs)
+
+    def calculate(self, atoms, disp):
         """Call ground and excited state calculation"""
-        assert(atoms == self.atoms)  # XXX action required
-        self.timer.start('Ground state')
+        assert atoms == self.atoms  # XXX action required
         forces = self.atoms.get_forces()
-        if world.rank == 0:
-            pickle.dump(forces, fd, protocol=2)
 
         if self.overlap:
             """Overlap is determined as
 
             ov_ij = int dr displaced*_i(r) eqilibrium_j(r)
             """
-            self.timer.start('Overlap')
             ov_nn = self.overlap(self.atoms.calc,
                                  self.eq_calculator)
             if world.rank == 0:
-                np.save(filename + '.ov', ov_nn)
-            self.timer.stop('Overlap')
-        self.timer.stop('Ground state')
+                disp.save_ov_nn(ov_nn)
 
-        self.timer.start('Excitations')
-        basename, _ = os.path.splitext(filename)
-        excalc = self.exobj(**self.exkwargs)
-        exlist = excalc.calculate(self.atoms)
-        exlist.write(basename + self.exext)
-        self.timer.stop('Excitations')
+        disp.calculate_and_save_exlist(atoms)
+        return {'forces': forces}
 
     def run(self):
         if self.overlap:
             # XXXX stupid way to make a copy
             self.atoms.get_potential_energy()
             self.eq_calculator = self.atoms.calc
-            fname = self.exname + '.eq.gpw'
+            Path(self.name).mkdir(parents=True, exist_ok=True)
+            fname = Path(self.name) / 'tmp.gpw'
             self.eq_calculator.write(fname, 'all')
             self.eq_calculator = self.eq_calculator.__class__(restart=fname)
             try:
@@ -100,10 +101,11 @@ class ResonantRamanCalculator(RamanCalculatorBase, Vibrations):
 class ResonantRaman(Raman):
     """Base Class for resonant Raman intensities using finite differences.
     """
+
     def __init__(self, atoms, Excitations, *args,
-                 observation={'geometry': '-Z(XX)Z'},
+                 observation=None,
                  form='v',         # form of the dipole operator
-                 exkwargs={},      # kwargs to be passed to Excitations
+                 exkwargs=None,      # kwargs to be passed to Excitations
                  exext='.ex.gz',   # extension for Excitation names
                  overlap=False,
                  minoverlap=0.02,
@@ -148,11 +150,17 @@ class ResonantRaman(Raman):
         minrep: float
             Minimal representation to consider derivative, defaults to 0.8
         """
+
+        if observation is None:
+            observation = {'geometry': '-Z(XX)Z'}
+
         kwargs['exext'] = exext
         Raman.__init__(self, atoms, *args, **kwargs)
-        assert(self.vibrations.nfree == 2)
+        assert self.vibrations.nfree == 2
 
         self.exobj = Excitations
+        if exkwargs is None:
+            exkwargs = {}
         self.exkwargs = exkwargs
         self.observation = observation
         self.dipole_form = form
@@ -165,6 +173,9 @@ class ResonantRaman(Raman):
         else:
             self.minoverlap = minoverlap
         self.minrep = minrep
+
+    def read_exobj(self, filename):
+        return self.exobj.read(filename, **self.exkwargs)
 
     def get_absolute_intensities(self, omega, gamma=0.1, delta=0, **kwargs):
         """Absolute Raman intensity or Raman scattering factor
@@ -204,48 +215,32 @@ class ResonantRaman(Raman):
         if self.overlap:
             return self.read_excitations_overlap()
 
-        self.timer.start('read excitations')
-        self.timer.start('really read')
-        self.log('reading ' + self.exname + '.eq' + self.exext)
-        ex0_object = self.exobj.read(self.exname + '.eq' + self.exext,
-                                     **self.exkwargs)
+        disp = self._eq_disp()
+        ex0_object = disp.read_exobj()
         eu = ex0_object.energy_to_eV_scale
-        self.timer.stop('really read')
-        self.timer.start('index')
         matching = frozenset(ex0_object)
-        self.timer.stop('index')
 
-        def append(lst, exname, matching):
-            self.timer.start('really read')
-            self.log('reading ' + exname, end=' ')
-            exo = self.exobj.read(exname, **self.exkwargs)
+        def append(lst, disp, matching):
+            exo = disp.read_exobj()
             lst.append(exo)
-            self.timer.stop('really read')
-            self.timer.start('index')
             matching = matching.intersection(exo)
-            self.log('len={0}, matching={1}'.format(len(exo),
-                                                    len(matching)), pre='')
-            self.timer.stop('index')
             return matching
 
         exm_object_list = []
         exp_object_list = []
         for a, i in zip(self.myindices, self.myxyz):
-            name = '%s.%d%s' % (self.exname, a, i)
+            mdisp = self._disp(a, i, -1)
+            pdisp = self._disp(a, i, 1)
             matching = append(exm_object_list,
-                              name + '-' + self.exext, matching)
+                              mdisp, matching)
             matching = append(exp_object_list,
-                              name + '+' + self.exext, matching)
-        self.ndof = 3 * len(self.indices)
-        self.nex = len(matching)
-        self.timer.stop('read excitations')
-
-        self.timer.start('select')
+                              pdisp, matching)
 
         def select(exl, matching):
             mlst = [ex for ex in exl if ex in matching]
-            assert(len(mlst) == len(matching))
+            assert len(mlst) == len(matching)
             return mlst
+
         ex0 = select(ex0_object, matching)
         exm = []
         exp = []
@@ -254,9 +249,6 @@ class ResonantRaman(Raman):
             exm.append(select(exm_object_list[r], matching))
             exp.append(select(exp_object_list[r], matching))
             r += 1
-        self.timer.stop('select')
-
-        self.timer.start('me and energy')
 
         self.ex0E_p = np.array([ex.energy * eu for ex in ex0])
         self.ex0m_pc = (np.array(
@@ -291,8 +283,6 @@ class ResonantRaman(Raman):
         self.exmm_rpc = np.array(exmm_rpc) * u.Bohr
         self.expm_rpc = np.array(expm_rpc) * u.Bohr
 
-        self.timer.stop('me and energy')
-
     def read_excitations_overlap(self):
         """Read all finite difference excitations and wf overlaps.
 
@@ -300,29 +290,20 @@ class ResonantRaman(Raman):
 
         ov_ij = int dr displaced*_i(r) eqilibrium_j(r)
         """
-        self.timer.start('read excitations')
-        self.timer.start('read+rotate')
-        self.log('reading ' + self.exname + '.eq' + self.exext)
-        ex0 = self.exobj.read(self.exname + '.eq' + self.exext,
-                              **self.exkwargs)
+        ex0 = self._eq_disp().read_exobj()
         eu = ex0.energy_to_eV_scale
         rep0_p = np.ones((len(ex0)), dtype=float)
 
-        def load(name, pm, rep0_p):
-            self.log('reading ' + name + pm + self.exext)
-            ex_p = self.exobj.read(name + pm + self.exext, **self.exkwargs)
-            self.log('reading ' + name + pm + '.pckl.ov.npy')
-            ov_nn = np.load(name + pm + '.pckl.ov.npy')
+        def load(disp, rep0_p):
+            ex_p = disp.read_exobj()
+            ov_nn = disp.load_ov_nn()
             # remove numerical garbage
             ov_nn = np.where(np.abs(ov_nn) > self.minoverlap['orbitals'],
                              ov_nn, 0)
-            self.timer.start('ex overlap')
             ov_pp = ex_p.overlap(ov_nn, ex0)
-            # remove numerical garbage
             ov_pp = np.where(np.abs(ov_pp) > self.minoverlap['excitations'],
                              ov_pp, 0)
             rep0_p *= (ov_pp.real**2 + ov_pp.imag**2).sum(axis=0)
-            self.timer.stop('ex overlap')
             return ex_p, ov_pp
 
         def rotate(ex_p, ov_pp):
@@ -340,10 +321,11 @@ class ResonantRaman(Raman):
         expm_rpc = []
         exdmdr_rpc = []
         for a, i in zip(self.myindices, self.myxyz):
-            name = '%s.%d%s' % (self.exname, a, i)
-            ex, ov = load(name, '-', rep0_p)
+            mdisp = self._disp(a, i, -1)
+            pdisp = self._disp(a, i, 1)
+            ex, ov = load(mdisp, rep0_p)
             exmE_p, exmm_pc = rotate(ex, ov)
-            ex, ov = load(name, '+', rep0_p)
+            ex, ov = load(pdisp, rep0_p)
             expE_p, expm_pc = rotate(ex, ov)
             exmE_rp.append(exmE_p)
             expE_rp.append(expE_p)
@@ -351,9 +333,6 @@ class ResonantRaman(Raman):
             exmm_rpc.append(exmm_pc)
             expm_rpc.append(expm_pc)
             exdmdr_rpc.append(expm_pc - exmm_pc)
-        self.timer.stop('read+rotate')
-
-        self.timer.start('me and energy')
 
         # select only excitations that are sufficiently represented
         self.comm.product(rep0_p)
@@ -379,30 +358,20 @@ class ResonantRaman(Raman):
                                u.Bohr / 2 / self.delta)
         else:
             # did not read
-            self.exmE_rp = self.expE_rp = self.exF_rp = np.empty((0))
-            self.exmm_rpc = self.expm_rpc = self.exdmdr_rpc = np.empty((0))
-
-        self.timer.stop('me and energy')
-        self.timer.stop('read excitations')
+            self.exmE_rp = self.expE_rp = self.exF_rp = np.empty(0)
+            self.exmm_rpc = self.expm_rpc = self.exdmdr_rpc = np.empty(0)
 
     def read(self, *args, **kwargs):
         """Read data from a pre-performed calculation."""
-        self.timer.start('read')
-        self.timer.start('vibrations')
         self.vibrations.read(*args, **kwargs)
-        self.timer.stop('vibrations')
-
-        self.timer.start('excitations')
         self.init_parallel_read()
         if not hasattr(self, 'ex0E_p'):
             if self.overlap:
                 self.read_excitations_overlap()
             else:
                 self.read_excitations()
-        self.timer.stop('excitations')
 
         self._already_read = True
-        self.timer.stop('read')
 
     def get_cross_sections(self, omega, gamma):
         """Returns Raman cross sections for each vibration."""
@@ -486,10 +455,10 @@ class ResonantRaman(Raman):
         with paropen(out, 'w') as fd:
             fd.write('# Resonant Raman spectrum\n')
             if hasattr(self, '_approx'):
-                fd.write('# approximation: {0}\n'.format(self._approx))
+                fd.write(f'# approximation: {self._approx}\n')
             for key in self.observation:
-                fd.write('# {0}: {1}\n'.format(key, self.observation[key]))
-            fd.write('# omega={0:g} eV, gamma={1:g} eV\n'
+                fd.write(f'# {key}: {self.observation[key]}\n')
+            fd.write('# omega={:g} eV, gamma={:g} eV\n'
                      .format(omega, gamma))
             if width is not None:
                 fd.write('# %s folded, width=%g cm^-1\n'
@@ -499,9 +468,6 @@ class ResonantRaman(Raman):
             for row in outdata:
                 fd.write('%.3f  %15.5g\n' %
                          (row[0], row[1]))
-
-    def __del__(self):
-        self.timer.write(self.txt)
 
     def summary(self, omega, gamma=0.1,
                 method='standard', direction='central',
@@ -517,7 +483,7 @@ class ResonantRaman(Raman):
         elif te > -2 and te < 3:
             ts = str(10**te)
         else:
-            ts = '10^{0}'.format(te)
+            ts = f'10^{te}'
 
         if isinstance(log, str):
             log = paropen(log, 'a')
@@ -528,7 +494,7 @@ class ResonantRaman(Raman):
         parprint(' method:', self.vibrations.method, file=log)
         parprint(' approximation:', self.approximation, file=log)
         parprint(' Mode    Frequency        Intensity', file=log)
-        parprint('  #    meV     cm^-1      [{0}A^4/amu]'.format(ts), file=log)
+        parprint(f'  #    meV     cm^-1      [{ts}A^4/amu]', file=log)
         parprint('-------------------------------------', file=log)
         for n, e in enumerate(hnu):
             if e.imag != 0:
@@ -551,53 +517,40 @@ class LrResonantRaman(ResonantRaman):
 
     Quick and dirty approach to enable loading of LrTDDFT calculations
     """
-    def read_excitations(self):
-        self.timer.start('read excitations')
-        self.timer.start('really read')
-        self.log('reading ' + self.exname + '.eq' + self.exext)
-        ex0_object = self.exobj(self.exname + '.eq' + self.exext,
-                                **self.exkwargs)
-        eu = ex0_object.energy_to_eV_scale
-        self.timer.stop('really read')
-        self.timer.start('index')
-        matching = frozenset(ex0_object.kss)
-        self.timer.stop('index')
 
-        def append(lst, exname, matching):
-            self.timer.start('really read')
-            self.log('reading ' + exname, end=' ')
-            exo = self.exobj(exname, **self.exkwargs)
+    def read_excitations(self):
+        eq_disp = self._eq_disp()
+        ex0_object = eq_disp.read_exobj()
+        eu = ex0_object.energy_to_eV_scale
+        matching = frozenset(ex0_object.kss)
+
+        def append(lst, disp, matching):
+            exo = disp.read_exobj()
             lst.append(exo)
-            self.timer.stop('really read')
-            self.timer.start('index')
             matching = matching.intersection(exo.kss)
-            self.log('len={0}, matching={1}'.format(len(exo.kss),
-                                                    len(matching)), pre='')
-            self.timer.stop('index')
             return matching
 
         exm_object_list = []
         exp_object_list = []
         for a in self.indices:
             for i in 'xyz':
-                name = '%s.%d%s' % (self.exname, a, i)
-                matching = append(exm_object_list,
-                                  name + '-' + self.exext, matching)
-                matching = append(exp_object_list,
-                                  name + '+' + self.exext, matching)
-        self.ndof = 3 * len(self.indices)
-        self.timer.stop('read excitations')
+                disp1 = self._disp(a, i, -1)
+                disp2 = self._disp(a, i, 1)
 
-        self.timer.start('select')
+                matching = append(exm_object_list,
+                                  disp1,
+                                  matching)
+                matching = append(exp_object_list,
+                                  disp2,
+                                  matching)
 
         def select(exl, matching):
             exl.diagonalize(**self.exkwargs)
-            mlst = [ex for ex in exl]
+            mlist = list(exl)
 #            mlst = [ex for ex in exl if ex in matching]
 #            assert(len(mlst) == len(matching))
-            return mlst
+            return mlist
         ex0 = select(ex0_object, matching)
-        self.nex = len(ex0)
         exm = []
         exp = []
         r = 0
@@ -606,9 +559,6 @@ class LrResonantRaman(ResonantRaman):
                 exm.append(select(exm_object_list[r], matching))
                 exp.append(select(exp_object_list[r], matching))
                 r += 1
-        self.timer.stop('select')
-
-        self.timer.start('me and energy')
 
         self.ex0E_p = np.array([ex.energy * eu for ex in ex0])
 #        self.exmE_p = np.array([ex.energy * eu for ex in exm])
@@ -639,5 +589,3 @@ class LrResonantRaman(ResonantRaman):
         self.exF_rp = np.array(self.exF_rp) * eu / 2 / self.delta
         self.exmm_rpc = np.array(exmm_rpc) * u.Bohr
         self.expm_rpc = np.array(expm_rpc) * u.Bohr
-
-        self.timer.stop('me and energy')

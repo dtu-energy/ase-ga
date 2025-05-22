@@ -1,3 +1,5 @@
+# fmt: off
+
 """Function-like objects creating cubic lattices (SC, FCC, BCC and Diamond).
 
 The following lattice creators are defined:
@@ -7,9 +9,10 @@ The following lattice creators are defined:
     Diamond
 """
 
-from ase.lattice.bravais import Bravais, reduceindex
 import numpy as np
+
 from ase.data import reference_states as _refstate
+from ase.lattice.bravais import Bravais, reduceindex
 
 
 class SimpleCubicFactory(Bravais):
@@ -37,13 +40,14 @@ class SimpleCubicFactory(Bravais):
         "Get the lattice constant of an element with cubic crystal structure."
         if _refstate[self.atomicnumber]['symmetry'] != self.xtal_name:
             raise ValueError(("Cannot guess the %s lattice constant of"
-                                + " an element with crystal structure %s.")
-                               % (self.xtal_name,
-                                  _refstate[self.atomicnumber]['symmetry']))
+                              + " an element with crystal structure %s.")
+                             % (self.xtal_name,
+                                _refstate[self.atomicnumber]['symmetry']))
         return _refstate[self.atomicnumber]['a']
 
     def make_crystal_basis(self):
-        "Make the basis matrix for the crystal unit cell and the system unit cell."
+        """Make the basis matrix for the crystal unit cell and the
+        system unit cell."""
         self.crystal_basis = (self.latticeconstant * self.basis_factor
                               * self.int_basis)
         self.miller_basis = self.latticeconstant * np.identity(3)
@@ -57,7 +61,7 @@ class SimpleCubicFactory(Bravais):
         if self.bravais_basis is not None:
             cellsize *= len(self.bravais_basis)
         vol2 = (self.calc_num_atoms() * self.latticeconstant**3 / cellsize)
-        assert abs(vol1-vol2) < 1e-5
+        assert abs(vol1 - vol2) < 1e-5
 
     def find_directions(self, directions, miller):
         "Find missing directions and miller indices from the specified ones."
@@ -76,13 +80,14 @@ class SimpleCubicFactory(Bravais):
                      idx[i].lower() == "orthogonal")):
                 if self.debug:
                     print("Calculating orthogonal direction", i)
-                    print(idx[i-2], "X", idx[i-1], end=' ')
-                idx[i] = reduceindex(np.cross(idx[i-2], idx[i-1]))
+                    print(idx[i - 2], "X", idx[i - 1], end=' ')
+                idx[i] = reduceindex(np.cross(idx[i - 2], idx[i - 1]))
                 if self.debug:
                     print("=", idx[i])
 
 
 SimpleCubic = SimpleCubicFactory()
+
 
 class FaceCenteredCubicFactory(SimpleCubicFactory):
     "A factory for creating face-centered cubic lattices."
@@ -99,7 +104,9 @@ class FaceCenteredCubicFactory(SimpleCubicFactory):
 
     atoms_in_unit_cell = 4
 
+
 FaceCenteredCubic = FaceCenteredCubicFactory()
+
 
 class BodyCenteredCubicFactory(SimpleCubicFactory):
     "A factory for creating body-centered cubic lattices."
@@ -123,6 +130,7 @@ BodyCenteredCubic = BodyCenteredCubicFactory()
 class DiamondFactory(FaceCenteredCubicFactory):
     "A factory for creating diamond lattices."
     xtal_name = "diamond"
-    bravais_basis = [[0,0,0], [0.25, 0.25, 0.25]]
+    bravais_basis = [[0, 0, 0], [0.25, 0.25, 0.25]]
+
 
 Diamond = DiamondFactory()

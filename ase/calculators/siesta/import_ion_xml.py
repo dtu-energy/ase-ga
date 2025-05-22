@@ -1,6 +1,10 @@
+# fmt: off
+
 import re
-import numpy as np
 from xml.dom import minidom
+
+import numpy as np
+
 
 def get_ion(fname):
     """
@@ -172,6 +176,7 @@ def extract_projector(pro_xml):
     pro['ref_energy'] = str2float(pro_xml.attributes['ref_energy'].value)[0]
 
     return pro
+
 
 def str2float(string):
     numeric_const_pattern = r"""

@@ -1,10 +1,11 @@
+# fmt: off
 # Stripped (minimal) version of nomad entry with 3 images.
 # The images are actually identical for some reason, but we want to be sure
 # that they are extracted correctly.
+from ase.io import iread
 
 
 def test_nomad(datadir):
-    from ase.io import iread
 
     path = datadir / 'nomad-images.nomad-json'
     images = list(iread(path))

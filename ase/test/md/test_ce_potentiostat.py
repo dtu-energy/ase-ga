@@ -1,12 +1,13 @@
+# fmt: off
 '''These tests ensure that the potentiostat can keep a sysytem near the PEC'''
 
-import pytest
-from ase.build import bulk
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
-from ase.md.contour_exploration import ContourExploration
 import numpy as np
-from ase.calculators.emt import EMT
+import pytest
 
+from ase.build import bulk
+from ase.calculators.emt import EMT
+from ase.md.contour_exploration import ContourExploration
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 
 from .test_ce_curvature import Al_atom_pair
 
@@ -28,7 +29,7 @@ bulk_Al_settings = {
     'loginterval': 1}
 
 
-def test_potentiostat():
+def test_potentiostat(testdir):
     '''This is very realistic and stringent test of the potentiostatic accuracy
      with 32 atoms at ~235 meV/atom above the ground state.'''
     name = 'test_potentiostat'
@@ -43,25 +44,25 @@ def test_potentiostat():
 
     rng = np.random.RandomState(seed)
     MaxwellBoltzmannDistribution(atoms, temperature_K=300, rng=rng)
-    dyn = ContourExploration(atoms,
-                             **bulk_Al_settings,
-                             energy_target=initial_energy,
-                             rng=rng,
-                             trajectory=name + '.traj',
-                             logfile=name + '.log',
-                             )
+    with ContourExploration(
+        atoms,
+        **bulk_Al_settings,
+        energy_target=initial_energy,
+        rng=rng,
+        trajectory=name + '.traj',
+        logfile=name + '.log',
+    ) as dyn:
+        print("Energy Above Ground State: {: .4f} eV/atom".format(
+            (initial_energy - E0) / len(atoms)))
+        for _ in range(5):
+            dyn.run(5)
+            energy_error = (atoms.get_potential_energy() -
+                            initial_energy) / len(atoms)
+            print(f'Potentiostat Error {energy_error: .4f} eV/atom')
+            assert 0 == pytest.approx(energy_error, abs=0.01)
 
-    print("Energy Above Ground State: {: .4f} eV/atom".format(
-        (initial_energy - E0) / len(atoms)))
-    for i in range(5):
-        dyn.run(5)
-        energy_error = (atoms.get_potential_energy() -
-                        initial_energy) / len(atoms)
-        print('Potentiostat Error {: .4f} eV/atom'.format(energy_error))
-        assert 0 == pytest.approx(energy_error, abs=0.01)
 
-
-def test_potentiostat_no_fs():
+def test_potentiostat_no_fs(testdir):
     '''This test ensures that the potentiostat is working even when curvature
     extrapolation (use_fs) is turned off.'''
     name = 'test_potentiostat_no_fs'
@@ -71,20 +72,20 @@ def test_potentiostat_no_fs():
     atoms.set_momenta([[0, -1, 0], [0, 1, 0]])
 
     initial_energy = atoms.get_potential_energy()
-    dyn = ContourExploration(atoms,
-                             maxstep=0.2,
-                             parallel_drift=0.0,
-                             remove_translation=False,
-                             energy_target=initial_energy,
-                             potentiostat_step_scale=None,
-                             use_frenet_serret=False,
-                             trajectory=name + '.traj',
-                             logfile=name + '.log',
-                             )
-
-    for i in range(5):
-        dyn.run(10)
-        energy_error = (atoms.get_potential_energy() -
-                        initial_energy) / len(atoms)
-        print('Potentiostat Error {: .4f} eV/atom'.format(energy_error))
-        assert 0 == pytest.approx(energy_error, abs=0.01)
+    with ContourExploration(
+        atoms,
+        maxstep=0.2,
+        parallel_drift=0.0,
+        remove_translation=False,
+        energy_target=initial_energy,
+        potentiostat_step_scale=None,
+        use_frenet_serret=False,
+        trajectory=name + '.traj',
+        logfile=name + '.log',
+    ) as dyn:
+        for _ in range(5):
+            dyn.run(10)
+            energy_error = (atoms.get_potential_energy() -
+                            initial_energy) / len(atoms)
+            print(f'Potentiostat Error {energy_error: .4f} eV/atom')
+            assert 0 == pytest.approx(energy_error, abs=0.01)

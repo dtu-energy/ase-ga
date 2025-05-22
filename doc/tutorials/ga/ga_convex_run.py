@@ -1,13 +1,15 @@
 import numpy as np
-from ase.ga.population import RankFitnessPopulation
-from ase.ga.data import DataConnection
-from ase.ga.offspring_creator import OperationSelector
-from ase.ga.slab_operators import (CutSpliceSlabCrossover,
-                                   RandomSlabPermutation,
-                                   RandomCompositionMutation)
-from ase.ga import set_raw_score
 
 from ase.calculators.emt import EMT
+from ase.ga import set_raw_score
+from ase.ga.data import DataConnection
+from ase.ga.offspring_creator import OperationSelector
+from ase.ga.population import RankFitnessPopulation
+from ase.ga.slab_operators import (
+    CutSpliceSlabCrossover,
+    RandomCompositionMutation,
+    RandomSlabPermutation,
+)
 
 # Connect to the database containing all candidates
 db = DataConnection('hull.db')
@@ -39,7 +41,7 @@ def get_mixing_energy(atoms):
 
 
 def get_avg_lattice_constant(syms):
-    a = 0.
+    a = 0.0
     for m in set(syms):
         a += syms.count(m) * lattice_constants[m]
     return a / len(syms)
@@ -56,18 +58,19 @@ num_gens = 10
 # how often each is picked on average
 # The probability for an operator is the prepended integer divided by the sum
 # of integers
-oclist = [(3, CutSpliceSlabCrossover()),
-          (1, RandomSlabPermutation()),
-          (1, RandomCompositionMutation())
-          ]
+oclist = [
+    (3, CutSpliceSlabCrossover()),
+    (1, RandomSlabPermutation()),
+    (1, RandomCompositionMutation()),
+]
 operation_selector = OperationSelector(*zip(*oclist))
 
 # Pass parameters to the population instance
 # A variable_function is required to divide candidates into groups here we use
 # the chemical composition
-pop = RankFitnessPopulation(data_connection=db,
-                            population_size=pop_size,
-                            variable_function=get_comp)
+pop = RankFitnessPopulation(
+    data_connection=db, population_size=pop_size, variable_function=get_comp
+)
 
 # Evaluate the starting population
 # The only requirement of the evaluation is to set the raw_score
@@ -84,7 +87,7 @@ pop.update()
 # Below is the iterative part of the algorithm
 gen_num = db.get_generation_number()
 for i in range(num_gens):
-    print('Creating and evaluating generation {0}'.format(gen_num + i))
+    print(f'Creating and evaluating generation {gen_num + i}')
     new_generation = []
     for _ in range(pop_size):
         # Select parents for a new candidate

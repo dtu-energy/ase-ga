@@ -1,16 +1,20 @@
+# fmt: off
+
 from functools import partial
 
-from ase.gui.i18n import _
+import numpy as np
 
 import ase.gui.ui as ui
-from ase.gui.widgets import Element
+from ase.gui.i18n import _
 from ase.gui.utils import get_magmoms
+from ase.gui.widgets import Element
 
 
 class ModifyAtoms:
     """Presents a dialog box where the user is able to change the
     atomic type, the magnetic moment and tags of the selected atoms.
     """
+
     def __init__(self, gui):
         self.gui = gui
         selected = self.selection()
@@ -18,7 +22,7 @@ class ModifyAtoms:
             ui.error(_('No atoms selected!'))
             return
 
-        win = ui.Window(_('Modify'))
+        win = ui.Window(_('Modify'), wmtype='utility')
         element = Element(callback=self.set_element)
         win.add(element)
         win.add(ui.Button(_('Change element'),
@@ -34,11 +38,11 @@ class ModifyAtoms:
             element.symbol = sym[0]
 
         tags = atoms.get_tags()[selected]
-        if tags.ptp() == 0:
+        if np.ptp(tags) == 0:
             self.tag.value = tags[0]
 
         magmoms = get_magmoms(atoms)[selected]
-        if magmoms.round(2).ptp() == 0.0:
+        if np.ptp(magmoms.round(2)) == 0.0:
             self.magmom.value = round(magmoms[0], 2)
 
     def selection(self):

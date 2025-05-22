@@ -1,10 +1,14 @@
+# fmt: off
+import numpy as np
+
+from ase.build import fcc111
+from ase.constraints import FixAtoms
+from ase.ga.standardmutations import PermutationMutation, RattleMutation
+from ase.ga.startgenerator import StartGenerator
+from ase.ga.utilities import closest_distances_generator
+
+
 def test_mutations(seed):
-    from ase.ga.startgenerator import StartGenerator
-    from ase.ga.utilities import closest_distances_generator
-    from ase.ga.standardmutations import RattleMutation, PermutationMutation
-    import numpy as np
-    from ase.build import fcc111
-    from ase.constraints import FixAtoms
 
     # set up the random number generator
     rng = np.random.RandomState(seed)
@@ -39,7 +43,7 @@ def test_mutations(seed):
     rmut = RattleMutation(blmin, n_top, rattle_strength=0.8, rattle_prop=0.4,
                           rng=rng)
 
-    c2, desc = rmut.get_new_individual([c1])
+    c2, _desc = rmut.get_new_individual([c1])
 
     assert np.all(c1.numbers == c2.numbers)
 
@@ -63,7 +67,7 @@ def test_mutations(seed):
 
     mmut = PermutationMutation(n_top, probability=0.5, rng=rng)
 
-    c3, desc = mmut.get_new_individual([c1])
+    c3, _desc = mmut.get_new_individual([c1])
     assert np.all(c1.numbers == c3.numbers)
 
     top1 = c1[-n_top:]

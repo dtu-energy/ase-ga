@@ -1,31 +1,19 @@
+# fmt: off
+import copy
+
+import pytest
+
+from ase.build import molecule
 from ase.calculators.emt import EMT
 from ase.constraints import FixInternals
 from ase.optimize.bfgs import BFGS
-from ase.build import molecule
-import copy
-import pytest
-
-
-# Convenience functions to compute linear combinations of internal coordinates
-def get_bondcombo(atoms, bondcombo_def):
-    return sum([defin[2] * atoms.get_distance(*defin[0:2]) for
-                defin in bondcombo_def])
-
-
-def get_anglecombo(atoms, anglecombo_def):
-    return sum([defin[3] * atoms.get_angle(*defin[0:3]) for
-                defin in anglecombo_def])
-
-
-def get_dihedralcombo(atoms, dihedralcombo_def):
-    return sum([defin[4] * atoms.get_dihedral(*defin[0:4]) for
-                defin in dihedralcombo_def])
 
 
 def setup_atoms():
     atoms = molecule('CH3CH2OH', vacuum=5.0)
     atoms.rattle(stdev=0.3)
     return atoms
+
 
 def setup_fixinternals():
     atoms = setup_atoms()
@@ -49,19 +37,17 @@ def setup_fixinternals():
 
     # Initialize constraint
     constr = FixInternals(bonds=[(target_bond, bond_def)],
-                              angles_deg=[(target_angle, angle_def)],
-                              dihedrals_deg=[(target_dihedral, dihedral_def)],
-                              epsilon=1e-10)
-    print(constr)
+                          angles_deg=[(target_angle, angle_def)],
+                          dihedrals_deg=[(target_dihedral, dihedral_def)],
+                          epsilon=1e-10)
     return (atoms, constr, bond_def, target_bond, angle_def, target_angle,
             dihedral_def, target_dihedral)
 
 
+@pytest.mark.optimize()
 def test_fixinternals():
-    (atoms, constr, bond_def, target_bond, angle_def, target_angle,
-     dihedral_def, target_dihedral) = setup_fixinternals()
-
-    calc = EMT()
+    (atoms, constr, bond_def, target_bond, angle_def, _target_angle,
+     dihedral_def, _target_dihedral) = setup_fixinternals()
 
     opt = BFGS(atoms)
 
@@ -73,7 +59,7 @@ def test_fixinternals():
     print('bond length before', atoms.get_distance(*bond_def))
     print('target bondlength', target_bond)
 
-    atoms.calc = calc
+    atoms.calc = EMT()
     atoms.set_constraint(constr)
     print('-----Optimization-----')
     opt.run(fmax=0.01)
@@ -94,9 +80,8 @@ def test_fixinternals():
     print('error in dihedral', repr(err2))
     print('error in bondlength', repr(err3))
 
-    assert err1 < 1e-11
-    assert err2 < 1e-12
-    assert err3 < 1e-12
+    for err in [err1, err2, err3]:
+        assert abs(err) < 1e-11
 
 
 def setup_combos():
@@ -107,63 +92,44 @@ def setup_combos():
     # In other words, fulfil the following constraint:
     # 1.0 * atoms.get_distance(2, 1) + -1.0 * atoms.get_distance(2, 3) = const.
     bondcombo_def = [[2, 1, 1.0], [2, 3, -1.0]]
-    target_bondcombo = get_bondcombo(atoms, bondcombo_def)
+    target_bondcombo = FixInternals.get_bondcombo(atoms, bondcombo_def)
 
-    # Fix linear combination of two angles
-    # 1. * atoms.get_angle(7, 0, 8) + 1. * atoms.get_angle(7, 0, 6) = const.
-    anglecombo_def = [[7, 0, 8, 1.], [7, 0, 6, 1]]
-    target_anglecombo = get_anglecombo(atoms, anglecombo_def)
-
-    # Fix linear combination of two dihedrals
-    dihedralcombo_def = [[3, 2, 1, 4, 1.0], [2, 1, 0, 7, 1.0]]
-    target_dihedralcombo = get_dihedralcombo(atoms, dihedralcombo_def)
-
-    # Initialize constraint
-    constr = FixInternals(bondcombos=[(target_bondcombo, bondcombo_def)],
-                          anglecombos=[(target_anglecombo, anglecombo_def)],
-                          dihedralcombos=[(target_dihedralcombo,
-                          dihedralcombo_def)], epsilon=1e-10)
-    print(constr)
-    return (atoms, constr, bondcombo_def, target_bondcombo, anglecombo_def,
-            target_anglecombo, dihedralcombo_def, target_dihedralcombo)
+    # Initialize constraint; 'None' value should be converted to current value
+    constr = FixInternals(bondcombos=[(None, bondcombo_def)], epsilon=1e-10)
+    return atoms, constr, bondcombo_def, target_bondcombo,
 
 
-@pytest.mark.xfail
+@pytest.mark.optimize()
 def test_combos():
-    # XXX https://gitlab.com/ase/ase/-/issues/868
-    (atoms, constr, bondcombo_def, target_bondcombo, anglecombo_def,
-     target_anglecombo, dihedralcombo_def,
-     target_dihedralcombo) = setup_combos()
+    atoms, constr, bondcombo_def, target_bondcombo = setup_combos()
 
-    ref_bondcombo = get_bondcombo(atoms, bondcombo_def)
-    ref_anglecombo = get_anglecombo(atoms, anglecombo_def)
-    ref_dihedralcombo = get_dihedralcombo(atoms, dihedralcombo_def)
+    ref_bondcombo = FixInternals.get_bondcombo(atoms, bondcombo_def)
 
     atoms.calc = EMT()
     atoms.set_constraint(constr)
 
+    atoms2 = atoms.copy()  # check if 'None' value converts to current value
+    atoms2.set_positions(atoms2.get_positions())
+    checked_bondcombo = False
+    for subconstr in atoms2.constraints[0].constraints:
+        if repr(subconstr).startswith('FixBondCombo'):
+            assert subconstr.targetvalue == target_bondcombo
+            checked_bondcombo = True
+    assert checked_bondcombo
+
     opt = BFGS(atoms)
     opt.run(fmax=0.01)
 
-    new_bondcombo = get_bondcombo(atoms, bondcombo_def)
-    new_anglecombo = get_anglecombo(atoms, anglecombo_def)
-    new_dihedralcombo = get_dihedralcombo(atoms, dihedralcombo_def)
-
+    new_bondcombo = FixInternals.get_bondcombo(atoms, bondcombo_def)
     err_bondcombo = new_bondcombo - ref_bondcombo
-    err_anglecombo = new_anglecombo - ref_anglecombo
-    err_dihedralcombo = new_dihedralcombo - ref_dihedralcombo
 
     print('error in bondcombo:', repr(err_bondcombo))
-    print('error in anglecombo:', repr(err_anglecombo))
-    print('error in dihedralcombo:', repr(err_dihedralcombo))
-
-    for err in [err_bondcombo, err_anglecombo, err_dihedralcombo]:
-        assert err < 1e-12
+    assert abs(err_bondcombo) < 1e-11
 
 
 def test_index_shuffle():
-    (atoms, constr, bond_def, target_bond, angle_def, target_angle,
-     dihedral_def, target_dihedral) = setup_fixinternals()
+    (atoms, constr, _bond_def, _target_bond, _angle_def, _target_angle,
+     _dihedral_def, _target_dihedral) = setup_fixinternals()
 
     constr2 = copy.deepcopy(constr)
 
@@ -184,17 +150,53 @@ def test_index_shuffle():
 
 
 def test_combo_index_shuffle():
-    (atoms, constr, bondcombo_def, target_bondcombo, anglecombo_def,
-     target_anglecombo, dihedralcombo_def,
-     target_dihedralcombo) = setup_combos()
+    atoms, constr, _bondcombo_def, _target_bondcombo = setup_combos()
 
     # test no change, test constr.get_indices()
-    answer = (0, 1, 2, 3, 4, 6, 7, 8)
+    answer = (1, 2, 3)
     assert all(a == b for a, b in zip(constr.get_indices(), answer))
     constr.index_shuffle(atoms, range(len(atoms)))
     assert all(a == b for a, b in zip(constr.get_indices(), answer))
 
-    # test anglecombo not part of slice
-    constr.index_shuffle(atoms, [1, 2, 3, 4, 0, 7])
-    assert constr.bondcombos[0][1] == [[1, 0, 1.0], [1, 2, -1.0]]
-    assert constr.dihedralcombos[0][1] == [[2, 1, 0, 3, 1.0], [1, 0, 4, 5, 1.0]]
+
+@pytest.mark.optimize()
+def test_zero_distance_error():
+    """Zero distances cannot be fixed due to a singularity in the derivative.
+    """
+    atoms = setup_atoms()
+    constr = FixInternals(bonds=[(0.0, [1, 2])])
+    atoms.calc = EMT()
+    atoms.set_constraint(constr)
+    opt = BFGS(atoms)
+    with pytest.raises(ZeroDivisionError):
+        for _ in opt.irun():
+            atoms.get_distance(1, 2)
+
+
+@pytest.mark.optimize()
+def test_planar_angle_error():
+    """Support for planar angles could be added in the future using
+       dummy/ghost atoms. See issue #868."""
+    atoms = setup_atoms()
+    constr = FixInternals(angles_deg=[(180, [6, 0, 1])])
+    atoms.calc = EMT()
+    atoms.set_constraint(constr)
+    opt = BFGS(atoms)
+    with pytest.raises(ZeroDivisionError):
+        opt.run()
+
+
+@pytest.mark.optimize()
+def test_undefined_dihedral_error():
+    atoms = setup_atoms()
+    pos = atoms.get_positions()
+    pos[0:3] = [[8, 5, 5], [7, 5, 5], [6, 5, 5]]
+    atoms.set_positions(pos)  # with undefined dihedral
+    with pytest.raises(ZeroDivisionError):
+        atoms.get_dihedral(6, 0, 1, 2)
+    constr = FixInternals(dihedrals_deg=[(20., [6, 0, 1, 2])])
+    atoms.calc = EMT()
+    atoms.set_constraint(constr)
+    opt = BFGS(atoms)
+    with pytest.raises(ZeroDivisionError):
+        opt.run()

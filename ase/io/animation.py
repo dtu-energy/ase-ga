@@ -1,8 +1,11 @@
+# fmt: off
+
 from ase.visualize.plot import animate
 
 
 def write_animation(filename, images, writer=None,
-                    interval=200, save_count=100,
+                    interval=200,
+                    save_count=None,  # ignored for newer matplotlib (2023)
                     save_parameters=None, ax=None, **kwargs):
     import matplotlib.pyplot as plt
 
@@ -13,7 +16,7 @@ def write_animation(filename, images, writer=None,
         ax = plt.gca()
 
     animation = animate(images, ax=ax,
-                        interval=interval, save_count=save_count,
+                        interval=interval,
                         **kwargs)
     animation.save(filename, writer=writer,
                    **save_parameters)

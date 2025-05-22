@@ -1,12 +1,9 @@
 from ase import Atoms
-from ase.build import fcc111, add_adsorbate
-
+from ase.build import add_adsorbate, fcc111
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
-
-from ase.optimize import QuasiNewton
-
 from ase.io import write
+from ase.optimize import QuasiNewton
 
 # Find the initial and final states for the reaction.
 
@@ -17,8 +14,9 @@ slab.set_pbc((1, 1, 0))
 # Initial state.
 # Add the N2 molecule oriented at 60 degrees:
 d = 1.10  # N2 bond length
-N2mol = Atoms('N2', positions=[[0.0, 0.0, 0.0],
-                               [0.5 * 3**0.5 * d, 0.5 * d, 0.0]])
+N2mol = Atoms(
+    'N2', positions=[[0.0, 0.0, 0.0], [0.5 * 3**0.5 * d, 0.5 * d, 0.0]]
+)
 add_adsorbate(slab, N2mol, height=1.0, position='fcc')
 
 # Use the EMT calculator for the forces and energies:

@@ -1,14 +1,17 @@
-def test_json_arrays():
-    import numpy as np
-    from ase.io.jsonio import encode, decode
+# fmt: off
+import numpy as np
 
+from ase.io.jsonio import decode, encode
+
+
+def test_json_arrays():
 
     def check(obj):
         txt = encode(obj)
         newobj = decode(txt, always_array=False)
         print(obj, '-->', newobj)
-        assert type(obj) is type(newobj), '{} vs {}'.format(type(obj),
-                                                            type(newobj))
+        assert isinstance(obj, type(newobj)), '{} vs {}'.format(type(obj),
+                                                                type(newobj))
         assert np.shape(obj) == np.shape(newobj)
         assert np.array_equal(obj, newobj)
 

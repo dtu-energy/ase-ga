@@ -1,3 +1,5 @@
+# fmt: off
+
 """Helper functions for creating the most common surfaces and related tasks.
 
 The helper functions can create the most common low-index surfaces,
@@ -12,7 +14,7 @@ import numpy as np
 
 from ase.atom import Atom
 from ase.atoms import Atoms
-from ase.data import reference_states, atomic_numbers
+from ase.data import atomic_numbers, reference_states
 from ase.lattice.cubic import FaceCenteredCubic
 
 
@@ -210,7 +212,7 @@ def add_adsorbate(slab, adsorbate, height, position=(0, 0), offset=None,
                             'ase.build function, ' +
                             'position cannot be a name.')
         if position not in info['sites']:
-            raise TypeError('Adsorption site %s not supported.' % position)
+            raise TypeError(f'Adsorption site {position} not supported.')
         spos += info['sites'][position]
     else:
         pos += position
@@ -268,6 +270,13 @@ def add_vacuum(atoms, vacuum):
     atoms.set_cell(uc)
 
 
+def create_tags(size) -> np.ndarray:
+    """ Function to create layer tags. """
+    # tag atoms by layer
+    # create blocks of descending integers of length size[0]*size[1]
+    return np.arange(size[2], 0, -1).repeat(size[0] * size[1])
+
+
 def _surface(symbol, structure, face, size, a, c, vacuum, periodic,
              orthogonal=True):
     """Function to build often used surfaces.
@@ -279,8 +288,8 @@ def _surface(symbol, structure, face, size, a, c, vacuum, periodic,
     if a is None:
         sym = reference_states[Z]['symmetry']
         if sym != structure:
-            raise ValueError("Can't guess lattice constant for %s-%s!" %
-                             (structure, symbol))
+            raise ValueError(
+                f"Can't guess lattice constant for {structure}-{symbol}!")
         a = reference_states[Z]['a']
 
     if structure == 'hcp' and c is None:
@@ -296,11 +305,8 @@ def _surface(symbol, structure, face, size, a, c, vacuum, periodic,
 
     numbers = np.ones(size[0] * size[1] * size[2], int) * Z
 
-    tags = np.empty((size[2], size[1], size[0]), int)
-    tags[:] = np.arange(size[2], 0, -1).reshape((-1, 1, 1))
-
     slab = Atoms(numbers,
-                 tags=tags.ravel(),
+                 tags=create_tags(size),
                  pbc=(True, True, periodic),
                  cell=size)
 
@@ -477,11 +483,18 @@ def mx2(formula='MoS2', kind='2H', a=3.18, thickness=3.19,
         size=(1, 1, 1), vacuum=None):
     """Create three-layer 2D materials with hexagonal structure.
 
-    For metal dichalcogenites, etc.
+    This can be used for e.g. metal dichalcogenides :mol:`MX_2` 2D structures
+    such as :mol:`MoS_2`.
 
-    The kind argument accepts '2H', which gives a mirror plane symmetry
-    and '1T', which gives an inversion symmetry."""
+    https://en.wikipedia.org/wiki/Transition_metal_dichalcogenide_monolayers
 
+    Parameters
+    ----------
+    kind : {'2H', '1T'}, default: '2H'
+
+        - '2H': mirror-plane symmetry
+        - '1T': inversion symmetry
+    """
     if kind == '2H':
         basis = [(0, 0, 0),
                  (2 / 3, 1 / 3, 0.5 * thickness),
@@ -503,10 +516,17 @@ def mx2(formula='MoS2', kind='2H', a=3.18, thickness=3.19,
     return atoms
 
 
-def graphene(formula='C2', a=2.460, size=(1, 1, 1), vacuum=None):
-    """Create a graphene monolayer structure."""
+def graphene(formula='C2', a=2.460, thickness=0.0,
+             size=(1, 1, 1), vacuum=None):
+    """Create a graphene monolayer structure.
+
+    Parameters
+    ----------
+    thickness : float, default: 0.0
+        Thickness of the layer; maybe for a buckled structure like silicene.
+    """
     cell = [[a, 0, 0], [-a / 2, a * 3**0.5 / 2, 0], [0, 0, 0]]
-    basis = [[0, 0, 0], [2 / 3, 1 / 3, 0]]
+    basis = [[0, 0, -0.5 * thickness], [2 / 3, 1 / 3, 0.5 * thickness]]
     atoms = Atoms(formula, cell=cell, pbc=(1, 1, 0))
     atoms.set_scaled_positions(basis)
     if vacuum is not None:
@@ -517,8 +537,22 @@ def graphene(formula='C2', a=2.460, size=(1, 1, 1), vacuum=None):
 
 def _all_surface_functions():
     # Convenient for debugging.
-    d = {}
-    for func in [fcc100, fcc110, bcc100, bcc110, bcc111, fcc111, hcp0001,
-                 hcp10m10, diamond100, diamond111, fcc111, mx2, graphene]:
-        d[func.__name__] = func
+    d = {
+        func.__name__: func
+        for func in [
+            fcc100,
+            fcc110,
+            bcc100,
+            bcc110,
+            bcc111,
+            fcc111,
+            hcp0001,
+            hcp10m10,
+            diamond100,
+            diamond111,
+            fcc111,
+            mx2,
+            graphene,
+        ]
+    }
     return d

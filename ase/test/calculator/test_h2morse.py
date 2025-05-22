@@ -1,14 +1,22 @@
+# fmt: off
 import numpy as np
 import pytest
+
+from ase.calculators.h2morse import (
+    De,
+    Etrans,
+    H2Morse,
+    H2MorseCalculator,
+    H2MorseExcitedStates,
+    H2MorseExcitedStatesAndCalculator,
+    H2MorseExcitedStatesCalculator,
+    Re,
+    ome,
+)
 from ase.vibrations import Vibrations
-from ase.calculators.h2morse import (H2Morse, H2MorseCalculator,
-                                     Re, De, ome, Etrans)
-from ase.calculators.h2morse import (H2MorseExcitedStatesCalculator,
-                                     H2MorseExcitedStates,
-                                     H2MorseExcitedStatesAndCalculator)
 
 
-def test_gs_minimum():
+def test_gs_minimum(testdir):
     """Test ground state minimum distance, energy and
     vibrational frequency"""
     atoms = H2Morse()
@@ -21,7 +29,7 @@ def test_gs_minimum():
             pytest.approx(ome[0], 1e-2))
 
 
-def test_gs_io_overlap():
+def test_gs_io_overlap(testdir):
     """Test ground state IO and 'wave function' overlap"""
     atoms0 = H2Morse()
     calc0 = atoms0.calc
@@ -30,7 +38,7 @@ def test_gs_io_overlap():
     calc1 = H2MorseCalculator(fname)
     for wf0, wf1 in zip(calc0.wfs, calc1.wfs):
         assert wf0 == pytest.approx(wf1, 1e-5)
-    
+
     atoms1 = H2Morse()
     ov = calc0.overlap(calc0)
     # own overlap is the unity matrix
@@ -38,7 +46,7 @@ def test_gs_io_overlap():
     # self and other - test on unitarity
     ov = calc0.overlap(atoms1.calc)
     assert np.eye(4) == pytest.approx(ov.dot(ov.T), 1e-8)
-    
+
 
 def test_excited_state():
     """Test excited state transition energies"""
@@ -48,14 +56,14 @@ def test_excited_state():
         exatoms = H2Morse()
         exatoms[1].position[2] = Re[i]  # set to potential minimum
         Egs = exatoms.get_potential_energy()
-        
+
         exc = H2MorseExcitedStatesCalculator()
         exl = exc.calculate(exatoms)
         assert (exl[i - 1].energy ==
                 pytest.approx(Etrans[i] - Egs + Egs0, 1e-8))
 
 
-def test_excited_io():
+def test_excited_io(testdir):
     """Check writing and reading"""
     fname = 'exlist.dat'
     atoms = H2Morse()
@@ -70,7 +78,7 @@ def test_excited_io():
         assert ex1.muv == pytest.approx(ex2.muv, 1e-5)
 
 
-def test_traditional():
+def test_traditional(testdir):
     """Check that traditional calling works"""
     atoms = H2Morse()
     fname = 'exlist.dat'

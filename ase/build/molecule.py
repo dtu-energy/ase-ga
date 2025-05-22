@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.atoms import Atoms
 from ase.collections import g2
 
@@ -27,9 +29,33 @@ def molecule(name, vacuum=None, **kwargs):
     To see a list of allowed names, try:
 
     >>> from ase.collections import g2
-    >>> print(g2.names)
+    >>> print(g2.names)  #doctest:+NORMALIZE_WHITESPACE
+        ['PH3', 'P2', 'CH3CHO', 'H2COH', 'CS', 'OCHCHO', 'C3H9C', 'CH3COF',
+        'CH3CH2OCH3', 'HCOOH', 'HCCl3', 'HOCl', 'H2', 'SH2', 'C2H2',
+        'C4H4NH', 'CH3SCH3', 'SiH2_s3B1d', 'CH3SH', 'CH3CO', 'CO', 'ClF3',
+        'SiH4', 'C2H6CHOH', 'CH2NHCH2', 'isobutene', 'HCO', 'bicyclobutane',
+        'LiF', 'Si', 'C2H6', 'CN', 'ClNO', 'S', 'SiF4', 'H3CNH2',
+        'methylenecyclopropane', 'CH3CH2OH', 'F', 'NaCl', 'CH3Cl',
+        'CH3SiH3', 'AlF3', 'C2H3', 'ClF', 'PF3', 'PH2', 'CH3CN',
+        'cyclobutene', 'CH3ONO', 'SiH3', 'C3H6_D3h', 'CO2', 'NO',
+        'trans-butane', 'H2CCHCl', 'LiH', 'NH2', 'CH', 'CH2OCH2',
+        'C6H6', 'CH3CONH2', 'cyclobutane', 'H2CCHCN', 'butadiene', 'C',
+        'H2CO', 'CH3COOH', 'HCF3', 'CH3S', 'CS2', 'SiH2_s1A1d', 'C4H4S',
+        'N2H4', 'OH', 'CH3OCH3', 'C5H5N', 'H2O', 'HCl', 'CH2_s1A1d',
+        'CH3CH2SH', 'CH3NO2', 'Cl', 'Be', 'BCl3', 'C4H4O', 'Al', 'CH3O',
+        'CH3OH', 'C3H7Cl', 'isobutane', 'Na', 'CCl4', 'CH3CH2O', 'H2CCHF',
+        'C3H7', 'CH3', 'O3', 'P', 'C2H4', 'NCCN', 'S2', 'AlCl3', 'SiCl4',
+        'SiO', 'C3H4_D2d', 'H', 'COF2', '2-butyne', 'C2H5', 'BF3', 'N2O',
+        'F2O', 'SO2', 'H2CCl2', 'CF3CN', 'HCN', 'C2H6NH', 'OCS', 'B', 'ClO',
+        'C3H8', 'HF', 'O2', 'SO', 'NH', 'C2F4', 'NF3', 'CH2_s3B1d',
+        'CH3CH2Cl', 'CH3COCl', 'NH3', 'C3H9N', 'CF4', 'C3H6_Cs', 'Si2H6',
+        'HCOOCH3', 'O', 'CCH', 'N', 'Si2', 'C2H6SO', 'C5H8', 'H2CF2', 'Li2',
+        'CH2SCH2', 'C2Cl4', 'C3H4_C3v', 'CH3COCH3', 'F2', 'CH4', 'SH',
+        'H2CCO', 'CH3CH2NH2', 'Li', 'N2', 'Cl2', 'H2O2', 'Na2', 'BeH',
+        'C3H4_C2v', 'NO2']
     >>> from ase.build.molecule import extra
-    >>> print(extra.keys())
+    >>> print(extra.keys())  #doctest:+NORMALIZE_WHITESPACE
+        dict_keys(['Be2', 'C7NH5', 'BDA', 'biphenyl', 'C60'])
 
     Examples
     --------

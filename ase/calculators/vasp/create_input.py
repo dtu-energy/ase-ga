@@ -1,3 +1,5 @@
+# fmt: off
+
 # Copyright (C) 2008 CSC - Scientific Computing Ltd.
 """This module defines an ASE interface to VASP.
 
@@ -19,9 +21,9 @@ http://cms.mpi.univie.ac.at/vasp/
 """
 
 import os
-import warnings
 import shutil
-from os.path import join, isfile, islink
+import warnings
+from os.path import isfile, islink, join
 from typing import List, Sequence, Tuple
 
 import numpy as np
@@ -29,6 +31,209 @@ import numpy as np
 import ase
 from ase.calculators.calculator import kpts2ndarray
 from ase.calculators.vasp.setups import get_default_setups
+from ase.config import cfg
+from ase.io.vasp_parsers.incar_writer import write_incar
+
+FLOAT_FORMAT = '5.6f'
+EXP_FORMAT = '5.2e'
+
+
+def check_ichain(ichain, ediffg, iopt):
+    ichain_dct = {}
+    if ichain > 0:
+        ichain_dct['ibrion'] = 3
+        ichain_dct['potim'] = 0.0
+        if iopt is None:
+            warnings.warn(
+                'WARNING: optimization is set to LFBGS (IOPT = 1)')
+            ichain_dct['iopt'] = 1
+        if ediffg is None or float(ediffg > 0.0):
+            raise RuntimeError('Please set EDIFFG < 0')
+    return ichain_dct
+
+
+def set_magmom(ispin, spinpol, atoms, magmom_input, sorting):
+    """Helps to set the magmom tag in the INCAR file with correct formatting"""
+    magmom_dct = {}
+    if magmom_input is not None:
+        if len(magmom_input) != len(atoms):
+            msg = ('Expected length of magmom tag to be'
+                   ' {}, i.e. 1 value per atom, but got {}').format(
+                len(atoms), len(magmom_input))
+            raise ValueError(msg)
+
+            # Check if user remembered to specify ispin
+            # note: we do not overwrite ispin if ispin=1
+        if not ispin:
+            spinpol = True
+            # note that ispin is an int key, but for the INCAR it does not
+            # matter
+            magmom_dct['ispin'] = 2
+        magmom = np.array(magmom_input)
+        magmom = magmom[sorting]
+    elif (spinpol and atoms.get_initial_magnetic_moments().any()):
+        # We don't want to write magmoms if they are all 0.
+        # but we could still be doing a spinpol calculation
+        if not ispin:
+            magmom_dct['ispin'] = 2
+        # Write out initial magnetic moments
+        magmom = atoms.get_initial_magnetic_moments()[sorting]
+        # unpack magmom array if three components specified
+        if magmom.ndim > 1:
+            magmom = [item for sublist in magmom for item in sublist]
+    else:
+        return spinpol, {}
+    # Compactify the magmom list to symbol order
+    lst = [[1, magmom[0]]]
+    for n in range(1, len(magmom)):
+        if magmom[n] == magmom[n - 1]:
+            lst[-1][0] += 1
+        else:
+            lst.append([1, magmom[n]])
+    line = ' '.join(['{:d}*{:.4f}'.format(mom[0], mom[1])
+                     for mom in lst])
+    magmom_dct['magmom'] = line
+    return spinpol, magmom_dct
+
+
+def set_ldau(ldau_param, luj_params, symbol_count):
+    """Helps to set the ldau tag in the INCAR file with correct formatting"""
+    ldau_dct = {}
+    if ldau_param is None:
+        ldau_dct['ldau'] = '.TRUE.'
+    llist = []
+    ulist = []
+    jlist = []
+    for symbol in symbol_count:
+        #  default: No +U
+        luj = luj_params.get(
+            symbol[0],
+            {'L': -1, 'U': 0.0, 'J': 0.0}
+        )
+        llist.append(int(luj['L']))
+        ulist.append(f'{luj["U"]:{".3f"}}')
+        jlist.append(f'{luj["J"]:{".3f"}}')
+    ldau_dct['ldaul'] = llist
+    ldau_dct['ldauu'] = ulist
+    ldau_dct['ldauj'] = jlist
+    return ldau_dct
+
+
+def test_nelect_charge_compitability(nelect, charge, nelect_from_ppp):
+    # We need to determine the nelect resulting from a given
+    # charge in any case if it's != 0, but if nelect is
+    # additionally given explicitly, then we need to determine it
+    # even for net charge of 0 to check for conflicts
+    if charge is not None and charge != 0:
+        nelect_from_charge = nelect_from_ppp - charge
+        if nelect and nelect != nelect_from_charge:
+            raise ValueError('incompatible input parameters: '
+                             f'nelect={nelect}, but charge={charge} '
+                             '(neutral nelect is '
+                             f'{nelect_from_ppp})')
+        print(nelect_from_charge)
+        return nelect_from_charge
+    else:
+        return nelect
+
+
+def get_pp_setup(setup) -> Tuple[dict, Sequence[int]]:
+    """
+    Get the pseudopotential mapping based on the "setpus" input.
+
+    Parameters
+    ----------
+    setup : [str, dict]
+        The setup to use for the calculation. This can be a string
+        shortcut, or a dict of atom identities and suffixes.
+        In the dict version it is also possible to select a base setup
+        e.g.: {'base': 'minimal', 'Ca': '_sv', 2: 'O_s'}
+        If the key is an integer, this means an atom index.
+        For the string version, 'minimal', 'recommended' and 'GW' are
+        available. The default is 'minimal
+
+    Returns
+    -------
+    setups : dict
+        The setup dictionary, with atom indices as keys and suffixes
+        as values.
+    special_setups : list
+        A list of atom indices that have a special setup.
+    """
+    special_setups = []
+
+    # Avoid mutating the module dictionary, so we use a copy instead
+    # Note, it is a nested dict, so a regular copy is not enough
+    setups_defaults = get_default_setups()
+
+    # Default to minimal basis
+    if setup is None:
+        setup = {'base': 'minimal'}
+
+    # String shortcuts are initialised to dict form
+    elif isinstance(setup, str):
+        if setup.lower() in setups_defaults.keys():
+            setup = {'base': setup}
+
+    # Dict form is then queried to add defaults from setups.py.
+    if 'base' in setup:
+        setups = setups_defaults[setup['base'].lower()]
+    else:
+        setups = {}
+
+    # Override defaults with user-defined setups
+    if setup is not None:
+        setups.update(setup)
+
+    for m in setups:
+        try:
+            special_setups.append(int(m))
+        except ValueError:
+            pass
+    return setups, special_setups
+
+
+def format_kpoints(kpts, atoms, reciprocal=False, gamma=False):
+    tokens = []
+    append = tokens.append
+
+    append('KPOINTS created by Atomic Simulation Environment\n')
+
+    if isinstance(kpts, dict):
+        kpts = kpts2ndarray(kpts, atoms=atoms)
+        reciprocal = True
+
+    shape = np.array(kpts).shape
+
+    # Wrap scalar in list if necessary
+    if shape == ():
+        kpts = [kpts]
+        shape = (1, )
+
+    if len(shape) == 1:
+        append('0\n')
+        if shape == (1, ):
+            append('Auto\n')
+        elif gamma:
+            append('Gamma\n')
+        else:
+            append('Monkhorst-Pack\n')
+        append(' '.join(f'{kpt:d}' for kpt in kpts))
+        append('\n0 0 0\n')
+    elif len(shape) == 2:
+        append('%i \n' % (len(kpts)))
+        if reciprocal:
+            append('Reciprocal\n')
+        else:
+            append('Cartesian\n')
+        for n in range(len(kpts)):
+            [append('%f ' % kpt) for kpt in kpts[n]]
+            if shape[1] == 4:
+                append('\n')
+            elif shape[1] == 3:
+                append('1.0 \n')
+    return ''.join(tokens)
+
 
 # Parameters that can be set in INCAR. The values which are None
 # are not written and default parameters of VASP are used for them.
@@ -131,6 +336,7 @@ float_keys = [
     'auger_temp',  # Temperature for Auger calculation
     'dq',  # Finite difference displacement magnitude (NMR)
     'avgap',  # Average gap (Model GW)
+    'ch_sigma',  # Broadening of the core electron absorption spectrum
     'bpotim',  # Undocumented Bond-Boost parameter (GH patches)
     'qrr',  # Undocumented Bond-Boost parameter (GH patches)
     'prr',  # Undocumented Bond-Boost parameter (GH patches)
@@ -141,14 +347,29 @@ float_keys = [
     'efirst',  # Energy of first NEB image (GH patches)
     'elast',  # Energy of final NEB image (GH patches)
     'fmagval',  # Force magnitude convergence criterion (GH patches)
-    'cmbj',  # Undocumented MetaGGA parameter
-    'cmbja',  # Undocumented MetaGGA parameter
-    'cmbjb',  # Undocumented MetaGGA parameter
+    'cmbj',  # Modified Becke-Johnson MetaGGA c-parameter
+    'cmbja',  # Modified Becke-Johnson MetaGGA alpha-parameter
+    'cmbjb',  # Modified Becke-Johnson MetaGGA beta-parameter
     'sigma_nc_k',  # Width of ion gaussians (VASPsol)
     'sigma_k',  # Width of dielectric cavidty (VASPsol)
     'nc_k',  # Cavity turn-on density (VASPsol)
     'lambda_d_k',  # Debye screening length (VASPsol)
     'ediffsol',  # Tolerance for solvation convergence (VASPsol)
+    'soltemp',  # Solvent temperature for isol 2 in Vaspsol++
+    'a_k',  # Smoothing length for FFT for isol 2 in Vaspsol++
+    'r_cav',  # Offset for solute surface area for isol 2 in Vaspsol++
+    'epsilon_inf',  # Bulk optical dielectric for isol 2 in Vaspsol++
+    'n_mol',  # Solvent density for isol 2 in Vaspsol++
+    'p_mol',  # Solvent dipole moment for isol 2 in Vaspsol++
+    'r_solv',  # Solvent radius for isol 2 in Vaspsol++
+    'r_diel',  # Dielectric radius for isol 2 in Vaspsol++
+    'r_b',  # Bound charge smearing length for isol 2 in Vaspsol++
+    'c_molar',  # Electrolyte concentration for isol 2 in Vaspsol++
+    'zion',  # Electrolyte ion valency for isol 2 in Vaspsol++
+    'd_ion',  # Packing diameter of electrolyte ions for isol 2 in Vaspsol++
+    'r_ion',  # Ionic radius of electrolyte ions for isol 2 in Vaspsol++
+    'efermi_ref',  # Potential vs vacuum for isol 2 in Vaspsol++
+    'capacitance_init',  # Initial guess for isol 2 in Vaspsol++
     'deg_threshold',  # Degeneracy threshold
     'omegamin',  # Minimum frequency for dense freq. grid
     'omegamax',  # Maximum frequency for dense freq. grid
@@ -180,7 +401,6 @@ float_keys = [
     'dvvvnorm0',  # Undocumented parameter
     'dvvminpotim',  # Undocumented parameter
     'dvvmaxpotim',  # Undocumented parameter
-    'efermi',  # Undocumented parameter
     'enchg',  # Undocumented charge fitting parameter
     'tau0',  # Undocumented charge fitting parameter
     'encut4o',  # Cutoff energy for 4-center integrals (HF)
@@ -225,6 +445,7 @@ float_keys = [
     'qdt',  # Timestep for quickmin minimization (instanton)
     'qtpz',  # Temperature (instanton)
     'qftol',  # Tolerance (instanton)
+    'nupdown',  # fix spin moment to specified value
 ]
 
 exp_keys = [
@@ -246,6 +467,7 @@ string_keys = [
     'radeq',  # Which type of radial equations to use for rel. core calcs.
     'localized_basis',  # Basis to use in CRPA
     'proutine',  # Select profiling routine
+    'efermi',  # Sets the FERMI level in VASP 6.4.0+
 ]
 
 int_keys = [
@@ -254,6 +476,7 @@ int_keys = [
     'icharg',  # charge: 0-WAVECAR 1-CHGCAR 2-atom 10-const
     'idipol',  # monopol/dipol and quadropole corrections
     'images',  # number of images for NEB calculation
+    'imix',  # specifies density mixing
     'iniwav',  # initial electr wf. : 0-lowe 1-rand
     'isif',  # calculate stress and what to relax
     'ismear',  # part. occupancies: -5 Blochl -4-tet -1-fermi 0-gaus >0 MP
@@ -279,6 +502,7 @@ int_keys = [
     'nbmod',  # specifies mode for partial charge calculation
     'nelm',  # nr. of electronic steps (default 60)
     'nelmdl',  # nr. of initial electronic steps
+    'nelmgw',  # nr. of self-consistency cycles for GW
     'nelmin',
     'nfree',  # number of steps per DOF when calculting Hessian using
     # finite differences
@@ -292,7 +516,6 @@ int_keys = [
     'npar',  # parallelization over bands
     'nsim',  # evaluate NSIM bands simultaneously if using RMM-DIIS
     'nsw',  # number of steps for ionic upd.
-    'nupdown',  # fix spin moment to specified value
     'nwrite',  # verbosity write-flag (how much is written)
     'vdwgr',  # extra keyword for Andris program
     'vdwrn',  # extra keyword for Andris program
@@ -321,7 +544,9 @@ int_keys = [
     'nedos',  # Number of grid points in DOS
     'turbo',  # Ewald, 0 = Normal, 1 = PME
     'omegapar',  # Number of groups for response function calc.
-    'taupar',  # (Possibly Depricated) Number of groups in real time for response function calc.
+    # (Possibly Depricated) Number of groups in real time for
+    # response function calc.
+    'taupar',
     'ntaupar',  # Number of groups in real time for response function calc.
     'antires',  # How to treat antiresonant part of response function
     'magatom',  # Index of atom at which to place magnetic field (NMR)
@@ -414,8 +639,10 @@ int_keys = [
     'nkoffopt',  # K-point "counter offset" for Optics
     'nbvalopt',  # Number of valence bands to write in OPTICS file
     'nbconopt',  # Number of conduction bands to write in OPTICS file
+    'ch_nedos',  # Number dielectric function calculation grid points for XAS
     'plevel',  # No timings for routines with "level" higher than this
     'qnl',  # Lanczos matrix size (instanton)
+    'isol',  # vaspsol++ flag 1 linear, 2 nonlinear
 ]
 
 bool_keys = [
@@ -472,6 +699,9 @@ bool_keys = [
     'lwannier90',  # Switches on the interface between VASP and WANNIER90
     'lsorbit',  # Enable spin-orbit coupling
     'lsol',  # turn on solvation for Vaspsol
+    'lnldiel',  # turn on nonlinear dielectric in Vaspsol++
+    'lnlion',  # turn on nonlinear ionic in Vaspsol++
+    'lsol_scf',  # turn on solvation in SCF cycle in Vaspsol++
     'lautoscale',  # automatically calculate inverse curvature for VTST LBFGS
     'interactive',  # Enables interactive calculation for VaspInteractive
     'lauger',  # Perform Auger calculation (Auger)
@@ -531,6 +761,7 @@ bool_keys = [
     'oddonlygw',  # Avoid gamma point in response function calc.
     'evenonlygw',  # Avoid even points in response function calc.
     'lspectralgw',  # More accurate self-energy calculation
+    'ch_lspec',  # Calculate matrix elements btw. core and conduction states
     'fletcher_reeves',  # Undocumented dimer parameter
     'lidm_selective',  # Undocumented dimer parameter
     'lblueout',  # Write output of blue-moon algorithm
@@ -552,7 +783,7 @@ bool_keys = [
     'oddonly',  # Undocumented HF parameter
     'evenonly',  # Undocumented HF parameter
     'lfockaedft',  # Undocumented HF parameter
-    'lsubsrot',  # Enable subspace rotation diagonalization
+    'lsubrot',  # Enable subspace rotation diagonalization
     'mixfirst',  # Mix before diagonalization
     'lvcader',  # Calculate derivs. w.r.t. VCA parameters
     'lcompat',  # Enable "full compatibility"
@@ -755,6 +986,14 @@ class GenerateVaspInput:
             'pp': 'LDA'
         },
         # GGAs
+        'blyp': {  # https://www.vasp.at/forum/viewtopic.php?p=17234
+            'pp': 'PBE',
+            'gga': 'B5',
+            'aldax': 1.00,
+            'aggax': 1.00,
+            'aggac': 1.00,
+            'aldac': 0.00
+        },
         'pw91': {
             'pp': 'PW91',
             'gga': '91'
@@ -797,10 +1036,24 @@ class GenerateVaspInput:
         'scan': {
             'metagga': 'SCAN'
         },
+        'rscan': {
+            'metagga': 'RSCAN'
+        },
+        'r2scan': {
+            'metagga': 'R2SCAN'
+        },
         'scan-rvv10': {
             'metagga': 'SCAN',
             'luse_vdw': True,
             'bparam': 15.7
+        },
+        'mbj': {
+            # Modified Becke-Johnson
+            'metagga': 'MBJ',
+        },
+        'tb09': {
+            # Alias for MBJ
+            'metagga': 'MBJ',
         },
         # vdW-DFs
         'vdw-df': {
@@ -950,6 +1203,7 @@ class GenerateVaspInput:
         self.list_float_params = {}
         self.special_params = {}
         self.dict_params = {}
+        self.atoms = None
         for key in float_keys:
             self.float_params[key] = None
         for key in exp_keys:
@@ -996,6 +1250,16 @@ class GenerateVaspInput:
             # Custom key-value pairs, written to INCAR with *no* type checking
             'custom': {},
         }
+        # warning message for pw91
+        self.pw91_warning_msg =\
+            "The PW91 (potpaw_GGA) pseudopotential set is " \
+            "from 2006 and not recommended for use.\nWe will " \
+            "remove support for it in a future release, " \
+            "and use the current PBE (potpaw_PBE) set instead.\n" \
+            "Note that this still allows for PW91 calculations, " \
+            "since VASP recalculates the exchange-correlation\n" \
+            "energy inside the PAW sphere and corrects the atomic " \
+            "energies given by the POTCAR file."
 
     def set_xc_params(self, xc):
         """Set parameters corresponding to XC functional"""
@@ -1004,9 +1268,14 @@ class GenerateVaspInput:
             pass
         elif xc not in self.xc_defaults:
             xc_allowed = ', '.join(self.xc_defaults.keys())
-            raise ValueError('{0} is not supported for xc! Supported xc values'
-                             'are: {1}'.format(xc, xc_allowed))
+            raise ValueError('{} is not supported for xc! Supported xc values'
+                             'are: {}'.format(xc, xc_allowed))
         else:
+            # print future warning in case pw91 is selected:
+            if xc == 'pw91':
+                warnings.warn(
+                    self.pw91_warning_msg, FutureWarning
+                )
             # XC defaults to PBE pseudopotentials
             if 'pp' not in self.xc_defaults[xc]:
                 self.set(pp='PBE')
@@ -1027,31 +1296,55 @@ class GenerateVaspInput:
 
         if 'xc' in kwargs:
             self.set_xc_params(kwargs['xc'])
-        for key in kwargs:
+        for key, value in kwargs.items():
             if key in self.float_params:
-                self.float_params[key] = kwargs[key]
+                self.float_params[key] = value
             elif key in self.exp_params:
-                self.exp_params[key] = kwargs[key]
+                self.exp_params[key] = value
             elif key in self.string_params:
-                self.string_params[key] = kwargs[key]
+                self.string_params[key] = value
             elif key in self.int_params:
-                self.int_params[key] = kwargs[key]
+                self.int_params[key] = value
             elif key in self.bool_params:
-                self.bool_params[key] = kwargs[key]
+                self.bool_params[key] = value
             elif key in self.list_bool_params:
-                self.list_bool_params[key] = kwargs[key]
+                self.list_bool_params[key] = value
             elif key in self.list_int_params:
-                self.list_int_params[key] = kwargs[key]
+                self.list_int_params[key] = value
             elif key in self.list_float_params:
-                self.list_float_params[key] = kwargs[key]
+                self.list_float_params[key] = value
             elif key in self.special_params:
-                self.special_params[key] = kwargs[key]
+                self.special_params[key] = value
             elif key in self.dict_params:
-                self.dict_params[key] = kwargs[key]
+                self.dict_params[key] = value
             elif key in self.input_params:
-                self.input_params[key] = kwargs[key]
+                self.input_params[key] = value
+            elif isinstance(value, str):
+                self.string_params[key] = value
+            # `bool` is a subclass of `int` and should be checked earlier.
+            # https://docs.python.org/3/c-api/bool.html
+            elif isinstance(value, bool):
+                self.bool_params[key] = value
+            elif isinstance(value, int):
+                self.int_params[key] = value
+            elif isinstance(value, float):
+                self.float_params[key] = value
+            elif isinstance(value, list):
+                if len(value) == 0:
+                    msg = f'empty list is given for {key}'
+                    raise ValueError(msg)
+                if isinstance(value[0], bool):
+                    self.list_bool_params[key] = value
+                elif isinstance(value[0], int):
+                    self.list_int_params[key] = value
+                elif isinstance(value[0], float):
+                    self.list_float_params[key] = value
+                else:
+                    msg = f'cannot handle type of value for {key} = {value!r}'
+                    raise TypeError(msg)
             else:
-                raise TypeError('Parameter not defined: ' + key)
+                msg = f'cannot handle type of value for {key} = {value!r}'
+                raise TypeError(msg)
 
     def check_xc(self):
         """Make sure the calculator has functional & pseudopotentials set up
@@ -1070,6 +1363,10 @@ class GenerateVaspInput:
                 p.update({'pp': 'lda'})
             elif self.string_params['gga'] == '91':
                 p.update({'pp': 'pw91'})
+                warnings.warn(
+                    self.pw91_warning_msg, FutureWarning
+                )
+
             elif self.string_params['gga'] == 'PE':
                 p.update({'pp': 'pbe'})
             else:
@@ -1115,6 +1412,14 @@ class GenerateVaspInput:
             resrt[srt[n]] = n
         return srt, resrt
 
+    def _set_spinpol(self, atoms):
+        if self.int_params['ispin'] is None:
+            self.spinpol = atoms.get_initial_magnetic_moments().any()
+        else:
+            # VASP runs non-spin-polarized calculations when `ispin=1`,
+            # regardless if `magmom` is specified or not.
+            self.spinpol = (self.int_params['ispin'] == 2)
+
     def _build_pp_list(self,
                        atoms,
                        setups=None,
@@ -1124,7 +1429,7 @@ class GenerateVaspInput:
         p = self.input_params
 
         if setups is None:
-            setups, special_setups = self._get_setups()
+            setups, special_setups = get_pp_setup(p['setups'])
 
         symbols, _ = count_symbols(atoms, exclude=special_setups)
 
@@ -1136,8 +1441,8 @@ class GenerateVaspInput:
         else:
             pp_folder = p['pp']
 
-        if self.VASP_PP_PATH in os.environ:
-            pppaths = os.environ[self.VASP_PP_PATH].split(':')
+        if self.VASP_PP_PATH in cfg:
+            pppaths = cfg[self.VASP_PP_PATH].split(':')
         else:
             pppaths = []
         ppp_list = []
@@ -1147,9 +1452,9 @@ class GenerateVaspInput:
             if m in setups:
                 special_setup_index = m
             elif str(m) in setups:
-                special_setup_index = str(m)  # type: ignore
+                special_setup_index = str(m)  # type: ignore[assignment]
             else:
-                raise Exception("Having trouble with special setup index {0}."
+                raise Exception("Having trouble with special setup index {}."
                                 " Please use an int.".format(m))
             potcar = join(pp_folder, setups[special_setup_index], 'POTCAR')
             for path in pppaths:
@@ -1188,58 +1493,10 @@ class GenerateVaspInput:
                         LDA:  $VASP_PP_PATH/potpaw/
                         PBE:  $VASP_PP_PATH/potpaw_PBE/
                         PW91: $VASP_PP_PATH/potpaw_GGA/
-                        
+
                         No pseudopotential for {}!""".format(potcar, symbol))
                 raise RuntimeError(msg)
         return ppp_list
-
-    def _get_setups(self):
-        p = self.input_params
-
-        special_setups = []
-
-        # Default setup lists are available: 'minimal', 'recommended' and 'GW'
-        # These may be provided as a string e.g.::
-        #
-        #     calc = Vasp(setups='recommended')
-        #
-        # or in a dict with other specifications e.g.::
-        #
-        #    calc = Vasp(setups={'base': 'minimal', 'Ca': '_sv', 2: 'O_s'})
-        #
-        # Where other keys are either atom identities or indices, and the
-        # corresponding values are suffixes or the full name of the setup
-        # folder, respectively.
-
-        # Avoid mutating the module dictionary, so we use a copy instead
-        # Note, it is a nested dict, so a regular copy is not enough
-        setups_defaults = get_default_setups()
-
-        # Default to minimal basis
-        if p['setups'] is None:
-            p['setups'] = {'base': 'minimal'}
-
-        # String shortcuts are initialised to dict form
-        elif isinstance(p['setups'], str):
-            if p['setups'].lower() in setups_defaults.keys():
-                p['setups'] = {'base': p['setups']}
-
-        # Dict form is then queried to add defaults from setups.py.
-        if 'base' in p['setups']:
-            setups = setups_defaults[p['setups']['base'].lower()]
-        else:
-            setups = {}
-
-        # Override defaults with user-defined setups
-        if p['setups'] is not None:
-            setups.update(p['setups'])
-
-        for m in setups:
-            try:
-                special_setups.append(int(m))
-            except ValueError:
-                pass
-        return setups, special_setups
 
     def initialize(self, atoms):
         """Initialize a VASP calculation
@@ -1264,10 +1521,9 @@ class GenerateVaspInput:
         self.all_symbols = atoms.get_chemical_symbols()
         self.natoms = len(atoms)
 
-        self.spinpol = (atoms.get_initial_magnetic_moments().any()
-                        or self.int_params['ispin'] == 2)
+        self._set_spinpol(atoms)
 
-        setups, special_setups = self._get_setups()
+        setups, special_setups = get_pp_setup(self.input_params['setups'])
 
         # Determine the number of atoms of each atomic species
         # sorted after atomic species
@@ -1340,8 +1596,8 @@ class GenerateVaspInput:
 
         if self.bool_params['luse_vdw']:
             src = None
-            if vdw_env in os.environ:
-                src = os.path.join(os.environ[vdw_env], kernel)
+            if vdw_env in cfg:
+                src = os.path.join(cfg[vdw_env], kernel)
 
             if not src or not isfile(src):
                 warnings.warn(
@@ -1374,193 +1630,143 @@ class GenerateVaspInput:
 
     def write_incar(self, atoms, directory='./', **kwargs):
         """Writes the INCAR file."""
-        p = self.input_params
-        # jrk 1/23/2015 I added this flag because this function has
-        # two places where magmoms get written. There is some
-        # complication when restarting that often leads to magmom
-        # getting written twice. this flag prevents that issue.
-        magmom_written = False
-        incar = open(join(directory, 'INCAR'), 'w')
-        incar.write('INCAR created by Atomic Simulation Environment\n')
-        for key, val in self.float_params.items():
-            if key == 'nelect':
-                charge = p.get('charge')
-                # Handle deprecated net_charge parameter (remove at some point)
-                net_charge = p.get('net_charge')
-                if net_charge is not None:
-                    warnings.warn(
-                        '`net_charge`, which is given in units of '
-                        'the *negative* elementary charge (i.e., the opposite '
-                        'of what one normally calls charge) has been '
-                        'deprecated in favor of `charge`, which is given in '
-                        'units of the positive elementary charge as usual',
-                        category=FutureWarning)
-                    if charge is not None and charge != -net_charge:
-                        raise ValueError(
-                            "can't give both net_charge and charge")
-                    charge = -net_charge
-                # We need to determine the nelect resulting from a given net
-                # charge in any case if it's != 0, but if nelect is
-                # additionally given explicitly, then we need to determine it
-                # even for net charge of 0 to check for conflicts
-                if charge is not None and (charge != 0 or val is not None):
-                    default_nelect = self.default_nelect_from_ppp()
-                    nelect_from_charge = default_nelect - charge
-                    if val is not None and val != nelect_from_charge:
-                        raise ValueError('incompatible input parameters: '
-                                         'nelect=%s, but charge=%s '
-                                         '(neutral nelect is %s)' %
-                                         (val, charge, default_nelect))
-                    val = nelect_from_charge
-            if val is not None:
-                incar.write(' %s = %5.6f\n' % (key.upper(), val))
-        for key, val in self.exp_params.items():
-            if val is not None:
-                incar.write(' %s = %5.2e\n' % (key.upper(), val))
-        for key, val in self.string_params.items():
-            if val is not None:
-                incar.write(' %s = %s\n' % (key.upper(), val))
-        for key, val in self.int_params.items():
-            if val is not None:
-                incar.write(' %s = %d\n' % (key.upper(), val))
-                if key == 'ichain' and val > 0:
-                    incar.write(' IBRION = 3\n POTIM = 0.0\n')
-                    for key, val in self.int_params.items():
-                        if key == 'iopt' and val is None:
-                            print('WARNING: optimization is '
-                                  'set to LFBGS (IOPT = 1)')
-                            incar.write(' IOPT = 1\n')
-                    for key, val in self.exp_params.items():
-                        if key == 'ediffg' and val is None:
-                            RuntimeError('Please set EDIFFG < 0')
+        incar_params = {}
 
-        for key, val in self.list_bool_params.items():
-            if val is None:
-                pass
-            else:
-                incar.write(' %s = ' % key.upper())
-                [incar.write('%s ' % _to_vasp_bool(x)) for x in val]
-                incar.write('\n')
+        # float params
+        float_dct = {
+            key: f'{val:{FLOAT_FORMAT}}'
+            for key, val in self.float_params.items()
+            if val is not None
+        }
 
-        for key, val in self.list_int_params.items():
-            if val is None:
-                pass
-            elif key == 'ldaul' and (self.dict_params['ldau_luj'] is not None):
-                pass
-            else:
-                incar.write(' %s = ' % key.upper())
-                [incar.write('%d ' % x) for x in val]
-                incar.write('\n')
+        if 'charge' in self.input_params and self.input_params[
+                'charge'] is not None:
+            nelect_val = test_nelect_charge_compitability(
+                self.float_params['nelect'],
+                self.input_params['charge'],
+                self.default_nelect_from_ppp())
+            if nelect_val:
+                float_dct['nelect'] = f'{nelect_val:{FLOAT_FORMAT}}'
+        incar_params.update(float_dct)
 
-        for key, val in self.list_float_params.items():
-            if val is None:
-                pass
-            elif ((key in ('ldauu', 'ldauj'))
-                  and (self.dict_params['ldau_luj'] is not None)):
-                pass
-            elif key == 'magmom':
-                if not len(val) == len(atoms):
-                    msg = ('Expected length of magmom tag to be'
-                           ' {}, i.e. 1 value per atom, but got {}').format(
-                               len(atoms), len(val))
-                    raise ValueError(msg)
+        # exp params
+        exp_dct = {
+            key: f'{val:{EXP_FORMAT}}'
+            for key, val in self.exp_params.items()
+            if val is not None
+        }
+        incar_params.update(exp_dct)
 
-                # Check if user remembered to specify ispin
-                # note: we do not overwrite ispin if ispin=1
-                if not self.int_params['ispin']:
-                    self.spinpol = True
-                    incar.write(' ispin = 2\n'.upper())
+        # string_params
+        string_dct = {
+            key: val for key, val in self.string_params.items() if val is not
+            None
+        }
+        incar_params.update(string_dct)
 
-                incar.write(' %s = ' % key.upper())
-                magmom_written = True
-                # Work out compact a*x b*y notation and write in this form
-                # Assume 1 magmom per atom, ordered as our atoms object
-                val = np.array(val)
-                val = val[self.sort]  # Order in VASP format
+        # int params
+        int_dct = {
+            key: val for key, val in self.int_params.items() if val is not None
+        }
+        if 'ichain' in int_dct.keys():
+            ichain_dict = check_ichain(
+                ichain=int_dct['ichain'],
+                ediffg=self.exp_params.get('ediffg', None),
+                iopt=int_dct.get('iopt', None),
+            )
+            int_dct.update(ichain_dict)
+        incar_params.update(int_dct)
 
-                # Compactify the magmom list to symbol order
-                lst = [[1, val[0]]]
-                for n in range(1, len(val)):
-                    if val[n] == val[n - 1]:
-                        lst[-1][0] += 1
-                    else:
-                        lst.append([1, val[n]])
-                incar.write(' '.join(
-                    ['{:d}*{:.4f}'.format(mom[0], mom[1]) for mom in lst]))
-                incar.write('\n')
-            else:
-                incar.write(' %s = ' % key.upper())
-                [incar.write('%.4f ' % x) for x in val]
-                incar.write('\n')
+        # list_bool_params
+        bool_dct = {
+            key: val
+            for key, val in self.list_bool_params.items()
+            if val is not None
+        }
+        for key, val in bool_dct.items():
+            bool_dct[key] = [_to_vasp_bool(x) for x in val]
+        incar_params.update(bool_dct)
 
-        for key, val in self.bool_params.items():
-            if val is not None:
-                incar.write(' %s = ' % key.upper())
-                if val:
-                    incar.write('.TRUE.\n')
-                else:
-                    incar.write('.FALSE.\n')
-        for key, val in self.special_params.items():
-            if val is not None:
-                incar.write(' %s = ' % key.upper())
-                if key == 'lreal':
-                    if isinstance(val, str):
-                        incar.write(val + '\n')
-                    elif isinstance(val, bool):
-                        if val:
-                            incar.write('.TRUE.\n')
-                        else:
-                            incar.write('.FALSE.\n')
-        for key, val in self.dict_params.items():
-            if val is not None:
-                if key == 'ldau_luj':
-                    # User didn't turn on LDAU tag.
-                    # Only turn on if ldau is unspecified
-                    if self.bool_params['ldau'] is None:
-                        self.bool_params['ldau'] = True
-                        # At this point we have already parsed our bool params
-                        incar.write(' LDAU = .TRUE.\n')
-                    llist = ulist = jlist = ''
-                    for symbol in self.symbol_count:
-                        #  default: No +U
-                        luj = val.get(symbol[0], {'L': -1, 'U': 0.0, 'J': 0.0})
-                        llist += ' %i' % luj['L']
-                        ulist += ' %.3f' % luj['U']
-                        jlist += ' %.3f' % luj['J']
-                    incar.write(' LDAUL =%s\n' % llist)
-                    incar.write(' LDAUU =%s\n' % ulist)
-                    incar.write(' LDAUJ =%s\n' % jlist)
+        # list_int_params
+        int_dct = {
+            key: val
+            for key, val in self.list_int_params.items()
+            if val is not None
+        }
+        if 'ldaul' in int_dct.keys() and self.dict_params[
+                'ldau_luj'] is not None:
+            del int_dct['ldaul']
+        incar_params.update(int_dct)
 
-        if (self.spinpol and not magmom_written
-                # We don't want to write magmoms if they are all 0.
-                # but we could still be doing a spinpol calculation
-                and atoms.get_initial_magnetic_moments().any()):
-            if not self.int_params['ispin']:
-                incar.write(' ispin = 2\n'.upper())
-            # Write out initial magnetic moments
-            magmom = atoms.get_initial_magnetic_moments()[self.sort]
-            # unpack magmom array if three components specified
-            if magmom.ndim > 1:
-                magmom = [item for sublist in magmom for item in sublist]
-            list = [[1, magmom[0]]]
-            for n in range(1, len(magmom)):
-                if magmom[n] == magmom[n - 1]:
-                    list[-1][0] += 1
-                else:
-                    list.append([1, magmom[n]])
-            incar.write(' magmom = '.upper())
-            [incar.write('%i*%.4f ' % (mom[0], mom[1])) for mom in list]
-            incar.write('\n')
+        # list_float_params
+        float_dct = {
+            key: val
+            for key, val in self.list_float_params.items()
+            if val is not None
+        }
+        if 'ldauu' in float_dct.keys() and self.dict_params[
+                'ldau_luj'] is not None:
+            del float_dct['ldauu']
+        if 'ldauj' in float_dct.keys() and self.dict_params[
+                'ldau_luj'] is not None:
+            del float_dct['ldauj']
+        incar_params.update(float_dct)
+
+        # bool params
+        bool_dct = {
+            key: _to_vasp_bool(val)
+            for key, val in self.bool_params.items()
+            if val is not None
+        }
+        incar_params.update(bool_dct)
+
+        # special params
+        special_dct = {
+            key: val for key, val in self.special_params.items() if val is not
+            None
+        }
+        if 'lreal' in special_dct.keys():
+            if isinstance(special_dct['lreal'], bool):
+                special_dct['lreal'] = _to_vasp_bool(special_dct['lreal'])
+        incar_params.update(special_dct)
+
+        # dict params
+        dict_dct = {
+            key: val for key, val in self.dict_params.items() if val is not None
+        }
+        if 'ldau_luj' in dict_dct.keys():
+            ldau_dict = set_ldau(
+                ldau_param=self.bool_params['ldau'],
+                luj_params=dict_dct['ldau_luj'],
+                symbol_count=self.symbol_count)
+            dict_dct.update(ldau_dict)
+            del dict_dct['ldau_luj']
+        incar_params.update(dict_dct)
+
+        # set magmom based on input or initial atoms object
+        spinpol, magmom_dct = set_magmom(
+            atoms=atoms,
+            ispin=self.int_params['ispin'],
+            spinpol=self.spinpol,
+            magmom_input=float_dct.get('magmom', None),
+            sorting=self.sort,
+        )
+        self.spinpol = spinpol
+        incar_params.update(magmom_dct)
 
         # Custom key-value pairs, which receive no formatting
         # Use the comment "# <Custom ASE key>" to denote such
         # a custom key-value pair, as we cannot otherwise
         # reliably and easily identify such non-standard entries
-        custom_kv_pairs = p.get('custom')
-        for key, value in custom_kv_pairs.items():
-            incar.write(' {} = {}  # <Custom ASE key>\n'.format(
-                key.upper(), value))
-        incar.close()
+
+        cust_dict = {
+            key: str(val) + '  # <Custom ASE key>'
+            for key, val in self.input_params['custom'].items()
+            if val is not None
+        }
+        incar_params.update(cust_dict)
+
+        write_incar(directory=directory, parameters=incar_params)
 
     def write_kpoints(self, atoms=None, directory='./', **kwargs):
         """Writes the KPOINTS file."""
@@ -1573,47 +1779,17 @@ class GenerateVaspInput:
             if self.float_params['kspacing'] > 0:
                 return
             else:
-                raise ValueError("KSPACING value {0} is not allowable. "
+                raise ValueError("KSPACING value {} is not allowable. "
                                  "Please use None or a positive number."
                                  "".format(self.float_params['kspacing']))
 
-        p = self.input_params
+        kpointstring = format_kpoints(
+            kpts=self.input_params['kpts'],
+            atoms=atoms,
+            reciprocal=self.input_params['reciprocal'],
+            gamma=self.input_params['gamma'])
         with open(join(directory, 'KPOINTS'), 'w') as kpoints:
-            kpoints.write('KPOINTS created by Atomic Simulation Environment\n')
-
-            if isinstance(p['kpts'], dict):
-                p['kpts'] = kpts2ndarray(p['kpts'], atoms=atoms)
-                p['reciprocal'] = True
-
-            shape = np.array(p['kpts']).shape
-
-            # Wrap scalar in list if necessary
-            if shape == ():
-                p['kpts'] = [p['kpts']]
-                shape = (1, )
-
-            if len(shape) == 1:
-                kpoints.write('0\n')
-                if shape == (1, ):
-                    kpoints.write('Auto\n')
-                elif p['gamma']:
-                    kpoints.write('Gamma\n')
-                else:
-                    kpoints.write('Monkhorst-Pack\n')
-                [kpoints.write('%i ' % kpt) for kpt in p['kpts']]
-                kpoints.write('\n0 0 0\n')
-            elif len(shape) == 2:
-                kpoints.write('%i \n' % (len(p['kpts'])))
-                if p['reciprocal']:
-                    kpoints.write('Reciprocal\n')
-                else:
-                    kpoints.write('Cartesian\n')
-                for n in range(len(p['kpts'])):
-                    [kpoints.write('%f ' % kpt) for kpt in p['kpts'][n]]
-                    if shape[1] == 4:
-                        kpoints.write('\n')
-                    elif shape[1] == 3:
-                        kpoints.write('1.0 \n')
+            kpoints.write(kpointstring)
 
     def write_potcar(self, suffix="", directory='./'):
         """Writes the POTCAR file."""
@@ -1632,9 +1808,9 @@ class GenerateVaspInput:
         column. It is used for restart purposes to get sorting right
         when reading in an old calculation to ASE."""
 
-        file = open(join(directory, 'ase-sort.dat'), 'w')
-        for n in range(len(self.sort)):
-            file.write('%5i %5i \n' % (self.sort[n], self.resort[n]))
+        with open(join(directory, 'ase-sort.dat'), 'w') as fd:
+            for n in range(len(self.sort)):
+                fd.write('%5i %5i \n' % (self.sort[n], self.resort[n]))
 
     # The below functions are used to restart a calculation
 
@@ -1644,7 +1820,7 @@ class GenerateVaspInput:
         Typically named INCAR."""
 
         self.spinpol = False
-        with open(filename, 'r') as fd:
+        with open(filename) as fd:
             lines = fd.readlines()
 
         for line in lines:
@@ -1689,13 +1865,17 @@ class GenerateVaspInput:
                     else:
                         self.int_params[key] = int(data[2])
                 elif key in bool_keys:
-                    if 'true' in data[2].lower():
+                    val_char = data[2].lower().replace('.', '', 1)
+                    if val_char.startswith('t'):
                         self.bool_params[key] = True
-                    elif 'false' in data[2].lower():
+                    elif val_char.startswith('f'):
                         self.bool_params[key] = False
+                    else:
+                        raise ValueError(f'Invalid value "{data[2]}" for bool '
+                                         f'key "{key}"')
 
                 elif key in list_bool_keys:
-                    self.list_bool_keys[key] = [
+                    self.list_bool_params[key] = [
                         _from_vasp_bool(x)
                         for x in _args_without_comment(data[2:])
                     ]
@@ -1715,7 +1895,7 @@ class GenerateVaspInput:
                             if data[i] == "*":
                                 b = lst.pop()
                                 i += 1
-                                for j in range(int(b)):
+                                for _ in range(int(b)):
                                     lst.append(float(data[i]))
                             else:
                                 lst.append(float(data[i]))
@@ -1730,53 +1910,37 @@ class GenerateVaspInput:
                         self.list_float_params[key] = [
                             float(x) for x in data[2:]
                         ]
-                # elif key in list_keys:
-                #     list = []
-                #     if key in ('dipol', 'eint', 'ferwe', 'ferdo',
-                #                'ropt', 'rwigs',
-                #                'ldauu', 'ldaul', 'ldauj', 'langevin_gamma'):
-                #         for a in data[2:]:
-                #             if a in ["!", "#"]:
-                #                 break
-                #             list.append(float(a))
-                #     elif key in ('iband', 'kpuse', 'random_seed'):
-                #         for a in data[2:]:
-                #             if a in ["!", "#"]:
-                #                 break
-                #             list.append(int(a))
-                #     self.list_params[key] = list
-                #     if key == 'magmom':
-                #         list = []
-                #         i = 2
-                #         while i < len(data):
-                #             if data[i] in ["#", "!"]:
-                #                 break
-                #             if data[i] == "*":
-                #                 b = list.pop()
-                #                 i += 1
-                #                 for j in range(int(b)):
-                #                     list.append(float(data[i]))
-                #             else:
-                #                 list.append(float(data[i]))
-                #             i += 1
-                #         self.list_params['magmom'] = list
-                #         list = np.array(list)
-                #         if self.atoms is not None:
-                #             self.atoms.set_initial_magnetic_moments(
-                #                 list[self.resort])
                 elif key in special_keys:
                     if key == 'lreal':
-                        if 'true' in data[2].lower():
-                            self.special_params[key] = True
-                        elif 'false' in data[2].lower():
-                            self.special_params[key] = False
+                        val_char = data[2].lower().replace('.', '', 1)
+                        if val_char.startswith('t'):
+                            self.bool_params[key] = True
+                        elif val_char.startswith('f'):
+                            self.bool_params[key] = False
                         else:
                             self.special_params[key] = data[2]
-            except KeyError:
-                raise IOError('Keyword "%s" in INCAR is'
-                              'not known by calculator.' % key)
-            except IndexError:
-                raise IOError('Value missing for keyword "%s".' % key)
+
+                # non-registered keys
+                elif data[2].lower() in {'t', 'true', '.true.'}:
+                    self.bool_params[key] = True
+                elif data[2].lower() in {'f', 'false', '.false.'}:
+                    self.bool_params[key] = False
+                elif data[2].isdigit():
+                    self.int_params[key] = int(data[2])
+                else:
+                    try:
+                        self.float_params[key] = float(data[2])
+                    except ValueError:
+                        self.string_params[key] = data[2]
+
+            except KeyError as exc:
+                raise KeyError(
+                    f'Keyword "{key}" in INCAR is not known by calculator.'
+                ) from exc
+            except IndexError as exc:
+                raise IndexError(
+                    f'Value missing for keyword "{key}".'
+                ) from exc
 
     def read_kpoints(self, filename):
         """Read kpoints file, typically named KPOINTS."""
@@ -1785,7 +1949,7 @@ class GenerateVaspInput:
             # Don't update kpts array
             return
 
-        with open(filename, 'r') as fd:
+        with open(filename) as fd:
             lines = fd.readlines()
 
         ktype = lines[2].split()[0].lower()[0]
@@ -1812,8 +1976,8 @@ class GenerateVaspInput:
 
         # Search for key 'LEXCH' in POTCAR
         xc_flag = None
-        with open(filename, 'r') as f:
-            for line in f:
+        with open(filename) as fd:
+            for line in fd:
                 key = line.split()[0].upper()
                 if key == 'LEXCH':
                     xc_flag = line.split()[-1].upper()
@@ -1875,7 +2039,7 @@ def _from_vasp_bool(x):
     elif x.lower() == '.false.' or x.lower() == 'f':
         return False
     else:
-        raise ValueError('Value "%s" not recognized as bool' % x)
+        raise ValueError(f'Value "{x}" not recognized as bool')
 
 
 def _to_vasp_bool(x):
@@ -1904,11 +2068,11 @@ def open_potcar(filename):
     """
     import gzip
     if filename.endswith('R'):
-        return open(filename, 'r')
+        return open(filename)
     elif filename.endswith('.Z'):
         return gzip.open(filename)
     else:
-        raise ValueError('Invalid POTCAR filename: "%s"' % filename)
+        raise ValueError(f'Invalid POTCAR filename: "{filename}"')
 
 
 def read_potcar_numbers_of_electrons(file_obj):
@@ -1927,11 +2091,11 @@ def read_potcar_numbers_of_electrons(file_obj):
 
 def count_symbols(atoms, exclude=()):
     """Count symbols in atoms object, excluding a set of indices
-    
+
     Parameters:
         atoms: Atoms object to be grouped
         exclude: List of indices to be excluded from the counting
-    
+
     Returns:
         Tuple of (symbols, symbolcount)
         symbols: The unique symbols in the included list

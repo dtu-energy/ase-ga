@@ -1,3 +1,4 @@
+# fmt: off
 """PDB parser
 
 Test dealing with files that are not fully
@@ -15,14 +16,17 @@ from ase import io
 # No element field
 # positions with no spaces
 
-test_pdb = """REMARK   Not a real pdb file
+test_pdb = """\
+REMARK   Not a real pdb file
 CRYST1   30.00015000.00015000.000  90.00  90.00  90.00 P1
-ATOM      1  C     1 X   1       1.000   8.000  12.000  0.00  0.00           C    
+ATOM      1  C     1 X   1       1.000   8.000  12.000  0.00  0.00\
+           C    \n\
 ATOM      1  C     1 X   1       2.000   6.000   4.000  0.00  0.00
-ATOM      1  SI1 SIO     1       2.153  14.096   3.635  1.00  0.00      SIO 
+ATOM      1  SI1 SIO     1       2.153  14.096   3.635  1.00  0.00      SIO \n\
 ATOM      1    O   1     1       3.846   5.672   1.323  0.40 38.51            0
 ATOM      1  C1'   T A   1      -2.481   5.354   0.000
-ATOM      1 SIO  SIO     1     -11.713-201.677   9.060************      SIO2Si  
+ATOM      1 SIO  SIO     1     -11.713-201.677   9.060************\
+      SIO2Si  \n\
 """
 
 

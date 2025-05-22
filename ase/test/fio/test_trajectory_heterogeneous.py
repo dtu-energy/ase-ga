@@ -1,7 +1,8 @@
+# fmt: off
+from ase.build import bulk, molecule
 from ase.constraints import FixAtoms, FixBondLength
-from ase.build import molecule, bulk
-from ase.io.trajectory import Trajectory, get_header_data
 from ase.io import read
+from ase.io.trajectory import Trajectory, get_header_data
 
 
 def test_trajectory_heterogeneous():

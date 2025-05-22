@@ -41,6 +41,7 @@ in the python interface::
   calc = QChem(label='calc/ethane',
                method='B3LYP',
                basis='6-31+G*')
+  mol.calc = calc
   opt = LBFGS(mol)
   opt.run()
 

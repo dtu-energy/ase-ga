@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 
@@ -16,9 +18,9 @@ class ClusterBase:
             p = np.zeros((size.prod() * m, 3))
             for h in range(size[0]):
                 for k in range(size[1]):
-                    for l in range(size[2]):
-                        i = h * (size[1] * size[2]) + k * size[2] + l
-                        p[m * i:m * (i + 1)] = np.dot([h, k, l] +
+                    for l_ in range(size[2]):
+                        i = h * (size[1] * size[2]) + k * size[2] + l_
+                        p[m * i:m * (i + 1)] = np.dot([h, k, l_] +
                                                       self.atomic_basis,
                                                       self.lattice_basis)
 

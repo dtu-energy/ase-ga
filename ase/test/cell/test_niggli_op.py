@@ -1,11 +1,15 @@
+# fmt: off
+import numpy as np
+
+from ase.cell import Cell
+
+
 def test_niggli_op():
-    import numpy as np
-    from ase.cell import Cell
 
     rng = np.random.RandomState(3)
 
-    for i in range(5):
-        cell = Cell(rng.rand(3, 3))
+    for _ in range(5):
+        cell = Cell(rng.random((3, 3)))
         print(cell.cellpar())
         rcell, op = cell.niggli_reduce()
         print(op)

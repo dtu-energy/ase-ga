@@ -1,11 +1,13 @@
+# fmt: off
+
 import os
+
 import numpy as np
 
-from ase.gui.i18n import _
-from ase import Atoms
 import ase.gui.ui as ui
+from ase import Atoms
 from ase.data import atomic_numbers, chemical_symbols
-
+from ase.gui.i18n import _
 
 current_selection_string = _('(selection)')
 
@@ -13,7 +15,7 @@ current_selection_string = _('(selection)')
 class AddAtoms:
     def __init__(self, gui):
         self.gui = gui
-        win = self.win = ui.Window(_('Add atoms'))
+        win = self.win = ui.Window(_('Add atoms'), wmtype='utility')
         win.add(_('Specify chemical symbol, formula, or filename.'))
 
         def choose_file():
@@ -36,14 +38,14 @@ class AddAtoms:
         self._atoms_from_file = None
 
         from ase.collections import g2
-        labels = list(sorted(name for name in g2.names
-                             if len(g2[name]) > 1))
+        labels = sorted(name for name in g2.names
+                        if len(g2[name]) > 1)
         values = labels
 
         combobox = ui.ComboBox(labels, values)
         win.add([_('Add:'), combobox,
                  ui.Button(_('File ...'), callback=choose_file)])
-        combobox.widget.bind('<Return>', lambda e: self.add())
+        ui.bind_enter(combobox.widget, lambda e: self.add())
 
         combobox.value = default
         self.combobox = combobox
@@ -136,7 +138,7 @@ class AddAtoms:
         atoms = self.gui.atoms
         if len(atoms) and self.picky.value:
             from ase.geometry import get_distances
-            disps, dists = get_distances(atoms.positions,
+            _disps, dists = get_distances(atoms.positions,
                                          newatoms.positions)
             mindist = dists.min()
             if mindist < 0.5:

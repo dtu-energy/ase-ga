@@ -1,10 +1,18 @@
-import numpy as np
+# fmt: off
 
+import numpy as np
 from numpy import linalg
-from ase.transport.selfenergy import LeadSelfEnergy, BoxProbe
+from scipy.integrate import trapezoid
+
 from ase.transport.greenfunction import GreenFunction
-from ase.transport.tools import subdiagonalize, cutcoupling, dagger,\
-    rotate_matrix, fermidistribution
+from ase.transport.selfenergy import BoxProbe, LeadSelfEnergy
+from ase.transport.tools import (
+    cutcoupling,
+    dagger,
+    fermidistribution,
+    rotate_matrix,
+    subdiagonalize,
+)
 from ase.units import kB
 
 
@@ -294,7 +302,7 @@ class TransportCalculator:
         sa_ii = self.greenfunction.S[:pl1, :pl1]
         c1 = np.abs(h_ii - ha_ii).max()
         c2 = np.abs(s_ii - sa_ii).max()
-        print('Conv (h,s)=%.2e, %2.e' % (c1, c2))
+        print(f'Conv (h,s)={c1:.2e}, {c2:2.e}')
 
     def plot_pl_convergence(self):
         self.initialize()
@@ -308,24 +316,24 @@ class TransportCalculator:
         pl.axis('tight')
         pl.show()
 
-    def get_current(self, bias, T = 0., E=None, T_e=None, spinpol=False):
+    def get_current(self, bias, T=0., E=None, T_e=None, spinpol=False):
         '''Returns the current as a function of the
         bias voltage.
 
         **Parameters:**
         bias : {float, (M,) ndarray}, units: V
-          Specifies the bias voltage.  
+          Specifies the bias voltage.
         T : {float}, units: K, optional
           Specifies the temperature.
         E : {(N,) ndarray}, units: eV, optional
-          Contains energy grid of the transmission function.  
+          Contains energy grid of the transmission function.
         T_e {(N,) ndarray}, units: unitless, optional
           Contains the transmission function.
         spinpol: {bool}, optional
-          Specifies whether the current should be 
+          Specifies whether the current should be
           calculated assuming degenerate spins
 
-        **Returns:** 
+        **Returns:**
         I : {float, (M,) ndarray}, units: 2e/h*eV
           Contains the electric current.
 
@@ -349,22 +357,23 @@ class TransportCalculator:
                 self.uptodate = False
                 T_e = self.get_transmission().copy()
         else:
-            assert self.uptodate, 'Energy grid and transmission function not defined.'
+            assert self.uptodate, ('Energy grid and transmission function '
+                                   'not defined.')
             E = self.energies.copy()
             T_e = self.T_e.copy()
 
-        if not isinstance(bias, (int,float)):
+        if not isinstance(bias, (int, float)):
             bias = bias[np.newaxis]
             E = E[:, np.newaxis]
             T_e = T_e[:, np.newaxis]
 
-        fl = fermidistribution(E - bias/2., kB * T)
-        fr = fermidistribution(E + bias/2., kB * T)
+        fl = fermidistribution(E - bias / 2., kB * T)
+        fr = fermidistribution(E + bias / 2., kB * T)
 
         if spinpol:
-            return .5 * np.trapz((fl - fr) * T_e, x=E, axis=0)
+            return .5 * trapezoid((fl - fr) * T_e, x=E, axis=0)
         else:
-            return np.trapz((fl - fr) * T_e, x=E, axis=0)
+            return trapezoid((fl - fr) * T_e, x=E, axis=0)
 
     def get_transmission(self):
         self.initialize()

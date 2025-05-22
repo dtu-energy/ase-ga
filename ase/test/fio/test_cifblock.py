@@ -1,5 +1,7 @@
+# fmt: off
 import pytest
-from ase.io.cif import CIFBlock, parse_loop, CIFLoop
+
+from ase.io.cif import CIFBlock, CIFLoop, parse_loop
 
 
 def test_parse_cifloop_simple():
@@ -38,7 +40,7 @@ def test_cifloop_roundtrip():
     assert dct['_eggs'] == [1, 2, 3]
 
 
-@pytest.fixture
+@pytest.fixture()
 def cifblock():
     return CIFBlock('hello', {'_cifkey': 42})
 

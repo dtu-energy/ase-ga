@@ -1,9 +1,9 @@
 import numpy as np
 
-from ase.io import read
-from ase.constraints import FixAtoms
 from ase.calculators.emt import EMT
-from ase.neb import NEB
+from ase.constraints import FixAtoms
+from ase.io import read
+from ase.mep import NEB
 from ase.optimize.fire import FIRE as QuasiNewton
 
 initial = read('N2.traj')

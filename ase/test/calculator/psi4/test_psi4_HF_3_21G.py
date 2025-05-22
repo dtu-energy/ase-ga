@@ -1,17 +1,20 @@
-#!/usr/bin/env python3
-
-import os
+# fmt: off
+import pytest
 from numpy.testing import assert_allclose
 
 from ase.build import molecule
-from ase.calculators.psi4 import Psi4
+from ase.calculators.fd import calculate_numerical_forces
 
 
-def test_main():
+@pytest.mark.skip(reason='we do not know how to compile psi4')
+@pytest.mark.filterwarnings('once::DeprecationWarning')
+@pytest.mark.calculator_lite()
+@pytest.mark.calculator('psi4')
+def test_main(factory):
     atoms = molecule('H2O')
     atoms.rotate(30, 'x')
 
-    calc = Psi4(basis='3-21G')
+    calc = factory.calc(basis='3-21G')
     atoms.calc = calc
 
     # Calculate forces ahead of time, compare against finite difference after
@@ -21,7 +24,7 @@ def test_main():
                     rtol=1e-4, atol=1e-4)
 
     # Test the reader
-    calc2 = Psi4()
+    calc2 = factory.calc()
     calc2.read('psi4-calc')
     assert_allclose(calc2.results['energy'], atoms.get_potential_energy(),
                     rtol=1e-4, atol=1e-4)
@@ -29,10 +32,5 @@ def test_main():
                     rtol=1e-4, atol=1e-4)
 
     # Compare analytical vs numerical forces
-    assert_allclose(atoms.get_forces(), calc.calculate_numerical_forces(atoms),
+    assert_allclose(atoms.get_forces(), calculate_numerical_forces(atoms),
                     rtol=1e-4, atol=1e-4)
-
-    os.remove('psi4-calc.dat')
-    # Unfortunately, we can't currently remove timer.dat, because Psi4
-    # creates the file after this script exits. Not even atexit works.
-    # os.remove('timer.dat')

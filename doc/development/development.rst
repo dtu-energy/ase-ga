@@ -14,6 +14,7 @@ Development topics:
     contribute
     python_codingstandard
     writing_documentation_ase
+    writing_changelog
     calculators
     making_movies
     newrelease

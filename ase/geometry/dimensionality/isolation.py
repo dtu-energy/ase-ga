@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Implements functions for extracting ('isolating') a low-dimensional material
 component in its own unit cell.
@@ -9,14 +11,17 @@ P.M. Larsen, M. Pandey, M. Strange, and K. W. Jacobsen
 Phys. Rev. Materials 3 034003, 2019
 https://doi.org/10.1103/PhysRevMaterials.3.034003
 """
-import itertools
 import collections
+import itertools
+
 import numpy as np
 
 from ase import Atoms
 from ase.geometry.cell import complete_cell
-from ase.geometry.dimensionality import analyze_dimensionality
-from ase.geometry.dimensionality import rank_determination
+from ase.geometry.dimensionality import (
+    analyze_dimensionality,
+    rank_determination,
+)
 from ase.geometry.dimensionality.bond_generator import next_bond
 from ase.geometry.dimensionality.interval_analysis import merge_intervals
 
@@ -84,7 +89,7 @@ def build_supercomponent(atoms, components, k, v, anchor=True):
     numbers = np.array(numbers)
 
     # select an 'anchor' atom, which will lie at the origin
-    anchor_index = next((i for i in range(len(atoms)) if components[i] == k))
+    anchor_index = next(i for i in range(len(atoms)) if components[i] == k)
     if anchor:
         positions -= atoms.positions[anchor_index]
     return positions, numbers

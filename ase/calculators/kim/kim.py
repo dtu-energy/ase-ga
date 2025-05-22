@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Knowledgebase of Interatomic Models (KIM) Calculator for ASE written by:
 
@@ -13,13 +15,13 @@ on KIM, visit https://openkim.org.
 """
 
 from . import kimpy_wrappers
-from .exceptions import KIMCalculatorError
 from .calculators import (
-    KIMCalculator,
     ASAPCalculator,
-    LAMMPSRunCalculator,
+    KIMCalculator,
     LAMMPSLibCalculator,
+    LAMMPSRunCalculator,
 )
+from .exceptions import KIMCalculatorError
 
 
 def KIM(model_name, simulator=None, options=None, debug=False):
@@ -110,10 +112,10 @@ def KIM(model_name, simulator=None, options=None, debug=False):
     """
 
     if options is None:
-        options = dict()
+        options = {}
 
-    # If this is a KIM Portable Model (supports KIM API), return support through
-    # a KIM-compliant simulator
+    # If this is a KIM Portable Model (supports KIM API), return
+    # support through a KIM-compliant simulator
     model_type = "pm" if _is_portable_model(model_name) else "sm"
 
     if model_type == "pm":
@@ -138,14 +140,13 @@ def KIM(model_name, simulator=None, options=None, debug=False):
 
         elif simulator == "lammpslib":
             raise KIMCalculatorError(
-                '"lammpslib" calculator does not support KIM Portable Models. Try '
-                'using the "lammpsrun" calculator.'
+                '"lammpslib" calculator does not support KIM Portable Models. '
+                'Try using the "lammpsrun" calculator.'
             )
         else:
             raise KIMCalculatorError(
-                'Unsupported simulator "{}" requested to run KIM Portable Model.'.format(
-                    simulator
-                )
+                'Unsupported simulator "{}" requested to run KIM '
+                'Portable Model.'.format(simulator)
             )
 
     #######################################################
@@ -187,17 +188,18 @@ def KIM(model_name, simulator=None, options=None, debug=False):
 
             elif simulator == "lammpslib":
                 return LAMMPSLibCalculator(
-                    model_name, sm.supported_species, sm.supported_units, options
+                    model_name, sm.supported_species, sm.supported_units,
+                    options
                 )
 
             else:
                 raise KIMCalculatorError(
-                    'Unknown LAMMPS calculator: "{}".'.format(simulator)
+                    f'Unknown LAMMPS calculator: "{simulator}".'
                 )
 
         else:
             raise KIMCalculatorError(
-                'Unsupported simulator: "{}".'.format(sm.simulator_name)
+                f'Unsupported simulator: "{sm.simulator_name}".'
             )
 
 
@@ -210,7 +212,8 @@ def _is_portable_model(model_name):
     with kimpy_wrappers.ModelCollections() as col:
         model_type = col.get_item_type(model_name)
 
-    return model_type == kimpy_wrappers.collection_item_type_portableModel
+    return (model_type ==
+            kimpy_wrappers.wrappers.collection_item_type_portableModel)
 
 
 def get_model_supported_species(model_name):

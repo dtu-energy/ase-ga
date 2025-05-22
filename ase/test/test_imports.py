@@ -1,7 +1,17 @@
-from pathlib import Path
+# fmt: off
+import contextlib
 from importlib import import_module
-from numpy import VisibleDeprecationWarning
+from pathlib import Path
+
 import pytest
+
+try:
+    from numpy.exceptions import VisibleDeprecationWarning  # NumPy 2.0.0
+except ImportError:
+    from numpy import (  # type: ignore[attr-defined,no-redef]
+        VisibleDeprecationWarning,
+    )
+
 import ase
 
 # This test imports modules.
@@ -44,10 +54,7 @@ all_modules = filenames2modules(glob_modules())
 deprecated_modules = {'ase.dft.band_structure'}
 
 ignore_imports = {
-    'flask', 'psycopg2', 'kimpy', 'pymysql', 'IPython',
-    'docutils',
-    'gpaw',  # ase.vibrations.placzek
-    'gpaw.lrtddft',  # ase.vibrations.placzek
+    'flask', 'psycopg2', 'pymysql', 'docutils',
 }
 
 newpy_only_modules = {
@@ -58,17 +65,18 @@ newpy_only_modules = {
 @pytest.mark.filterwarnings('ignore:Moved to')
 def test_imports():
     for module in all_modules:
-        if module in deprecated_modules:
-            warning = (DeprecationWarning, VisibleDeprecationWarning)
-        else:
-            warning = None
+        with contextlib.ExitStack() as ignored_warnings:
+            if module in deprecated_modules:
+                ignored_warnings.enter_context(
+                    pytest.warns((DeprecationWarning,
+                                  VisibleDeprecationWarning)))
 
-        try:
-            with pytest.warns(warning):
+            try:
                 import_module(module)
-        except SyntaxError:
-            if module not in newpy_only_modules:
-                raise
-        except ImportError as err:
-            if err.name not in ignore_imports and 'deprecated' not in str(err):
-                raise
+            except SyntaxError:
+                if module not in newpy_only_modules:
+                    raise
+            except ImportError as err:
+                ok = err.name in ignore_imports or 'deprecated' in str(err)
+                if not ok:
+                    raise

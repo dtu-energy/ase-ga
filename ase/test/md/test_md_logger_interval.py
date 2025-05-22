@@ -1,15 +1,15 @@
+# fmt: off
 import numpy as np
 import pytest
 
-from ase.optimize import FIRE, BFGS
-from ase.data import s22
+import ase.units as units
 from ase.calculators.tip3p import TIP3P
 from ase.constraints import FixBondLengths
-from ase.md.verlet import VelocityVerlet
-from ase.md.langevin import Langevin
+from ase.data import s22
 from ase.io import Trajectory
-import ase.units as units
-
+from ase.md.langevin import Langevin
+from ase.md.verlet import VelocityVerlet
+from ase.optimize import BFGS, FIRE
 
 md_cls_and_kwargs = [
     (VelocityVerlet, {}),
@@ -36,7 +36,7 @@ def fmax(forces):
 
 
 @pytest.mark.parametrize('cls', [FIRE, BFGS])
-def test_optimization_log_and_trajectory_length(cls):
+def test_optimization_log_and_trajectory_length(cls, testdir):
     logfile = 'opt.log'
     trajectory = 'opt.traj'
     atoms = make_dimer()
@@ -47,8 +47,8 @@ def test_optimization_log_and_trajectory_length(cls):
         opt.run(0.1)
 
     # Test number of lines in log file matches number of frames in trajectory
-    with open(logfile, 'rt') as lf:
-        lines = [l for l in lf]
+    with open(logfile) as lf:
+        lines = [line for line in lf]
     loglines = len(lines)
     print("Number of lines in log file:", loglines)
 
@@ -62,7 +62,7 @@ def test_optimization_log_and_trajectory_length(cls):
 
 @pytest.mark.parametrize('loginterval', [1, 2])
 @pytest.mark.parametrize('cls, kwargs', md_cls_and_kwargs)
-def test_md_log_and_trajectory_length(cls, kwargs, loginterval):
+def test_md_log_and_trajectory_length(cls, testdir, kwargs, loginterval):
     timestep = 1 * units.fs
     trajectory = 'md.traj'
     logfile = 'md.log'
@@ -77,7 +77,7 @@ def test_md_log_and_trajectory_length(cls, kwargs, loginterval):
         md.run(steps=5)
 
     # Test number of lines in log file matches number of frames in trajectory
-    with open(logfile, 'rt') as fd:
+    with open(logfile) as fd:
         lines = list(fd)
     loglines = len(lines)
     print("Number of lines in log file:", loglines)

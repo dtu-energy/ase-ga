@@ -1,3 +1,6 @@
+# fmt: off
+
+import warnings
 from math import sqrt
 
 import numpy as np
@@ -6,12 +9,10 @@ from ase import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.constraints import FixAtoms
 from ase.data import covalent_radii
-from ase.gui.defaults import read_defaults
-from ase.io import read, write, string2index
-from ase.gui.i18n import _
 from ase.geometry import find_mic
-
-import warnings
+from ase.gui.defaults import read_defaults
+from ase.gui.i18n import _
+from ase.io import read, string2index, write
 
 
 class Images:
@@ -34,7 +35,7 @@ class Images:
 
     # XXXXXXX hack
     # compatibility hacks while allowing variable number of atoms
-    def get_dynamic(self, atoms):
+    def get_dynamic(self, atoms: Atoms) -> np.ndarray:
         dynamic = np.ones(len(atoms), bool)
         for constraint in atoms.constraints:
             if isinstance(constraint, FixAtoms):
@@ -55,49 +56,23 @@ class Images:
     def scale_radii(self, scaling_factor):
         self.covalent_radii *= scaling_factor
 
-    def get_energy(self, atoms):
+    def get_energy(self, atoms: Atoms) -> np.float64:
         try:
-            e = atoms.get_potential_energy() * self.repeat.prod()
+            return atoms.get_potential_energy()
         except RuntimeError:
-            e = np.nan
-        return e
+            return np.nan  # type: ignore[return-value]
 
-    def get_forces(self, atoms):
+    def get_forces(self, atoms: Atoms):
         try:
-            F = atoms.get_forces(apply_constraint=False)
+            return atoms.get_forces(apply_constraint=False)
         except RuntimeError:
             return None
-        else:
-            return F
 
     def initialize(self, images, filenames=None):
         nimages = len(images)
         if filenames is None:
             filenames = [None] * nimages
         self.filenames = filenames
-
-        #  The below seems to be about "quaternions"
-        if 0:  # XXXXXXXXXXXXXXXXXXXX hasattr(images[0], 'get_shapes'):
-            self.Q = np.empty((nimages, self.natoms, 4))
-            self.shapes = images[0].get_shapes()
-            import os as os
-            if os.path.exists('shapes'):
-                shapesfile = open('shapes')
-                lines = shapesfile.readlines()
-                shapesfile.close()
-                if '#{type:(shape_x,shape_y,shape_z), .....,}' in lines[0]:
-                    shape = eval(lines[1])
-                    shapes = []
-                    for an in images[0].get_atomic_numbers():
-                        shapes.append(shape[an])
-                    self.shapes = np.array(shapes)
-                else:
-                    print('shape file has wrong format')
-            else:
-                print('no shapesfile found: default shapes were used!')
-
-        else:
-            self.shapes = None
 
         warning = False
 
@@ -128,7 +103,7 @@ class Images:
         self.visible = np.ones(self.maxnatoms, bool)
         self.repeat = np.ones(3, int)
 
-    def get_radii(self, atoms):
+    def get_radii(self, atoms: Atoms) -> np.ndarray:
         radii = np.array([self.covalent_radii[z] for z in atoms.numbers])
         radii *= self.atom_scale
         return radii
@@ -176,11 +151,11 @@ class Images:
                     names.append('{}@{}'.format(
                         actual_filename, start + i * step))
                 else:
-                    names.append('{}@{}'.format(actual_filename, start))
+                    names.append(f'{actual_filename}@{start}')
 
         self.initialize(images, names)
 
-    def repeat_results(self, atoms, repeat=None, oldprod=None):
+    def repeat_results(self, atoms: Atoms, repeat=None, oldprod=None):
         """Return a dictionary which updates the magmoms, energy and forces
         to the repeated amount of atoms.
         """
@@ -276,7 +251,8 @@ class Images:
             images.append(atoms)
 
         if constraints_removed:
-            from ase.gui.ui import tk, showwarning
+            from ase.gui.ui import showwarning, tk
+
             # We must be able to show warning before the main GUI
             # has been created.  So we create a new window,
             # then show the warning, then destroy the window.
@@ -296,7 +272,7 @@ class Images:
         for atoms in self:
             atoms.center()
 
-    def graph(self, expr):
+    def graph(self, expr: str) -> np.ndarray:
         """Routine to create the data in graphs, defined by the
         string expr."""
         import ase.units as units
@@ -424,6 +400,6 @@ class Images:
         return atoms
 
     def delete(self, i):
-        self.images.pop(i)
+        self._images.pop(i)
         self.filenames.pop(i)
-        self.initialize(self.images, self.filenames)
+        self.initialize(self._images, self.filenames)

@@ -1,9 +1,9 @@
+# fmt: off
 """ test run for gromacs calculator """
 
 import pytest
 
-from ase.calculators.gromacs import parse_gromacs_version, get_gromacs_version
-
+from ase.calculators.gromacs import get_gromacs_version, parse_gromacs_version
 
 sample_header = """\
 blahblah...
@@ -54,8 +54,7 @@ data = """HISE for testing
    4.00000   4.00000   4.00000"""
 
 
-
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('gromacs')
 def test_gromacs(factory):
     GRO_INIT_FILE = 'hise_box.gro'
@@ -63,7 +62,6 @@ def test_gromacs(factory):
     # write structure file
     with open(GRO_INIT_FILE, 'w') as outfile:
         outfile.write(data)
-
 
     calc = factory.calc(
         force_field='charmm27',
@@ -92,7 +90,8 @@ def test_gromacs(factory):
     atoms = calc.get_atoms()
     final_energy = calc.get_potential_energy(atoms)
 
-    # e.g., -4.17570101 eV = -402.893902 kJ / mol by Gromacs 2019.1 double precision
+    # e.g., -4.17570101 eV = -402.893902 kJ / mol by Gromacs 2019.1 double
+    # precision
     final_energy_ref = -4.175
     tolerance = 0.010
     assert abs(final_energy - final_energy_ref) < tolerance

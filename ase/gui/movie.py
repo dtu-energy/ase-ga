@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 import ase.gui.ui as ui
@@ -6,10 +8,11 @@ from ase.gui.i18n import _
 
 class Movie:
     def __init__(self, gui):
-        self.win = win = ui.Window(_('Movie'), self.close)
+        self.win = win = ui.Window(
+            _('Movie'), close=self.close, wmtype='utility')
         win.add(_('Image number:'))
-        self.frame_number = ui.Scale(gui.frame + 1, 1,
-                                     len(gui.images),
+        self.frame_number = ui.Scale(gui.frame, 0,
+                                     len(gui.images) - 1,
                                      callback=self.new_frame)
         win.add(self.frame_number)
 
@@ -42,11 +45,7 @@ class Movie:
         self.gui = gui
         self.direction = 1
         self.timer = None
-        gui.register_vulnerable(self)
-
-    def notify_atoms_changed(self):
-        """Called by gui object when the atoms have changed."""
-        self.close()
+        gui.obs.new_atoms.register(self.close)
 
     def close(self):
         self.stop()
@@ -56,18 +55,18 @@ class Movie:
         if firstlast and step < 0:
             i = 0
         elif firstlast:
-            i = len(self.gui.images) - 1
+            i = len(self.gui.images)
         else:
             i = max(0, min(len(self.gui.images) - 1, self.gui.frame + step))
 
-        self.frame_number.value = i + 1
+        self.frame_number.value = i
         if firstlast:
             self.direction = np.sign(-step)
         else:
             self.direction = np.sign(step)
 
     def new_frame(self, value):
-        self.gui.set_frame(value - 1)
+        self.gui.set_frame(value)
 
     def play(self):
         self.stop()
@@ -81,7 +80,7 @@ class Movie:
     def step(self):
         i = self.gui.frame
         nimages = len(self.gui.images)
-        delta = int(self.skip.value + 1)
+        delta = int(self.skip.value) + 1
 
         if self.rock.value:
             if i <= self.skip.value:
@@ -92,5 +91,5 @@ class Movie:
         else:
             i = (i + self.direction * delta + nimages) % nimages
 
-        self.frame_number.value = i + 1
+        self.frame_number.value = i
         self.play()

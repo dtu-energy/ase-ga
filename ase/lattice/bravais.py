@@ -1,3 +1,5 @@
+# fmt: off
+
 """Bravais.py - class for generating Bravais lattices etc.
 
 This is a base class for numerous classes setting up pieces of crystal.
@@ -8,8 +10,8 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from ase.atoms import Atoms
 import ase.data
+from ase.atoms import Atoms
 
 
 class Bravais:
@@ -111,7 +113,7 @@ class Bravais:
         self.basis = np.dot(self.basis, t)
         transf = np.dot(transf, t)
         if self.debug >= 2:
-            print("Rotating %f degrees around y axis." % (-theta * degree,))
+            print(f"Rotating {-theta * degree:f} degrees around y axis.")
             print(self.basis)
         assert abs(np.linalg.det(transf) - 1) < 1e-6
         # Rotate first basis vector to point along x axis
@@ -122,7 +124,7 @@ class Bravais:
         self.basis = np.dot(self.basis, t)
         transf = np.dot(transf, t)
         if self.debug >= 2:
-            print("Rotating %f degrees around z axis." % (-theta * degree,))
+            print(f"Rotating {-theta * degree:f} degrees around z axis.")
             print(self.basis)
         assert abs(np.linalg.det(transf) - 1) < 1e-6
         # Rotate second basis vector into xy plane
@@ -133,7 +135,7 @@ class Bravais:
         self.basis = np.dot(self.basis, t)
         transf = np.dot(transf, t)
         if self.debug >= 2:
-            print("Rotating %f degrees around x axis." % (-theta * degree,))
+            print(f"Rotating {-theta * degree:f} degrees around x axis.")
             print(self.basis)
         assert abs(np.linalg.det(transf) - 1) < 1e-6
         # Now we better rotate the atoms as well
@@ -313,7 +315,7 @@ class Bravais:
                 #    if perce > percent + 10:
                 #        print ("%d%%" % perce),
                 #        percent = perce
-        assert(self.nput == self.natoms)
+        assert self.nput == self.natoms
 
     def inside(self, point):
         "Is a point inside the unit cell?"
@@ -422,10 +424,10 @@ class Bravais:
 
     def print_directions_and_miller(self, txt=""):
         "Print direction vectors and Miller indices."
-        print("Direction vectors of unit cell%s:" % (txt,))
+        print(f"Direction vectors of unit cell{txt}:")
         for i in (0, 1, 2):
             print("   ", self.directions[i])
-        print("Miller indices of surfaces%s:" % (txt,))
+        print(f"Miller indices of surfaces{txt}:")
         for i in (0, 1, 2):
             print("   ", self.miller[i])
 
@@ -445,7 +447,6 @@ class Lattice(Atoms, MillerInfo):
     also has a method, `miller_to_direction`, used to convert from Miller
     indices to directions in the coordinate system of the lattice.
     """
-    pass
 
 
 # Helper functions

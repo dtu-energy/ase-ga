@@ -1,5 +1,7 @@
-import pytest
+# fmt: off
 import numpy as np
+import pytest
+
 from ase.outputs import Properties, all_outputs
 
 
@@ -11,7 +13,7 @@ def test_print_props(name):
 natoms = 7
 
 
-@pytest.fixture
+@pytest.fixture()
 def forceprop():
     dct = dict(forces=np.zeros((natoms, 3)))
     props = Properties(dct)
@@ -22,6 +24,7 @@ def test_props(forceprop):
     print(forceprop)
     assert forceprop['forces'].shape == (natoms, 3)
     assert forceprop['natoms'] == natoms
+
 
 def test_props_set_twice(forceprop):
     with pytest.raises(ValueError):
@@ -43,7 +46,7 @@ def test_props_set_inconsistent(forceprop):
         forceprop._setvalue('stresses', np.zeros((natoms + 2, 6)))
 
 
-@pytest.fixture
+@pytest.fixture()
 def props():
     return Properties({})
 

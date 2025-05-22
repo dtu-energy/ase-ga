@@ -1,22 +1,24 @@
 """Diffusion by an exchange process"""
+
 from math import sqrt
 
-from ase import Atoms, Atom
-from ase.io import write
-from ase.visualize import view
-from ase.constraints import FixAtoms
-from ase.optimize import QuasiNewton, MDMin
-from ase.neb import NEB
+from ase import Atom, Atoms
 from ase.calculators.emt import EMT
+from ase.constraints import FixAtoms
+from ase.io import write
+from ase.mep import NEB
+from ase.optimize import MDMin, QuasiNewton
+from ase.visualize import view
 
 a = 4.0614
 b = a / sqrt(2)
 h = b / 2
-initial = Atoms('Al2',
-                positions=[(0, 0, 0),
-                           (a / 2, b / 2, -h)],
-                cell=(a, b, 2 * h),
-                pbc=(1, 1, 0))
+initial = Atoms(
+    'Al2',
+    positions=[(0, 0, 0), (a / 2, b / 2, -h)],
+    cell=(a, b, 2 * h),
+    pbc=(1, 1, 0),
+)
 initial *= (2, 2, 2)
 initial.append(Atom('Al', (a / 2, b / 2, 3 * h)))
 initial.center(vacuum=4.0, axis=2)

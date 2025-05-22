@@ -1,3 +1,4 @@
+# fmt: off
 from ase import Atoms
 from ase.calculators.gaussian import Gaussian
 
@@ -54,7 +55,7 @@ D   1   1.00
 """
 
 
-def test_h2of():
+def test_h2of(gaussian_factory):
     with open('def2-svp.gbs', 'w') as bfile:
         bfile.write(basis)
 

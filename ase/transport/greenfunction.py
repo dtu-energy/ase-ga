@@ -1,8 +1,11 @@
+# fmt: off
+
 import numpy as np
+
 
 class GreenFunction:
     """Equilibrium retarded Green function."""
-    
+
     def __init__(self, H, S=None, selfenergies=[], eta=1e-4):
         self.H = H
         self.S = S
@@ -38,12 +41,12 @@ class GreenFunction:
 
     def calculate(self, energy, sigma):
         """XXX is this really needed"""
-        ginv = energy * self.S - self.H - sigma 
+        ginv = energy * self.S - self.H - sigma
         return np.linalg.inv(ginv)
 
     def apply_retarded(self, energy, X):
         """Apply retarded Green function to X.
-        
+
         Returns the matrix product G^r(e) . X
         """
         return np.linalg.solve(self.retarded(energy, inverse=True), X)
@@ -55,7 +58,7 @@ class GreenFunction:
         else:
             GS = self.apply_retarded(energy, self.S)
             return -GS.imag.trace() / np.pi
-        
+
     def pdos(self, energy):
         """Projected density of states -1/pi Im(SGS/S)"""
         if self.S is None:

@@ -1,7 +1,8 @@
+# fmt: off
 import pytest
+
 from ase.calculators.excitation_list import polarizability
-from ase.calculators.h2morse import H2Morse
-from ase.calculators.h2morse import H2MorseExcitedStatesCalculator
+from ase.calculators.h2morse import H2Morse, H2MorseExcitedStatesCalculator
 
 
 def test_shapes():

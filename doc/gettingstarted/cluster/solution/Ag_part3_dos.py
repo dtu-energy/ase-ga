@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from gpaw import GPAW
+
 from ase.dft.dos import DOS
 
 calc = GPAW('groundstate.gpw')

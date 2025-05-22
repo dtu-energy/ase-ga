@@ -1,29 +1,31 @@
-import pytest
-import numpy as np
+# fmt: off
 import sys
+from pathlib import Path
 from subprocess import check_call, check_output
 
-from pathlib import Path
+import numpy as np
+import pytest
 
 from ase.build import bulk
-from ase.io import read, write
-from ase.io.pickletrajectory import PickleTrajectory
 from ase.calculators.calculator import compare_atoms
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
-from ase.io.bundletrajectory import (BundleTrajectory,
-                                     print_bundletrajectory_info)
-
+from ase.io import read, write
+from ase.io.bundletrajectory import (
+    BundleTrajectory,
+    print_bundletrajectory_info,
+)
+from ase.io.pickletrajectory import PickleTrajectory
 
 trajname = 'pickletraj.traj'
 
 
 def test_raises():
-    with pytest.raises(DeprecationWarning):
+    with pytest.raises(RuntimeError):
         PickleTrajectory(trajname, 'w')
 
 
-@pytest.fixture
+@pytest.fixture()
 def images():
     atoms = bulk('Ti') * (1, 2, 1)
     atoms.symbols = 'Au'
@@ -55,7 +57,7 @@ def read_images(filename):
         return list(traj)
 
 
-@pytest.fixture
+@pytest.fixture()
 def trajfile(images):
     ptraj = PickleTrajectory(trajname, 'w', _warn=False)
     for image in images:
@@ -96,7 +98,7 @@ def test_append_pickle(images, trajfile):
 def test_append_bundle(images, bundletraj):
     traj = BundleTrajectory(bundletraj, mode='a')
     assert len(read(bundletraj, ':')) == 2
-    #write(bundletraj, images, append=True)
+    # write(bundletraj, images, append=True)
     for atoms in images:
         traj.write(atoms)
     traj.close()
@@ -117,7 +119,7 @@ def test_old_trajectory_conversion_utility(images, trajfile):
     assert_images_equal(images, new_images)
 
 
-@pytest.fixture
+@pytest.fixture()
 def bundletraj(images):
     fname = 'traj.bundle'
     write(fname, images, format='bundletrajectory')

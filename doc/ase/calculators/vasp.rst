@@ -19,7 +19,7 @@ also to use ASE as a post-processor for an already performed VASP_
 calculation.
 
 
-.. _VASP: https://cms.mpi.univie.ac.at/vasp/
+.. _VASP: https://www.vasp.at/
 
 
 Environment variables
@@ -71,7 +71,7 @@ Set both environment variables in your shell configuration file:
   $ export VASP_SCRIPT=$HOME/vasp/run_vasp.py
   $ export VASP_PP_PATH=$HOME/vasp/mypps
 
-.. _VASP vdW wiki: https://cms.mpi.univie.ac.at/vasp/vasp/vdW_DF_functional_Langreth_Lundqvist_et_al.html
+.. _VASP vdW wiki: https://www.vasp.at/wiki/index.php/VdW-DF_functional_of_Langreth_and_Lundqvist_et_al.
 
 The following environment variable can be used to automatically copy the
 van der Waals kernel to the calculation directory. The kernel is needed for
@@ -154,7 +154,7 @@ the default value. Most of the parameters used in the VASP :file:`INCAR` file
 are allowed keywords. See the official `VASP manual`_ for more details.
 Input arguments specific to the `VTST add-ons`_ for VASP are also supported.
 
-.. _VASP manual: https://cms.mpi.univie.ac.at/vasp/vasp/vasp.html
+.. _VASP manual: https://www.vasp.at/wiki/index.php/The_VASP_Manual
 .. _VTST add-ons: https://theory.cm.utexas.edu/vtsttools/
 
 .. note::
@@ -186,6 +186,7 @@ is set to ``pw91`` or ``lda``.
 ==========================  =====================================
 lda, pbe, pw91              ``pp`` (``gga`` set implicitly in POTCAR)
 pbesol, revpbe, rpbe, am05  ``gga``
+blyp                        ``gga``, ``aldax``, ``aggax``, ``aggac``, ``aldac``
 tpss, revtpss, m06l         ``metagga``
 vdw-df, optpbe-vdw          ``gga``, ``luse_vdw``, ``aggac``
 optb88-vdw, obptb86b-vdw    ``gga``, ``luse_vdw``, ``aggac``,
@@ -231,11 +232,9 @@ Three base setups are provided:
         this will be used. For the other elements, the PAW setup
         with the least electrons has been chosen.
     recommended:
-        corresponds to the `table of recommended PAW setups <https://cms.mpi.univie.ac.at/vasp/vasp/Recommended_PAW_potentials_DFT_calculations_using_vasp_5_2.html>`_ supplied by the VASP developers.
-    materialsproject:
-        corresponds to the `Materials Project recommended PAW setups <https://wiki.materialsproject.org/Pseudopotentials_Choice>`_.
+        corresponds to the `table of recommended PAW setups <https://www.vasp.at/wiki/index.php/Available_PAW_potentials#Recommended_potentials_for_DFT_calculations>`_ supplied by the VASP developers.
     gw:
-        corresponds to the `table of recommended setups for GW <https://cms.mpi.univie.ac.at/vasp/vasp/Recommended_GW_PAW_potentials_vasp_5_2.html>`_ supplied by the VASP developers.
+        corresponds to the `table of recommended setups for GW <https://www.vasp.at/wiki/index.php/Available_PAW_potentials#Recommended_potentials_for_GW.2FRPA_calculations>`_ supplied by the VASP developers.
 
 Where elements are missing from the default sets, the Vasp Calculator
 will attempt to use a setup folder with the same name as the element.
@@ -323,13 +322,13 @@ Scalar ``kpts``
   appropriate KPOINTS file will be written. The value of ``kpts`` will
   be used to set a length cutoff for the Gamma-centered “Automatic”
   scheme provided by VASP. (See `first example
-  <https://cms.mpi.univie.ac.at/vasp/vasp/Automatic_k_mesh_generation.html>`_
+  <https://www.vasp.at/wiki/index.php/KPOINTS#Automatic_k-mesh_generation>`_
   in VASP manual.)
 
 KSPACING and KGAMMA
   Alternatively, the **k**-point density can be set in the INCAR file with
   these flags as `described in the VASP manual
-  <https://cms.mpi.univie.ac.at/vasp/vasp/KSPACING_tag_KGAMMA_tag.html>`_. If
+  <https://www.vasp.at/wiki/index.php/KSPACING>`_. If
   ``kspacing`` is set, the ASE calculator will not write out a KPOINTS
   file.
 
@@ -339,7 +338,7 @@ Three-parameter scheme
 Brillouin-zone sampling can also be specified by defining a number of
 subdivisions for each reciprocal lattice vector.
 
-This is the `second “Automatic” scheme <https://cms.mpi.univie.ac.at/vasp/vasp/Automatic_k_mesh_generation.html>`_ described in the VASP manual.
+This is the `second “Automatic” scheme <https://www.vasp.at/wiki/index.php/KPOINTS#Automatic_k-mesh_generation>`_ described in the VASP manual.
 In the ASE calculator, it is used by setting ``kpts`` to a sequence of three ``int`` values, e.g. ``[2, 2, 3]``.
 If ``gamma` is set to ``True``, the mesh will be centred at the `\Gamma`-point;
 otherwise, a regular Monkhorst-Pack grid is used, which may or may not include the `\Gamma`-point.
@@ -496,6 +495,21 @@ and VASP version which was used at the time of the calculation, through the
     The ASE calculator contains no information about the wavefunctions or charge densities, so these are NOT stored
     in the dictionary or JSON file, and therefore results may vary on a restarted calculation.
 
+
+Vibrational Analysis
+====================
+Vibrational analysis can be performed using the :class:`~ase.vibrations.Vibrations`
+class or using the VASP internals (e.g. with ``IBRION=5``).
+When using IBRION=5-8, the corresponding vibrational
+analysis can be represented by retrieving a :class:`~ase.vibrations.VibrationsData`
+object from the calculator using :meth:`ase.calculators.vasp.Vasp.get_vibrations`.
+From the OUTCAR, the energies of all modes can be retrieved using
+:meth:`ase.calculators.vasp.Vasp.read_vib_freq`.
+
+.. automethod:: ase.calculators.vasp.Vasp.get_vibrations
+.. automethod:: ase.calculators.vasp.Vasp.read_vib_freq
+
+
 Examples
 ========
 
@@ -504,7 +518,7 @@ The Vasp 2 calculator now integrates with existing ASE functions, such as
 
 Band structure with VASP
 ------------------------
-.. _Si band structure: https://cms.mpi.univie.ac.at/wiki/index.php/Si_bandstructure
+.. _Si band structure: https://www.vasp.at/wiki/index.php/Si_bandstructure
 
 The VASP manual has an example of creating a `Si band structure`_ - we can
 easily reproduce a similar result, by using the ASE Vasp calculator.
@@ -575,7 +589,7 @@ Transition (v -> c):
    Currently, we have no functions to easily handle this issue, but may be added
    in the future.
 
-.. _VASP HSE band structure wiki: https://cms.mpi.univie.ac.at/wiki/index.php/Si_HSE_bandstructure#Procedure_2:_0-weight_.28Fake.29_SC_procedure_.28works_DFT_.26_hybrid_functionals.29
+.. _VASP HSE band structure wiki: https://vasp.at/wiki/index.php/Si_HSE_bandstructure#Procedure_2:_0-weight_.28Fake.29_SC_procedure_.28works_DFT_.26_hybrid_functionals.29
 
 
 Density of States

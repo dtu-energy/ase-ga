@@ -9,7 +9,9 @@ during delta leaning.
 
 .. autoclass:: ase.calculators.mixing.LinearCombinationCalculator
 
-There are two special variant of LinearCombinationCalculator which are available for specific tasks:
+There are three special variants of LinearCombinationCalculator which are available for specific tasks:
+
+.. autoclass:: ase.calculators.mixing.MixedCalculator
 
 .. autoclass:: ase.calculators.mixing.SumCalculator
 

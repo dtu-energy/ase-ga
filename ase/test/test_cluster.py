@@ -1,3 +1,4 @@
+# fmt: off
 import numpy as np
 import pytest
 
@@ -32,8 +33,9 @@ def test_icosa(shells):
     assert ncorners == ico_corners
 
 
-
 octa_sizes = [0, 1, 6, 19, 44, 85, 146, 231, 344]
+
+
 @pytest.mark.parametrize('shells', range(1, 8))
 def test_regular_octahedron(shells):
     octa = Octahedron(sym, length=shells, cutoff=0)

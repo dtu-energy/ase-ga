@@ -1,9 +1,12 @@
+# fmt: off
+
 import numpy as np
+
 import ase.units
 from ase.atoms import Atoms
 from ase.calculators.singlepoint import SinglePointCalculator
-from ase.io import read
 from ase.data import chemical_symbols
+from ase.io import read
 
 
 def parse_geometry(filename):
@@ -18,8 +21,8 @@ def parse_geometry(filename):
     retval["Atomic_numbers"]: list of atomic numbers
     retval["Positions"]: list of [x, y, z] coordinates for each atoms.
     '''
-    with open(filename, 'r') as f:
-        lines = f.readlines()
+    with open(filename) as fd:
+        lines = fd.readlines()
         start_line = 0
         end_line = 0
         for i, line in enumerate(lines):
@@ -27,7 +30,7 @@ def parse_geometry(filename):
                 start_line = i
             if start_line != 0 and len(line.split('=')) > 3:
                 end_line = i
-                if not start_line == end_line:
+                if start_line != end_line:
                     break
         atoms = []
         positions = []
@@ -41,7 +44,8 @@ def parse_geometry(filename):
 
 
 def read_acemolecule_out(filename):
-    '''Interface to ACEMoleculeReader and return values for corresponding quantity
+    '''Interface to ACEMoleculeReader, return values for corresponding quantity
+
     Parameters
     ==========
     filename: ACE-Molecule log file.
@@ -68,8 +72,8 @@ def read_acemolecule_out(filename):
     excitation_energy = None
 #    results = {}
 #    if len(results)<1:
-    with open(filename, 'r') as f:
-        lines = f.readlines()
+    with open(filename) as fd:
+        lines = fd.readlines()
 
     for i in range(len(lines) - 1, 1, -1):
         line = lines[i].split()
@@ -91,7 +95,7 @@ def read_acemolecule_out(filename):
             convert = ase.units.Hartree / ase.units.Bohr
             forces = np.array(forces, dtype=float) * convert
             break
-    if not len(forces) > 0:
+    if len(forces) <= 0:
         forces = None
 
     # Set calculator to
@@ -116,12 +120,10 @@ def read_acemolecule_input(filename):
     =======
     ASE atoms object containing geometry only.
     '''
-    with open(filename, 'r') as f:
-        for line in f:
+    with open(filename) as fd:
+        for line in fd:
             if len(line.split('GeometryFilename')) > 1:
                 geometryfile = line.split()[1]
                 break
     atoms = read(geometryfile, format='xyz')
     return atoms
-
-

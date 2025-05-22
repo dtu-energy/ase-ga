@@ -7,16 +7,21 @@ LAMMPS Calculators
 LAMMPS_ (Large-scale Atomic/Molecular Massively Parallel Simulator) is
 a classical molecular dynamics code.
 
+    LAMMPS has potentials for soft materials (biomolecules, polymers) and solid-state materials (metals, semiconductors) and coarse-grained or mesoscopic systems.
+    It can be used to model atoms or, more generically, as a parallel particle simulator at the atomic, meso, or continuum scale.
+
 There are two calculators that interface to the LAMMPS molecular
 dynamics code that can be used to solve an atoms model for energy,
 atom forces and cell stresses. They are:
 
-1. :mod:`ase.calculators.LAMMPSrun` which interfaces to LAMMPS via writing a
+1. :class:`ase.calculators.lammpsrun.LAMMPS`
+which interfaces to LAMMPS via writing a
 controlling input file that is then run automatically through LAMMPS
 and the results read back in. These results are currently limited to
 total energy, atomic forces and cell stress.
 
-2. LAMMPSlib which uses the python interface that comes with LAMMPS,
+2. :class:`ase.calculators.lammpslib.LAMMPSlib`
+which uses the python interface that comes with LAMMPS,
 loads the LAMMPS program as a python library. The LAMMPSlib calculator
 then creates a '.lmp' object which is a running LAMMPS subroutine, so
 further commands can be sent to this object and executed until it is
@@ -36,10 +41,10 @@ debugging the is difficult and different for both calculators.
 Both of these interfaces are still experimental code and any
 problems should be reported to the ASE developers mailing list.
 
-.. autoclass:: ase.calculators.lammpsrun.LAMMPS
+.. _LAMMPS: https://lammps.sandia.gov/
+.. _lammpspy_link: https://docs.lammps.org/Python_head.html
 
-.. autoclass:: ase.calculators.lammpslib.LAMMPSlib
+.. toctree::
 
-.. _LAMMPS_link: http://lammps.sandia.gov
-.. _lammpslib_link: https://svn.fysik.dtu.dk/projects/ase-extra/trunk/ase/calculators
-.. _lammpspy_link: http://lammps.sandia.gov/doc/Section_python.html
+    lammpsrun
+    lammpslib

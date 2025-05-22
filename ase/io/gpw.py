@@ -1,10 +1,15 @@
+# fmt: off
+
 """Read gpw-file from GPAW."""
-from ase import Atoms
-from ase.calculators.singlepoint import (SinglePointDFTCalculator,
-                                         SinglePointKPoint)
-from ase.units import Bohr, Hartree
 import ase.io.ulm as ulm
+from ase import Atoms
+from ase.calculators.singlepoint import (
+    SinglePointDFTCalculator,
+    SinglePointKPoint,
+    all_properties,
+)
 from ase.io.trajectory import read_atoms
+from ase.units import Bohr, Hartree
 
 
 def read_gpw(filename):
@@ -37,18 +42,22 @@ def read_gpw(filename):
         ibzkpts=ibzkpts,
         bzkpts=bzkpts,
         bz2ibz=bz2ibz,
-        **reader.results.asdict())
+        # New gpw-files may have "non_collinear_magmom(s)" which ASE
+        # doesn't know:
+        **{property: value
+           for property, value in reader.results.asdict().items()
+           if property in all_properties})
 
     if kpts is not None:
         atoms.calc.kpts = []
-        spin = 0
-        for eps_kn, f_kn in zip(wfs.eigenvalues, wfs.occupations):
-            kpt = 0
-            for weight, eps_n, f_n in zip(kpts.weights, eps_kn, f_kn):
+        for spin, (eps_kn, f_kn) in enumerate(zip(wfs.eigenvalues,
+                                                  wfs.occupations)):
+            for kpt, (weight, eps_n, f_n) in enumerate(zip(kpts.weights,
+                                                           eps_kn, f_kn)):
                 atoms.calc.kpts.append(
                     SinglePointKPoint(weight, spin, kpt, eps_n, f_n))
-                kpt += 1
-            spin += 1
+    reader.close()
+
     return atoms
 
 

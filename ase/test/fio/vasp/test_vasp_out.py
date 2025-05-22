@@ -1,10 +1,13 @@
+# fmt: off
 # flake8: noqa
 import inspect
-import pytest
+
 import numpy as np
+import pytest
+
 from ase import Atoms
-from ase.io import read, iread
 from ase.calculators.calculator import compare_atoms
+from ase.io import iread, read
 
 
 @pytest.fixture

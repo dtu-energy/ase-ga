@@ -1,11 +1,12 @@
+# fmt: off
 import numpy as np
 import pytest
 
-from ase.units import Ry, Ha
+from ase import Atoms
+from ase.filters import UnitCellFilter
 from ase.io.trajectory import Trajectory
 from ase.optimize import QuasiNewton
-from ase.constraints import UnitCellFilter
-from ase import Atoms
+from ase.units import Ha, Ry
 from ase.utils import tokenize_version
 
 
@@ -40,8 +41,8 @@ def test_md(factory):
     with Trajectory('example.traj', 'w', bud) as traj:
         ucf = UnitCellFilter(
             bud, mask=[True, True, False, False, False, False])
-        dyn = QuasiNewton(ucf)
-        dyn.attach(traj.write)
-        dyn.run(fmax=0.1)
-        bud.get_potential_energy()
+        with QuasiNewton(ucf) as dyn:
+            dyn.attach(traj.write)
+            dyn.run(fmax=0.1)
+            bud.get_potential_energy()
         # XXX maybe assert something?

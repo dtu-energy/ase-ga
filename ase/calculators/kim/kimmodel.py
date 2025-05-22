@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 ASE Calculator for interatomic models compatible with the Knowledgebase
 of Interatomic Models (KIM) application programming interface (API).
@@ -9,11 +11,9 @@ University of Minnesota
 """
 import numpy as np
 
-from ase.calculators.calculator import Calculator
-from ase.calculators.calculator import compare_atoms
+from ase.calculators.calculator import Calculator, compare_atoms
 
-from . import kimpy_wrappers
-from . import neighborlist
+from . import kimpy_wrappers, neighborlist
 
 
 class KIMModelData:
@@ -30,41 +30,42 @@ class KIMModelData:
         self.debug = debug
 
         # Initialize KIM API Portable Model object and ComputeArguments object
-        self.init_kim()
+        self.kim_model, self.compute_args = self._init_kim()
 
-        # Set cutoff
-        model_influence_dist = self.kim_model.get_influence_distance()
-        model_cutoffs, padding_not_require_neigh = (
-            self.kim_model.get_neighbor_list_cutoffs_and_hints()
-        )
+        self.species_map = self._create_species_map()
 
-        self.species_map = self.create_species_map()
+        # Ask model to provide information relevant for neighbor list
+        # construction
+        (
+            model_influence_dist,
+            model_cutoffs,
+            padding_not_require_neigh,
+        ) = self.get_model_neighbor_list_parameters()
 
         # Initialize neighbor list object
-        self.init_neigh(
+        self.neigh = self._init_neigh(
             neigh_skin_ratio,
             model_influence_dist,
             model_cutoffs,
             padding_not_require_neigh,
         )
 
-    def __del__(self):
-        self.clean()
-
-    def init_kim(self):
+    def _init_kim(self):
         """Create the KIM API Portable Model object and KIM API ComputeArguments
         object
         """
         if self.kim_initialized:
-            return
+            return None
 
-        self.kim_model = kimpy_wrappers.PortableModel(self.model_name, self.debug)
+        kim_model = kimpy_wrappers.PortableModel(self.model_name, self.debug)
 
-        # KIM API model object is what actually creates/destroys the ComputeArguments
-        # object, so we must pass it as a parameter
-        self.compute_args = self.kim_model.compute_arguments_create()
+        # KIM API model object is what actually creates/destroys the
+        # ComputeArguments object, so we must pass it as a parameter
+        compute_args = kim_model.compute_arguments_create()
 
-    def init_neigh(
+        return kim_model, compute_args
+
+    def _init_neigh(
         self,
         neigh_skin_ratio,
         model_influence_dist,
@@ -79,7 +80,7 @@ class KIMModelData:
             if self.ase_neigh
             else neighborlist.KimpyNeighborList
         )
-        self.neigh = neigh_list_object_type(
+        return neigh_list_object_type(
             self.compute_args,
             neigh_skin_ratio,
             model_influence_dist,
@@ -88,17 +89,26 @@ class KIMModelData:
             self.debug,
         )
 
+    def get_model_neighbor_list_parameters(self):
+        model_influence_dist = self.kim_model.get_influence_distance()
+        (
+            model_cutoffs,
+            padding_not_require_neigh,
+        ) = self.kim_model.get_neighbor_list_cutoffs_and_hints()
+
+        return model_influence_dist, model_cutoffs, padding_not_require_neigh
+
     def update_compute_args_pointers(self, energy, forces):
         self.compute_args.update(
             self.num_particles,
             self.species_code,
-            self.particle_contributing,
+            self._particle_contributing,
             self.coords,
             energy,
             forces,
         )
 
-    def create_species_map(self):
+    def _create_species_map(self):
         """Get all the supported species of the KIM model and the
         corresponding integer codes used by the model
 
@@ -110,40 +120,17 @@ class KIMModelData:
             value : int
                 species integer code (e.g. 1)
         """
-        supported_species, codes = self.get_model_supported_species_and_codes()
-        species_map = dict()
+        supported_species, codes = self._get_model_supported_species_and_codes()
+        species_map = {}
         for i, spec in enumerate(supported_species):
             species_map[spec] = codes[i]
             if self.debug:
                 print(
-                    "Species {} is supported and its code is: {}".format(spec, codes[i])
+                    "Species {} is supported and its code is: {}".format(
+                        spec, codes[i])
                 )
 
         return species_map
-
-    def clean_neigh(self):
-        """If the neighbor list method being used is the one in the
-        kimpy neighlist module, deallocate its memory
-        """
-        if self.neigh_initialized:
-            self.neigh.clean()
-            del self.neigh
-
-    def clean_kim(self):
-        """Deallocate the memory allocated to the KIM API Portable Model object
-        and KIM API ComputeArguments object
-        """
-        if self.kim_initialized:
-            self.kim_model.compute_arguments_destroy(self.compute_args)
-            self.kim_model.destroy()
-            del self.kim_model
-
-    def clean(self):
-        """Deallocate the KIM API Portable Model object, KIM API ComputeArguments
-        object, and, if applicable, the neighbor list object
-        """
-        self.clean_neigh()
-        self.clean_kim()
 
     @property
     def padding_image_of(self):
@@ -158,7 +145,7 @@ class KIMModelData:
         return self.neigh.coords
 
     @property
-    def particle_contributing(self):
+    def _particle_contributing(self):
         return self.neigh.particle_contributing
 
     @property
@@ -170,11 +157,11 @@ class KIMModelData:
         return hasattr(self, "kim_model")
 
     @property
-    def neigh_initialized(self):
+    def _neigh_initialized(self):
         return hasattr(self, "neigh")
 
     @property
-    def get_model_supported_species_and_codes(self):
+    def _get_model_supported_species_and_codes(self):
         return self.kim_model.get_model_supported_species_and_codes
 
 
@@ -211,7 +198,9 @@ class KIMModelCalculator(Calculator):
       False)
     """
 
-    implemented_properties = ["energy", "forces", "stress"]
+    implemented_properties = ["energy", "free_energy", "forces", "stress"]
+
+    ignored_changes = {"initial_charges", "initial_magmoms"}
 
     def __init__(
         self,
@@ -231,28 +220,30 @@ class KIMModelCalculator(Calculator):
 
         if neigh_skin_ratio < 0:
             raise ValueError('Argument "neigh_skin_ratio" must be non-negative')
+        self.neigh_skin_ratio = neigh_skin_ratio
 
         # Model output
         self.energy = None
         self.forces = None
 
-        # Create KIMModelData object. This will take care of creating and storing the KIM
-        # API Portable Model object, KIM API ComputeArguments object, and the neighbor
-        # list object that our calculator needs
-        self.kimmodeldata = KIMModelData(
-            self.model_name, ase_neigh, neigh_skin_ratio, self.debug
+        # Create KIMModelData object. This will take care of creating
+        # and storing the KIM API Portable Model object, KIM API
+        # ComputeArguments object, and the neighbor list object that
+        # our calculator needs
+        self._kimmodeldata = KIMModelData(
+            self.model_name, ase_neigh, self.neigh_skin_ratio, self.debug
         )
+
+        self._parameters_changed = False
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, value, traceback):
-        # Explicitly deallocate all three objects held by the KIMModelData
-        # instance referenced by our calculator
-        self.kimmodeldata.clean()
+        pass
 
     def __repr__(self):
-        return "KIMModelCalculator(model_name={})".format(self.model_name)
+        return f"KIMModelCalculator(model_name={self.model_name})"
 
     def calculate(
         self,
@@ -279,26 +270,40 @@ class KIMModelCalculator(Calculator):
             and 'pbc'.
         """
 
-        Calculator.calculate(self, atoms, properties, system_changes)
+        super().calculate(atoms, properties, system_changes)
 
-        # Update KIM API input data and neighbor list, if necessary
+        if self._parameters_changed:
+            self._parameters_changed = False
+
         if system_changes:
-            if self.need_neigh_update(atoms, system_changes):
-                self.update_neigh(atoms, self.species_map)
-                self.energy = np.array([0.0], dtype=np.double)
-                self.forces = np.zeros([self.num_particles[0], 3], dtype=np.double)
-                self.update_compute_args_pointers(self.energy, self.forces)
-            else:
-                self.update_kim_coords(atoms)
 
-            self.kim_model.compute(self.compute_args, self.release_GIL)
+            # Ask model to update all of its parameters and the parameters
+            # related to the neighbor list(s). This update is necessary to do
+            # here since the user will generally have made changes the model
+            # parameters since the last time an update was performed and we
+            # need to ensure that any properties calculated here are made using
+            # the up-to-date model and neighbor list parameters.
+            self._model_refresh_and_update_neighbor_list_parameters()
+
+            if self._need_neigh_update(atoms, system_changes):
+                self._update_neigh(atoms, self._species_map)
+                self.energy = np.array([0.0], dtype=kimpy_wrappers.c_double)
+                self.forces = np.zeros(
+                    [self._num_particles[0], 3], dtype=kimpy_wrappers.c_double
+                )
+                self._update_compute_args_pointers(self.energy, self.forces)
+            else:
+                self._update_kim_coords(atoms)
+
+            self._kim_model.compute(self._compute_args, self.release_GIL)
 
         energy = self.energy[0]
-        forces = self.assemble_padding_forces()
+        forces = self._assemble_padding_forces()
 
         try:
             volume = atoms.get_volume()
-            stress = self.compute_virial_stress(self.forces, self.coords, volume)
+            stress = self._compute_virial_stress(
+                self.forces, self._coords, volume)
         except ValueError:  # Volume cannot be computed
             stress = None
 
@@ -309,10 +314,18 @@ class KIMModelCalculator(Calculator):
         self.results["stress"] = stress
 
     def check_state(self, atoms, tol=1e-15):
-        return compare_atoms(self.atoms, atoms, excluded_properties={'initial_charges',
-            'initial_magmoms'})
+        # Check for change in atomic configuration (positions or pbc)
+        system_changes = compare_atoms(
+            self.atoms, atoms, excluded_properties=self.ignored_changes
+        )
 
-    def assemble_padding_forces(self):
+        # Check if model parameters were changed
+        if self._parameters_changed:
+            system_changes.append("calculator")
+
+        return system_changes
+
+    def _assemble_padding_forces(self):
         """
         Assemble forces on padding atoms back to contributing atoms.
 
@@ -333,17 +346,17 @@ class KIMModelCalculator(Calculator):
             Total forces on contributing atoms.
         """
 
-        total_forces = np.array(self.forces[: self.num_contributing_particles])
+        total_forces = np.array(self.forces[:self._num_contributing_particles])
 
-        if self.padding_image_of.size != 0:
-            pad_forces = self.forces[self.num_contributing_particles :]
-            for f, org_index in zip(pad_forces, self.padding_image_of):
+        if self._padding_image_of.size != 0:
+            pad_forces = self.forces[self._num_contributing_particles:]
+            for f, org_index in zip(pad_forces, self._padding_image_of):
                 total_forces[org_index] += f
 
         return total_forces
 
     @staticmethod
-    def compute_virial_stress(forces, coords, volume):
+    def _compute_virial_stress(forces, coords, volume):
         """Compute the virial stress in Voigt notation.
 
         Parameters
@@ -372,53 +385,105 @@ class KIMModelCalculator(Calculator):
 
         return stress
 
-    def get_model_supported_species_and_codes(self):
-        return self.kimmodeldata.get_model_supported_species_and_codes
+    @property
+    def _update_compute_args_pointers(self):
+        return self._kimmodeldata.update_compute_args_pointers
 
     @property
-    def update_compute_args_pointers(self):
-        return self.kimmodeldata.update_compute_args_pointers
+    def _kim_model(self):
+        return self._kimmodeldata.kim_model
 
     @property
-    def kim_model(self):
-        return self.kimmodeldata.kim_model
+    def _compute_args(self):
+        return self._kimmodeldata.compute_args
 
     @property
-    def compute_args(self):
-        return self.kimmodeldata.compute_args
+    def _num_particles(self):
+        return self._kimmodeldata.num_particles
 
     @property
-    def num_particles(self):
-        return self.kimmodeldata.num_particles
+    def _coords(self):
+        return self._kimmodeldata.coords
 
     @property
-    def coords(self):
-        return self.kimmodeldata.coords
+    def _padding_image_of(self):
+        return self._kimmodeldata.padding_image_of
 
     @property
-    def padding_image_of(self):
-        return self.kimmodeldata.padding_image_of
+    def _species_map(self):
+        return self._kimmodeldata.species_map
 
     @property
-    def species_map(self):
-        return self.kimmodeldata.species_map
+    def _neigh(self):
+        # WARNING: This property is underscored for a reason! The
+        # neighborlist(s) itself (themselves) may not be up to date with
+        # respect to changes that have been made to the model's parameters, or
+        # even since the positions in the Atoms object may have changed.
+        # Neighbor lists are only potentially updated inside the ``calculate``
+        # method.
+        return self._kimmodeldata.neigh
 
     @property
-    def neigh(self):
-        return self.kimmodeldata.neigh
+    def _num_contributing_particles(self):
+        return self._neigh.num_contributing_particles
 
     @property
-    def num_contributing_particles(self):
-        return self.neigh.num_contributing_particles
+    def _update_kim_coords(self):
+        return self._neigh.update_kim_coords
 
     @property
-    def update_kim_coords(self):
-        return self.neigh.update_kim_coords
+    def _need_neigh_update(self):
+        return self._neigh.need_neigh_update
 
     @property
-    def need_neigh_update(self):
-        return self.neigh.need_neigh_update
+    def _update_neigh(self):
+        return self._neigh.update
 
     @property
-    def update_neigh(self):
-        return self.neigh.update
+    def parameters_metadata(self):
+        return self._kim_model.parameters_metadata
+
+    @property
+    def parameter_names(self):
+        return self._kim_model.parameter_names
+
+    @property
+    def get_parameters(self):
+        # Ask model to update all of its parameters and the parameters related
+        # to the neighbor list(s). This update is necessary to do here since
+        # the user will generally have made changes the model parameters since
+        # the last time an update was performed and we need to ensure the
+        # parameters returned by this method are fully up to date.
+        self._model_refresh_and_update_neighbor_list_parameters()
+
+        return self._kim_model.get_parameters
+
+    def set_parameters(self, **kwargs):
+        parameters = self._kim_model.set_parameters(**kwargs)
+        self._parameters_changed = True
+
+        return parameters
+
+    def _model_refresh_and_update_neighbor_list_parameters(self):
+        """
+        Call the model's refresh routine and update the neighbor list object
+        for any necessary changes arising from changes to the model parameters,
+        e.g. a change in one of its cutoffs.  After a model's parameters have
+        been changed, this method *must* be called before calling the model's
+        compute routine.
+        """
+        self._kim_model.clear_then_refresh()
+
+        # Update neighbor list parameters
+        (
+            model_influence_dist,
+            model_cutoffs,
+            padding_not_require_neigh,
+        ) = self._kimmodeldata.get_model_neighbor_list_parameters()
+
+        self._neigh.set_neigh_parameters(
+            self.neigh_skin_ratio,
+            model_influence_dist,
+            model_cutoffs,
+            padding_not_require_neigh,
+        )

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Implements the Topology-Scaling Algorithm (TSA)
 
 Method is described in:
@@ -14,7 +16,9 @@ This permits k-interval analysis.
 
 
 import itertools
+
 import numpy as np
+
 from ase.geometry.dimensionality.disjoint_set import DisjointSet
 
 

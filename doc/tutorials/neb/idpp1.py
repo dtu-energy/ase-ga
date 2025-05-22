@@ -1,6 +1,6 @@
 from ase.build import molecule
-from ase.neb import NEB
 from ase.calculators.emt import EMT
+from ase.mep import NEB
 from ase.optimize.fire import FIRE as QuasiNewton
 
 # Optimise molecule.
@@ -29,6 +29,7 @@ neb = NEB(images)
 neb.interpolate()
 
 # Run NEB calculation.
-qn = QuasiNewton(neb, trajectory='ethane_linear.traj',
-                 logfile='ethane_linear.log')
+qn = QuasiNewton(
+    neb, trajectory='ethane_linear.traj', logfile='ethane_linear.log'
+)
 qn.run(fmax=0.05)

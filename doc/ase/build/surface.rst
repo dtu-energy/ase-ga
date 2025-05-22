@@ -169,13 +169,13 @@ ontop    hollow    fcc    hcp    bridge    shortbridge  longbridge
 .. |diamond100| image:: diamond100.png
 .. |diamond111| image:: diamond111.png
 
-
-This can be used for :mol:`MX_2` 2D structures such as :mol:`MoS_2`:
-
 .. autofunction:: mx2
 
 .. image:: mx2.png
 
+.. autofunction:: graphene
+
+.. image:: graphene.png
 
 Create root cuts of surfaces
 ````````````````````````````
@@ -245,7 +245,8 @@ Example
 To setup a Au(211) surface with 9 layers and 10 Å of vacuum:
 
 .. literalinclude:: general_surface.py
-    :lines: 2-4
+    :start-after: Au example
+    :end-before: Mo example
 
 This is the easy way, where you use the experimental lattice constant
 for gold bulk structure.  You can write::
@@ -261,7 +262,8 @@ Next example is a molybdenum bcc(321) surface where we decide what
 lattice constant to use:
 
 .. literalinclude:: general_surface.py
-    :lines: 6-9
+    :start-after: Mo example
+    :end-before: Pt3Rh example
 
 .. image:: s2.png
 
@@ -270,7 +272,8 @@ carried out with this module.  In this example, two :mol:`Pt_3Rh`
 fcc(211) surfaces will be created:
 
 .. literalinclude:: general_surface.py
-    :lines: 11-25
+    :start-after: Pt3Rh example
+    :end-before: Done
 
 |s3| |s4|
 

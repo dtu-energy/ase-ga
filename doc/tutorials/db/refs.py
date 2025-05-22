@@ -1,7 +1,7 @@
 from ase import Atoms
+from ase.build import fcc111
 from ase.calculators.emt import EMT
 from ase.db import connect
-from ase.build import fcc111
 
 db1 = connect('bulk.db')
 db2 = connect('ads.db')

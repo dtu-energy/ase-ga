@@ -1,18 +1,20 @@
-import os
+# fmt: off
 import json
 
 import numpy as np
 import pytest
 
+from ase.build import bulk
 from ase.calculators.morse import MorsePotential
+from ase.constraints import FixBondLength
+from ase.geometry.geometry import find_mic, get_distances
+from ase.mep import NEB, NEBTools
+from ase.mep.neb import NEBOptimizer
 from ase.optimize import BFGS, ODE12r
 from ase.optimize.precon import Exp
-from ase.build import bulk
-from ase.neb import NEB, NEBTools, NEBOptimizer
-from ase.geometry.geometry import find_mic
-from ase.constraints import FixBondLength
-from ase.geometry.geometry import get_distances
 from ase.utils.forcecurve import fit_images
+
+pytestmark = pytest.mark.optimize
 
 
 def calc():
@@ -72,7 +74,7 @@ def _setup_images_global():
     return neb.images, i1, i2
 
 
-@pytest.fixture
+@pytest.fixture()
 def setup_images(_setup_images_global):
     images, i1, i2 = _setup_images_global
     new_images = [img.copy() for img in images]
@@ -101,7 +103,7 @@ def _ref_vacancy_global(_setup_images_global):
     return Ef_ref, dE_ref, saddle
 
 
-@pytest.fixture
+@pytest.fixture()
 def ref_vacancy(_ref_vacancy_global):
     Ef_ref, dE_ref, saddle = _ref_vacancy_global
     return Ef_ref, dE_ref, saddle.copy()
@@ -114,16 +116,16 @@ def ref_vacancy(_ref_vacancy_global):
                           ('improvedtangent', BFGS, None, None),
                           ('spline', NEBOptimizer, None, 'ODE'),
                           ('string', NEBOptimizer, 'Exp', 'ODE')])
-def test_neb_methods(method, optimizer, precon,
+def test_neb_methods(testdir, method, optimizer, precon,
                      optmethod, ref_vacancy, setup_images):
     # unpack the reference result
     Ef_ref, dE_ref, saddle_ref = ref_vacancy
 
     # now relax the MEP for comparison
     images, _, _ = setup_images
-    
+
     fmax_history = []
-    
+
     def save_fmax_history(mep):
         fmax_history.append(mep.get_residual())
 
@@ -146,9 +148,8 @@ def test_neb_methods(method, optimizer, precon,
 
     forcefit = fit_images(images)
 
-    output_dir = os.path.dirname(__file__)
-    with open(f'{output_dir}/MEP_{method}_{optimizer.__name__}_{optmethod}'
-              f'_{precon}.json', 'w') as f:
+    with open(f'MEP_{method}_{optimizer.__name__}_{optmethod}'
+              f'_{precon}.json', 'w') as fd:
         json.dump({'fmax_history': fmax_history,
                    'method': method,
                    'optmethod': optmethod,
@@ -160,7 +161,7 @@ def test_neb_methods(method, optimizer, precon,
                    'fit_energies': forcefit.fit_energies.tolist(),
                    'lines': np.array(forcefit.lines).tolist(),
                    'Ef': Ef,
-                   'dE': dE}, f)
+                   'dE': dE}, fd)
 
     centre = 2  # we have 5 images total, so central image has index 2
     vdiff, _ = find_mic(images[centre].positions - saddle_ref.positions,
@@ -172,7 +173,7 @@ def test_neb_methods(method, optimizer, precon,
     assert abs(vdiff).max() < 1e-2
 
 
-@pytest.mark.parametrize('method', ['ODE', 'krylov', 'static'])
+@pytest.mark.parametrize('method', ['ODE', 'static'])
 @pytest.mark.filterwarnings('ignore:NEBOptimizer did not converge')
 def test_neb_optimizers(setup_images, method):
     images, _, _ = setup_images
@@ -184,7 +185,7 @@ def test_neb_optimizers(setup_images, method):
     R1 = mep.get_residual()
     # check residual has got smaller
     assert R1 < R0
-    
+
 
 def test_precon_initialisation(setup_images):
     images, _, _ = setup_images
@@ -194,11 +195,42 @@ def test_precon_initialisation(setup_images):
     assert mep.precon[0].mu == mep.precon[1].mu
 
 
+def test_single_precon_initialisation(setup_images):
+    images, _, _ = setup_images
+    precon = Exp()
+    mep = NEB(images, method='spline', precon=precon)
+    mep.get_forces()
+    assert len(mep.precon) == len(mep.images)
+    assert mep.precon[0].mu == mep.precon[1].mu
+
+
+def test_list_precon_initialisation(setup_images):
+    images, _, _ = setup_images
+
+    precon = Exp()
+    mep = NEB(images, method='spline', precon=precon)
+    mep.get_forces()
+
+    # the tested scenario is saving computed precon
+    # for restarting of a calculation
+
+    # saving as PreconImages object
+    mep_restart = NEB(images, method='spline', precon=mep.precon)
+    mep_restart.get_forces()
+    assert len(mep_restart.precon) == len(mep_restart.images)
+    assert mep_restart.precon[0].mu == mep_restart.precon[1].mu
+    # saving as a list of precon objects
+    mep_restart = NEB(images, method='spline', precon=mep.precon.precon)
+    mep_restart.get_forces()
+    assert len(mep_restart.precon) == len(mep_restart.images)
+    assert mep_restart.precon[0].mu == mep_restart.precon[1].mu
+
+
 def test_precon_assembly(setup_images):
     images, _, _ = setup_images
     neb = NEB(images, method='spline', precon='Exp')
     neb.get_forces()  # trigger precon assembly
-    
+
     # check precon for each image is symmetric positive definite
     for image, precon in zip(neb.images, neb.precon):
         assert isinstance(precon, Exp)
@@ -213,13 +245,32 @@ def test_spline_fit(setup_images):
     images, _, _ = setup_images
     neb = NEB(images)
     fit = neb.spline_fit()
-    
+
     # check spline points are equally spaced
     assert np.allclose(fit.s, np.linspace(0, 1, len(images)))
-    
+
     # check spline matches target at fit points
     assert np.allclose(fit.x(fit.s), fit.x_data)
-    
+
     # ensure derivative is smooth across central fit point
     eps = 1e-4
     assert np.allclose(fit.dx_ds(fit.s[2] + eps), fit.dx_ds(fit.s[2] + eps))
+
+
+def test_integrate_forces(setup_images):
+    images, _, _ = setup_images
+    forcefit = fit_images(images)
+
+    neb = NEB(images)
+    spline_points = 1000  # it is the default value
+    _s, E, _F = neb.integrate_forces(spline_points=spline_points)
+    # check the difference between initial and final images
+    np.testing.assert_allclose(E[0] - E[-1],
+                               forcefit.energies[0] - forcefit.energies[-1],
+                               atol=1.0e-10)
+    # assert the maximum Energy value is in the middle
+    assert np.argmax(E) == spline_points // 2 - 1
+    # check the maximum values (barrier value)
+    # tolerance value is rather high since the images are not relaxed
+    np.testing.assert_allclose(E.max(),
+                               forcefit.energies.max(), rtol=2.5e-2)

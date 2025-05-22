@@ -1,3 +1,4 @@
+# fmt: off
 """
 Read and write on compressed files.
 """
@@ -9,9 +10,8 @@ import numpy as np
 import pytest
 
 from ase import io
-from ase.io import formats
 from ase.build import bulk
-
+from ase.io import formats
 
 single = bulk('Au')
 multiple = [bulk('Fe'), bulk('Zn'), bulk('Li')]
@@ -31,17 +31,18 @@ def test_get_compression():
 @pytest.mark.parametrize('ext', compressions)
 def test_compression_write_single(ext):
     """Writing compressed file."""
-    filename = 'single.xsf.{ext}'.format(ext=ext)
+    filename = f'single.xsf.{ext}'
     io.write(filename, single)
     assert os.path.exists(filename)
 
 
+@pytest.mark.parametrize('fmt', ('xsf', 'traj'))
 @pytest.mark.parametrize('ext', compressions)
-def test_compression_read_write_single(ext):
+def test_compression_read_write_single(ext, fmt):
     """Re-reading a compressed file."""
     # Use xsf filetype as it needs to check the 'magic'
     # filetype guessing when reading
-    filename = 'single.xsf.{ext}'.format(ext=ext)
+    filename = f'single.{fmt}.{ext}'
     io.write(filename, single)
     assert os.path.exists(filename)
     reread = io.read(filename)
@@ -52,15 +53,16 @@ def test_compression_read_write_single(ext):
 @pytest.mark.parametrize('ext', compressions)
 def test_compression_write_multiple(ext):
     """Writing compressed file, with multiple configurations."""
-    filename = 'multiple.xyz.{ext}'.format(ext=ext)
+    filename = f'multiple.xyz.{ext}'
     io.write(filename, multiple)
     assert os.path.exists(filename)
 
 
+@pytest.mark.parametrize('fmt', ('xyz', 'traj'))
 @pytest.mark.parametrize('ext', compressions)
-def test_compression_read_write_multiple(ext):
+def test_compression_read_write_multiple(ext, fmt):
     """Re-reading a compressed file with multiple configurations."""
-    filename = 'multiple.xyz.{ext}'.format(ext=ext)
+    filename = f'multiple.{fmt}.{ext}'
     io.write(filename, multiple)
     assert os.path.exists(filename)
     reread = io.read(filename, ':')
@@ -71,7 +73,7 @@ def test_compression_read_write_multiple(ext):
 @pytest.mark.parametrize('ext', compressions)
 def test_modes(ext):
     """Test the different read/write modes for a compression format."""
-    filename = 'testrw.{ext}'.format(ext=ext)
+    filename = f'testrw.{ext}'
     for mode in ['w', 'wb', 'wt']:
         with formats.open_with_compression(filename, mode) as tmp:
             if 'b' in mode:

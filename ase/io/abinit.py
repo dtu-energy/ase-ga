@@ -1,15 +1,18 @@
+# fmt: off
+
 import os
-from os.path import join
 import re
 from glob import glob
-import warnings
+from os.path import join
+from pathlib import Path
 
 import numpy as np
 
 from ase import Atoms
+from ase.calculators.calculator import all_properties
+from ase.calculators.singlepoint import SinglePointCalculator
 from ase.data import chemical_symbols
-from ase.units import Hartree, Bohr, fs
-from ase.calculators.calculator import Parameters
+from ase.units import Bohr, Hartree, fs
 
 
 def read_abinit_in(fd):
@@ -28,7 +31,7 @@ def read_abinit_in(fd):
 
     index = tokens.index("acell")
     unit = 1.0
-    if(tokens[index + 4].lower()[:3] != 'ang'):
+    if tokens[index + 4].lower()[:3] != 'ang':
         unit = Bohr
     acell = [unit * float(tokens[index + 1]),
              unit * float(tokens[index + 2]),
@@ -88,7 +91,7 @@ def read_abinit_in(fd):
             unit = 1.0
             index = tokens.index("xangst")
         else:
-            raise IOError(
+            raise OSError(
                 "No xred, xcart, or xangs keyword in abinit input file")
 
         xangs = []
@@ -153,24 +156,18 @@ keys_with_units = {
 
 
 def write_abinit_in(fd, atoms, param=None, species=None, pseudos=None):
-    import copy
     from ase.calculators.calculator import kpts2mp
-    from ase.calculators.abinit import Abinit
 
     if param is None:
         param = {}
 
-    _param = copy.deepcopy(Abinit.default_parameters)
-    _param.update(param)
-    param = _param
-
     if species is None:
         species = sorted(set(atoms.numbers))
 
-    inp = {}
-    inp.update(param)
-    for key in ['xc', 'smearing', 'kpts', 'pps', 'raw']:
-        del inp[key]
+    inp = dict(param)
+    xc = inp.pop('xc', 'LDA')
+    for key in ['smearing', 'kpts', 'pps', 'raw']:
+        inp.pop(key, None)
 
     smearing = param.get('smearing')
     if 'tsmear' in param or 'occopt' in param:
@@ -194,18 +191,18 @@ def write_abinit_in(fd, atoms, param=None, species=None, pseudos=None):
                           'PBE': 11,
                           'revPBE': 14,
                           'RPBE': 15,
-                          'WC': 23}[param['xc']]
+                          'WC': 23}[xc]
 
     magmoms = atoms.get_initial_magnetic_moments()
     if magmoms.any():
         inp['nsppol'] = 2
         fd.write('spinat\n')
         for n, M in enumerate(magmoms):
-            fd.write('%.14f %.14f %.14f\n' % (0, 0, M))
+            fd.write(f'{0:.14f} {0:.14f} {M:.14f}\n')
     else:
         inp['nsppol'] = 1
 
-    if param['kpts'] is not None:
+    if param.get('kpts') is not None:
         mp = kpts2mp(atoms, param['kpts'])
         fd.write('kptopt 1\n')
         fd.write('ngkpt %d %d %d\n' % tuple(mp))
@@ -224,31 +221,31 @@ def write_abinit_in(fd, atoms, param=None, species=None, pseudos=None):
                 value /= fs
         if isinstance(value, valid_lists):
             if isinstance(value[0], valid_lists):
-                fd.write("{}\n".format(key))
+                fd.write(f"{key}\n")
                 for dim in value:
                     write_list(fd, dim, unit)
             else:
-                fd.write("{}\n".format(key))
+                fd.write(f"{key}\n")
                 write_list(fd, value, unit)
         else:
             if unit is None:
-                fd.write("{} {}\n".format(key, value))
+                fd.write(f"{key} {value}\n")
             else:
-                fd.write("{} {} {}\n".format(key, value, unit))
+                fd.write(f"{key} {value} {unit}\n")
 
-    if param['raw'] is not None:
+    if param.get('raw') is not None:
         if isinstance(param['raw'], str):
             raise TypeError('The raw parameter is a single string; expected '
                             'a sequence of lines')
         for line in param['raw']:
             if isinstance(line, tuple):
-                fd.write(' '.join(['%s' % x for x in line]) + '\n')
+                fd.write(' '.join([f'{x}' for x in line]) + '\n')
             else:
-                fd.write('%s\n' % line)
+                fd.write(f'{line}\n')
 
     fd.write('#Definition of the unit cell\n')
     fd.write('acell\n')
-    fd.write('%.14f %.14f %.14f Angstrom\n' % (1.0, 1.0, 1.0))
+    fd.write(f'{1.0:.14f} {1.0:.14f} {1.0:.14f} Angstrom\n')
     fd.write('rprim\n')
     if atoms.cell.rank != 3:
         raise RuntimeError('Abinit requires a 3D cell, but cell is {}'
@@ -278,7 +275,7 @@ def write_abinit_in(fd, atoms, param=None, species=None, pseudos=None):
     fd.write('\n')
 
     if pseudos is not None:
-        listing = ', '.join(pseudos)
+        listing = ',\n'.join(pseudos)
         line = f'pseudos "{listing}"\n'
         fd.write(line)
 
@@ -293,9 +290,9 @@ def write_abinit_in(fd, atoms, param=None, species=None, pseudos=None):
 
 def write_list(fd, value, unit):
     for element in value:
-        fd.write("{} ".format(element))
+        fd.write(f"{element} ")
     if unit is not None:
-        fd.write("{}".format(unit))
+        fd.write(f"{unit}")
     fd.write("\n")
 
 
@@ -312,7 +309,6 @@ def read_stress(fd):
             # Not a real value error.  What should we raise?
             raise ValueError('Line {!r} does not match stress pattern {!r}'
                              .format(line, pat))
-        s1, s2 = m.group(1, 2)
         stress[i] = float(m.group(1))
         stress[i + 3] = float(m.group(2))
     unit = Hartree / Bohr**3
@@ -345,7 +341,7 @@ def read_abinit_out(fd):
         for line in fd:
             if string in line:
                 return line
-        raise RuntimeError('Not found: {}'.format(string))
+        raise RuntimeError(f'Not found: {string}')
 
     line = skipto('Version')
     m = re.match(r'\.*?Version\s+(\S+)\s+of ABINIT', line)
@@ -446,6 +442,12 @@ def read_abinit_out(fd):
                   cell=cell,
                   pbc=True)
 
+    calc_results = {name: results[name] for name in
+                    set(all_properties) & set(results)}
+    atoms.calc = SinglePointCalculator(atoms,
+                                       **calc_results)
+    atoms.calc.name = "abinit"
+
     results['atoms'] = atoms
     return results
 
@@ -469,7 +471,7 @@ def read_eigenvalues_for_one_spin(fd, nkpts):
     kpoint_coords = []
 
     eig_kn = []
-    for ikpt in range(nkpts):
+    for _ in range(nkpts):
         header = next(fd)
         nbands, weight, kvector = match_kpt_header(header)
         kpoint_coords.append(kvector)
@@ -544,103 +546,103 @@ def read_eig(fd):
     return results
 
 
-def write_files_file(fd, label, ppp_list):
-    """Write files-file, the file which tells abinit about other files."""
-    prefix = label.rsplit('/', 1)[-1]
-    fd.write('%s\n' % (prefix + '.in'))  # input
-    fd.write('%s\n' % (prefix + '.txt'))  # output
-    fd.write('%s\n' % (prefix + 'i'))  # input
-    fd.write('%s\n' % (prefix + 'o'))  # output
-    fd.write('%s\n' % (prefix + '.abinit'))
-    # Provide the psp files
-    for ppp in ppp_list:
-        fd.write('%s\n' % (ppp))  # psp file path
-
-
 def get_default_abinit_pp_paths():
     return os.environ.get('ABINIT_PP_PATH', '.').split(':')
 
 
-abinit_input_version_warning = """\
-Abinit input format has changed in Abinit9.
-
-ASE will currently write inputs for Abinit8 by default.  Please
-silence this warning passing either Abinit(v8_legacy_format=True) to
-write the old Abinit8 format, or False for writing
-the new Abinit9+ format.
-
-The default will change to Abinit9+ format from ase-3.22, and this
-warning will be removed.
-
-Please note that stdin to Abinit should be the .files file until version 8
-but the main inputfile (conventionally abinit.in) from abinit9,
-which may require reconfiguring the ASE/Abinit shell command.
-"""
-
-
-
-def write_all_inputs(atoms, properties, parameters,
-                     pp_paths=None,
-                     raise_exception=True,
-                     label='abinit',
-                     *, v8_legacy_format=True):
+def prepare_abinit_input(directory, atoms, properties, parameters,
+                         pp_paths=None,
+                         raise_exception=True):
+    directory = Path(directory)
     species = sorted(set(atoms.numbers))
     if pp_paths is None:
         pp_paths = get_default_abinit_pp_paths()
     ppp = get_ppp_list(atoms, species,
                        raise_exception=raise_exception,
-                       xc=parameters.xc,
-                       pps=parameters.pps,
+                       xc=parameters['xc'],
+                       pps=parameters['pps'],
                        search_paths=pp_paths)
 
-    if v8_legacy_format is None:
-        warnings.warn(abinit_input_version_warning,
-                      FutureWarning)
-        v8_legacy_format = True
+    inputfile = directory / 'abinit.in'
 
-    if v8_legacy_format:
-        with open(label + '.files', 'w') as fd:
-            write_files_file(fd, label, ppp)
-        pseudos = None
-
-        # XXX here we build the txt filename again, which is bad
-        # (also defined in the calculator)
-        output_filename = label + '.txt'
-    else:
-        pseudos = ppp  # Include pseudopotentials in inputfile
-        output_filename = label + '.abo'
+    # XXX inappropriate knowledge about choice of outputfile
+    outputfile = directory / 'abinit.abo'
 
     # Abinit will write to label.txtA if label.txt already exists,
     # so we remove it if it's there:
-    if os.path.isfile(output_filename):
-        os.remove(output_filename)
+    if outputfile.exists():
+        outputfile.unlink()
 
-    parameters.write(label + '.ase')
-
-    with open(label + '.in', 'w') as fd:
+    with open(inputfile, 'w') as fd:
         write_abinit_in(fd, atoms, param=parameters, species=species,
-                        pseudos=pseudos)
+                        pseudos=ppp)
 
 
-def read_ase_and_abinit_inputs(label):
-    with open(label + '.in') as fd:
-        atoms = read_abinit_in(fd)
-    parameters = Parameters.read(label + '.ase')
-    return atoms, parameters
-
-
-def read_results(label, textfilename):
-    # filename = label + '.txt'
+def read_abinit_outputs(directory, label):
+    directory = Path(directory)
+    textfilename = directory / f'{label}.abo'
     results = {}
     with open(textfilename) as fd:
         dct = read_abinit_out(fd)
         results.update(dct)
+
     # The eigenvalues section in the main file is shortened to
     # a limited number of kpoints.  We read the complete one from
     # the EIG file then:
-    with open('{}o_EIG'.format(label)) as fd:
+    with open(directory / f'{label}o_EIG') as fd:
         dct = read_eig(fd)
         results.update(dct)
+    return results
+
+
+def read_abinit_gsr(filename):
+    import netCDF4
+    data = netCDF4.Dataset(filename)
+    data.set_auto_mask(False)
+    version = data.abinit_version
+
+    typat = data.variables['atom_species'][:]
+    cell = data.variables['primitive_vectors'][:] * Bohr
+    znucl = data.variables['atomic_numbers'][:]
+    xred = data.variables['reduced_atom_positions'][:]
+
+    znucl_int = znucl.astype(int)
+    znucl_int[znucl_int != znucl] = 0  # (Fractional Z)
+    numbers = znucl_int[typat - 1]
+
+    atoms = Atoms(numbers=numbers,
+                  scaled_positions=xred,
+                  cell=cell,
+                  pbc=True)
+
+    results = {}
+
+    def addresult(name, abinit_name, unit=1):
+        if abinit_name not in data.variables:
+            return
+        values = data.variables[abinit_name][:]
+        # Within the netCDF4 dataset, the float variables return a array(float)
+        # The tolist() is here to ensure that the result is of type float
+        if not values.shape:
+            values = values.tolist()
+        results[name] = values * unit
+
+    addresult('energy', 'etotal', Hartree)
+    addresult('free_energy', 'etotal', Hartree)
+    addresult('forces', 'cartesian_forces', Hartree / Bohr)
+    addresult('stress', 'cartesian_stress_tensor', Hartree / Bohr**3)
+
+    atoms.calc = SinglePointCalculator(atoms, **results)
+    atoms.calc.name = 'abinit'
+    results['atoms'] = atoms
+
+    addresult('fermilevel', 'fermie', Hartree)
+    addresult('ibz_kpoints', 'reduced_coordinates_of_kpoints')
+    addresult('eigenvalues', 'eigenvalues', Hartree)
+    addresult('occupations', 'occupations')
+    addresult('kpoint_weights', 'kpoint_weights')
+    results['version'] = version
+
     return results
 
 
@@ -659,20 +661,23 @@ def get_ppp_list(atoms, species, raise_exception, xc, pps,
                 if pps in ['paw']:
                     hghtemplate = '%s-%s-%s.paw'  # E.g. "H-GGA-hard-uspp.paw"
                     names.append(hghtemplate % (s, xcn, '*'))
-                    names.append('%s[.-_]*.paw' % s)
+                    names.append(f'{s}[.-_]*.paw')
                 elif pps in ['pawxml']:
                     hghtemplate = '%s.%s%s.xml'  # E.g. "H.GGA_PBE-JTH.xml"
                     names.append(hghtemplate % (s, xcn, '*'))
-                    names.append('%s[.-_]*.xml' % s)
+                    names.append(f'{s}[.-_]*.xml')
                 elif pps in ['hgh.k']:
                     hghtemplate = '%s-q%s.hgh.k'  # E.g. "Co-q17.hgh.k"
                     names.append(hghtemplate % (s, '*'))
-                    names.append('%s[.-_]*.hgh.k' % s)
-                    names.append('%s[.-_]*.hgh' % s)
+                    names.append(f'{s}[.-_]*.hgh.k')
+                    names.append(f'{s}[.-_]*.hgh')
                 elif pps in ['tm']:
                     hghtemplate = '%d%s%s.pspnc'  # E.g. "44ru.pspnc"
                     names.append(hghtemplate % (number, s, '*'))
-                    names.append('%s[.-_]*.pspnc' % s)
+                    names.append(f'{s}[.-_]*.pspnc')
+                elif pps in ['psp8']:
+                    hghtemplate = '%s.psp8'  # E.g. "Si.psp8"
+                    names.append(hghtemplate % (s))
                 elif pps in ['hgh', 'hgh.sc']:
                     hghtemplate = '%d%s.%s.hgh'  # E.g. "42mo.6.hgh"
                     # There might be multiple files with different valence
@@ -683,12 +688,12 @@ def get_ppp_list(atoms, species, raise_exception, xc, pps,
                     # then pick the correct one afterwards.
                     names.append(hghtemplate % (number, s, '*'))
                     names.append('%d%s%s.hgh' % (number, s, '*'))
-                    names.append('%s[.-_]*.hgh' % s)
+                    names.append(f'{s}[.-_]*.hgh')
                 else:  # default extension
                     names.append('%02d-%s.%s.%s' % (number, s, xcn, pps))
                     names.append('%02d[.-_]%s*.%s' % (number, s, pps))
                     names.append('%02d%s*.%s' % (number, s, pps))
-                    names.append('%s[.-_]*.%s' % (s, pps))
+                    names.append(f'{s}[.-_]*.{pps}')
 
         found = False
         for name in names:        # search for file names possibilities
@@ -729,8 +734,8 @@ def get_ppp_list(atoms, species, raise_exception, xc, pps,
         if not found:
             ppp_list.append("Provide {}.{}.{}?".format(symbol, '*', pps))
             if raise_exception:
-                msg = ('Could not find {} pseudopotential {} for {}'
-                       .format(xcname.lower(), pps, symbol))
+                msg = ('Could not find {} pseudopotential {} for {} in {}'
+                       .format(xcname.lower(), pps, symbol, search_paths))
                 raise RuntimeError(msg)
 
     return ppp_list

@@ -1,3 +1,4 @@
+# fmt: off
 """
 This is testing NEB in general, though at the moment focusing on the shared
 calculator implementation that is replacing
@@ -5,12 +6,14 @@ the SingleCalculatorNEB class.
 Intending to be a *true* unittest, by testing small things
 """
 
-from pytest import warns, raises
+from pytest import mark, raises, warns
 
 from ase import Atoms
-from ase import neb
 from ase.calculators.emt import EMT
 from ase.calculators.singlepoint import SinglePointCalculator
+from ase.mep import neb
+
+pytestmark = mark.optimize
 
 
 def test_get_neb_method():
@@ -29,7 +32,7 @@ def test_get_neb_method():
         _ = neb.get_neb_method(neb_dummy, "some_random_string")
 
 
-class TestNEB(object):
+class TestNEB:
     @classmethod
     def setup_class(cls):
         cls.h_atom = Atoms("H", positions=[[0., 0., 0.]], cell=[10., 10., 10.])
@@ -37,7 +40,7 @@ class TestNEB(object):
         cls.images_dummy = [cls.h_atom.copy(), cls.h_atom.copy(),
                             cls.h_atom.copy()]
 
-    def test_deprecations(self):
+    def test_deprecations(self, testdir):
         # future warning on deprecated class
         with warns(FutureWarning, match=r".*Please use.*"):
             deprecated_neb = neb.SingleCalculatorNEB(self.images_dummy)
@@ -108,7 +111,9 @@ class TestNEB(object):
         with raises(ValueError, match=r".*atoms in different orders.*"):
             _ = neb.NEB(mismatch_numbers)
 
-        mismatch_cell = [self.h_atom.copy(), self.h_atom.copy()]
+        h_atom = self.h_atom.copy()
+        h_atom.set_pbc(True)
+        mismatch_cell = [h_atom.copy(), h_atom.copy()]
         mismatch_cell[-1].set_cell(mismatch_cell[-1].get_cell() + 0.00001)
         with raises(NotImplementedError, match=r".*Variable cell.*"):
             _ = neb.NEB(mismatch_cell)

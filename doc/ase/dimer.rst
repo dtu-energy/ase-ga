@@ -2,7 +2,7 @@
 Dimer method
 ============
 
-.. module:: ase.dimer
+.. module:: ase.mep.dimer
 
 The dimer method is a means of finding a saddle point on a potential energy
 surface starting from a single point (as opposed to a NEB calculation,

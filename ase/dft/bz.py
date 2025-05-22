@@ -1,19 +1,31 @@
-import warnings
-from math import pi, sin, cos
+# fmt: off
+
+from itertools import product
+from math import cos, pi, sin
+from typing import Any, Dict, Optional, Tuple, Union
+
 import numpy as np
+from matplotlib.patches import FancyArrowPatch
+from mpl_toolkits.mplot3d import Axes3D, proj3d
+from scipy.spatial.transform import Rotation
+
+from ase.cell import Cell
 
 
 def bz_vertices(icell, dim=3):
-    """See https://xkcd.com/1421 ..."""
+    """Return the vertices and the normal vector of the BZ.
+
+    See https://xkcd.com/1421 ..."""
     from scipy.spatial import Voronoi
+
     icell = icell.copy()
     if dim < 3:
         icell[2, 2] = 1e-3
     if dim < 2:
         icell[1, 1] = 1e-3
 
-    I = (np.indices((3, 3, 3)) - 1).reshape((3, 27))
-    G = np.dot(icell.T, I).T
+    indices = (np.indices((3, 3, 3)) - 1).reshape((3, 27))
+    G = np.dot(icell.T, indices).T
     vor = Voronoi(G)
     bz1 = []
     for vertices, points in zip(vor.ridge_vertices, vor.ridge_points):
@@ -24,180 +36,149 @@ def bz_vertices(icell, dim=3):
     return bz1
 
 
-def bz_plot(cell, vectors=False, paths=None, points=None,
-            elev=None, scale=1, interactive=False,
-            pointstyle=None, ax=None, show=False):
-    import matplotlib.pyplot as plt
+class FlatPlot:
+    """Helper class for 1D/2D Brillouin zone plots."""
 
-    if ax is None:
-        fig = plt.gcf()
+    axis_dim = 2  # Dimension of the plotting surface (2 even if it's 1D BZ).
+    point_options = {'zorder': 5}
 
-    dimensions = cell.any(1).sum()
-    assert dimensions > 0, 'No BZ for 0D!'
+    def new_axes(self, fig):
+        return fig.gca()
 
-    if dimensions == 3:
-        from mpl_toolkits.mplot3d import Axes3D
-        from mpl_toolkits.mplot3d import proj3d
-        from matplotlib.patches import FancyArrowPatch
-        Axes3D  # silence pyflakes
+    def adjust_view(self, ax, minp, maxp, symmetric: bool = True):
+        """Ajusting view property of the drawn BZ. (1D/2D)
 
+        Parameters
+        ----------
+        ax: Axes
+            matplotlib Axes object.
+        minp: float
+            minimum value for the plotting region, which detemines the
+            bottom left corner of the figure. if symmetric is set as True,
+            this value is ignored.
+        maxp: float
+            maximum value for the plotting region, which detemines the
+            top right corner of the figure.
+        symmetric: bool
+            if True, set the (0,0) position (Gamma-bar position) at the center
+            of the figure.
+
+        """
+        ax.autoscale_view(tight=True)
+        s = maxp * 1.05
+        if symmetric:
+            ax.set_xlim(-s, s)
+            ax.set_ylim(-s, s)
+        else:
+            ax.set_xlim(minp * 1.05, s)
+            ax.set_ylim(minp * 1.05, s)
+        ax.set_aspect('equal')
+
+    def draw_arrow(self, ax, vector, **kwargs):
+        ax.arrow(0, 0, vector[0], vector[1],
+                 lw=1,
+                 length_includes_head=True,
+                 head_width=0.03,
+                 head_length=0.05,
+                 **kwargs)
+
+    def label_options(self, point):
+        ha_s = ['right', 'left', 'right']
+        va_s = ['bottom', 'bottom', 'top']
+
+        x, y = point
+        ha = ha_s[int(np.sign(x))]
+        va = va_s[int(np.sign(y))]
+        return {'ha': ha, 'va': va, 'zorder': 4}
+
+    def view(self):
+        pass
+
+
+class SpacePlot:
+    """Helper class for ordinary (3D) Brillouin zone plots.
+
+    Attributes
+    ----------
+    azim : float
+        Azimuthal angle in radian for viewing 3D BZ.
+        default value is pi/5
+    elev : float
+        Elevation angle in radian for viewing 3D BZ.
+        default value is pi/6
+
+    """
+    axis_dim = 3
+    point_options: Dict[str, Any] = {}
+
+    def __init__(self, *, azim: Optional[float] = None,
+                 elev: Optional[float] = None):
         class Arrow3D(FancyArrowPatch):
-            def __init__(self, xs, ys, zs, *args, **kwargs):
+            def __init__(self, ax, xs, ys, zs, *args, **kwargs):
                 FancyArrowPatch.__init__(self, (0, 0), (0, 0), *args, **kwargs)
                 self._verts3d = xs, ys, zs
+                self.ax = ax
 
             def draw(self, renderer):
                 xs3d, ys3d, zs3d = self._verts3d
-                xs, ys, zs = proj3d.proj_transform(xs3d, ys3d,
-                                                   zs3d, renderer.M)
+                xs, ys, _zs = proj3d.proj_transform(xs3d, ys3d,
+                                                   zs3d, self.ax.axes.M)
                 self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
                 FancyArrowPatch.draw(self, renderer)
-        azim = pi / 5
-        elev = elev or pi / 6
-        x = sin(azim)
-        y = cos(azim)
-        view = [x * cos(elev), y * cos(elev), sin(elev)]
-        if ax is None:
-            ax = fig.gca(projection='3d')
-    elif dimensions == 2:
-        # 2d in xy
-        assert all(abs(cell[2][0:2]) < 1e-6) and all(abs(cell.T[2]
-                                                         [0:2]) < 1e-6)
-        ax = plt.gca()
-        cell = cell.copy()
-    else:
-        # 1d in x
-        assert (all(abs(cell[2][0:2]) < 1e-6) and
-                all(abs(cell.T[2][0:2]) < 1e-6) and
-                abs(cell[0][1]) < 1e-6 and abs(cell[1][0]) < 1e-6)
-        ax = plt.gca()
-        cell = cell.copy()
 
-    icell = cell.reciprocal()
-    kpoints = points
-    bz1 = bz_vertices(icell, dim=dimensions)
+            # FIXME: Compatibility fix for matplotlib 3.5.0: Handling of 3D
+            # artists have changed and all 3D artists now need
+            # "do_3d_projection". Since this class is a hack that manually
+            # projects onto the 3D axes we don't need to do anything in this
+            # method. Ideally we shouldn't resort to a hack like this.
+            def do_3d_projection(self, *_, **__):
+                return 0
 
-    maxp = 0.0
-    minp = 0.0
-    if dimensions == 1:
-        x = np.array([-0.5 * icell[0, 0],
-                      0.5 * icell[0, 0],
-                      -0.5 * icell[0, 0]])
-        y = np.array([0, 0, 0])
-        ax.plot(x, y, c='k', ls='-')
-        maxp = icell[0, 0]
-    else:
-        for points, normal in bz1:
-            x, y, z = np.concatenate([points, points[:1]]).T
-            if dimensions == 3:
-                if np.dot(normal, view) < 0 and not interactive:
-                    ls = ':'
-                else:
-                    ls = '-'
-                ax.plot(x, y, z, c='k', ls=ls)
-            elif dimensions == 2:
-                ax.plot(x, y, c='k', ls='-')
-            maxp = max(maxp, points.max())
-            minp = min(minp, points.min())
+        self.arrow3d = Arrow3D
+        self.azim: float = pi / 5 if azim is None else azim
+        self.elev: float = pi / 6 if elev is None else elev
+        self.view = [
+            sin(self.azim) * cos(self.elev),
+            cos(self.azim) * cos(self.elev),
+            sin(self.elev),
+        ]
 
-    if vectors:
-        if dimensions == 3:
-            ax.add_artist(Arrow3D([0, icell[0, 0]],
-                                  [0, icell[0, 1]],
-                                  [0, icell[0, 2]],
-                                  mutation_scale=20, lw=1,
-                                  arrowstyle='-|>', color='k'))
-            ax.add_artist(Arrow3D([0, icell[1, 0]],
-                                  [0, icell[1, 1]],
-                                  [0, icell[1, 2]],
-                                  mutation_scale=20, lw=1,
-                                  arrowstyle='-|>', color='k'))
-            ax.add_artist(Arrow3D([0, icell[2, 0]],
-                                  [0, icell[2, 1]],
-                                  [0, icell[2, 2]],
-                                  mutation_scale=20, lw=1,
-                                  arrowstyle='-|>', color='k'))
-            maxp = max(maxp, 0.6 * icell.max())
-        elif dimensions == 2:
-            ax.arrow(0, 0, icell[0, 0], icell[0, 1],
-                     lw=1, color='k',
-                     length_includes_head=True,
-                     head_width=0.03, head_length=0.05)
-            ax.arrow(0, 0, icell[1, 0], icell[1, 1],
-                     lw=1, color='k',
-                     length_includes_head=True,
-                     head_width=0.03, head_length=0.05)
-            maxp = max(maxp, icell.max())
-        else:
-            ax.arrow(0, 0, icell[0, 0], 0,
-                     lw=1, color='k',
-                     length_includes_head=True,
-                     head_width=0.03, head_length=0.05)
-            maxp = max(maxp, icell.max())
+    def new_axes(self, fig):
+        return fig.add_subplot(projection='3d')
 
-    if paths is not None:
-        for names, points in paths:
-            x, y, z = np.array(points).T
-            if dimensions == 3:
-                ax.plot(x, y, z, c='r', ls='-', marker='.')
-            elif dimensions in [1, 2]:
-                ax.plot(x, y, c='r', ls='-')
+    def draw_arrow(self, ax: Axes3D, vector, **kwargs):
+        ax.add_artist(self.arrow3d(
+            ax,
+            [0, vector[0]],
+            [0, vector[1]],
+            [0, vector[2]],
+            mutation_scale=20,
+            arrowstyle='-|>',
+            **kwargs))
 
-            for name, point in zip(names, points):
-                x, y, z = point
-                if name == 'G':
-                    name = '\\Gamma'
-                elif len(name) > 1:
-                    import re
-                    m = re.match(r'^(\D+?)(\d*)$', name)
-                    if m is None:
-                        raise ValueError('Bad label: {}'.format(name))
-                    name, num = m.group(1, 2)
-                    if num:
-                        name = '{}_{{{}}}'.format(name, num)
-                if dimensions == 3:
-                    ax.text(x, y, z, '$\\mathrm{' + name + '}$',
-                            ha='center', va='bottom', color='g')
-                elif dimensions == 2:
-                    ha_s = ['right', 'left', 'right']
-                    va_s = ['bottom', 'bottom', 'top']
+    def adjust_view(self, ax, minp, maxp, symmetric=True):
+        """Ajusting view property of the drawn BZ. (3D)
 
-                    ha = ha_s[int(np.sign(x))]
-                    va = va_s[int(np.sign(y))]
-                    if abs(z) < 1e-6:
-                        ax.text(x, y, '$\\mathrm{' + name + '}$',
-                                ha=ha, va=va, color='g',
-                                zorder=5)
-                else:
-                    if abs(y) < 1e-6 and abs(z) < 1e-6:
-                        ax.text(x, y, '$\\mathrm{' + name + '}$',
-                                ha='center', va='bottom', color='g',
-                                zorder=5)
+        Parameters
+        ----------
+        ax: Axes
+            matplotlib Axes object.
+        minp: float
+            minimum value for the plotting region, which detemines the
+            bottom left corner of the figure. if symmetric is set as True,
+            this value is ignored.
+        maxp: float
+            maximum value for the plotting region, which detemines the
+            top right corner of the figure.
+        symmetric: bool
+            Currently, this is not used, just for keeping consistency with 2D
+            version.
 
-    if kpoints is not None:
-        kw = {'c': 'b'}
-        if pointstyle is not None:
-            kw.update(pointstyle)
-        for p in kpoints:
-            if dimensions == 3:
-                ax.scatter(p[0], p[1], p[2], **kw)
-            elif dimensions == 2:
-                ax.scatter(p[0], p[1], zorder=4, **kw)
-            else:
-                ax.scatter(p[0], 0, zorder=4, **kw)
+        """
+        import matplotlib.pyplot as plt
 
-    ax.set_axis_off()
-
-    if dimensions in [1, 2]:
-        ax.autoscale_view(tight=True)
-        s = maxp * 1.05
-        ax.set_xlim(-s, s)
-        ax.set_ylim(-s, s)
-        ax.set_aspect('equal')
-
-    if dimensions == 3:
         # ax.set_aspect('equal') <-- won't work anymore in 3.1.0
-        ax.view_init(azim=azim / pi * 180, elev=elev / pi * 180)
+        ax.view_init(azim=np.rad2deg(self.azim), elev=np.rad2deg(self.elev))
         # We want aspect 'equal', but apparently there was a bug in
         # matplotlib causing wrong behaviour.  Matplotlib raises
         # NotImplementedError as of v3.1.0.  This is a bit unfortunate
@@ -212,9 +193,7 @@ def bz_plot(cell, vectors=False, paths=None, points=None,
         fig.set_figheight(xx[1])
         fig.set_figwidth(xx[0])
 
-        # oldlibs tests with matplotlib 2.0.0 say we have no set_proj_type:
-        if hasattr(ax, 'set_proj_type'):
-            ax.set_proj_type('ortho')
+        ax.set_proj_type('ortho')
 
         minp0 = 0.9 * minp  # Here we cheat a bit to trim spacings
         maxp0 = 0.9 * maxp
@@ -222,15 +201,202 @@ def bz_plot(cell, vectors=False, paths=None, points=None,
         ax.set_ylim3d(minp0, maxp0)
         ax.set_zlim3d(minp0, maxp0)
 
-        if hasattr(ax, 'set_box_aspect'):
-            ax.set_box_aspect([1, 1, 1])
-        else:
-            msg = ('Matplotlib axes have no set_box_aspect() method.  '
-                   'Aspect ratio will likely be wrong.  '
-                   'Consider updating to Matplotlib >= 3.3.')
-            warnings.warn(msg)
+        ax.set_box_aspect([1, 1, 1])
 
+    def label_options(self, point):
+        return dict(ha='center', va='bottom')
+
+
+def normalize_name(name):
+    if name == 'G':
+        return '\\Gamma'
+
+    if len(name) > 1:
+        import re
+
+        m = re.match(r'^(\D+?)(\d*)$', name)
+        if m is None:
+            raise ValueError(f'Bad label: {name}')
+        name, num = m.group(1, 2)
+        if num:
+            name = f'{name}_{{{num}}}'
+    return name
+
+
+def bz_plot(cell: Cell, vectors: bool = False, paths=None, points=None,
+            azim: Optional[float] = None, elev: Optional[float] = None,
+            scale=1, interactive: bool = False,
+            transforms: Optional[list] = None,
+            repeat: Union[Tuple[int, int], Tuple[int, int, int]] = (1, 1, 1),
+            pointstyle: Optional[dict] = None,
+            ax=None, show=False, **kwargs):
+    """Plot the Brillouin zone of the Cell
+
+    Parameters
+    ----------
+    cell: Cell
+        Cell object for BZ drawing.
+    vectors : bool
+        if True, show the vector.
+    paths : list[tuple[str, np.ndarray]] | None
+        Special point name and its coordinate position
+    points : np.ndarray
+        Coordinate points along the paths.
+    azim : float | None
+        Azimuthal angle in radian for viewing 3D BZ.
+    elev : float | None
+        Elevation angle in radian for viewing 3D BZ.
+    scale : float
+        Not used. To be removed?
+    interactive : bool
+        Not effectively works. To be removed?
+    transforms: List
+        List of linear transformation (scipy.spatial.transform.Rotation)
+    repeat: Tuple[int, int] | Tuple[int, int, int]
+        Set the repeating draw of BZ. default is (1, 1, 1), no repeat.
+    pointstyle : Dict
+        Style of the special point
+    ax : Axes | Axes3D
+        matplolib Axes (Axes3D in 3D) object
+    show : bool
+        If true, show the figure.
+    **kwargs
+        Additional keyword arguments to pass to ax.plot
+
+    Returns
+    -------
+    ax
+        A matplotlib axis object.
+    """
+    import matplotlib.pyplot as plt
+
+    if pointstyle is None:
+        pointstyle = {}
+
+    if transforms is None:
+        transforms = [Rotation.from_rotvec((0, 0, 0))]
+
+    cell = cell.copy()
+
+    dimensions = cell.rank
+    if dimensions == 3:
+        plotter: Union[SpacePlot, FlatPlot] = SpacePlot(azim=azim, elev=elev)
+    else:
+        plotter = FlatPlot()
+    assert dimensions > 0, 'No BZ for 0D!'
+
+    if ax is None:
+        ax = plotter.new_axes(plt.gcf())
+
+    assert not np.array(cell)[dimensions:, :].any()
+    assert not np.array(cell)[:, dimensions:].any()
+
+    icell = cell.reciprocal()
+    kpoints = points
+    bz1 = bz_vertices(icell, dim=dimensions)
+    if len(repeat) == 2:
+        repeat = (repeat[0], repeat[1], 1)
+
+    maxp = 0.0
+    minp = 0.0
+    for bz_i in bz_index(repeat):
+        for points, normal in bz1:
+            shift = np.dot(np.array(icell).T, np.array(bz_i))
+            for transform in transforms:
+                shift = transform.apply(shift)
+            ls = '-'
+            xyz = np.concatenate([points, points[:1]])
+            for transform in transforms:
+                xyz = transform.apply(xyz)
+            x, y, z = xyz.T
+            x, y, z = x + shift[0], y + shift[1], z + shift[2]
+            if dimensions == 3:
+                if normal @ plotter.view < 0 and not interactive:
+                    ls = ':'
+            if plotter.axis_dim == 2:
+                ax.plot(x, y, c='k', ls=ls, **kwargs)
+            else:
+                ax.plot(x, y, z, c='k', ls=ls, **kwargs)
+            maxp = max(maxp, x.max(), y.max(), z.max())
+            minp = min(minp, x.min(), y.min(), z.min())
+
+    if vectors:
+        for transform in transforms:
+            icell = transform.apply(icell)
+        assert isinstance(icell, np.ndarray)
+        for i in range(dimensions):
+            plotter.draw_arrow(ax, icell[i], color='k')
+
+        # XXX Can this be removed?
+        if dimensions == 3:
+            maxp = max(maxp, 0.6 * icell.max())
+        else:
+            maxp = max(maxp, icell.max())
+
+    if paths is not None:
+        for names, points in paths:
+            for transform in transforms:
+                points = transform.apply(points)
+            coords = np.array(points).T[:plotter.axis_dim, :]
+            ax.plot(*coords, c='r', ls='-')
+
+            for name, point in zip(names, points):
+                name = normalize_name(name)
+                for transform in transforms:
+                    point = transform.apply(point)
+                point = point[:plotter.axis_dim]
+                ax.text(*point, rf'$\mathrm{{{name}}}$',
+                        color='g', **plotter.label_options(point))
+
+    if kpoints is not None:
+        kw = {'c': 'b', **plotter.point_options, **pointstyle}
+        for transform in transforms:
+            kpoints = transform.apply(kpoints)
+        ax.scatter(*kpoints[:, :plotter.axis_dim].T, **kw)
+
+    ax.set_axis_off()
+
+    if repeat == (1, 1, 1):
+        plotter.adjust_view(ax, minp, maxp)
+    else:
+        plotter.adjust_view(ax, minp, maxp, symmetric=False)
     if show:
         plt.show()
 
     return ax
+
+
+def bz_index(repeat):
+    """BZ index from the repeat
+
+    A helper function to iterating drawing BZ.
+
+    Parameters
+    ----------
+    repeat: Tuple[int, int] | Tuple[int, int, int]
+        repeating for drawing BZ
+
+    Returns
+    -------
+    Iterator[Tuple[int, int, int]]
+
+    >>> list(_bz_index((1, 2, -2)))
+    [(0, 0, 0), (0, 0, -1), (0, 1, 0), (0, 1, -1)]
+
+    """
+    if len(repeat) == 2:
+        repeat = (repeat[0], repeat[1], 1)
+    assert len(repeat) == 3
+    assert repeat[0] != 0
+    assert repeat[1] != 0
+    assert repeat[2] != 0
+    repeat_along_a = (
+        range(0, repeat[0]) if repeat[0] > 0 else range(0, repeat[0], -1)
+    )
+    repeat_along_b = (
+        range(0, repeat[1]) if repeat[1] > 0 else range(0, repeat[1], -1)
+    )
+    repeat_along_c = (
+        range(0, repeat[2]) if repeat[2] > 0 else range(0, repeat[2], -1)
+    )
+    return product(repeat_along_a, repeat_along_b, repeat_along_c)

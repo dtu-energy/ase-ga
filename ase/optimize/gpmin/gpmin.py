@@ -1,21 +1,23 @@
-import numpy as np
+# fmt: off
+
 import warnings
 
+import numpy as np
 from scipy.optimize import minimize
-from ase.parallel import world
+
 from ase.io.jsonio import write_json
-from ase.optimize.optimize import Optimizer
 from ase.optimize.gpmin.gp import GaussianProcess
 from ase.optimize.gpmin.kernel import SquaredExponential
 from ase.optimize.gpmin.prior import ConstantPrior
+from ase.optimize.optimize import Optimizer
+from ase.parallel import world
 
 
 class GPMin(Optimizer, GaussianProcess):
     def __init__(self, atoms, restart=None, logfile='-', trajectory=None,
-                 prior=None, kernel=None, master=None, noise=None, weight=None,
-                 scale=None, force_consistent=None, batch_size=None,
-                 bounds=None, update_prior_strategy="maximum",
-                 update_hyperparams=False):
+                 prior=None, kernel=None, noise=None, weight=None, scale=None,
+                 batch_size=None, bounds=None, update_prior_strategy="maximum",
+                 update_hyperparams=False, **kwargs):
         """Optimize atomic positions using GPMin algorithm, which uses both
         potential energies and forces information to build a PES via Gaussian
         Process (GP) regression and then minimizes it.
@@ -41,13 +43,13 @@ class GPMin(Optimizer, GaussianProcess):
             bounds: irrelevant
             batch_size: irrelevant
 
-        Parameters:
-        ------------------
+        Parameters
+        ----------
 
-        atoms: Atoms object
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
+        restart: str
             JSON file used to store the training set. If set, file with
             such a name will be searched and the data in the file incorporated
             to the new training set, if the file exists.
@@ -56,18 +58,8 @@ class GPMin(Optimizer, GaussianProcess):
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout
 
-        trajectory: string
+        trajectory: str
             File used to store trajectory of atomic movement.
-
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files. If
-            set to True, this rank will save files.
-
-        force_consistent: boolean or None
-            Use force-consistent energy calls (as opposed to the energy
-            extrapolated to 0 K). By default (force_consistent=None) uses
-            force-consistent energies if available in the calculator, but
-            falls back to force_consistent=False if not.
 
         prior: Prior object or None
             Prior for the GP regression of the PES surface
@@ -90,7 +82,7 @@ class GPMin(Optimizer, GaussianProcess):
             If *update_hyperparams* is False, changing this parameter
             has no effect on the dynamics of the algorithm.
 
-        update_prior_strategy: string
+        update_prior_strategy: str
             Strategy to update the constant from the ConstantPrior
             when more data is collected. It does only work when
             Prior = None
@@ -103,7 +95,7 @@ class GPMin(Optimizer, GaussianProcess):
         scale: float
             scale of the Squared Exponential Kernel
 
-        update_hyperparams: boolean
+        update_hyperparams: bool
             Update the scale of the Squared exponential kernel
             every batch_size-th iteration by maximizing the
             marginal likelihood.
@@ -122,6 +114,10 @@ class GPMin(Optimizer, GaussianProcess):
             step.
             If bounds is False, no constraints are set in the optimization of
             the hyperparameters.
+
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
 
         .. warning:: The memory of the optimizer scales as O(n²N²) where
                      N is the number of atoms and n the number of steps.
@@ -189,8 +185,8 @@ class GPMin(Optimizer, GaussianProcess):
         self.x_list = []      # Training set features
         self.y_list = []      # Training set targets
 
-        Optimizer.__init__(self, atoms, restart, logfile,
-                           trajectory, master, force_consistent)
+        Optimizer.__init__(self, atoms, restart=restart, logfile=logfile,
+                           trajectory=trajectory, **kwargs)
         if prior is None:
             self.update_prior = True
             prior = ConstantPrior(constant=None)
@@ -249,25 +245,24 @@ class GPMin(Optimizer, GaussianProcess):
 
     def fit_to_batch(self):
         """Fit hyperparameters keeping the ratio noise/weight fixed"""
-        ratio = self.noise/self.kernel.weight
+        ratio = self.noise / self.kernel.weight
         self.fit_hyperparameters(np.array(self.x_list),
                                  np.array(self.y_list), eps=self.eps)
-        self.noise = ratio*self.kernel.weight
+        self.noise = ratio * self.kernel.weight
 
     def step(self, f=None):
-        atoms = self.atoms
+        optimizable = self.optimizable
         if f is None:
-            f = atoms.get_forces()
+            f = optimizable.get_forces()
 
-        fc = self.force_consistent
-        r0 = atoms.get_positions().reshape(-1)
-        e0 = atoms.get_potential_energy(force_consistent=fc)
+        r0 = optimizable.get_positions().reshape(-1)
+        e0 = optimizable.get_potential_energy()
         self.update(r0, e0, f)
 
         r1 = self.relax_model(r0)
-        self.atoms.set_positions(r1.reshape(-1, 3))
-        e1 = self.atoms.get_potential_energy(force_consistent=fc)
-        f1 = self.atoms.get_forces()
+        optimizable.set_positions(r1.reshape(-1, 3))
+        e1 = optimizable.get_potential_energy()
+        f1 = optimizable.get_forces()
         self.function_calls += 1
         self.force_calls += 1
         count = 0
@@ -275,9 +270,9 @@ class GPMin(Optimizer, GaussianProcess):
             self.update(r1, e1, f1)
             r1 = self.relax_model(r0)
 
-            self.atoms.set_positions(r1.reshape(-1, 3))
-            e1 = self.atoms.get_potential_energy(force_consistent=fc)
-            f1 = self.atoms.get_forces()
+            optimizable.set_positions(r1.reshape(-1, 3))
+            e1 = optimizable.get_potential_energy()
+            f1 = optimizable.get_forces()
             self.function_calls += 1
             self.force_calls += 1
             if self.converged(f1):
@@ -291,7 +286,7 @@ class GPMin(Optimizer, GaussianProcess):
     def dump(self):
         """Save the training set"""
         if world.rank == 0 and self.restart is not None:
-            with open(self.restart, 'wb') as fd:
+            with open(self.restart, 'w') as fd:
                 write_json(fd, (self.x_list, self.y_list))
 
     def read(self):

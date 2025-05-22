@@ -1,14 +1,18 @@
+# fmt: off
 from math import sqrt
 
-from ase import Atoms, Atom
+import pytest
+
+from ase import Atom, Atoms
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
 from ase.io import Trajectory
-from ase.neb import NEB
+from ase.mep import NEB
 from ase.optimize import BFGS, QuasiNewton
 
 
-def test_COCu111():
+@pytest.mark.optimize()
+def test_COCu111(testdir):
     # Distance between Cu atoms on a (111) surface:
     a = 3.6
     d = a / sqrt(2)
@@ -25,8 +29,8 @@ def test_COCu111():
     indices = [i for i, z in enumerate(Z) if z < Z.mean()]
     constraint = FixAtoms(indices=indices)
     slab.set_constraint(constraint)
-    dyn = QuasiNewton(slab)
-    dyn.run(fmax=0.05)
+    with QuasiNewton(slab) as dyn:
+        dyn.run(fmax=0.05)
     Z = slab.get_positions()[:, 2]
     print(Z[0] - Z[1])
     print(Z[1] - Z[2])
@@ -36,12 +40,12 @@ def test_COCu111():
     h = 1.5
     slab += Atom('C', (d / 2, -b / 2, h))
     slab += Atom('O', (d / 2, +b / 2, h))
-    dyn = QuasiNewton(slab)
-    dyn.run(fmax=0.05)
+    with QuasiNewton(slab) as dyn:
+        dyn.run(fmax=0.05)
 
     # Make band:
     images = [slab]
-    for i in range(4):
+    for _ in range(4):
         image = slab.copy()
         # Set constraints and calculator:
         image.set_constraint(constraint)
@@ -54,8 +58,8 @@ def test_COCu111():
     image[-1].x = d
     image[-1].y = d / sqrt(3)
 
-    dyn = QuasiNewton(images[-1])
-    dyn.run(fmax=0.05)
+    with QuasiNewton(images[-1]) as dyn:
+        dyn.run(fmax=0.05)
     neb = NEB(images, climb=not True)
 
     # Interpolate positions between initial and final states:

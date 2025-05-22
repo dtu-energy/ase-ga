@@ -1,12 +1,12 @@
 # creates: periodic-images-1.svg periodic-images-2.svg
 
-import numpy as np
-import matplotlib.pyplot as plt
 from itertools import product
 
+import matplotlib.pyplot as plt
+import numpy as np
 
-class CellFigure():
 
+class CellFigure:
     def __init__(self, dim):
         """
         Set up a figure for visualizing a cell metric.
@@ -19,8 +19,15 @@ class CellFigure():
         self.ax.set_ylim(-dim, 1.5 * dim)
         self.ax.set_aspect('equal')
 
-    def add_cell(self, cell, offset=[0, 0], fill_color=None,
-                 atom=None, radius=0.1, atom_color='orange'):
+    def add_cell(
+        self,
+        cell,
+        offset=[0, 0],
+        fill_color=None,
+        atom=None,
+        radius=0.1,
+        atom_color='orange',
+    ):
         """
         Draw a cell, optionally filled and including an atom.
         """
@@ -29,12 +36,12 @@ class CellFigure():
         for xv in xvecs:
             vectors.append(np.dot(cell, xv + offset))
         vectors = np.array(vectors)
-        from matplotlib.patches import Polygon, Circle
+        from matplotlib.patches import Circle, Polygon
+
         if fill_color is not None:
-            self.ax.add_patch(Polygon(vectors,
-                                      True,
-                                      color=fill_color,
-                                      alpha=0.4))
+            self.ax.add_patch(
+                Polygon(vectors, closed=True, color=fill_color, alpha=0.4)
+            )
         for points in vectors:
             self.ax.plot(vectors.T[0], vectors.T[1], c='k', ls='-')
         if atom:
@@ -47,6 +54,7 @@ class CellFigure():
         Draw an arrow typically symbolizing a neighbor connection.
         """
         from matplotlib.patches import Arrow
+
         pos = np.dot(cell, xvec)
         dir = np.dot(cell, xdir)
         self.ax.add_patch(Arrow(pos[0], pos[1], dir[0], dir[1], width=0.2))
@@ -84,7 +92,8 @@ for i, j in product(range(-dim, dim + 1), repeat=2):
     fill_color = 'blue' if i == 0 and j == 0 else None
     myfig.add_cell(prim, [i, j], atom=atompos, fill_color=fill_color)
 myfig.annotate_figure(
-    'rectangular lattice with a 2:1 aspect ratio\n$r_1 = a/2$, $Z_1=2$')
+    'rectangular lattice with a 2:1 aspect ratio\n$r_1 = a/2$, $Z_1=2$'
+)
 plt.savefig('periodic-images-2.svg', bbox_inches='tight')
 
 # Figure 3

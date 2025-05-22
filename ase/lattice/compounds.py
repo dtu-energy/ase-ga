@@ -1,3 +1,5 @@
+# fmt: off
+
 """Function-like objects creating lattices with more than one element.
 
 These lattice creators are mainly intended as examples for how to build you
@@ -13,9 +15,9 @@ own.  The following crystal structures are defined:
 
 """
 from ase.lattice.cubic import DiamondFactory, SimpleCubicFactory
+from ase.lattice.hexagonal import HexagonalFactory
 from ase.lattice.tetragonal import SimpleTetragonalFactory
 from ase.lattice.triclinic import TriclinicFactory
-from ase.lattice.hexagonal import HexagonalFactory
 
 
 # To prevent a layer of element one on one side, and a layer of
@@ -38,6 +40,7 @@ class CsClFactory(SimpleCubicFactory):
     bravais_basis = [[0, 0, 0], [0.5, 0.5, 0.5]]
     element_basis = (0, 1)
 
+
 B2 = CsCl = CsClFactory()
 
 
@@ -46,6 +49,7 @@ B2 = CsCl = CsClFactory()
 class ZnSFactory(DiamondFactory):
     "A factory for creating ZnS (B3, Zincblende) lattices."
     element_basis = (0, 1)
+
 
 B3 = ZnS = Zincblende = ZnSFactory()
 
@@ -63,6 +67,7 @@ class AuCuFactory(SimpleTetragonalFactory):
     bravais_basis = [[0, 0, 0], [0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]]
     element_basis = (0, 1, 1, 0)
 
+
 AuCu = L1_0 = AuCuFactory()
 
 
@@ -72,6 +77,7 @@ class AuCu3Factory(SimpleCubicFactory):
     "A factory for creating AuCu3 (L1_2) lattices."
     bravais_basis = [[0, 0, 0], [0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]]
     element_basis = (0, 1, 1, 1)
+
 
 AuCu3 = L1_2 = AuCu3Factory()
 
@@ -117,6 +123,7 @@ class TriclinicFe2O3Factory(TriclinicFactory):
                      [0.00000, 0.30569, 0.69431], [0.19431, 0.80569, 0.50000],
                      [0.80569, 0.50000, 0.19431], [0.50000, 0.19431, 0.80569]]
     element_basis = (0, 0, 0, 0, 1, 1, 1, 1, 1, 1)
+
 
 TRI_Fe2O3 = TriclinicFe2O3Factory()
 
@@ -190,5 +197,6 @@ class HexagonalFe2O3Factory(HexagonalFactory):
     element_basis = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                      0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
 
 HEX_Fe2O3 = HexagonalFe2O3Factory()

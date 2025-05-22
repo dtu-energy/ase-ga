@@ -1,3 +1,5 @@
+# fmt: off
+
 import collections
 from pathlib import Path
 
@@ -6,7 +8,6 @@ import numpy as np
 from ase import Atoms
 from ase.units import Bohr, Hartree
 from ase.utils import reader, writer
-
 
 elk_parameters = {'swidth': Hartree}
 
@@ -58,10 +59,11 @@ def read_elk(fd):
                     natoms.append(natomsnow)
                     atposnow = []
                     bfcmtnow = []
-                    for l in lines1[n1 + 2:n1 + 2 + natomsnow]:
-                        atposnow.append([float(v) for v in l.split()[0:3]])
-                        if len(l.split()) == 6:  # bfcmt present
-                            bfcmtnow.append([float(v) for v in l.split()[3:]])
+                    for line in lines1[n1 + 2:n1 + 2 + natomsnow]:
+                        atposnow.append([float(v) for v in line.split()[0:3]])
+                        if len(line.split()) == 6:  # bfcmt present
+                            bfcmtnow.append(
+                                [float(v) for v in line.split()[3:]])
                     atpos.append(atposnow)
                     bfcmt.append(bfcmtnow)
     # symbols, positions, magmoms based on ELK spfname, atpos, and bfcmt
@@ -166,11 +168,11 @@ def write_elk_in(fd, atoms, parameters=None):
 
     # write all keys
     for key, value in inp.items():
-        fd.write('%s\n' % key)
+        fd.write(f'{key}\n')
         if isinstance(value, bool):
-            fd.write('.%s.\n\n' % ('false', 'true')[value])
+            fd.write(f'.{("false", "true")[value]}.\n\n')
         elif isinstance(value, (int, float)):
-            fd.write('%s\n\n' % value)
+            fd.write(f'{value}\n\n')
         else:
             fd.write('%s\n\n' % ' '.join([str(x) for x in value]))
 
@@ -195,7 +197,7 @@ def write_elk_in(fd, atoms, parameters=None):
     # scaled = atoms.get_scaled_positions(wrap=False)
     scaled = np.linalg.solve(atoms.cell.T, atoms.positions.T).T
     for symbol in symbols:
-        fd.write("'%s.in' : spfname\n" % symbol)
+        fd.write(f"'{symbol}.in' : spfname\n")
         fd.write('%d\n' % len(species[symbol]))
         for a, m in species[symbol]:
             fd.write('%.14f %.14f %.14f 0.0 0.0 %.14f\n' %

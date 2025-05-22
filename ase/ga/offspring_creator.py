@@ -1,3 +1,5 @@
+# fmt: off
+
 """Base module for all operators that create offspring."""
 import numpy as np
 
@@ -80,7 +82,7 @@ class OperationSelector:
         self.rng = rng
 
     def __get_index__(self):
-        v = self.rng.rand() * self.rho[-1]
+        v = self.rng.random() * self.rho[-1]
         for i in range(len(self.rho)):
             if self.rho[i] > v:
                 return i
@@ -109,7 +111,7 @@ class CombinationMutation(OffspringCreator):
     """
 
     def __init__(self, *mutations, verbose=False):
-        super(CombinationMutation, self).__init__(verbose=verbose)
+        super().__init__(verbose=verbose)
         self.descriptor = 'CombinationMutation'
 
         # Check that a combination mutation makes sense
@@ -123,13 +125,13 @@ class CombinationMutation(OffspringCreator):
 
         indi = self.mutate(f)
         if indi is None:
-            return indi, 'mutation: {}'.format(self.descriptor)
+            return indi, f'mutation: {self.descriptor}'
 
         indi = self.initialize_individual(f, indi)
         indi.info['data']['parents'] = [f.info['confid']]
 
         return (self.finalize_individual(indi),
-                'mutation: {}'.format(self.descriptor))
+                f'mutation: {self.descriptor}')
 
     def mutate(self, atoms):
         """Perform the mutations one at a time."""

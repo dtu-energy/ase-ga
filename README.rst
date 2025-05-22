@@ -10,24 +10,30 @@ Webpage: http://wiki.fysik.dtu.dk/ase
 Requirements
 ------------
 
-* Python_ 3.6 or later
+* Python_ 3.9 or later
 * NumPy_ (base N-dimensional array package)
 * SciPy_ (library for scientific computing)
+* Matplotlib_ (2D Plotting)
 
 Optional:
 
-
-* For ASE's GUI: Matplotlib_ (2D Plotting)
-* tkinter (for ase.gui)
-* Flask (for ase.db web-interface)
-
+* Flask_ (for ase.db web-interface)
+* spglib_ (for symmetry operations)
 
 Installation
 ------------
 
-Add ``~/ase`` to your $PYTHONPATH environment variable and add
-``~/ase/bin`` to $PATH (assuming ``~/ase`` is where your ASE folder is).
+To install the latest release:
 
+::
+
+  pip install ase
+
+To install the development version:
+
+::
+
+  pip install git+https://gitlab.com/ase/ase.git
 
 Testing
 -------
@@ -43,9 +49,16 @@ Contact
 -------
 
 * Mailing list: ase-users_
-* IRC_: #ase on freenode.net
 
-Please send us bug-reports, patches, code, ideas and questions.
+* Chat: Join the ``#ase`` channel on Matrix_, also accessible via the Element_ webclient.
+
+* There is an `ASE forum <https://matsci.org/c/ase/36>`_ on
+  the `Materials Science Community Forum <https://matsci.org/>`_.
+
+Feel free to create Merge Requests and Issues on our GitLab page:
+https://gitlab.com/ase/ase
+
+For regular support, please use the mailing list or chat rather than GitLab.
 
 
 Example
@@ -82,5 +95,8 @@ This example requires NWChem to be installed.
 .. _NumPy: http://docs.scipy.org/doc/numpy/reference/
 .. _SciPy: http://docs.scipy.org/doc/scipy/reference/
 .. _Matplotlib: http://matplotlib.org/
+.. _flask: https://pypi.org/project/Flask/
+.. _spglib: https://github.com/spglib/spglib
 .. _ase-users: https://listserv.fysik.dtu.dk/mailman/listinfo/ase-users
-.. _IRC: http://webchat.freenode.net/?randomnick=0&channels=ase
+.. _Matrix: https://matrix.to/#/!JEiuNJLuxedbohAOuH:matrix.org
+.. _Element: https://app.element.io/#/room/#ase:matrix.org

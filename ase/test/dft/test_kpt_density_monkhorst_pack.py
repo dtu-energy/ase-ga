@@ -1,6 +1,9 @@
+# fmt: off
 import numpy as np
+
 from ase import Atoms
 from ase.calculators.calculator import kptdensity2monkhorstpack as kd2mp
+
 
 def test_mp():
     kd = 25 / (2 * np.pi)

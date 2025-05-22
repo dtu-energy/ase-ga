@@ -1,10 +1,13 @@
+# fmt: off
+
 import numpy as np
 
-from ase.units import Hartree, Bohr
+from ase.units import Bohr, Hartree
 
 
 class Excitation:
     """Base class for a single excitation"""
+
     def __init__(self, energy, index, mur, muv=None, magn=None):
         """
         Parameters
@@ -29,13 +32,13 @@ class Excitation:
 
     def outstring(self):
         """Format yourself as a string"""
-        string = '{0:g}  {1}  '.format(self.energy, self.index)
+        string = f'{self.energy:g}  {self.index}  '
 
         def format_me(me):
             string = ''
             if me.dtype == float:
                 for m in me:
-                    string += ' {0:g}'.format(m)
+                    string += f' {m:g}'
             else:
                 for m in me:
                     string += ' {0.real:g}{0.imag:+g}j'.format(m)
@@ -56,16 +59,16 @@ class Excitation:
         l = string.split()
         energy = float(l.pop(0))
         index = int(l.pop(0))
-        mur = np.array([float(l.pop(0)) for i in range(3)])
+        mur = np.array([float(l.pop(0)) for _ in range(3)])
         try:
-            muv = np.array([float(l.pop(0)) for i in range(3)])
+            muv = np.array([float(l.pop(0)) for _ in range(3)])
         except IndexError:
             muv = None
         try:
-            magn = np.array([float(l.pop(0)) for i in range(3)])
+            magn = np.array([float(l.pop(0)) for _ in range(3)])
         except IndexError:
             magn = None
-       
+
         return cls(energy, index, mur, muv, magn)
 
     def get_dipole_me(self, form='r'):
@@ -92,10 +95,11 @@ class Excitation:
 
 class ExcitationList(list):
     """Base class for excitions from the ground state"""
+
     def __init__(self):
         # initialise empty list
         super().__init__()
-        
+
         # set default energy scale to get eV
         self.energy_to_eV_scale = 1.
 

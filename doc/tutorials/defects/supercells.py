@@ -1,8 +1,9 @@
 # creates: supercell-1.svg supercell-2.svg supercell-3.svg
 
-from math import pi, sin, cos
-import numpy as np
+from math import cos, pi, sin
+
 import matplotlib.pyplot as plt
+import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
 
@@ -11,6 +12,7 @@ def vertices(cell):
     Set up vertices for a cell metric.
     """
     from scipy.spatial import Voronoi
+
     I = np.indices((3, 3, 3)).reshape((3, 27)) - 1
     G = np.dot(cell, I).T
     vor = Voronoi(G)
@@ -18,20 +20,19 @@ def vertices(cell):
     for vertices, points in zip(vor.ridge_vertices, vor.ridge_points):
         if -1 not in vertices and 13 in points:
             normal = G[points].sum(0)
-            normal /= (normal ** 2).sum() ** 0.5
+            normal /= (normal**2).sum() ** 0.5
             vert1.append((vor.vertices[vertices], normal))
     return vert1
 
 
-class CellFigure():
-
+class CellFigure:
     def __init__(self, dim, azim, elev):
         """
         Set up a figure for visualizing a cell metric.
         """
         Axes3D  # silence pyflakes
         self.fig = plt.figure(figsize=(5, 5))
-        self.ax = self.fig.gca(projection='3d')
+        self.ax = self.fig.add_subplot(projection='3d')
         x = sin(azim)
         y = cos(azim)
         self.view = [x * cos(elev), y * cos(elev), sin(elev)]
@@ -67,16 +68,19 @@ class CellFigure():
         # plot side faces of unit cell
         X, Y = np.meshgrid([0, uc], [0, uc])
         Z = np.zeros((2, 2)) + uc
-        self.ax.plot_surface(X, Y, Z,
-                             color='blue', alpha=.5, linewidth=0, zorder=1)
+        self.ax.plot_surface(
+            X, Y, Z, color='blue', alpha=0.5, linewidth=0, zorder=1
+        )
         X, Z = np.meshgrid([0, uc], [0, uc])
         Y = np.zeros((2, 2)) + uc
-        self.ax.plot_surface(X, Y, Z,
-                             color='blue', alpha=.5, linewidth=0, zorder=1)
+        self.ax.plot_surface(
+            X, Y, Z, color='blue', alpha=0.5, linewidth=0, zorder=1
+        )
         Y, Z = np.meshgrid([0, uc], [0, uc])
         X = np.zeros((2, 2)) + uc
-        self.ax.plot_surface(X, Y, Z,
-                             color='blue', alpha=.5, linewidth=0, zorder=1)
+        self.ax.plot_surface(
+            X, Y, Z, color='blue', alpha=0.5, linewidth=0, zorder=1
+        )
 
     def add_atom(self, x0, y0, z0, radius=0.06):
         """
@@ -87,9 +91,16 @@ class CellFigure():
         x = x0 + radius * np.outer(np.cos(u), np.sin(v))
         y = y0 + radius * np.outer(np.sin(u), np.sin(v))
         z = z0 + radius * np.outer(np.ones(np.size(u)), np.cos(v))
-        self.ax.plot_surface(x, y, z,
-                             rstride=4, cstride=4,
-                             color='orange', linewidth=0.1, alpha=0.5)
+        self.ax.plot_surface(
+            x,
+            y,
+            z,
+            rstride=4,
+            cstride=4,
+            color='orange',
+            linewidth=0.1,
+            alpha=0.5,
+        )
 
     def annotate_figure(self, text):
         """

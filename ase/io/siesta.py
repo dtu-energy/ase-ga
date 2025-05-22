@@ -1,3 +1,5 @@
+# fmt: off
+
 """Helper functions for read_fdf."""
 from pathlib import Path
 from re import compile
@@ -5,9 +7,8 @@ from re import compile
 import numpy as np
 
 from ase import Atoms
-from ase.utils import reader
 from ase.units import Bohr
-
+from ase.utils import reader
 
 _label_strip_re = compile(r'[\s._-]')
 
@@ -59,7 +60,7 @@ def _read_fdf_lines(file):
                 # "%block label < filename" means that the block contents
                 # should be read from filename
                 if len(w) != 2:
-                    raise IOError('Bad %%block-statement "%s < %s"' %
+                    raise OSError('Bad %%block-statement "%s < %s"' %
                                   (L, fname))
                 label = lbz(w[1])
                 lines.append('%%block %s' % label)
@@ -76,7 +77,8 @@ def _read_fdf_lines(file):
                         lines += [' '.join(x) for x in fdf[label]]
                         lines.append('%%endblock %s' % label)
                     else:
-                        lines.append('%s %s' % (label, ' '.join(fdf[label])))
+                        lines.append('{} {}'.format(
+                            label, ' '.join(fdf[label])))
                 # else:
                 #    label unresolved!
                 #    One should possibly issue a warning about this!
@@ -151,7 +153,7 @@ def read_fdf(fname):
                 content = []
                 while True:
                     if len(lines) == 0:
-                        raise IOError('Unexpected EOF reached in %s, '
+                        raise OSError('Unexpected EOF reached in %s, '
                                       'un-ended block %s' % (fname, label))
                     w = lines.pop(0).split()
                     if lbz(w[0]) == '%endblock':
@@ -162,7 +164,7 @@ def read_fdf(fname):
                     # Only first appearance of label is to be used
                     fdf[label] = content
             else:
-                raise IOError('%%block statement without label')
+                raise OSError('%%block statement without label')
         else:
             # Ordinary value
             label = lbz(w[0])
@@ -178,7 +180,7 @@ def read_struct_out(fd):
     """Read a siesta struct file"""
 
     cell = []
-    for i in range(3):
+    for _ in range(3):
         line = next(fd)
         v = np.array(line.split(), float)
         cell.append(v)
@@ -200,7 +202,7 @@ def read_struct_out(fd):
 
 def read_siesta_xv(fd):
     vectors = []
-    for i in range(3):
+    for _ in range(3):
         data = next(fd).split()
         vectors.append([float(data[j]) * Bohr for j in range(3)])
 

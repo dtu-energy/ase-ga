@@ -1,10 +1,16 @@
+# fmt: off
+
 """Implementation of the cut-and-splice paring operator."""
 import numpy as np
+
 from ase import Atoms
-from ase.geometry import find_mic
-from ase.ga.utilities import (atoms_too_close, atoms_too_close_two_sets,
-                              gather_atoms_by_tag)
 from ase.ga.offspring_creator import OffspringCreator
+from ase.ga.utilities import (
+    atoms_too_close,
+    atoms_too_close_two_sets,
+    gather_atoms_by_tag,
+)
+from ase.geometry import find_mic
 
 
 class Positions:
@@ -23,6 +29,7 @@ class Positions:
     origin: int (0 or 1)
         Determines at which side of the plane the position should be.
     """
+
     def __init__(self, scaled_positions, cop, symbols, distance, origin):
         self.scaled_positions = scaled_positions
         self.cop = cop
@@ -53,19 +60,16 @@ class CutAndSplicePairing(OffspringCreator):
     The basic implementation (for fixed unit cells) is
     described in:
 
-    `L.B. Vilhelmsen and B. Hammer, PRL, 108, 126101 (2012)`__
-
-    __ https://doi.org/10.1103/PhysRevLett.108.126101
+    :doi:`L.B. Vilhelmsen and B. Hammer, PRL, 108, 126101 (2012)
+    <10.1103/PhysRevLett.108.126101`>
 
     The extension to variable unit cells is similar to:
 
-    * `Glass, Oganov, Hansen, Comp. Phys. Comm. 175 (2006) 713-720`__
+    * :doi:`Glass, Oganov, Hansen, Comp. Phys. Comm. 175 (2006) 713-720
+      <10.1016/j.cpc.2006.07.020>`
 
-      __ https://doi.org/10.1016/j.cpc.2006.07.020
-
-    * `Lonie, Zurek, Comp. Phys. Comm. 182 (2011) 372-387`__
-
-      __ https://doi.org/10.1016/j.cpc.2010.07.048
+    * :doi:`Lonie, Zurek, Comp. Phys. Comm. 182 (2011) 372-387
+      <10.1016/j.cpc.2010.07.048>`
 
     The operator can furthermore preserve molecular identity
     if desired (see the *use_tags* kwarg). Atoms with the same
@@ -139,6 +143,7 @@ class CutAndSplicePairing(OffspringCreator):
     rng: Random number generator
         By default numpy.random.
     """
+
     def __init__(self, slab, n_top, blmin, number_of_variable_cell_vectors=0,
                  p1=1, p2=0.05, minfrac=None, cellbounds=None,
                  test_dist_to_slab=True, use_tags=False, rng=np.random,
@@ -186,8 +191,8 @@ class CutAndSplicePairing(OffspringCreator):
         f, m = parents
 
         indi = self.cross(f, m)
-        desc = 'pairing: {0} {1}'.format(f.info['confid'],
-                                         m.info['confid'])
+        desc = 'pairing: {} {}'.format(f.info['confid'],
+                                       m.info['confid'])
         # It is ok for an operator to return None
         # It means that it could not make a legal offspring
         # within a reasonable amount of time
@@ -248,8 +253,8 @@ class CutAndSplicePairing(OffspringCreator):
             # Choose direction of cutting plane normal
             if self.number_of_variable_cell_vectors == 0:
                 # Will be generated entirely at random
-                theta = np.pi * self.rng.rand()
-                phi = 2. * np.pi * self.rng.rand()
+                theta = np.pi * self.rng.random()
+                phi = 2. * np.pi * self.rng.random()
                 cut_n = np.array([np.cos(phi) * np.sin(theta),
                                   np.sin(phi) * np.sin(theta), np.cos(theta)])
             else:
@@ -262,11 +267,11 @@ class CutAndSplicePairing(OffspringCreator):
 
                 cell = a_copy.get_cell()
                 for i in range(self.number_of_variable_cell_vectors):
-                    r = self.rng.rand()
+                    r = self.rng.random()
                     cond1 = i == cut_n and r < self.p1
                     cond2 = i != cut_n and r < self.p2
                     if cond1 or cond2:
-                        a_copy.positions += self.rng.rand() * cell[i]
+                        a_copy.positions += self.rng.random() * cell[i]
 
                 if self.use_tags:
                     # For correct determination of the center-
@@ -283,7 +288,7 @@ class CutAndSplicePairing(OffspringCreator):
             cut_p = np.zeros((1, 3))
             for i in range(3):
                 if i < self.number_of_variable_cell_vectors:
-                    cut_p[0, i] = self.rng.rand()
+                    cut_p[0, i] = self.rng.random()
                 else:
                     cut_p[0, i] = 0.5 * (cosp1[i] + cosp2[i])
 
@@ -323,7 +328,7 @@ class CutAndSplicePairing(OffspringCreator):
         if not self.scaling_volume:
             v1 = np.abs(np.linalg.det(cell1))
             v2 = np.abs(np.linalg.det(cell2))
-            r = self.rng.rand()
+            r = self.rng.random()
             v_ref = r * v1 + (1 - r) * v2
         else:
             v_ref = self.scaling_volume
@@ -335,7 +340,7 @@ class CutAndSplicePairing(OffspringCreator):
         else:
             count = 0
             while count < maxcount:
-                r = self.rng.rand()
+                r = self.rng.random()
                 newcell = r * cell1 + (1 - r) * cell2
 
                 vol = abs(np.linalg.det(newcell))
@@ -411,7 +416,7 @@ class CutAndSplicePairing(OffspringCreator):
 
         # For each atom type make the pairing
         unique_sym.sort()
-        use_total = dict()
+        use_total = {}
         for s in unique_sym:
             used = []
             not_used = []
@@ -443,15 +448,15 @@ class CutAndSplicePairing(OffspringCreator):
 
             use_total[s] = used
 
-        n_tot = sum([len(ll) for ll in use_total.values()])
+        n_tot = sum(len(ll) for ll in use_total.values())
         assert n_tot == len(sym)
 
         # check if the generated structure contains
         # atoms from both parents:
         count1, count2, N = 0, 0, len(a1)
         for x in use_total.values():
-            count1 += sum([y.origin == 0 for y in x])
-            count2 += sum([y.origin == 1 for y in x])
+            count1 += sum(y.origin == 0 for y in x)
+            count2 += sum(y.origin == 1 for y in x)
 
         nmin = 1 if self.minfrac is None else int(round(self.minfrac * N))
         if count1 < nmin or count2 < nmin:
@@ -466,7 +471,7 @@ class CutAndSplicePairing(OffspringCreator):
             c = a1.get_cell() if p.origin == 0 else a2.get_cell()
             pos = np.dot(p.scaled_positions, c)
             cop = np.dot(p.cop, c)
-            vectors, lengths = find_mic(pos - cop, c, pbc)
+            vectors, _lengths = find_mic(pos - cop, c, pbc)
             newcop = np.dot(p.cop, cell)
             pos = newcop + vectors
             for row in pos:

@@ -12,6 +12,17 @@ optimization algorithms which find a nearby local minimum and
 global optimization algorithms that try to find the global
 minimum (a much harder task).
 
+Most optimization algorithms available in ASE inherit the following
+:class:`~ase.optimize.optimize.Optimizer` base-class.
+
+.. autoclass:: ase.optimize.optimize.Optimizer
+
+.. note::
+
+    :class:`~ase.optimize.optimize.Optimizer` classes themselves optimize only
+    internal atomic positions.
+    Cell volume and shape can also be optimized in combination with ``Filter``
+    classes. (See :doc:`filters` for details.)
 
 Local optimization
 ==================
@@ -23,7 +34,7 @@ The local optimization algorithms available in ASE are: :class:`BFGS`,
 .. seealso::
 
     `Performance test
-    <https://wiki.fysik.dtu.dk/gpaw/devel/ase_optimize/ase_optimize.html>`_
+    <https://gpaw.readthedocs.io/devel/ase_optimize/ase_optimize.html>`_
     for all ASE local optimizers.
 
 
@@ -46,7 +57,6 @@ The convergence criterion is that the force on all individual atoms
 should be less than *fmax*:
 
 .. math:: \max_a |\vec{F_a}| < f_\text{max}
-
 
 BFGS
 ----
@@ -119,10 +129,10 @@ Aside from the geometry, the Hessian of the previous run can and
 should be retained for the second run.  Use the ``restart`` keyword to
 specify a file in which to save the Hessian::
 
-  dyn = BFGS(atoms=system, trajectory='qn.traj', restart='qn.pckl')
+  dyn = BFGS(atoms=system, trajectory='qn.traj', restart='qn.json')
 
 This will create an optimizer which saves the Hessian to
-:file:`qn.pckl` (using the Python :mod:`pickle` module) on each
+:file:`qn.json` (using the Python :mod:`json` module) on each
 step.  If the file already exists, the Hessian will also be
 *initialized* from that file.
 
@@ -146,7 +156,7 @@ The file :file:`history.traj` will then contain all necessary
 information.
 
 When switching between different types of optimizers, e.g. between
-``BFGS`` and ``LBFGS``, the pickle-files specified by the
+``BFGS`` and ``LBFGS``, the JSON-files specified by the
 ``restart`` keyword are not compatible, but the Hessian can still be
 retained by replaying the trajectory as above.
 
@@ -196,7 +206,7 @@ Read more about this algorithm here:
              N is the number of atoms and n the number of steps.
              If the number of atoms is sufficiently high, this
              may cause a memory issue.
-             This class prints a warning if the user tries to 
+             This class prints a warning if the user tries to
              run GPMin with more than 100 atoms in the unit cell.
 
 
@@ -282,16 +292,6 @@ optimization and the information needed to generate the Hessian Matrix.
 
 The BFGSLineSearch algorithm is not compatible with nudged elastic band
 calculations.
-
-Pyberny
--------
-
-ASE includes a wrapper for the Pyberny_ optimizer. This requires installing
-Pyberny::
-
-    pip install pyberny
-
-.. autoclass:: Berny
 
 .. module:: ase.optimize.precon
 
@@ -519,3 +519,22 @@ The code is written such that a stopped simulation (e.g., killed by the batching
 Note that these searches can be quite slow, so it can pay to have multiple searches running at a time. Multiple searches can run in parallel and share one list of minima. (Run each script from a separate directory but specify the location to the same absolute location for ``minima_traj``). Each search will use the global information of the list of minima, but will keep its own local information of the initial temperature and `E_\mathrm{diff}`.
 
 For an example of use, see the :ref:`mhtutorial` tutorial.
+
+Transition state search
+=======================
+There are several strategies and tools for the search and optimization of
+transition states available in ASE.
+The transition state search and optimization algorithms are:
+:class:`ClimbFixInternals`, :mod:`~ase.mep.neb` and :mod:`~ase.mep.dimer`.
+
+ClimbFixInternals
+-----------------
+The :class:`BFGSClimbFixInternals` optimizer can be used to climb a reaction
+coordinate defined using the :class:`~ase.constraints.FixInternals` class.
+
+.. module:: ase.optimize.climbfixinternals
+
+.. autoclass:: BFGSClimbFixInternals
+
+   .. automethod:: get_projected_forces
+   .. automethod:: get_scaled_fmax

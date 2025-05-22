@@ -1,0 +1,127 @@
+[build-system]
+requires = ['setuptools >= 61.0.0']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'ase'
+description='Atomic Simulation Environment'
+dynamic = ['version']
+readme = 'README.rst'
+license-files = ['LICENSE']
+maintainers = [{ name = 'ASE Community', email = 'ase-users@listserv.fysik.dtu.dk' }]
+classifiers = [
+    'Development Status :: 6 - Mature',
+    'Intended Audience :: Science/Research',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering :: Physics'
+]
+requires-python = '>=3.9'
+dependencies = [
+    'numpy>=1.19.5',  # January 2021
+    'scipy>=1.6.0',  # December 2020
+    'matplotlib>=3.3.4'  # January 2021 (3.3.0 is July 2020)
+]
+
+[project.urls]
+Homepage = 'https://wiki.fysik.dtu.dk/ase/'
+Repository = 'https://gitlab.com/ase/ase.git'
+Issues = 'https://gitlab.com/ase/ase/issues/'
+
+[project.scripts]
+ase = 'ase.cli.main:main'
+
+[project.optional-dependencies]
+docs = ['sphinx', 'sphinx_rtd_theme', 'pillow']
+test = ['pytest>=7.0.0', 'pytest-xdist>=2.1.0']
+spglib = ['spglib>=1.9']
+lint = ['mypy', 'ruff', 'coverage', 'types-docutils', 'types-PyMySQL', 'flake8']
+
+[tool.setuptools.package-data]
+ase = [
+    'spacegroup/spacegroup.dat',
+    'collections/*.json',
+    'db/templates/*',
+    'db/static/*',
+    'py.typed',
+    'test/pytest.ini',
+    'test/testdata/**',
+]
+
+[tool.setuptools.dynamic]
+version = {attr = 'ase.__version__'}
+
+[tool.pytest.ini_options]
+testpaths = ['ase/test']
+markers = [
+    'calculator: parametrizes calculator tests with calculator factories',
+    'calculator_lite: for calculator tests; include in calculators-lite job',
+    'optimize: tests of optimizers',
+    'slow: test takes longer than a few seconds',
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+no_implicit_optional = false
+enable_error_code = 'ignore-without-code'
+
+[tool.coverage.run]
+source = ['ase']
+
+[tool.coverage.report]
+exclude_also = [
+    'if TYPE_CHECKING:',
+    'if __name__ == .__main__.:'
+]
+
+[tool.ruff]
+line-length = 80
+exclude = ['./build/', './dist', './doc/build']
+src = ['ase', 'doc']
+
+[tool.ruff.format]
+quote-style = 'single'
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+preview = true  # necessary to activate many pycodestyle rules
+select = [
+    'F',  # Pyflakes
+    'E',  # pycodestyle
+    'W',  # pycodestyle
+    'I'   # isort
+]
+ignore = [
+    'E741',  # ambiguous-variable-name
+    'W505',  # doc-line-too-long
+]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 80
+max-doc-length = 80
+
+[tool.ruff.lint.pydocstyle]
+convention = 'numpy'
+
+[tool.ruff.lint.isort]
+known-first-party = ['ase']
+
+[tool.scriv]
+output_file = 'doc/changelog.rst'
+insert_marker = 'scriv-auto-changelog-start'
+end_marker = 'scriv-auto-changelog-end'
+categories = [
+    'I/O',
+    'Calculators',
+    'Optimizers',
+    'Molecular dynamics',
+    'GUI',
+    'Development',
+    'Other changes',
+    'Bugfixes'
+]

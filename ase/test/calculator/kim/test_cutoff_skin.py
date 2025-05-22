@@ -1,10 +1,12 @@
+# fmt: off
 import numpy as np
 import pytest
+
 from ase import Atoms
 
 
-@pytest.mark.calculator_lite
-def test_cutoff_skin(KIM):
+@pytest.mark.calculator_lite()
+def test_cutoff_skin(KIM, testdir):
     """
     To test that the calculator handles skin and cutoffs correctly.
     Specifically, note that the neighbor skin distance must be added onto

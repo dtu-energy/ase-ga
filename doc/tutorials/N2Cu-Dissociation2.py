@@ -1,10 +1,10 @@
 import numpy as np
 
-from ase.constraints import FixAtoms
 from ase.calculators.emt import EMT
-from ase.neb import NEB
-from ase.optimize.fire import FIRE as QuasiNewton
+from ase.constraints import FixAtoms
 from ase.io import read
+from ase.mep import NEB
+from ase.optimize.fire import FIRE as QuasiNewton
 
 # Read the previous configurations
 initial = read('N2.traj')

@@ -1,9 +1,11 @@
-import pytest
+# fmt: off
 import numpy as np
+import pytest
+
 from ase.dft.kpoints import resolve_custom_points
 
 
-@pytest.fixture
+@pytest.fixture()
 def special_points():
     return dict(A=np.zeros(3),
                 B=np.ones(3))

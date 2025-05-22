@@ -91,7 +91,7 @@ for the following reasons:
 .. _LGPL: http://www.gnu.org/licenses/lgpl-3.0.html
 .. _GPL: http://www.gnu.org/licenses/gpl-3.0.html
 .. _`LGPL on Wikipedia`: https://en.wikipedia.org/wiki/GNU_Lesser_General_Public_License
-.. _GPAW: https://wiki.fysik.dtu.dk/gpaw
+.. _GPAW: https://gpaw.readthedocs.io
 .. _Asap: https://wiki.fysik.dtu.dk/asap
 .. _`statement by Fedora`: https://fedoraproject.org/wiki/Licensing:FAQ?rd=Licensing/FAQ#Linking_and_multiple_licenses
 

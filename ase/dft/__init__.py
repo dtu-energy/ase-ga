@@ -1,9 +1,11 @@
 import numpy as np
+from scipy.integrate import trapezoid
 
 from ase.dft.dos import DOS
 from ase.dft.kpoints import monkhorst_pack
 
 __all__ = ['DOS', 'monkhorst_pack']
+
 
 def get_distribution_moment(x, y, order=0):
     """Return the moment of nth order of distribution.
@@ -18,10 +20,10 @@ def get_distribution_moment(x, y, order=0):
     y = np.asarray(y)
 
     if order == 0:
-        return np.trapz(y, x)
+        return trapezoid(y, x)
     elif isinstance(order, int):
-        return np.trapz(x**order * y, x) / np.trapz(y, x)
+        return trapezoid(x**order * y, x) / trapezoid(y, x)
     elif hasattr(order, '__iter__'):
         return [get_distribution_moment(x, y, n) for n in order]
     else:
-        raise ValueError('Illegal order: %s' % order)
+        raise ValueError(f'Illegal order: {order}')

@@ -1,15 +1,18 @@
-from random import randint
-from typing import Dict, Tuple, Any
+# fmt: off
+
+import uuid
+from typing import Any, Dict
 
 import numpy as np
 
 from ase import Atoms
-from ase.constraints import dict2constraint
-from ase.calculators.calculator import (get_calculator_class, all_properties,
-                                        PropertyNotImplementedError,
-                                        kptdensity2monkhorstpack)
+from ase.calculators.calculator import (
+    PropertyNotImplementedError,
+    all_properties,
+    kptdensity2monkhorstpack,
+)
 from ase.calculators.singlepoint import SinglePointCalculator
-from ase.data import chemical_symbols, atomic_masses
+from ase.data import atomic_masses, chemical_symbols
 from ase.formula import Formula
 from ase.geometry import cell_to_cellpar
 from ase.io.jsonio import decode
@@ -17,6 +20,7 @@ from ase.io.jsonio import decode
 
 class FancyDict(dict):
     """Dictionary with keys available as attributes also."""
+
     def __getattr__(self, key):
         if key not in self:
             return dict.__getattribute__(self, key)
@@ -33,7 +37,7 @@ def atoms2dict(atoms):
     dct = {
         'numbers': atoms.numbers,
         'positions': atoms.positions,
-        'unique_id': '%x' % randint(16**31, 16**32 - 1)}
+        'unique_id': uuid.uuid4().hex}
     if atoms.pbc.any():
         dct['pbc'] = atoms.pbc
     if atoms.cell.any():
@@ -66,6 +70,10 @@ def atoms2dict(atoms):
 
 
 class AtomsRow:
+    mtime: float
+    positions: np.ndarray
+    id: int
+
     def __init__(self, dct):
         if isinstance(dct, dict):
             dct = dct.copy()
@@ -103,7 +111,7 @@ class AtomsRow:
     @property
     def key_value_pairs(self):
         """Return dict of key-value pairs."""
-        return dict((key, self.get(key)) for key in self._keys)
+        return {key: self.get(key) for key in self._keys}
 
     def count_atoms(self):
         """Count atoms.
@@ -122,12 +130,13 @@ class AtomsRow:
         setattr(self, key, value)
 
     def __str__(self):
-        return '<AtomsRow: formula={0}, keys={1}>'.format(
+        return '<AtomsRow: formula={}, keys={}>'.format(
             self.formula, ','.join(self._keys))
 
     @property
     def constraints(self):
         """List of constraints."""
+        from ase.constraints import dict2constraint
         if not isinstance(self._constraints, list):
             # Lazy decoding:
             cs = decode(self._constraints)
@@ -214,12 +223,12 @@ class AtomsRow:
     @property
     def charge(self):
         """Total charge."""
-        charges = self.get('inital_charges')
+        charges = self.get('initial_charges')
         if charges is None:
             return 0.0
         return charges.sum()
 
-    def toatoms(self, attach_calculator=False,
+    def toatoms(self,
                 add_additional_information=False):
         """Create Atoms object."""
         atoms = Atoms(self.numbers,
@@ -233,17 +242,10 @@ class AtomsRow:
                       momenta=self.get('momenta'),
                       constraint=self.constraints)
 
-        if attach_calculator:
-            params = self.get('calculator_parameters', {})
-            atoms.calc = get_calculator_class(self.calculator)(**params)
-        else:
-            results = {}
-            for prop in all_properties:
-                if prop in self:
-                    results[prop] = self[prop]
-            if results:
-                atoms.calc = SinglePointCalculator(atoms, **results)
-                atoms.calc.name = self.get('calculator', 'unknown')
+        results = {prop: self[prop] for prop in all_properties if prop in self}
+        if results:
+            atoms.calc = SinglePointCalculator(atoms, **results)
+            atoms.calc.name = self.get('calculator', 'unknown')
 
         if add_additional_information:
             atoms.info = {}
@@ -257,9 +259,7 @@ class AtomsRow:
         return atoms
 
 
-def row2dct(row,
-            key_descriptions: Dict[str, Tuple[str, str, str]] = {}
-            ) -> Dict[str, Any]:
+def row2dct(row, key_descriptions) -> Dict[str, Any]:
     """Convert row to dict of things for printing or a web-page."""
 
     from ase.db.core import float_to_time_string, now
@@ -271,20 +271,20 @@ def row2dct(row,
                                            kptdensity=1.8,
                                            even=False)
 
-    dct['cell'] = [['{:.3f}'.format(a) for a in axis] for axis in row.cell]
-    par = ['{:.3f}'.format(x) for x in cell_to_cellpar(row.cell)]
+    dct['cell'] = [[f'{a:.3f}' for a in axis] for axis in row.cell]
+    par = [f'{x:.3f}' for x in cell_to_cellpar(row.cell)]
     dct['lengths'] = par[:3]
     dct['angles'] = par[3:]
 
     stress = row.get('stress')
     if stress is not None:
-        dct['stress'] = ', '.join('{0:.3f}'.format(s) for s in stress)
+        dct['stress'] = ', '.join(f'{s:.3f}' for s in stress)
 
     dct['formula'] = Formula(row.formula).format('abc')
 
     dipole = row.get('dipole')
     if dipole is not None:
-        dct['dipole'] = ', '.join('{0:.3f}'.format(d) for d in dipole)
+        dct['dipole'] = ', '.join(f'{d:.3f}' for d in dipole)
 
     data = row.get('data')
     if data:
@@ -299,6 +299,8 @@ def row2dct(row,
             set(key_descriptions) |
             set(row.key_value_pairs))
     dct['table'] = []
+
+    from ase.db.project import KeyDescription
     for key in keys:
         if key == 'age':
             age = float_to_time_string(now() - row.ctime, True)
@@ -307,12 +309,15 @@ def row2dct(row,
         value = row.get(key)
         if value is not None:
             if isinstance(value, float):
-                value = '{:.3f}'.format(value)
+                value = f'{value:.3f}'
             elif not isinstance(value, str):
                 value = str(value)
-            desc, unit = key_descriptions.get(key, ['', '', ''])[1:]
+
+            nokeydesc = KeyDescription(key, '', '', '')
+            keydesc = key_descriptions.get(key, nokeydesc)
+            unit = keydesc.unit
             if unit:
                 value += ' ' + unit
-            dct['table'].append((key, desc, value))
+            dct['table'].append((key, keydesc.longdesc, value))
 
     return dct

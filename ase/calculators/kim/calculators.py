@@ -1,13 +1,15 @@
-import re
+# fmt: off
+
 import os
+import re
 
-from ase.data import atomic_masses, atomic_numbers
-from ase.calculators.lammpsrun import LAMMPS
-from ase.calculators.lammpslib import LAMMPSlib
 from ase.calculators.lammps import convert
+from ase.calculators.lammpslib import LAMMPSlib
+from ase.calculators.lammpsrun import LAMMPS
+from ase.data import atomic_masses, atomic_numbers
 
-from .kimmodel import KIMModelCalculator
 from .exceptions import KIMCalculatorError
+from .kimmodel import KIMModelCalculator
 
 
 def KIMCalculator(model_name, options, debug):
@@ -17,7 +19,8 @@ def KIMCalculator(model_name, options, debug):
 
     options_not_allowed = ["modelname", "debug"]
 
-    _check_conflict_options(options, options_not_allowed, simulator="kimmodel")
+    _check_conflict_options(options, options_not_allowed,
+                            simulator="kimmodel")
 
     return KIMModelCalculator(model_name, debug=debug, **options)
 
@@ -25,9 +28,8 @@ def KIMCalculator(model_name, options, debug):
 def LAMMPSRunCalculator(
     model_name, model_type, supported_species, options, debug, **kwargs
 ):
-    """
-    Used for Portable Models or LAMMPS Simulator Models if specifically requested
-    """
+    """Used for Portable Models or LAMMPS Simulator Models if
+    specifically requested"""
 
     def get_params(model_name, supported_units, supported_species, atom_style):
         """
@@ -38,8 +40,9 @@ def LAMMPSRunCalculator(
         """
         parameters = {}
 
-        # In case the SM supplied its own atom_style in its model-init -- only needed
-        # because lammpsrun writes data files and needs to know the proper format
+        # In case the SM supplied its own atom_style in its model-init
+        # -- only needed because lammpsrun writes data files and needs
+        # to know the proper format
         if atom_style:
             parameters["atom_style"] = atom_style
 
@@ -47,7 +50,7 @@ def LAMMPSRunCalculator(
         parameters["units"] = supported_units
 
         parameters["model_init"] = [
-            "kim_init {} {}{}".format(model_name, supported_units, os.linesep)
+            f"kim_init {model_name} {supported_units}{os.linesep}"
         ]
 
         parameters["kim_interactions"] = "kim_interactions {}{}".format(
@@ -75,27 +78,35 @@ def LAMMPSRunCalculator(
 
         return parameters
 
-    options_not_allowed = ["parameters", "files", "specorder", "keep_tmp_files"]
+    options_not_allowed = ["parameters", "files", "specorder",
+                           "keep_tmp_files"]
 
-    _check_conflict_options(options, options_not_allowed, simulator="lammpsrun")
+    _check_conflict_options(options, options_not_allowed,
+                            simulator="lammpsrun")
 
-    # If no atom_style kwarg is passed, lammpsrun will default to atom_style atomic,
-    # which is what we want for KIM Portable Models
+    # If no atom_style kwarg is passed, lammpsrun will default to
+    # atom_style atomic, which is what we want for KIM Portable Models
     atom_style = kwargs.get("atom_style", None)
 
-    # Simulator Models will supply their own units from their metadata. For Portable
-    # Models, we use "metal" units.
+    # Simulator Models will supply their own units from their
+    # metadata. For Portable Models, we use "metal" units.
     supported_units = kwargs.get("supported_units", "metal")
 
     # Set up kim_init and kim_interactions lines
-    parameters = get_params(model_name, supported_units, supported_species, atom_style)
+    parameters = get_params(
+        model_name,
+        supported_units,
+        supported_species,
+        atom_style)
 
     return LAMMPS(
-        **parameters, specorder=supported_species, keep_tmp_files=debug, **options
+        **parameters, specorder=supported_species, keep_tmp_files=debug,
+        **options
     )
 
 
-def LAMMPSLibCalculator(model_name, supported_species, supported_units, options):
+def LAMMPSLibCalculator(model_name, supported_species,
+                        supported_units, options):
     """
     Only used for LAMMPS Simulator Models
     """
@@ -107,7 +118,8 @@ def LAMMPSLibCalculator(model_name, supported_species, supported_units, options)
         "keep_alive",
     ]
 
-    _check_conflict_options(options, options_not_allowed, simulator="lammpslib")
+    _check_conflict_options(options, options_not_allowed,
+                            simulator="lammpslib")
     # Set up LAMMPS header commands lookup table
 
     # This units command actually has no effect, but is necessary because
@@ -116,16 +128,15 @@ def LAMMPSLibCalculator(model_name, supported_species, supported_units, options)
     model_init = ["units " + supported_units + os.linesep]
 
     model_init.append(
-        "kim_init {} {}{}".format(model_name, supported_units, os.linesep)
+        f"kim_init {model_name} {supported_units}{os.linesep}"
     )
     model_init.append("atom_modify map array sort 0 0" + os.linesep)
 
     # Assign atom types to species
-    atom_types = {}
-    for i_s, s in enumerate(supported_species):
-        atom_types[s] = i_s + 1
-
-    kim_interactions = ["kim_interactions {}".format((" ").join(supported_species))]
+    atom_types = {s: i_s + 1 for i_s, s in enumerate(supported_species)}
+    kim_interactions = [
+        "kim_interactions {}".format(
+            (" ").join(supported_species))]
 
     # Return LAMMPSlib calculator
     return LAMMPSlib(
@@ -148,7 +159,10 @@ def ASAPCalculator(model_name, model_type, options, **kwargs):
 
     options_not_allowed = {"pm": ["name", "verbose"], "sm": ["Params"]}
 
-    _check_conflict_options(options, options_not_allowed[model_type], simulator="asap")
+    _check_conflict_options(
+        options,
+        options_not_allowed[model_type],
+        simulator="asap")
 
     if model_type == "pm":
 
@@ -167,22 +181,23 @@ def ASAPCalculator(model_name, model_type, options, **kwargs):
                 'be "ase" for ASAP.'.format(supported_units)
             )
 
-        # Check model_defn to make sure there's only one element in it that is a
-        # non-empty string
+        # Check model_defn to make sure there's only one element in it
+        # that is a non-empty string
         if len(model_defn) == 0:
             raise KIMCalculatorError(
-                "model-defn is an empty list in metadata file of Simulator Model {}"
-                "".format(model_name)
+                "model-defn is an empty list in metadata file of "
+                "Simulator Model {}".format(model_name)
             )
         elif len(model_defn) > 1:
             raise KIMCalculatorError(
-                "model-defn should contain only one entry for an ASAP model (found {} "
-                "lines)".format(len(model_defn))
+                "model-defn should contain only one entry for an ASAP "
+                "model (found {} lines)".format(len(model_defn))
             )
 
         if "" in model_defn:
             raise KIMCalculatorError(
-                "model-defn contains an empty string in metadata file of Simulator "
+                "model-defn contains an empty string in metadata "
+                "file of Simulator "
                 "Model {}".format(model_name)
             )
 
@@ -201,41 +216,45 @@ def ASAPCalculator(model_name, model_type, options, **kwargs):
             else:
                 pp = mobj.group(1)
 
-                # Currently we only supported two specific EMT models that are built
-                # into ASAP
+                # Currently we only supported two specific EMT models
+                # that are built into ASAP
                 if pp.startswith("EMTRasmussenParameters"):
-                    asap_calc = asap3.EMT(parameters=asap3.EMTRasmussenParameters())
+                    asap_calc = asap3.EMT(
+                        parameters=asap3.EMTRasmussenParameters())
                     model_defn_is_valid = True
                 elif pp.startswith("EMTMetalGlassParameters"):
-                    asap_calc = asap3.EMT(parameters=asap3.EMTMetalGlassParameters())
+                    asap_calc = asap3.EMT(
+                        parameters=asap3.EMTMetalGlassParameters())
                     model_defn_is_valid = True
 
         if not model_defn_is_valid:
             raise KIMCalculatorError(
-                'Unknown model "{}" requested for simulator asap.'.format(model_defn)
+                'Unknown model "{}" requested for simulator asap.'.format(
+                    model_defn)
             )
 
-        # Disable undocumented feature for the EMT self.calculators to take the
-        # energy of an isolated atoms as zero. (Otherwise it is taken to be that of
-        # perfect FCC.)
+        # Disable undocumented feature for the EMT self.calculators to
+        # take the energy of an isolated atoms as zero. (Otherwise it
+        # is taken to be that of perfect FCC.)
         asap_calc.set_subtractE0(False)
 
         return asap_calc
 
 
 def _check_conflict_options(options, options_not_allowed, simulator):
-    """Check whether options intended to be passed to a given calculator are allowed.
-    Some options are not allowed because they must be set internally in this package.
-    """
+    """Check whether options intended to be passed to a given calculator
+    are allowed.  Some options are not allowed because they must be
+    set internally in this package."""
     s1 = set(options)
     s2 = set(options_not_allowed)
     common = s1.intersection(s2)
 
     if common:
-        options_in_not_allowed = ", ".join(['"{}"'.format(s) for s in common])
+        options_in_not_allowed = ", ".join([f'"{s}"' for s in common])
 
         msg = (
-            'Simulator "{}" does not support argument(s): {} provided in "options", '
+            'Simulator "{}" does not support argument(s): '
+            '{} provided in "options", '
             "because it is (they are) determined internally within the KIM "
             "calculator".format(simulator, options_in_not_allowed)
         )

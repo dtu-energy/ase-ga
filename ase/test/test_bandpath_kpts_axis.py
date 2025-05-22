@@ -1,7 +1,9 @@
+# fmt: off
+from ase import Atoms
+
+
 def test_bandpath_kpts_axis():
     # See https://gitlab.com/ase/ase/issues/502
-    from ase import Atoms
-
 
     a = 3.16
     atoms = Atoms(cell=[a, a, 12, 90, 90, 120], pbc=True)

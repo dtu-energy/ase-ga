@@ -1,8 +1,14 @@
-import pytest
+# fmt: off
 import numpy as np
-from ase.spacegroup import Spacegroup
+import pytest
+
 from ase.lattice import FCC
-from ase.spacegroup.spacegroup import parse_sitesym, parse_sitesym_single, parse_sitesym_element
+from ase.spacegroup import Spacegroup
+from ase.spacegroup.spacegroup import (
+    parse_sitesym,
+    parse_sitesym_element,
+    parse_sitesym_single,
+)
 
 
 def test_spacegroup_miscellaneous():
@@ -20,7 +26,8 @@ def test_spacegroup_miscellaneous():
 
 
 def test_spacegroup_parse_sitesym():
-    sitesyms = ["x,y,z", "0.25-y,x+1/4,-z", "x-1/4, y+3/4,   1/8-z", "x-y,-z+0.3-y,-1/2+x-y+z"]
+    sitesyms = ["x,y,z", "0.25-y,x+1/4,-z",
+                "x-1/4, y+3/4,   1/8-z", "x-y,-z+0.3-y,-1/2+x-y+z"]
     expected_trans = np.array(
         [
             [+0.000, 0.000, 0.000],  # x, y, z
@@ -44,7 +51,8 @@ def test_spacegroup_parse_sitesym():
     )
 
     rot, trans = parse_sitesym(sitesyms)
-    rot_bounded, trans_bounded = parse_sitesym(sitesyms, force_positive_translation=True)
+    rot_bounded, trans_bounded = parse_sitesym(
+        sitesyms, force_positive_translation=True)
     assert np.allclose(rot, expected_rot)
     assert np.allclose(rot_bounded, expected_rot)
     assert np.allclose(trans, expected_trans)
@@ -64,10 +72,13 @@ def test_spacegroup_parse_sitesym_single():
 
 def test_spacegroup_parse_sitesym_element():
     element_list = ("x", "y", "z", "-x", "0.1+x", "-y-1/8", "+1/2-z", "x+z")
-    expected_rot_list = ([(0, 1)], [(1, 1)], [(2, 1)], [(0, -1)], [(0, 1)], [(1, -1)], [(2, -1)], [(0, 1), (2, 1)])
+    expected_rot_list = ([(0, 1)], [(1, 1)], [(2, 1)],
+                         [(0, -1)], [(0, 1)], [(1, -1)],
+                         [(2, -1)], [(0, 1), (2, 1)])
     expected_trans_list = (0.0, 0.0, 0.0, 0.0, 0.1, -0.125, 0.5, 0.0)
 
-    for element, expected_rot, expected_trans in zip(element_list, expected_rot_list, expected_trans_list):
+    for element, expected_rot, expected_trans in zip(
+            element_list, expected_rot_list, expected_trans_list):
         rot, trans = parse_sitesym_element(element)
         assert rot == expected_rot
         assert np.allclose(trans, expected_trans)

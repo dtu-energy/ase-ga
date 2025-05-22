@@ -1,6 +1,8 @@
+# fmt: off
 """Check if we can deal with spin-broken symmetries."""
-from numpy import array
 import pytest
+from numpy import array
+
 from ase import Atoms
 
 

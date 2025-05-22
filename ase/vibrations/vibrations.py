@@ -1,22 +1,97 @@
-"""Vibrational modes."""
+# fmt: off
 
-import os
-import os.path as op
-import pickle
+"""A class for computing vibrational modes"""
+
 import sys
-from math import sin, pi, sqrt, log
+from collections import namedtuple
+from math import log, pi, sqrt
+from pathlib import Path
+from typing import Iterator, Tuple
 
 import numpy as np
 
+import ase.io
 import ase.units as units
-from ase.io.trajectory import Trajectory
-from ase.parallel import world, paropen
+from ase.atoms import Atoms
+from ase.constraints import FixAtoms
+from ase.parallel import paropen, world
+from ase.utils.filecache import get_json_cache
 
-from ase.utils import opencew, pickleload
-from ase.calculators.singlepoint import SinglePointCalculator
+from .data import VibrationsData
 
 
-class Vibrations:
+class AtomicDisplacements:
+    def _disp(self, a, i, step):
+        if isinstance(i, str):  # XXX Simplify by removing this.
+            i = 'xyz'.index(i)
+        return Displacement(a, i, np.sign(step), abs(step), self)
+
+    def _eq_disp(self):
+        return self._disp(0, 0, 0)
+
+    @property
+    def ndof(self):
+        return 3 * len(self.indices)
+
+
+class Displacement(namedtuple('Displacement', ['a', 'i', 'sign', 'ndisp',
+                                               'vib'])):
+    @property
+    def name(self):
+        if self.sign == 0:
+            return 'eq'
+
+        axisname = 'xyz'[self.i]
+        dispname = self.ndisp * ' +-'[self.sign]
+        return f'{self.a}{axisname}{dispname}'
+
+    @property
+    def _cached(self):
+        return self.vib.cache[self.name]
+
+    def forces(self):
+        return self._cached['forces'].copy()
+
+    @property
+    def step(self):
+        return self.ndisp * self.sign * self.vib.delta
+
+    # XXX dipole only valid for infrared
+    def dipole(self):
+        return self._cached['dipole'].copy()
+
+    # XXX below stuff only valid for TDDFT excitation stuff
+    def save_ov_nn(self, ov_nn):
+        np.save(Path(self.vib.exname) / (self.name + '.ov'), ov_nn)
+
+    def load_ov_nn(self):
+        return np.load(Path(self.vib.exname) / (self.name + '.ov.npy'))
+
+    @property
+    def _exname(self):
+        return Path(self.vib.exname) / f'ex.{self.name}{self.vib.exext}'
+
+    def calculate_and_save_static_polarizability(self, atoms):
+        exobj = self.vib._new_exobj()
+        excitation_data = exobj(atoms)
+        np.savetxt(self._exname, excitation_data)
+
+    def load_static_polarizability(self):
+        return np.loadtxt(self._exname)
+
+    def read_exobj(self):
+        # XXX each exobj should allow for self._exname as Path
+        return self.vib.read_exobj(str(self._exname))
+
+    def calculate_and_save_exlist(self, atoms):
+        # exo = self.vib._new_exobj()
+        excalc = self.vib._new_exobj()
+        exlist = excalc.calculate(atoms)
+        # XXX each exobj should allow for self._exname as Path
+        exlist.write(str(self._exname))
+
+
+class Vibrations(AtomicDisplacements):
     """Class for calculating vibrational modes using finite difference.
 
     The vibrational modes are calculated from a finite difference
@@ -59,19 +134,6 @@ class Vibrations:
     BFGS:   3  16:01:21        0.262777       0.0088
     >>> vib = Vibrations(n2)
     >>> vib.run()
-    Writing vib.eq.pckl
-    Writing vib.0x-.pckl
-    Writing vib.0x+.pckl
-    Writing vib.0y-.pckl
-    Writing vib.0y+.pckl
-    Writing vib.0z-.pckl
-    Writing vib.0z+.pckl
-    Writing vib.1x-.pckl
-    Writing vib.1x+.pckl
-    Writing vib.1y-.pckl
-    Writing vib.1y+.pckl
-    Writing vib.1z-.pckl
-    Writing vib.1z+.pckl
     >>> vib.summary()
     ---------------------
     #    meV     cm^-1
@@ -79,11 +141,11 @@ class Vibrations:
     0    0.0       0.0
     1    0.0       0.0
     2    0.0       0.0
-    3    2.5      20.4
-    4    2.5      20.4
-    5  152.6    1230.8
+    3    1.4      11.5
+    4    1.4      11.5
+    5  152.7    1231.3
     ---------------------
-    Zero-point energy: 0.079 eV
+    Zero-point energy: 0.078 eV
     >>> vib.write_mode(-1)  # write last mode to trajectory file
 
     """
@@ -93,16 +155,28 @@ class Vibrations:
         self.atoms = atoms
         self.calc = atoms.calc
         if indices is None:
-            indices = range(len(atoms))
+            fixed_indices = []
+            for constr in atoms.constraints:
+                if isinstance(constr, FixAtoms):
+                    fixed_indices.extend(constr.get_indices())
+            fixed_indices = list(set(fixed_indices))
+            indices = [i for i in range(len(atoms)) if i not in fixed_indices]
         if len(indices) != len(set(indices)):
             raise ValueError(
                 'one (or more) indices included more than once')
         self.indices = np.asarray(indices)
-        self.name = name
+
         self.delta = delta
         self.nfree = nfree
         self.H = None
         self.ir = None
+        self._vibrations = None
+
+        self.cache = get_json_cache(name)
+
+    @property
+    def name(self):
+        return str(self.cache.directory)
 
     def run(self):
         """Run the vibration calculations.
@@ -110,7 +184,7 @@ class Vibrations:
         This will calculate the forces for 6 displacements per atom +/-x,
         +/-y, +/-z. Only those calculations that are not already done will be
         started. Be aware that an interrupted calculation may produce an empty
-        file (ending with .pckl), which must be deleted before restarting the
+        file (ending with .json), which must be deleted before restarting the
         job. Otherwise the forces will not be calculated for that
         displacement.
 
@@ -120,73 +194,105 @@ class Vibrations:
         case it is not found.
 
         If the program you want to use does not have a calculator in ASE, use
-        ``iterdisplace`` to get all displaced structures and calculate the forces
-        on your own.
+        ``iterdisplace`` to get all displaced structures and calculate the
+        forces on your own.
         """
 
-        if op.isfile(self.name + '.all.pckl'):
+        if not self.cache.writable:
             raise RuntimeError(
-                'Cannot run calculation. ' +
-                self.name + '.all.pckl must be removed or split in order ' +
+                'Cannot run calculation.  '
+                'Cache must be removed or split in order '
                 'to have only one sort of data structure at a time.')
-        for dispName, atoms in self.iterdisplace(inplace=True):
-            filename = dispName + '.pckl'
-            fd = opencew(filename)
-            if fd is not None:
-                self.calculate(atoms, filename, fd)
 
-    def iterdisplace(self, inplace=False):
-        """Yield name and atoms object for initial and displaced structures.
+        self._check_old_pickles()
+
+        for disp, atoms in self.iterdisplace(inplace=True):
+            with self.cache.lock(disp.name) as handle:
+                if handle is None:
+                    continue
+
+                result = self.calculate(atoms, disp)
+
+                if world.rank == 0:
+                    handle.save(result)
+
+    def _check_old_pickles(self):
+        from pathlib import Path
+        eq_pickle_path = Path(f'{self.name}.eq.pckl')
+        pickle2json_instructions = f"""\
+Found old pickle files such as {eq_pickle_path}.  \
+Please remove them and recalculate or run \
+"python -m ase.vibrations.pickle2json --help"."""
+        if len(self.cache) == 0 and eq_pickle_path.exists():
+            raise RuntimeError(pickle2json_instructions)
+
+    def iterdisplace(self, inplace=False) -> \
+            Iterator[Tuple[Displacement, Atoms]]:
+        """Iterate over initial and displaced structures.
 
         Use this to export the structures for each single-point calculation
         to an external program instead of using ``run()``. Then save the
-        calculated gradients to <name>.pckl and continue using this instance.
+        calculated gradients to <name>.json and continue using this instance.
+
+        Parameters:
+        ------------
+        inplace: bool
+            If True, the atoms object will be modified in-place. Otherwise a
+            copy will be made.
+
+        Yields:
+        --------
+        disp: Displacement
+            Displacement object with information about the displacement.
+        atoms: Atoms
+            Atoms object with the displaced structure.
         """
+        # XXX change of type of disp
         atoms = self.atoms if inplace else self.atoms.copy()
-        yield self.name + '.eq', atoms
-        for dispName, a, i, disp in self.displacements():
+        displacements = self.displacements()
+        eq_disp = next(displacements)
+        assert eq_disp.name == 'eq'
+        yield eq_disp, atoms
+
+        for disp in displacements:
             if not inplace:
                 atoms = self.atoms.copy()
-            pos0 = atoms.positions[a, i]
-            atoms.positions[a, i] += disp
-            yield dispName, atoms
+            pos0 = atoms.positions[disp.a, disp.i]
+            atoms.positions[disp.a, disp.i] += disp.step
+            yield disp, atoms
+
             if inplace:
-                atoms.positions[a, i] = pos0
+                atoms.positions[disp.a, disp.i] = pos0
 
     def iterimages(self):
         """Yield initial and displaced structures."""
         for name, atoms in self.iterdisplace():
             yield atoms
 
-    def displacements(self):
+    def _iter_ai(self):
         for a in self.indices:
             for i in range(3):
-                for sign in [-1, 1]:
-                    for ndis in range(1, self.nfree // 2 + 1):
-                        dispName = ('%s.%d%s%s' %
-                                    (self.name, a, 'xyz'[i],
-                                     ndis * ' +-'[sign]))
-                        disp = ndis * sign * self.delta
-                        yield dispName, a, i, disp
+                yield a, i
 
-    def calculate(self, atoms, filename, fd):
-        forces = self.calc.get_forces(atoms)
+    def displacements(self):
+        yield self._eq_disp()
+
+        for a, i in self._iter_ai():
+            for sign in [-1, 1]:
+                for ndisp in range(1, self.nfree // 2 + 1):
+                    yield self._disp(a, i, sign * ndisp)
+
+    def calculate(self, atoms, disp):
+        results = {}
+        results['forces'] = self.calc.get_forces(atoms)
+
         if self.ir:
-            dipole = self.calc.get_dipole_moment(atoms)
-        if world.rank == 0:
-            if self.ir:
-                pickle.dump([forces, dipole], fd, protocol=2)
-                sys.stdout.write(
-                    'Writing %s, dipole moment = (%.6f %.6f %.6f)\n' %
-                    (filename, dipole[0], dipole[1], dipole[2]))
-            else:
-                pickle.dump(forces, fd, protocol=2)
-                sys.stdout.write('Writing %s\n' % filename)
-            fd.close()
-        sys.stdout.flush()
+            results['dipole'] = self.calc.get_dipole_moment(atoms)
+
+        return results
 
     def clean(self, empty_files=False, combined=True):
-        """Remove pickle-files.
+        """Remove json-files.
 
         Use empty_files=True to remove only empty files and
         combined=False to not remove the combined file.
@@ -196,84 +302,34 @@ class Vibrations:
         if world.rank != 0:
             return 0
 
-        n = 0
-        filenames = [self.name + '.eq.pckl']
-        if combined:
-            filenames.append(self.name + '.all.pckl')
-        for dispName, a, i, disp in self.displacements():
-            filename = dispName + '.pckl'
-            filenames.append(filename)
+        if empty_files:
+            return self.cache.strip_empties()  # XXX Fails on combined cache
 
-        for name in filenames:
-            if op.isfile(name):
-                if not empty_files or op.getsize(name) == 0:
-                    os.remove(name)
-                    n += 1
-        return n
+        nfiles = self.cache.filecount()
+        self.cache.clear()
+        return nfiles
 
     def combine(self):
-        """Combine pickle-files to one file ending with '.all.pckl'.
+        """Combine json-files to one file ending with '.all.json'.
 
-        The other pickle-files will be removed in order to have only one sort
+        The other json-files will be removed in order to have only one sort
         of data structure at a time.
 
         """
-        if world.rank != 0:
-            return 0
-        filenames = [self.name + '.eq.pckl']
-        for dispName, a, i, disp in self.displacements():
-            filename = dispName + '.pckl'
-            filenames.append(filename)
-        combined_data = {}
-        for name in filenames:
-            if not op.isfile(name) or op.getsize(name) == 0:
-                raise RuntimeError('Calculation is not complete. ' +
-                                   name + ' is missing or empty.')
-            with open(name, 'rb') as fl:
-                f = pickleload(fl)
-            combined_data.update({op.basename(name): f})
-        filename = self.name + '.all.pckl'
-        fd = opencew(filename)
-        if fd is None:
-            raise RuntimeError(
-                'Cannot write file ' + filename +
-                '. Remove old file if it exists.')
-        else:
-            pickle.dump(combined_data, fd, protocol=2)
-            fd.close()
-        return self.clean(combined=False)
+        nelements_before = self.cache.filecount()
+        self.cache = self.cache.combine()
+        return nelements_before
 
     def split(self):
-        """Split combined pickle-file.
+        """Split combined json-file.
 
-        The combined pickle-file will be removed in order to have only one
+        The combined json-file will be removed in order to have only one
         sort of data structure at a time.
 
         """
-        if world.rank != 0:
-            return 0
-        combined_name = self.name + '.all.pckl'
-        if not op.isfile(combined_name):
-            raise RuntimeError('Cannot find combined file: ' +
-                               combined_name + '.')
-        with open(combined_name, 'rb') as fl:
-            combined_data = pickleload(fl)
-        filenames = [self.name + '.eq.pckl']
-        for dispName, a, i, disp in self.displacements():
-            filename = dispName + '.pckl'
-            filenames.append(filename)
-            if op.isfile(filename):
-                raise RuntimeError(
-                    'Cannot split. File ' + filename + 'already exists.')
-        for name in filenames:
-            fd = opencew(name)
-            try:
-                pickle.dump(combined_data[op.basename(name)], fd, protocol=2)
-            except KeyError:
-                pickle.dump(combined_data[name], fd, protocol=2)  # Old version
-            fd.close()
-        os.remove(combined_name)
-        return 1  # One file removed
+        count = self.cache.filecount()
+        self.cache = self.cache.split()
+        return count
 
     def read(self, method='standard', direction='central'):
         self.method = method.lower()
@@ -281,68 +337,59 @@ class Vibrations:
         assert self.method in ['standard', 'frederiksen']
         assert self.direction in ['central', 'forward', 'backward']
 
-        def load(fname, combined_data=None):
-            if combined_data is None:
-                with open(fname, 'rb') as fl:
-                    f = pickleload(fl)
-            else:
-                try:
-                    f = combined_data[op.basename(fname)]
-                except KeyError:
-                    f = combined_data[fname]  # Old version
-            if not hasattr(f, 'shape') and not hasattr(f, 'keys'):
-                # output from InfraRed
-                return f[0]
-            return f
-
         n = 3 * len(self.indices)
         H = np.empty((n, n))
         r = 0
-        if op.isfile(self.name + '.all.pckl'):
-            # Open the combined pickle-file
-            combined_data = load(self.name + '.all.pckl')
-        else:
-            combined_data = None
+
+        eq_disp = self._eq_disp()
+
         if direction != 'central':
-            feq = load(self.name + '.eq.pckl', combined_data)
-        for a in self.indices:
-            for i in 'xyz':
-                name = '%s.%d%s' % (self.name, a, i)
-                fminus = load(name + '-.pckl', combined_data)
-                fplus = load(name + '+.pckl', combined_data)
+            feq = eq_disp.forces()
+
+        for a, i in self._iter_ai():
+            disp_minus = self._disp(a, i, -1)
+            disp_plus = self._disp(a, i, 1)
+
+            fminus = disp_minus.forces()
+            fplus = disp_plus.forces()
+            if self.method == 'frederiksen':
+                fminus[a] -= fminus.sum(0)
+                fplus[a] -= fplus.sum(0)
+            if self.nfree == 4:
+                fminusminus = self._disp(a, i, -2).forces()
+                fplusplus = self._disp(a, i, 2).forces()
                 if self.method == 'frederiksen':
-                    fminus[a] -= fminus.sum(0)
-                    fplus[a] -= fplus.sum(0)
-                if self.nfree == 4:
-                    fminusminus = load(name + '--.pckl', combined_data)
-                    fplusplus = load(name + '++.pckl', combined_data)
-                    if self.method == 'frederiksen':
-                        fminusminus[a] -= fminusminus.sum(0)
-                        fplusplus[a] -= fplusplus.sum(0)
-                if self.direction == 'central':
-                    if self.nfree == 2:
-                        H[r] = .5 * (fminus - fplus)[self.indices].ravel()
-                    else:
-                        H[r] = H[r] = (-fminusminus +
-                                       8 * fminus -
-                                       8 * fplus +
-                                       fplusplus)[self.indices].ravel() / 12.0
-                elif self.direction == 'forward':
-                    H[r] = (feq - fplus)[self.indices].ravel()
+                    fminusminus[a] -= fminusminus.sum(0)
+                    fplusplus[a] -= fplusplus.sum(0)
+            if self.direction == 'central':
+                if self.nfree == 2:
+                    H[r] = .5 * (fminus - fplus)[self.indices].ravel()
                 else:
-                    assert self.direction == 'backward'
-                    H[r] = (fminus - feq)[self.indices].ravel()
-                H[r] /= 2 * self.delta
-                r += 1
+                    assert self.nfree == 4
+                    H[r] = H[r] = (-fminusminus +
+                                   8 * fminus -
+                                   8 * fplus +
+                                   fplusplus)[self.indices].ravel() / 12.0
+            elif self.direction == 'forward':
+                H[r] = (feq - fplus)[self.indices].ravel()
+            else:
+                assert self.direction == 'backward'
+                H[r] = (fminus - feq)[self.indices].ravel()
+            H[r] /= 2 * self.delta
+            r += 1
         H += H.copy().T
         self.H = H
-        m = self.atoms.get_masses()
-        if 0 in [m[index] for index in self.indices]:
+        masses = self.atoms.get_masses()
+        if any(masses[self.indices] == 0):
             raise RuntimeError('Zero mass encountered in one or more of '
                                'the vibrated atoms. Use Atoms.set_masses()'
                                ' to set all masses to non-zero values.')
 
-        self.im = np.repeat(m[self.indices]**-0.5, 3)
+        self.im = np.repeat(masses[self.indices]**-0.5, 3)
+        self._vibrations = self.get_vibrations(read_cache=False,
+                                               method=self.method,
+                                               direction=self.direction)
+
         omega2, modes = np.linalg.eigh(self.im[:, None] * H * self.im)
         self.modes = modes.T.copy()
 
@@ -350,75 +397,71 @@ class Vibrations:
         s = units._hbar * 1e10 / sqrt(units._e * units._amu)
         self.hnu = s * omega2.astype(complex)**0.5
 
+    def get_vibrations(self, method='standard', direction='central',
+                       read_cache=True, **kw):
+        """Get vibrations as VibrationsData object
+
+        If read() has not yet been called, this will be called to assemble data
+        from the outputs of run(). Most of the arguments to this function are
+        options to be passed to read() in this case.
+
+        Args:
+            method (str): Calculation method passed to read()
+            direction (str): Finite-difference scheme passed to read()
+            read_cache (bool): The VibrationsData object will be cached for
+                quick access. Set False to force regeneration of the cache with
+                the current atoms/Hessian/indices data.
+            **kw: Any remaining keyword arguments are passed to read()
+
+        Returns:
+            VibrationsData
+
+        """
+        if read_cache and (self._vibrations is not None):
+            return self._vibrations
+
+        else:
+            if (self.H is None or method.lower() != self.method or
+                    direction.lower() != self.direction):
+                self.read(method, direction, **kw)
+
+            return VibrationsData.from_2d(self.atoms, self.H,
+                                          indices=self.indices)
+
     def get_energies(self, method='standard', direction='central', **kw):
         """Get vibration energies in eV."""
-
-        if (self.H is None or method.lower() != self.method or
-            direction.lower() != self.direction):
-            self.read(method, direction, **kw)
-        return self.hnu
+        return self.get_vibrations(method=method,
+                                   direction=direction, **kw).get_energies()
 
     def get_frequencies(self, method='standard', direction='central'):
         """Get vibration frequencies in cm^-1."""
-
-        s = 1. / units.invcm
-        return s * self.get_energies(method, direction)
+        return self.get_vibrations(method=method,
+                                   direction=direction).get_frequencies()
 
     def summary(self, method='standard', direction='central', freq=None,
                 log=sys.stdout):
-        """Print a summary of the vibrational frequencies.
+        if freq is not None:
+            energies = freq * units.invcm
+        else:
+            energies = self.get_energies(method=method, direction=direction)
 
-        Parameters:
-
-        method : string
-            Can be 'standard'(default) or 'Frederiksen'.
-        direction: string
-            Direction for finite differences. Can be one of 'central'
-            (default), 'forward', 'backward'.
-        freq : numpy array
-            Optional. Can be used to create a summary on a set of known
-            frequencies.
-        log : if specified, write output to a different location than
-            stdout. Can be an object with a write() method or the name of a
-            file to create.
-        """
+        summary_lines = VibrationsData._tabulate_from_energies(energies)
+        log_text = '\n'.join(summary_lines) + '\n'
 
         if isinstance(log, str):
-            log = paropen(log, 'a')
-        write = log.write
-
-        s = 0.01 * units._e / units._c / units._hplanck
-        if freq is not None:
-            hnu = freq / s
+            with paropen(log, 'a') as log_file:
+                log_file.write(log_text)
         else:
-            hnu = self.get_energies(method, direction)
-        write('---------------------\n')
-        write('  #    meV     cm^-1\n')
-        write('---------------------\n')
-        for n, e in enumerate(hnu):
-            if e.imag != 0:
-                c = 'i'
-                e = e.imag
-            else:
-                c = ' '
-                e = e.real
-            write('%3d %6.1f%s  %7.1f%s\n' % (n, 1000 * e, c, s * e, c))
-        write('---------------------\n')
-        write('Zero-point energy: %.3f eV\n' %
-              self.get_zero_point_energy(freq=freq))
+            log.write(log_text)
 
     def get_zero_point_energy(self, freq=None):
-        if freq is None:
-            return 0.5 * self.hnu.real.sum()
-        else:
-            s = 0.01 * units._e / units._c / units._hplanck
-            return 0.5 * freq.real.sum() / s
+        if freq:
+            raise NotImplementedError
+        return self.get_vibrations().get_zero_point_energy()
 
     def get_mode(self, n):
         """Get mode number ."""
-        mode = np.zeros((len(self.atoms), 3))
-        mode[self.indices] = (self.modes[n] * self.im).reshape((-1, 3))
-        return mode
+        return self.get_vibrations().get_modes(all_atoms=True)[n]
 
     def write_mode(self, n=None, kT=units.kB * 300, nimages=30):
         """Write mode number n to trajectory file. If n is not specified,
@@ -428,22 +471,18 @@ class Vibrations:
                 if abs(energy) > 1e-5:
                     self.write_mode(n=index, kT=kT, nimages=nimages)
             return
-        mode = self.get_mode(n) * sqrt(kT / abs(self.hnu[n]))
 
-        pos0 = self.atoms.get_positions()
-        n %= 3 * len(self.indices)
-        atoms = self.atoms.copy()
+        else:
+            n %= len(self.get_energies())
 
-        with Trajectory('%s.%d.traj' % (self.name, n), 'w') as traj:
-            for x in np.linspace(0, 2 * pi, nimages, endpoint=False):
-                atoms.set_positions(pos0 + sin(x) * mode)
-                traj.write(atoms)
+        with ase.io.Trajectory('%s.%d.traj' % (self.name, n), 'w') as traj:
+            for image in (self.get_vibrations()
+                          .iter_animated_mode(n,
+                                              temperature=kT, frames=nimages)):
+                traj.write(image)
 
-    def show_as_force(self, n, scale=0.2):
-        mode = self.get_mode(n) * len(self.hnu) * scale
-        calc = SinglePointCalculator(self.atoms, forces=mode)
-        self.atoms.calc = calc
-        self.atoms.edit()
+    def show_as_force(self, n, scale=0.2, show=True):
+        return self.get_vibrations().show_as_force(n, scale=scale, show=show)
 
     def write_jmol(self):
         """Writes file for viewing of the modes with jmol."""
@@ -460,10 +499,14 @@ class Vibrations:
             if freq[n].imag != 0:
                 c = 'i'
                 freq[n] = freq[n].imag
+
             else:
+                freq[n] = freq[n].real
                 c = ' '
 
-            fd.write('Mode #%d, f = %.1f%s cm^-1' % (n, freq[n], c))
+            fd.write('Mode #%d, f = %.1f%s cm^-1'
+                     % (n, float(freq[n].real), c))
+
             if self.ir:
                 fd.write(', I = %.4f (D/Å)^2 amu^-1.\n' % self.intensities[n])
             else:
@@ -471,7 +514,7 @@ class Vibrations:
 
             mode = self.get_mode(n)
             for i, pos in enumerate(self.atoms.positions):
-                fd.write('%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f \n' %
+                fd.write('%2s %12.5f %12.5f %12.5f %12.5f %12.5f %12.5f\n' %
                          (symbols[i], pos[0], pos[1], pos[2],
                           mode[i, 0], mode[i, 1], mode[i, 2]))
 
@@ -534,7 +577,7 @@ class Vibrations:
         outdata.T[1] = spectrum
 
         with open(out, 'w') as fd:
-            fd.write('# %s folded, width=%g cm^-1\n' % (type.title(), width))
+            fd.write(f'# {type.title()} folded, width={width:g} cm^-1\n')
             fd.write('# [cm^-1] arbitrary\n')
             for row in outdata:
                 fd.write('%.3f  %15.5e\n' %

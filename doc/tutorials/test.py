@@ -1,10 +1,12 @@
 # creates: test.txt
 import runpy
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 # Monkey-patch view() to avoid ASE-GUI windows popping up:
 import ase.visualize
+
 ase.visualize.view = lambda *args, **kwargs: None
 
 

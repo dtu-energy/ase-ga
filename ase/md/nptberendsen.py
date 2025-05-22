@@ -1,19 +1,35 @@
+# fmt: off
+
 """Berendsen NPT dynamics class."""
+import warnings
+from typing import IO, Optional, Union
 
 import numpy as np
-import warnings
 
+from ase import Atoms, units
 from ase.md.nvtberendsen import NVTBerendsen
-import ase.units as units
 
 
 class NPTBerendsen(NVTBerendsen):
-    def __init__(self, atoms, timestep, temperature=None,
-                 *, temperature_K=None, pressure=None, pressure_au=None,
-                 taut=0.5e3 * units.fs, taup=1e3 * units.fs,
-                 compressibility=None, compressibility_au=None, fixcm=True,
-                 trajectory=None,
-                 logfile=None, loginterval=1, append_trajectory=False):
+    def __init__(
+        self,
+        atoms: Atoms,
+        timestep: float,
+        temperature: Optional[float] = None,
+        *,
+        temperature_K: Optional[float] = None,
+        pressure: Optional[float] = None,
+        pressure_au: Optional[float] = None,
+        taut: float = 0.5e3 * units.fs,
+        taup: float = 1e3 * units.fs,
+        compressibility: Optional[float] = None,
+        compressibility_au: Optional[float] = None,
+        fixcm: bool = True,
+        trajectory: Optional[str] = None,
+        logfile: Optional[Union[IO, str]] = None,
+        loginterval: int = 1,
+        append_trajectory: bool = False,
+    ):
         """Berendsen (constant N, P, T) molecular dynamics.
 
         This dynamics scale the velocities and volumes to maintain a constant
@@ -38,7 +54,7 @@ class NPTBerendsen(NVTBerendsen):
             The desired pressure, in bar (1 bar = 1e5 Pa).  Deprecated,
             use ``pressure_au`` instead.
 
-        pressure: float
+        pressure_au: float
             The desired pressure, in atomic units (eV/Å^3).
 
         taut: float
@@ -69,7 +85,7 @@ class NPTBerendsen(NVTBerendsen):
             Use '-' for stdout.
 
         loginterval: int (optional)
-            Only write a log line for every *loginterval* time steps.  
+            Only write a log line for every *loginterval* time steps.
             Default: 1
 
         append_trajectory: boolean (optional)
@@ -136,9 +152,6 @@ class NPTBerendsen(NVTBerendsen):
         scl_pressure = (1.0 - taupscl * self.compressibility / 3.0 *
                         (self.pressure - old_pressure))
 
-        #print("old_pressure", old_pressure, self.pressure)
-        #print("volume scaling by:", scl_pressure)
-
         cell = self.atoms.get_cell()
         cell = scl_pressure * cell
         self.atoms.set_cell(cell, scale_atoms=True)
@@ -153,7 +166,7 @@ class NPTBerendsen(NVTBerendsen):
         atoms = self.atoms
 
         if forces is None:
-            forces = atoms.get_forces()
+            forces = atoms.get_forces(md=True)
 
         p = self.atoms.get_momenta()
         p += 0.5 * self.dt * forces
@@ -175,7 +188,7 @@ class NPTBerendsen(NVTBerendsen):
         # cannot use self.masses in the line above.
 
         self.atoms.set_momenta(p)
-        forces = self.atoms.get_forces()
+        forces = self.atoms.get_forces(md=True)
         atoms.set_momenta(self.atoms.get_momenta() + 0.5 * self.dt * forces)
 
         return forces
@@ -195,7 +208,7 @@ class NPTBerendsen(NVTBerendsen):
         pressure_au: None or float
             Pressure in ev/Å^3.
 
-        Exactly one of the two pressure parameters must be different from 
+        Exactly one of the two pressure parameters must be different from
         None, otherwise an error is issued.
 
         Return value: Pressure in eV/Å^3.
@@ -224,53 +237,16 @@ class Inhomogeneous_NPTBerendsen(NPTBerendsen):
 
     Usage: NPTBerendsen(atoms, timestep, temperature, taut, pressure, taup)
 
-    atoms
-        The list of atoms.
-
-    timestep
-        The time step.
-
-    temperature
-        The desired temperature, in Kelvin.
-
-    taut
-        Time constant for Berendsen temperature coupling.
-
-    fixcm
-        If True, the position and momentum of the center of mass is
-        kept unperturbed.  Default: True.
-
-    pressure
-        The desired pressure, in bar (1 bar = 1e5 Pa).
-
-    taup
-        Time constant for Berendsen pressure coupling.
-
-    compressibility
-        The compressibility of the material, water 4.57E-5 bar-1, in bar-1
-
-    mask
+    Parameters
+    ----------
+    mask : tuple[int]
         Specifies which axes participate in the barostat.  Default (1, 1, 1)
         means that all axes participate, set any of them to zero to disable
         the barostat in that direction.
     """
 
-    def __init__(self, atoms, timestep, temperature=None,
-                 *, temperature_K=None,
-                 taut=0.5e3 * units.fs, pressure=None,
-                 pressure_au=None, taup=1e3 * units.fs,
-                 compressibility=None, compressibility_au=None,
-                 mask=(1, 1, 1), fixcm=True, trajectory=None,
-                 logfile=None, loginterval=1):
-
-        NPTBerendsen.__init__(self, atoms, timestep, temperature=temperature,
-                              temperature_K=temperature_K,
-                              taut=taut, taup=taup, pressure=pressure,
-                              pressure_au=pressure_au,
-                              compressibility=compressibility,
-                              compressibility_au=compressibility_au,
-                              fixcm=fixcm, trajectory=trajectory,
-                              logfile=logfile, loginterval=loginterval)
+    def __init__(self, *args, mask=(1, 1, 1), **kwargs):
+        NPTBerendsen.__init__(self, *args, **kwargs)
         self.mask = mask
 
     def scale_positions_and_cell(self):

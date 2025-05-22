@@ -1,9 +1,9 @@
-import re
+# fmt: off
+
 import os
+import re
+
 import numpy as np
-import ase
-from .vasp import Vasp
-from ase.calculators.singlepoint import SinglePointCalculator
 
 
 def get_vasp_version(string):
@@ -25,6 +25,7 @@ class VaspChargeDensity:
     Filename is normally CHG."""
     # Can the filename be CHGCAR?  There's a povray tutorial
     # in doc/tutorials where it's CHGCAR as of January 2021.  --askhl
+
     def __init__(self, filename):
         # Instance variables
         self.atoms = []  # List of Atoms objects
@@ -80,61 +81,65 @@ class VaspChargeDensity:
 
         """
         import ase.io.vasp as aiv
-        f = open(filename)
-        self.atoms = []
-        self.chg = []
-        self.chgdiff = []
-        self.aug = ''
-        self.augdiff = ''
-        while True:
-            try:
-                atoms = aiv.read_vasp(f)
-            except (IOError, ValueError, IndexError):
-                # Probably an empty line, or we tried to read the
-                # augmentation occupancies in CHGCAR
-                break
-            f.readline()
-            ngr = f.readline().split()
-            ng = (int(ngr[0]), int(ngr[1]), int(ngr[2]))
-            chg = np.empty(ng)
-            self._read_chg(f, chg, atoms.get_volume())
-            self.chg.append(chg)
-            self.atoms.append(atoms)
-            # Check if the file has a spin-polarized charge density part, and
-            # if so, read it in.
-            fl = f.tell()
-            # First check if the file has an augmentation charge part (CHGCAR
-            # file.)
-            line1 = f.readline()
-            if line1 == '':
-                break
-            elif line1.find('augmentation') != -1:
-                augs = [line1]
-                while True:
-                    line2 = f.readline()
-                    if line2.split() == ngr:
+        with open(filename) as fd:
+            self.atoms = []
+            self.chg = []
+            self.chgdiff = []
+            self.aug = ''
+            self.augdiff = ''
+            while True:
+                try:
+                    atoms = aiv.read_vasp_configuration(fd)
+                except (KeyError, RuntimeError, ValueError):
+                    # Probably an empty line, or we tried to read the
+                    # augmentation occupancies in CHGCAR
+                    break
+
+                # Note: We continue reading from the same file, and
+                # this relies on read_vasp() to read no more lines
+                # than it currently does.
+                fd.readline()
+
+                ngr = fd.readline().split()
+                ng = (int(ngr[0]), int(ngr[1]), int(ngr[2]))
+                chg = np.empty(ng)
+                self._read_chg(fd, chg, atoms.get_volume())
+                self.chg.append(chg)
+                self.atoms.append(atoms)
+                # Check if the file has a spin-polarized charge density part,
+                # and if so, read it in.
+                fl = fd.tell()
+                # First check if the file has an augmentation charge part
+                # (CHGCAR file.)
+                line1 = fd.readline()
+                if line1 == '':
+                    break
+                elif line1.find('augmentation') != -1:
+                    augs = [line1]
+                    while True:
+                        line2 = fd.readline()
+                        if line2.split() == ngr:
+                            self.aug = ''.join(augs)
+                            augs = []
+                            chgdiff = np.empty(ng)
+                            self._read_chg(fd, chgdiff, atoms.get_volume())
+                            self.chgdiff.append(chgdiff)
+                        elif line2 == '':
+                            break
+                        else:
+                            augs.append(line2)
+                    if len(self.aug) == 0:
                         self.aug = ''.join(augs)
                         augs = []
-                        chgdiff = np.empty(ng)
-                        self._read_chg(f, chgdiff, atoms.get_volume())
-                        self.chgdiff.append(chgdiff)
-                    elif line2 == '':
-                        break
                     else:
-                        augs.append(line2)
-                if len(self.aug) == 0:
-                    self.aug = ''.join(augs)
-                    augs = []
+                        self.augdiff = ''.join(augs)
+                        augs = []
+                elif line1.split() == ngr:
+                    chgdiff = np.empty(ng)
+                    self._read_chg(fd, chgdiff, atoms.get_volume())
+                    self.chgdiff.append(chgdiff)
                 else:
-                    self.augdiff = ''.join(augs)
-                    augs = []
-            elif line1.split() == ngr:
-                chgdiff = np.empty(ng)
-                self._read_chg(f, chgdiff, atoms.get_volume())
-                self.chgdiff.append(chgdiff)
-            else:
-                f.seek(fl)
-        f.close()
+                    fd.seek(fl)
 
     def _write_chg(self, fobj, chg, volume, format='chg'):
         """Write charge density
@@ -204,34 +209,33 @@ class VaspChargeDensity:
                 format = 'chgcar'
             else:
                 format = 'chg'
-        with open(filename, 'w') as f:
+        with open(filename, 'w') as fd:
             for ii, chg in enumerate(self.chg):
                 if format == 'chgcar' and ii != len(self.chg) - 1:
                     continue  # Write only the last image for CHGCAR
-                aiv.write_vasp(f,
+                aiv.write_vasp(fd,
                                self.atoms[ii],
-                               direct=True,
-                               long_format=False)
-                f.write('\n')
+                               direct=True)
+                fd.write('\n')
                 for dim in chg.shape:
-                    f.write(' %4i' % dim)
-                f.write('\n')
+                    fd.write(' %4i' % dim)
+                fd.write('\n')
                 vol = self.atoms[ii].get_volume()
-                self._write_chg(f, chg, vol, format)
+                self._write_chg(fd, chg, vol, format)
                 if format == 'chgcar':
-                    f.write(self.aug)
+                    fd.write(self.aug)
                 if self.is_spin_polarized():
                     if format == 'chg':
-                        f.write('\n')
+                        fd.write('\n')
                     for dim in chg.shape:
-                        f.write(' %4i' % dim)
-                    f.write('\n')  # a new line after dim is required
-                    self._write_chg(f, self.chgdiff[ii], vol, format)
+                        fd.write(' %4i' % dim)
+                    fd.write('\n')  # a new line after dim is required
+                    self._write_chg(fd, self.chgdiff[ii], vol, format)
                     if format == 'chgcar':
                         # a new line is always provided self._write_chg
-                        f.write(self.augdiff)
+                        fd.write(self.augdiff)
                 if format == 'chg' and len(self.chg) > 1:
-                    f.write('\n')
+                    fd.write('\n')
 
 
 class VaspDos:
@@ -250,6 +254,7 @@ class VaspDos:
     level. Changing this value shifts the energies.
 
     """
+
     def __init__(self, doscar='DOSCAR', efermi=0.0):
         """Initialize"""
         self._efermi = 0.0
@@ -261,9 +266,8 @@ class VaspDos:
         self.sort = []
         self.resort = []
         if os.path.isfile('ase-sort.dat'):
-            file = open('ase-sort.dat', 'r')
-            lines = file.readlines()
-            file.close()
+            with open('ase-sort.dat') as file:
+                lines = file.readlines()
             for line in lines:
                 data = line.split()
                 self.sort.append(int(data[0]))
@@ -343,136 +347,29 @@ class VaspDos:
 
     def read_doscar(self, fname="DOSCAR"):
         """Read a VASP DOSCAR file"""
-        f = open(fname)
-        natoms = int(f.readline().split()[0])
-        [f.readline() for nn in range(4)]  # Skip next 4 lines.
-        # First we have a block with total and total integrated DOS
-        ndos = int(f.readline().split()[2])
-        dos = []
-        for nd in range(ndos):
-            dos.append(np.array([float(x) for x in f.readline().split()]))
-        self._total_dos = np.array(dos).T
-        # Next we have one block per atom, if INCAR contains the stuff
-        # necessary for generating site-projected DOS
-        dos = []
-        for na in range(natoms):
-            line = f.readline()
-            if line == '':
-                # No site-projected DOS
-                break
-            ndos = int(line.split()[2])
-            line = f.readline().split()
-            cdos = np.empty((ndos, len(line)))
-            cdos[0] = np.array(line)
-            for nd in range(1, ndos):
-                line = f.readline().split()
-                cdos[nd] = np.array([float(x) for x in line])
-            dos.append(cdos.T)
-        self._site_dos = np.array(dos)
-
-
-class xdat2traj:
-    def __init__(self,
-                 trajectory=None,
-                 atoms=None,
-                 poscar=None,
-                 xdatcar=None,
-                 sort=None,
-                 calc=None):
-        """
-        trajectory is the name of the file to write the trajectory to
-        poscar is the name of the poscar file to read. Default: POSCAR
-        """
-        if not poscar:
-            self.poscar = 'POSCAR'
-        else:
-            self.poscar = poscar
-
-        if not atoms:
-            # This reads the atoms sorted the way VASP wants
-            self.atoms = ase.io.read(self.poscar, format='vasp')
-            resort_reqd = True
-        else:
-            # Assume if we pass atoms that it is sorted the way we want
-            self.atoms = atoms
-            resort_reqd = False
-
-        if not calc:
-            self.calc = Vasp()
-        else:
-            self.calc = calc
-        if not sort:
-            if not hasattr(self.calc, 'sort'):
-                self.calc.sort = list(range(len(self.atoms)))
-        else:
-            self.calc.sort = sort
-        self.calc.resort = list(range(len(self.calc.sort)))
-        for n in range(len(self.calc.resort)):
-            self.calc.resort[self.calc.sort[n]] = n
-
-        if not xdatcar:
-            self.xdatcar = 'XDATCAR'
-        else:
-            self.xdatcar = xdatcar
-
-        if not trajectory:
-            self.trajectory = 'out.traj'
-        else:
-            self.trajectory = trajectory
-
-        self.out = ase.io.trajectory.Trajectory(self.trajectory, mode='w')
-
-        if resort_reqd:
-            self.atoms = self.atoms[self.calc.resort]
-        self.energies = self.calc.read_energy(all=True)[1]
-        # Forces are read with the atoms sorted using resort
-        self.forces = self.calc.read_forces(self.atoms, all=True)
-
-    def convert(self):
-        lines = open(self.xdatcar).readlines()
-        if len(lines[7].split()) == 0:
-            del (lines[0:8])
-        elif len(lines[5].split()) == 0:
-            del (lines[0:6])
-        elif len(lines[4].split()) == 0:
-            del (lines[0:5])
-        elif lines[7].split()[0] == 'Direct':
-            del (lines[0:8])
-        step = 0
-        iatom = 0
-        scaled_pos = []
-        for line in lines:
-            if iatom == len(self.atoms):
-                if step == 0:
-                    self.out.write_header(self.atoms[self.calc.resort])
-                scaled_pos = np.array(scaled_pos)
-                # Now resort the positions to match self.atoms
-                self.atoms.set_scaled_positions(scaled_pos[self.calc.resort])
-
-                calc = SinglePointCalculator(self.atoms,
-                                             energy=self.energies[step],
-                                             forces=self.forces[step])
-                self.atoms.calc = calc
-                self.out.write(self.atoms)
-                scaled_pos = []
-                iatom = 0
-                step += 1
-            else:
-                if not line.split()[0] == 'Direct':
-                    iatom += 1
-                    scaled_pos.append(
-                        [float(line.split()[n]) for n in range(3)])
-
-        # Write also the last image
-        # I'm sure there is also more clever fix...
-        if step == 0:
-            self.out.write_header(self.atoms[self.calc.resort])
-        scaled_pos = np.array(scaled_pos)[self.calc.resort]
-        self.atoms.set_scaled_positions(scaled_pos)
-        calc = SinglePointCalculator(self.atoms,
-                                     energy=self.energies[step],
-                                     forces=self.forces[step])
-        self.atoms.calc = calc
-        self.out.write(self.atoms)
-
-        self.out.close()
+        with open(fname) as fd:
+            natoms = int(fd.readline().split()[0])
+            [fd.readline() for _ in range(4)]
+            # First we have a block with total and total integrated DOS
+            ndos = int(fd.readline().split()[2])
+            dos = []
+            for _ in range(ndos):
+                dos.append(np.array([float(x) for x in fd.readline().split()]))
+            self._total_dos = np.array(dos).T
+            # Next we have one block per atom, if INCAR contains the stuff
+            # necessary for generating site-projected DOS
+            dos = []
+            for _ in range(natoms):
+                line = fd.readline()
+                if line == '':
+                    # No site-projected DOS
+                    break
+                ndos = int(line.split()[2])
+                line = fd.readline().split()
+                cdos = np.empty((ndos, len(line)))
+                cdos[0] = np.array(line)
+                for nd in range(1, ndos):
+                    line = fd.readline().split()
+                    cdos[nd] = np.array([float(x) for x in line])
+                dos.append(cdos.T)
+            self._site_dos = np.array(dos)

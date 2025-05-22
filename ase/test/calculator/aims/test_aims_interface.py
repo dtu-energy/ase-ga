@@ -1,9 +1,12 @@
-import tempfile
+# fmt: off
 import os
+import tempfile
 
 import pytest
-from ase.calculators.aims import Aims
+
 from ase import Atoms
+from ase.calculators.aims import Aims
+
 
 @pytest.mark.skip('legacy test with hardcoded paths and commands')
 def test_aims_interface():
@@ -12,9 +15,8 @@ def test_aims_interface():
     aims_command_alternative = 'mpirun -np 4 fhiaims.x'
     outfilename = 'alternative_aims.out'
     outfilename_default = 'aims.out'
-    command = '{0:s} > {1:s}'.format(aims_command, outfilename)
-    #command_alternative = '{0:s} > {1:s}'.format(aims_command_alternative, outfilename)
-    command_default = '{0:s} > {1:s}'.format(aims_command, outfilename_default)
+    command = f'{aims_command:s} > {outfilename:s}'
+    command_default = f'{aims_command:s} > {outfilename_default:s}'
     legacy_command = 'aims.version.serial.x > aims.out'
     legacy_aims_command = legacy_command.split('>')[0].strip()
     legacy_outfilename = legacy_command.split('>')[-1].strip()
@@ -28,7 +30,8 @@ def test_aims_interface():
     # behavior of empty init with env variable
     os.environ['ASE_AIMS_COMMAND'] = aims_command_alternative
     calc = Aims()
-    assert calc.command == '{0} > {1}'.format(aims_command_alternative, outfilename_default)
+    assert calc.command == '{} > {}'.format(
+        aims_command_alternative, outfilename_default)
     assert calc.outfilename == outfilename_default
     assert calc.aims_command == aims_command_alternative
 
@@ -68,17 +71,18 @@ def test_aims_interface():
     assert calc.aims_command == aims_command
     assert calc.command == command_default
 
-    #calc.set_aims_command(aims_command_alternative)
+    # calc.set_aims_command(aims_command_alternative)
     calc.aims_command = aims_command_alternative
     assert calc.aims_command == aims_command_alternative
     assert calc.outfilename == outfilename_default
-    assert calc.command == '{} > {}'.format(aims_command_alternative, outfilename_default)
+    assert calc.command == '{} > {}'.format(
+        aims_command_alternative, outfilename_default)
 
     calc.outfilename = outfilename
-    assert calc.command == '{} > {}'.format(aims_command_alternative, outfilename)
+    assert calc.command == '{} > {}'.format(
+        aims_command_alternative, outfilename)
     assert calc.aims_command == aims_command_alternative
     assert calc.outfilename == outfilename
-
 
     # test writing files
     tmp_dir = tempfile.mkdtemp()
@@ -92,13 +96,11 @@ def test_aims_interface():
                 sc_accuracy_forces=1e-4,
                 label=tmp_dir,
                 )
-    try:
+
+    with pytest.raises(ValueError):
         calc.prepare_input_files()
-        raise AssertionError
-    except ValueError:
-        pass
 
     calc.atoms = water
     calc.prepare_input_files()
     for f in ['control.in', 'geometry.in']:
-        assert os.path.isfile(os.path.join(tmp_dir,f))
+        assert os.path.isfile(os.path.join(tmp_dir, f))

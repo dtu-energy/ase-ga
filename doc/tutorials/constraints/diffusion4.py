@@ -1,6 +1,6 @@
-from ase.build import fcc100, add_adsorbate
-from ase.constraints import FixAtoms, FixedPlane
+from ase.build import add_adsorbate, fcc100
 from ase.calculators.emt import EMT
+from ase.constraints import FixAtoms, FixedPlane
 from ase.optimize import QuasiNewton
 
 # 2x2-Al(001) surface with 3 layers and an
@@ -10,7 +10,7 @@ add_adsorbate(slab, 'Au', 1.7, 'hollow')
 slab.center(axis=2, vacuum=4.0)
 
 # Make sure the structure is correct:
-#from ase.visualize import view
+# from ase.visualize import view
 # view(slab)
 
 # Fix second and third layers:

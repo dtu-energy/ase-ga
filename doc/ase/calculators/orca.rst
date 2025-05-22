@@ -4,16 +4,16 @@
 ORCA
 ======
 
-`ORCA <https://orcaforum.kofo.mpg.de/app.php/portal>`_ is a computational chemistry code 
+`ORCA <https://orcaforum.kofo.mpg.de/app.php/portal>`_ is a computational chemistry code
 that can do SCF, (TD)DFT, semi-empirical potentials, MP2, CASSCF, Coupled Cluster
-calculations, and more. 
+calculations, and more.
 
 
-It is closed source, but free for academic users. Register on the forum to receive 
-a download link for the binaries, as well as access ot the latest manual.
+It is closed source, but free for academic users. Register on the forum to receive
+a download link for the binaries, as well as access to the latest manual.
 
 
-Many input examples are available at the 
+Many input examples are available at the
 `ORCA Input Library <https://sites.google.com/site/orcainputlibrary>`_.
 
 
@@ -24,40 +24,40 @@ The :class:`ORCA` ASE-interface is very simple. Two keywords are defined::
   orcasimpleinput: str
       What you'd put after the "!" in an orca input file.
 
-  orcablock: str
+  orcablocks: str
       What you'd put in the "% ... end"-blocks.
 
 
-The ASE-calculator also works with the 
-:mod:`~ase.calculators.qmmm.EIQMMM`-calculator 
-for QM/MM simulations (see :mod:`~ase.calculators.qmmm` for 
-more info). 
+The ASE-calculator also works with the
+:mod:`~ase.calculators.qmmm.EIQMMM`-calculator
+for QM/MM simulations (see :mod:`~ase.calculators.qmmm` for
+more info).
 
 Setup and usage
 ===============
 
-.. highlight:: bash
+Orca can be configured using the configfile like other calculators.
+If you need to override it for programmatic control of the orca
+command, you can manually create an ``OrcaProfile``::
 
-The default command that ASE will use to start ORCA is
-``orca PREFIX.inp > PREFIX.out``. 
+  from ase.calculators.orca import OrcaProfile
 
-You can change this command by setting the
-environment variable :envvar:`$ASE_ORCA_COMMAND`. (For example, add a line
-to your ``.bashrc`` with ``export ASE_ORCA_COMMAND="my new command"``). 
-This can be useful since the parallel MPI version of orca can require the full
-path to the executable to be specified. 
+  profile = OrcaProfile(command='/full/path/to/my/orca')
+  calc = ORCA(profile=profile)
 
-.. highlight:: python
-
-Orca wants to decide which sub-processes to parallelize via MPI itself, so you'd
-almost always want a string in your ``orcablocks`` specifying the number of 
+ORCA decides which sub-processes to parallelize via MPI by itself, so you'll
+almost always want a string in your ``orcablocks`` specifying the number of
 cores for the simulation, e.g.::
 
   from ase.calculators.orca import ORCA
 
-  calc = ORCA(label='orcacalc', 
+  calc = ORCA(profile=MyOrcaProfile,
               orcasimpleinput='B3LYP def2-TZVP'
-              orcablocks='%pal nprocs 16 end'
+              orcablocks='%pal nprocs 16 end')
 
-for a B3LYP/def2-TZVP calculation on 16 cores. 
+for a B3LYP/def2-TZVP calculation on 16 cores.
 
+Class Definition
+================
+
+.. autoclass:: ORCA

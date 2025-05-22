@@ -1,3 +1,5 @@
+# fmt: off
+
 import argparse
 import traceback
 from math import pi
@@ -9,7 +11,6 @@ import ase.db
 import ase.optimize
 from ase.calculators.emt import EMT
 from ase.io import Trajectory
-
 
 all_optimizers = ase.optimize.__all__ + ['PreconLBFGS', 'PreconFIRE',
                                          'SciPyFminCG', 'SciPyFminBFGS']
@@ -103,8 +104,9 @@ class Wrapper:
     def __len__(self):
         return len(self.atoms)
 
-    def __getattr__(self, name):
-        return self.atoms.__getattribute__(name)
+    def __ase_optimizable__(self):
+        from ase.optimize.optimize import OptimizableAtoms
+        return OptimizableAtoms(self)
 
 
 def run_test(atoms, optimizer, tag, fmax=0.02, eggbox=0.0):
@@ -120,11 +122,11 @@ def run_test(atoms, optimizer, tag, fmax=0.02, eggbox=0.0):
         relax.run(fmax=fmax, steps=10000000)
     except Exception as x:
         wrapper.nsteps = float('inf')
-        error = '{}: {}'.format(x.__class__.__name__, x)
+        error = f'{x.__class__.__name__}: {x}'
         tb = traceback.format_exc()
 
         with open(tag + '.err', 'w') as fd:
-            fd.write('{}\n{}\n'.format(error, tb))
+            fd.write(f'{error}\n{tb}\n')
 
     tincl += time()
 
@@ -142,7 +144,7 @@ def test_optimizer(systems, optimizer, calculator, prefix='', db=None,
             if id is None:
                 continue
         atoms = atoms.copy()
-        tag = '{}{}-{}'.format(prefix, optname, name)
+        tag = f'{prefix}{optname}-{name}'
         atoms.calc = calculator(txt=tag + '.txt')
         error, nsteps, texcl, tincl = run_test(atoms, optimizer, tag,
                                                eggbox=eggbox)

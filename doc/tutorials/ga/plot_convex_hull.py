@@ -1,8 +1,9 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from ase.phasediagram import PhaseDiagram
+import numpy as np
+
 from ase.db import connect
 from ase.io import write
+from ase.phasediagram import PhaseDiagram
 
 db = connect('hull.db')
 
@@ -14,8 +15,10 @@ for dct in dcts:
     refs.append((dct.formula, -dct.raw_score))
 
 pd = PhaseDiagram(refs)
-ax = pd.plot(show=not True,  # set to True to show plot
-             only_label_simplices=True)
+ax = pd.plot(
+    show=not True,  # set to True to show plot
+    only_label_simplices=True,
+)
 plt.savefig('hull.png')
 
 # View the simplices of the convex hull

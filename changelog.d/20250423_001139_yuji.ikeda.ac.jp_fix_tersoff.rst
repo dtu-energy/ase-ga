@@ -1,0 +1,5 @@
+Bugfixes
+--------
+
+- Fixed :class:`~ase.calculators.tersoff.Tersoff` to compute properties
+  correctly (:mr:`3653`, :mr:`3655`, :mr:`3657`).

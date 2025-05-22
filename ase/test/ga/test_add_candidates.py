@@ -1,17 +1,14 @@
-def test_add_candidates():
-    import pytest
-    from ase.build import fcc111
-    from ase.ga.data import PrepareDB
-    from ase.ga.data import DataConnection
-    from ase.ga.offspring_creator import OffspringCreator
-    from ase.ga import set_raw_score
+# fmt: off
+import pytest
 
-    import os
+from ase.build import fcc111
+from ase.ga import set_raw_score
+from ase.ga.data import DataConnection, PrepareDB
+from ase.ga.offspring_creator import OffspringCreator
 
-    db_file = 'gadb.db'
-    if os.path.isfile(db_file):
-        os.remove(db_file)
 
+def test_add_candidates(tmp_path):
+    db_file = tmp_path / 'gadb.db'
     db = PrepareDB(db_file)
 
     slab1 = fcc111('Ag', size=(2, 2, 2))
@@ -28,12 +25,12 @@ def test_add_candidates():
     slab3 = db.get_an_unrelaxed_candidate()
     old_confid = slab3.info['confid']
     slab3[0].symbol = 'Au'
-    db.add_unrelaxed_candidate(slab3, 'mutated: Parent {0}'.format(old_confid))
+    db.add_unrelaxed_candidate(slab3, f'mutated: Parent {old_confid}')
     new_confid = slab3.info['confid']
     # confid should update when using add_unrelaxed_candidate
     assert old_confid != new_confid
     slab3[1].symbol = 'Au'
-    db.add_unrelaxed_step(slab3, 'mutated: Parent {0}'.format(new_confid))
+    db.add_unrelaxed_step(slab3, f'mutated: Parent {new_confid}')
     # confid should not change when using add_unrelaxed_step
     assert slab3.info['confid'] == new_confid
 
@@ -56,5 +53,3 @@ def test_add_candidates():
         more_slabs.append(slab)
     db.add_more_relaxed_candidates(more_slabs)
     assert more_slabs[1].info['confid'] == 9
-
-    os.remove(db_file)

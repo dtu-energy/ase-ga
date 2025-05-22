@@ -1,8 +1,11 @@
-def test_cfg():
-    import numpy as np
+# fmt: off
+import numpy as np
 
-    from ase.build import molecule
-    from ase.io import read, write
+from ase.build import molecule
+from ase.io import read, write
+
+
+def test_cfg():
 
     a = molecule('CO2')
     f = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])

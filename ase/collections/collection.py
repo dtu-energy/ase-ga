@@ -1,3 +1,5 @@
+# fmt: off
+
 import os.path as op
 
 from ase.db.row import AtomsRow
@@ -22,6 +24,7 @@ class Collection:
     >>> sum(len(atoms) for atoms in s22)
     414
     """
+
     def __init__(self, name):
         """Create a collection lazily.
 
@@ -46,7 +49,7 @@ class Collection:
         self._names = []
         self._systems = {}
         self._data = {}
-        self.filename = op.join(op.dirname(__file__), name + '.json')
+        self.filename = op.join(op.dirname(__file__), f'{name}.json')
 
     def __getitem__(self, name):
         self._read()
@@ -65,11 +68,11 @@ class Collection:
         return len(self.names)
 
     def __str__(self):
-        return '<{0}-collection, {1} systems: {2}, {3}, ...>'.format(
+        return '<{}-collection, {} systems: {}, {}, ...>'.format(
             self.name, len(self), *self.names[:2])
 
     def __repr__(self):
-        return 'Collection({0!r})'.format(self.name)
+        return f'Collection({self.name!r})'
 
     @property
     def names(self):
@@ -92,4 +95,4 @@ class Collection:
             self._names.append(name)
             self._systems[name] = AtomsRow(dct).toatoms()
             del kvp['name']
-            self._data[name] = dict((str(k), v) for k, v in kvp.items())
+            self._data[name] = {str(k): v for k, v in kvp.items()}

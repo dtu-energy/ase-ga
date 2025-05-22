@@ -1,10 +1,11 @@
 # creates: atomic_radii.png
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
+from ase.data import chemical_symbols, covalent_radii
 from ase.data.vdw import vdw_radii as vdw1
 from ase.data.vdw_alvarez import vdw_radii as vdw2
-from ase.data import covalent_radii, chemical_symbols
 
 plt.grid(ls=':')
 c1 = covalent_radii.copy()
@@ -15,6 +16,6 @@ plt.plot(c1, marker='.', label='covalent_radii [ase.data]')
 nobles = [2, 10, 18, 36, 54, 86]
 plt.xticks(nobles, [chemical_symbols[Z] for Z in nobles])
 plt.xlabel('Z')
-plt.ylabel(u'radius [Å]')
+plt.ylabel('radius [Å]')
 plt.legend(loc='best')
 plt.savefig('atomic_radii.png')

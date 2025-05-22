@@ -1,5 +1,6 @@
+# fmt: off
 import pytest
-import os
+
 from ase.db import connect
 
 cmd = """
@@ -13,55 +14,17 @@ ase -T db -v testase.json natoms=1,Cu=1 --delete --yes &&
 ase -T db -v testase.json "H>0" -k hydro=1,abc=42,foo=bar &&
 ase -T db -v testase.json "H>0" --delete-keys foo"""
 
-
-dbnames = [
-    'json',
-    'db',
-    'postgresql',
-    'mysql',
-    'mariadb']
+dbtypes = ['json', 'db']
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize('dbname', dbnames)
-def test_db(dbname, cli):
+@pytest.mark.slow()
+@pytest.mark.parametrize('dbtype', dbtypes)
+def test_db(dbtype, cli, testdir):
     def count(n, *args, **kwargs):
         m = len(list(con.select(columns=['id'], *args, **kwargs)))
         assert m == n, (m, n)
 
-    name = None
-
-    if dbname == 'postgresql':
-        pytest.importorskip('psycopg2')
-        if os.environ.get('POSTGRES_DB'):  # gitlab-ci
-            name = 'postgresql://ase:ase@postgres:5432/testase'
-        else:
-            name = os.environ.get('ASE_TEST_POSTGRES_URL')
-    elif dbname == 'mysql':
-        pytest.importorskip('pymysql')
-        if os.environ.get('CI_PROJECT_DIR'):  # gitlab-ci
-            name = 'mysql://root:ase@mysql:3306/testase_mysql'
-        else:
-            name = os.environ.get('MYSQL_DB_URL')
-    elif dbname == 'mariadb':
-        pytest.importorskip('pymysql')
-        if os.environ.get('CI_PROJECT_DIR'):  # gitlab-ci
-            name = 'mariadb://root:ase@mariadb:3306/testase_mysql'
-        else:
-            name = os.environ.get('MYSQL_DB_URL')
-    elif dbname == 'json':
-        name = 'testase.json'
-    elif dbname == 'db':
-        name = 'testase.db'
-    else:
-        raise ValueError(f'Bad dbname: {dbname}')
-
-    if name is None:
-        pytest.skip('Test requires environment variables')
-
-    if 'postgres' in name or 'mysql' in name or 'mariadb' in name:
-        con = connect(name)
-        con.delete([row.id for row in con.select()])
+    name = f'testase.{dbtype}'
 
     cli.shell(cmd.replace('testase.json', name))
 
@@ -88,4 +51,4 @@ def test_db(dbname, cli):
             count(6, sort='-' + key)
 
         con.delete([id])
-    cli.shell('ase -T gui --terminal -n 3 {}'.format(name))
+    cli.shell(f'ase -T gui --terminal -n 3 {name}')

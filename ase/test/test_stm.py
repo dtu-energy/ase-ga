@@ -1,8 +1,9 @@
+# fmt: off
 from ase.calculators.test import make_test_dft_calculation
 from ase.dft.stm import STM
 
 
-def test_stm():
+def test_stm(testdir):
     atoms = make_test_dft_calculation()
     stm = STM(atoms, [0, 1, 2])
     c = stm.get_averaged_current(-1.0, 4.5)
@@ -13,10 +14,10 @@ def test_stm():
 
     stm = STM(atoms, use_density=True)
     c = stm.get_averaged_current(-1, 4.5)
-    x, y, I = stm.scan2(-1.0, 1.0)
+    x, y, current = stm.scan2(-1.0, 1.0)
     stm.write('stm2.json')
-    x, y, I2 = STM('stm2.json').scan2(-1, 1)
-    assert abs(I - I2).max() == 0
+    x, y, current2 = STM('stm2.json').scan2(-1, 1)
+    assert abs(current - current2).max() == 0
 
     stm = STM(atoms, use_density=True)
     c = stm.get_averaged_current(42, 4.5)

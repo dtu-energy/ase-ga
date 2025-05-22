@@ -25,5 +25,6 @@ This will make a summary figure, which should look something like the one below.
 You can see examples of the implementation of this for real adsorbates as well as find suitable parameters for the Hookean constraints:
 
   | Andrew Peterson
-  | :doi:`Global optimization of adsorbate–surface structures while preserving molecular identity <10.1021/jp063532w>`
+  | :doi:`Global optimization of adsorbate–surface structures while preserving molecular identity <10.1007/s11244-013-0161-8>`
   | Top. Catal., Vol. **57**, 40 (2014)
+

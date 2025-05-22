@@ -1,12 +1,17 @@
+# fmt: off
+import re
+from collections import OrderedDict
+
+import numpy as np
+
+from ase import Atoms
+from ase.io import write
+
+
 def test_xsd_bond():
     # This writes xsd example with bond connectivity information, and checks
     # bond formats.
 
-    from ase import Atoms
-    from ase.io import write
-    import numpy as np
-    from collections import OrderedDict
-    import re
     # Example molecule
     atoms = Atoms('CH4', [[1.08288111e-09, 1.74602682e-09, -1.54703448e-09],
                           [-6.78446715e-01, 8.73516584e-01, -8.63073811e-02],
@@ -24,8 +29,8 @@ def test_xsd_bond():
     # Read and see if the atom information and bond information matches.
     AtomIdsToBondIds = OrderedDict()
     BondIdsToConnectedAtomIds = OrderedDict()
-    with open('xsd_test_CH4.xsd', 'r') as f:
-        for i, line in enumerate(f):
+    with open('xsd_test_CH4.xsd') as fd:
+        for i, line in enumerate(fd):
             if '<Atom3d ' in line:
                 AtomId = int(re.search(r'ID="(.*?)"', line).group(1))
                 ConnectedBondIds = [
@@ -55,6 +60,6 @@ def test_xsd_bond():
             i = AtomIds.index(AtomId)
             j = AtomIds.index(OtherAtomId[0])
             Newconnectivitymatrix[i, j] = 1
-    for i in range(0, 4):
-        for j in range(0, 4):
+    for i in range(4):
+        for j in range(4):
             assert connectivitymatrix[i, j] == Newconnectivitymatrix[i, j]

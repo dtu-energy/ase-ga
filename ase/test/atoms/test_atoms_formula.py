@@ -1,6 +1,10 @@
+# fmt: off
+import warnings
+
+from ase.build import add_adsorbate, fcc111
+
+
 def test_atoms_formula():
-    from ase.build import fcc111, add_adsorbate
-    import warnings
 
     # some random system
     slab = fcc111('Al', size=(2, 2, 3))
@@ -20,7 +24,6 @@ def test_atoms_formula():
 
     assert slab.get_chemical_formula(mode='hill', empirical=True) == 'C2HAl6'
     assert slab.get_chemical_formula(mode='metal', empirical=True) == 'Al6C2H'
-
 
     # check for warning if empirical formula is not available
     for mode in ('all', 'reduce'):

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Mutation classes, that mutate the elements in the supplied
 atoms objects."""
 import numpy as np
@@ -6,9 +8,9 @@ from ase.data import atomic_numbers
 from ase.ga.offspring_creator import OffspringCreator
 
 
-def chunks(l, n):
+def chunks(line, n):
     """split a list into smaller chunks"""
-    return [l[i:i + n] for i in range(0, len(l), n)]
+    return [line[i:i + n] for i in range(0, len(line), n)]
 
 
 class ElementMutation(OffspringCreator):
@@ -151,7 +153,7 @@ class RandomElementMutation(ElementMutation):
             indi.append(a)
 
         return (self.finalize_individual(indi),
-                self.descriptor + ': Parent {0}'.format(f.info['confid']))
+                self.descriptor + ': Parent {}'.format(f.info['confid']))
 
 
 def mendeleiev_table():
@@ -293,7 +295,7 @@ class MoveDownMutation(ElementMutation):
             indi.append(a)
 
         return (self.finalize_individual(indi),
-                used_descriptor + ': Parent {0}'.format(f.info['confid']))
+                used_descriptor + ': Parent {}'.format(f.info['confid']))
 
 
 class MoveUpMutation(ElementMutation):
@@ -388,7 +390,7 @@ class MoveUpMutation(ElementMutation):
             indi.append(a)
 
         return (self.finalize_individual(indi),
-                used_descriptor + ': Parent {0}'.format(f.info['confid']))
+                used_descriptor + ': Parent {}'.format(f.info['confid']))
 
 
 class MoveRightMutation(ElementMutation):
@@ -430,7 +432,7 @@ class MoveRightMutation(ElementMutation):
 
     def __init__(self, element_pool, max_diff_elements=None,
                  min_percentage_elements=None, verbose=False, num_muts=1,
-                rng=np.random):
+                 rng=np.random):
         ElementMutation.__init__(self, element_pool, max_diff_elements,
                                  min_percentage_elements, verbose,
                                  num_muts=num_muts, rng=rng)
@@ -481,7 +483,7 @@ class MoveRightMutation(ElementMutation):
             indi.append(a)
 
         return (self.finalize_individual(indi),
-                used_descriptor + ': Parent {0}'.format(f.info['confid']))
+                used_descriptor + ': Parent {}'.format(f.info['confid']))
 
 
 class MoveLeftMutation(ElementMutation):
@@ -574,7 +576,7 @@ class MoveLeftMutation(ElementMutation):
             indi.append(a)
 
         return (self.finalize_individual(indi),
-                used_descriptor + ':Parent {0}'.format(f.info['confid']))
+                used_descriptor + ':Parent {}'.format(f.info['confid']))
 
 
 class FullElementMutation(OffspringCreator):
@@ -625,4 +627,4 @@ class FullElementMutation(OffspringCreator):
             indi.append(a)
 
         return (self.finalize_individual(indi),
-                self.descriptor + ': Parent {0}'.format(f.info['confid']))
+                self.descriptor + ': Parent {}'.format(f.info['confid']))

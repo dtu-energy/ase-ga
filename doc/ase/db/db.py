@@ -4,7 +4,7 @@ import subprocess
 import ase.db
 from ase import Atoms
 from ase.calculators.emt import EMT
-from ase.db.core import default_key_descriptions
+from ase.db.core import get_key_descriptions
 from ase.optimize import BFGS
 
 c = ase.db.connect('abc.db', append=False)
@@ -32,13 +32,12 @@ with open('ase-db.txt', 'w') as fd:
     fd.write(output.decode())
 with open('ase-db-long.txt', 'w') as fd:
     fd.write('$ ase db abc.db relaxed=1 -l\n')
-    output = subprocess.check_output(
-        ['ase', 'db', 'abc.db', 'relaxed=1', '-l'])
+    output = subprocess.check_output(['ase', 'db', 'abc.db', 'relaxed=1', '-l'])
     fd.write(output.decode())
 
 row = c.get(relaxed=1, calculator='emt')
 for key in row:
-    print('{0:22}: {1}'.format(key, row[key]))
+    print(f'{key:22}: {row[key]}')
 
 print(row.data.abc)
 
@@ -54,8 +53,13 @@ del c[c.get(relaxed=0).id]
 
 with open('known-keys.csv', 'w') as fd:
     print('key,short description,long description,unit', file=fd)
-    for key, (short, long, unit) in default_key_descriptions.items():
+    for key, keydesc in get_key_descriptions().items():
+        unit = keydesc.unit
         if unit == '|e|':
             unit = r'\|e|'
-        long = long or short
-        print('{},{},{},{}'.format(key, short, long, unit), file=fd)
+        print(
+            '{},{},{},{}'.format(
+                key, keydesc.shortdesc, keydesc.longdesc, unit
+            ),
+            file=fd,
+        )

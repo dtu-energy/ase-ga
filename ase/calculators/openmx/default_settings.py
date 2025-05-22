@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 The ASE Calculator for OpenMX <http://www.openmx-square.org>: Python interface
 to the software package for nano-scale material simulations based on density
@@ -26,10 +28,10 @@ functional theories.
 
 default_dictionary = {
     'H': {
-           'cutoff radius': 6,
-           'orbitals used': [3, 2],
-           'pseudo-potential suffix': ''
-          },
+        'cutoff radius': 6,
+        'orbitals used': [3, 2],
+        'pseudo-potential suffix': ''
+    },
     'He': {
         'cutoff radius': 8,
         'orbitals used': [2, 2, 1],

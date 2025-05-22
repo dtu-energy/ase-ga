@@ -65,8 +65,15 @@ def separate(atoms, **kwargs):
     return separated
 
 
-def split_bond(atoms, index1, index2):
-    """Split atoms by a bond specified by indices"""
+def split_bond(atoms, index1, index2, **kwargs):
+    """Split atoms by a bond specified by indices
+
+    index1: index of first atom
+    index2: index of second atom
+    kwargs: kwargs transferred to connected_atoms
+
+    Returns two Atoms objects
+    """
     assert index1 != index2
     if index2 > index1:
         shift = 0, 1
@@ -75,10 +82,10 @@ def split_bond(atoms, index1, index2):
 
     atoms_copy = atoms.copy()
     del atoms_copy[index2]
-    atoms1 = connected_atoms(atoms_copy, index1 - shift[0])
+    atoms1 = connected_atoms(atoms_copy, index1 - shift[0], **kwargs)
 
     atoms_copy = atoms.copy()
     del atoms_copy[index1]
-    atoms2 = connected_atoms(atoms_copy, index2 - shift[1])
+    atoms2 = connected_atoms(atoms_copy, index2 - shift[1], **kwargs)
 
     return atoms1, atoms2

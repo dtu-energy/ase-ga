@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 from ase import Atoms
@@ -7,7 +9,7 @@ from ase.utils import reader, writer
 
 def read_scf(filename):
     try:
-        with open(filename + '.scf', 'r') as fd:
+        with open(filename + '.scf') as fd:
             pip = fd.readlines()
         ene = []
         for line in pip:
@@ -67,14 +69,14 @@ def read_struct(fd, ase=True):
         iline += 1
         neq[iat] = int(pip[iline][15:17])
         iline += 1
-        for ieq in range(1, int(neq[iat])):
+        for _ in range(1, int(neq[iat])):
             pos = np.append(pos, np.array([[float(pip[iline][12:22]),
                                             float(pip[iline][25:35]),
                                             float(pip[iline][38:48])]]),
                             axis=0)
             indif += 1
             iline += 1
-        for i in range(indif - indifini):
+        for _ in range(indif - indifini):
             atomtype.append(pip[iline][0:2].replace(' ', ''))
             rmt.append(float(pip[iline][43:48]))
         iline += 4
@@ -100,8 +102,8 @@ def write_struct(fd, atoms2=None, rmt=None, lattice='P', zza=None):
     nat = len(atoms)
     if rmt is None:
         rmt = [2.0] * nat
-        fd.write(lattice +
-                '   LATTICE,NONEQUIV.ATOMS:%3i\nMODE OF CALC=RELA\n' % nat)
+    fd.write(lattice +
+             '   LATTICE,NONEQUIV.ATOMS:%3i\nMODE OF CALC=RELA\n' % nat)
     cell = atoms.get_cell()
     metT = np.dot(cell, np.transpose(cell))
     cell2 = cellconst(metT)
@@ -124,10 +126,10 @@ def write_struct(fd, atoms2=None, rmt=None, lattice='P', zza=None):
         else:
             ro = 0.0001
         fd.write('%-10s NPT=%5i  R0=%9.8f RMT=%10.4f   Z:%10.5f\n' %
-                (atoms.get_chemical_symbols()[ii], 781, ro, rmt[ii], zz))
-        fd.write('LOCAL ROT MATRIX:    %9.7f %9.7f %9.7f\n' % (1.0, 0.0, 0.0))
-        fd.write('                     %9.7f %9.7f %9.7f\n' % (0.0, 1.0, 0.0))
-        fd.write('                     %9.7f %9.7f %9.7f\n' % (0.0, 0.0, 1.0))
+                 (atoms.get_chemical_symbols()[ii], 781, ro, rmt[ii], zz))
+        fd.write(f'LOCAL ROT MATRIX:    {1.0:9.7f} {0.0:9.7f} {0.0:9.7f}\n')
+        fd.write(f'                     {0.0:9.7f} {1.0:9.7f} {0.0:9.7f}\n')
+        fd.write(f'                     {0.0:9.7f} {0.0:9.7f} {1.0:9.7f}\n')
     fd.write('   0\n')
 
 

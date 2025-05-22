@@ -1,41 +1,130 @@
-"""Quantum ESPRESSO Calculator
+# fmt: off
 
-export ASE_ESPRESSO_COMMAND="/path/to/pw.x -in PREFIX.pwi > PREFIX.pwo"
+"""Quantum ESPRESSO Calculator
 
 Run pw.x jobs.
 """
 
 
+import os
 import warnings
-from ase import io
-from ase.calculators.calculator import FileIOCalculator, PropertyNotPresent
+
+from ase.calculators.genericfileio import (
+    BaseProfile,
+    CalculatorTemplate,
+    GenericFileIOCalculator,
+    read_stdout,
+)
+from ase.io import read, write
+from ase.io.espresso import Namelist
+
+compatibility_msg = (
+    'Espresso calculator is being restructured.  Please use e.g. '
+    "Espresso(profile=EspressoProfile(argv=['mpiexec', 'pw.x'])) "
+    'to customize command-line arguments.'
+)
 
 
-error_template = 'Property "%s" not available. Please try running Quantum\n' \
-                 'Espresso first by calling Atoms.get_potential_energy().'
+# XXX We should find a way to display this warning.
+# warn_template = 'Property "%s" is None. Typically, this is because the ' \
+#                 'required information has not been printed by Quantum ' \
+#                 'Espresso at a "low" verbosity level (the default). ' \
+#                 'Please try running Quantum Espresso with "high" verbosity.'
 
-warn_template = 'Property "%s" is None. Typically, this is because the ' \
-                'required information has not been printed by Quantum ' \
-                'Espresso at a "low" verbosity level (the default). ' \
-                'Please try running Quantum Espresso with "high" verbosity.'
 
-class Espresso(FileIOCalculator):
-    """
-    """
-    implemented_properties = ['energy', 'forces', 'stress', 'magmoms']
-    command = 'pw.x -in PREFIX.pwi > PREFIX.pwo'
-    discard_results_on_any_change = True
+class EspressoProfile(BaseProfile):
+    configvars = {'pseudo_dir'}
 
-    def __init__(self, restart=None,
-                 ignore_bad_restart_file=FileIOCalculator._deprecated,
-                 label='espresso', atoms=None, **kwargs):
+    def __init__(self, command, pseudo_dir, **kwargs):
+        super().__init__(command, **kwargs)
+        # not Path object to avoid problems in remote calculations from Windows
+        self.pseudo_dir = str(pseudo_dir)
+
+    @staticmethod
+    def parse_version(stdout):
+        import re
+
+        match = re.match(r'\s*Program PWSCF\s*v\.(\S+)', stdout, re.M)
+        assert match is not None
+        return match.group(1)
+
+    def version(self):
+        stdout = read_stdout(self._split_command)
+        return self.parse_version(stdout)
+
+    def get_calculator_command(self, inputfile):
+        return ['-in', inputfile]
+
+
+class EspressoTemplate(CalculatorTemplate):
+    _label = 'espresso'
+
+    def __init__(self):
+        super().__init__(
+            'espresso',
+            ['energy', 'free_energy', 'forces', 'stress', 'magmoms', 'dipole'],
+        )
+        self.inputname = f'{self._label}.pwi'
+        self.outputname = f'{self._label}.pwo'
+        self.errorname = f"{self._label}.err"
+
+    def write_input(self, profile, directory, atoms, parameters, properties):
+        dst = directory / self.inputname
+
+        input_data = Namelist(parameters.pop("input_data", None))
+        input_data.to_nested("pw")
+        input_data["control"].setdefault("pseudo_dir", str(profile.pseudo_dir))
+
+        parameters["input_data"] = input_data
+
+        write(
+            dst,
+            atoms,
+            format='espresso-in',
+            properties=properties,
+            **parameters,
+        )
+
+    def execute(self, directory, profile):
+        profile.run(directory, self.inputname, self.outputname,
+                    errorfile=self.errorname)
+
+    def read_results(self, directory):
+        path = directory / self.outputname
+        atoms = read(path, format='espresso-out')
+        return dict(atoms.calc.properties())
+
+    def load_profile(self, cfg, **kwargs):
+        return EspressoProfile.from_config(cfg, self.name, **kwargs)
+
+    def socketio_parameters(self, unixsocket, port):
+        return {}
+
+    def socketio_argv(self, profile, unixsocket, port):
+        if unixsocket:
+            ipi_arg = f'{unixsocket}:UNIX'
+        else:
+            ipi_arg = f'localhost:{port:d}'  # XXX should take host, too
+        return profile.get_calculator_command(self.inputname) + [
+            '--ipi',
+            ipi_arg,
+        ]
+
+
+class Espresso(GenericFileIOCalculator):
+    def __init__(
+        self,
+        *,
+        profile=None,
+        command=GenericFileIOCalculator._deprecated,
+        label=GenericFileIOCalculator._deprecated,
+        directory='.',
+        **kwargs,
+    ):
         """
         All options for pw.x are copied verbatim to the input file, and put
         into the correct section. Use ``input_data`` for parameters that are
-        already in a dict, all other ``kwargs`` are passed as parameters.
-
-        Accepts all the options for pw.x as given in the QE docs, plus some
-        additional options:
+        already in a dict.
 
         input_data: dict
             A flat or nested dictionary with input parameters for pw.x
@@ -64,90 +153,23 @@ class Espresso(FileIOCalculator):
             Offset of kpoints in each direction. Must be 0 (no offset) or
             1 (half grid offset). Setting to True is equivalent to (1, 1, 1).
 
-
-        .. note::
-           Set ``tprnfor=True`` and ``tstress=True`` to calculate forces and
-           stresses.
-
-        .. note::
-           Band structure plots can be made as follows:
-
-
-           1. Perform a regular self-consistent calculation,
-              saving the wave functions at the end, as well as
-              getting the Fermi energy:
-
-              >>> input_data = {<your input data>}
-              >>> calc = Espresso(input_data=input_data, ...)
-              >>> atoms.calc = calc
-              >>> atoms.get_potential_energy()
-              >>> fermi_level = calc.get_fermi_level()
-
-           2. Perform a non-self-consistent 'band structure' run
-              after updating your input_data and kpts keywords:
-
-              >>> input_data['control'].update({'calculation':'bands',
-              >>>                               'restart_mode':'restart',
-              >>>                               'verbosity':'high'})
-              >>> calc.set(kpts={<your Brillouin zone path>},
-              >>>          input_data=input_data)
-              >>> calc.calculate(atoms)
-
-           3. Make the plot using the BandStructure functionality,
-              after setting the Fermi level to that of the prior
-              self-consistent calculation:
-
-              >>> bs = calc.band_structure()
-              >>> bs.reference = fermi_energy
-              >>> bs.plot()
-
         """
-        FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
-                                  label, atoms, **kwargs)
-        self.calc = None
 
-    def write_input(self, atoms, properties=None, system_changes=None):
-        FileIOCalculator.write_input(self, atoms, properties, system_changes)
-        io.write(self.label + '.pwi', atoms, **self.parameters)
+        if command is not self._deprecated:
+            raise RuntimeError(compatibility_msg)
 
-    def read_results(self):
-        output = io.read(self.label + '.pwo')
-        self.calc = output.calc
-        self.results = output.calc.results
+        if label is not self._deprecated:
+            warnings.warn(
+                'Ignoring label, please use directory instead', FutureWarning
+            )
 
-    def get_fermi_level(self):
-        if self.calc is None:
-            raise PropertyNotPresent(error_template % 'Fermi level')
-        return self.calc.get_fermi_level()
+        if 'ASE_ESPRESSO_COMMAND' in os.environ and profile is None:
+            warnings.warn(compatibility_msg, FutureWarning)
 
-    def get_ibz_k_points(self):
-        if self.calc is None:
-            raise PropertyNotPresent(error_template % 'IBZ k-points')
-        ibzkpts = self.calc.get_ibz_k_points()
-        if ibzkpts is None:
-            warnings.warn(warn_template % 'IBZ k-points')
-        return ibzkpts
-
-    def get_k_point_weights(self):
-        if self.calc is None:
-            raise PropertyNotPresent(error_template % 'K-point weights')
-        k_point_weights = self.calc.get_k_point_weights()
-        if k_point_weights is None:
-            warnings.warn(warn_template % 'K-point weights')
-        return k_point_weights
-
-    def get_eigenvalues(self, **kwargs):
-        if self.calc is None:
-            raise PropertyNotPresent(error_template % 'Eigenvalues')
-        eigenvalues = self.calc.get_eigenvalues(**kwargs)
-        if eigenvalues is None:
-            warnings.warn(warn_template % 'Eigenvalues')
-        return eigenvalues
-
-    def get_number_of_spins(self):
-        if self.calc is None:
-            raise PropertyNotPresent(error_template % 'Number of spins')
-        nspins = self.calc.get_number_of_spins()
-        if nspins is None:
-            warnings.warn(warn_template % 'Number of spins')
-        return nspins
+        template = EspressoTemplate()
+        super().__init__(
+            profile=profile,
+            template=template,
+            directory=directory,
+            parameters=kwargs,
+        )

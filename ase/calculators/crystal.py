@@ -1,3 +1,5 @@
+# fmt: off
+
 """This module defines an ASE interface to CRYSTAL14/CRYSTAL17
 
 http://www.crystal.unito.it/
@@ -33,11 +35,14 @@ The keywords are given, for instance, as follows:
 
 """
 
-from ase.units import Hartree, Bohr
-from ase.io import write
-import numpy as np
 import os
+
+import numpy as np
+
 from ase.calculators.calculator import FileIOCalculator
+from ase.io import write
+from ase.units import Bohr, Hartree
+
 
 class CRYSTAL(FileIOCalculator):
     """ A crystal calculator with ase-FileIOCalculator nomenclature
@@ -83,7 +88,7 @@ class CRYSTAL(FileIOCalculator):
         """
 
         # write BLOCK 1 (only SP with gradients)
-        with open(filename, 'wt', encoding='latin-1') as outfile:
+        with open(filename, 'w', encoding='latin-1') as outfile:
             self._write_crystal_in(outfile)
 
     def _write_crystal_in(self, outfile):
@@ -130,7 +135,7 @@ class CRYSTAL(FileIOCalculator):
             if isinstance(p.xc, str):
                 xc = {'LDA': 'EXCHANGE\nLDA\nCORRELAT\nVWN',
                       'PBE': 'PBEXC'}.get(p.xc, p.xc)
-                outfile.write(xc.upper()+'\n')
+                outfile.write(xc.upper() + '\n')
         # Custom xc functional are given by a tuple of string
             else:
                 x, c = p.xc
@@ -201,7 +206,7 @@ class CRYSTAL(FileIOCalculator):
                 raise ValueError('Shifted Monkhorst-Pack not allowed.')
             outfile.write('SHRINK  \n')
             # isp is by default 1, 2 is suggested for metals.
-            outfile.write('0 ' + str(p.isp*max(self.kpts)) + ' \n')
+            outfile.write('0 ' + str(p.isp * max(self.kpts)) + ' \n')
             if ispbc[2]:
                 outfile.write(str(self.kpts[0])
                               + ' ' + str(self.kpts[1])
@@ -236,7 +241,6 @@ class CRYSTAL(FileIOCalculator):
             reading it once again after some runtime error """
 
         with open(os.path.join(self.directory, 'OUTPUT'),
-                  'rt',
                   encoding='latin-1') as myfile:
             self.lines = myfile.readlines()
 
@@ -267,10 +271,10 @@ class CRYSTAL(FileIOCalculator):
                 self.pcpot.crys_pcc = True
             else:
                 self.pcpot.manual_pc_correct()
-            e_coul, f_coul = self.pcpot.coulomb_corrections
+            e_coul, _f_coul = self.pcpot.coulomb_corrections
 
         energy = float(self.lines[index_energy].split()[pos_en]) * Hartree
-        energy -= e_coul # e_coul already in eV.
+        energy -= e_coul  # e_coul already in eV.
 
         self.results['energy'] = energy
         # Force line indexes
@@ -282,13 +286,13 @@ class CRYSTAL(FileIOCalculator):
                 break
         else:
             raise RuntimeError('Problem in reading forces')
-        for j in range(index_force_begin, index_force_begin+len(self.atoms)):
+        for j in range(index_force_begin, index_force_begin + len(self.atoms)):
             word = self.lines[j].split()
             # If GHOST atoms give problems, have a close look at this
             if len(word) == 5:
-                gradients.append([float(word[k+2]) for k in range(0, 3)])
+                gradients.append([float(word[k + 2]) for k in range(3)])
             elif len(word) == 4:
-                gradients.append([float(word[k+1]) for k in range(0, 3)])
+                gradients.append([float(word[k + 1]) for k in range(3)])
             else:
                 raise RuntimeError('Problem in reading forces')
 
@@ -350,7 +354,6 @@ class CRYSTAL(FileIOCalculator):
         # debye to e*Ang
         self.results['dipole'] = dipole * 0.2081943482534
 
-
     def embed(self, mmcharges=None, directory='./'):
         """Embed atoms in point-charges (mmcharges)
         """
@@ -384,7 +387,7 @@ class PointChargePotential:
             print("CRYSTAL: Warning: not writing external charges ")
             return
         with open(os.path.join(self.directory, filename), 'w') as charge_file:
-            charge_file.write(str(len(self.mmcharges))+' \n')
+            charge_file.write(str(len(self.mmcharges)) + ' \n')
             for [pos, charge] in zip(self.mmpositions, self.mmcharges):
                 [x, y, z] = pos
                 charge_file.write('%12.6f %12.6f %12.6f %12.6f \n'
@@ -399,16 +402,16 @@ class PointChargePotential:
 
     def read_forces_on_pointcharges(self):
         """Read Forces from CRYSTAL output file (OUTPUT)."""
-        with open(os.path.join(self.directory, 'OUTPUT'), 'r') as infile:
+        with open(os.path.join(self.directory, 'OUTPUT')) as infile:
             lines = infile.readlines()
 
-        print('PCPOT crys_pcc: '+str(self.crys_pcc))
+        print('PCPOT crys_pcc: ' + str(self.crys_pcc))
         # read in force and energy Coulomb corrections
         if self.crys_pcc:
             self.read_pc_corrections()
         else:
             self.manual_pc_correct()
-        e_coul, f_coul = self.coulomb_corrections
+        _e_coul, f_coul = self.coulomb_corrections
 
         external_forces = []
         for n, line in enumerate(lines):
@@ -435,7 +438,7 @@ class PointChargePotential:
             This will be standard in future CRYSTAL versions .'''
 
         with open(os.path.join(self.directory,
-                               'FORCES_CHG.DAT'), 'r') as infile:
+                               'FORCES_CHG.DAT')) as infile:
             lines = infile.readlines()
 
         e = [float(x.split()[-1])
@@ -444,13 +447,13 @@ class PointChargePotential:
         e *= Hartree
 
         f_lines = [s for s in lines if '199' in s]
-        assert(len(f_lines) == len(self.mmcharges)), \
+        assert len(f_lines) == len(self.mmcharges), \
             'Mismatch in number of point charges from FORCES_CHG.dat'
 
         pc_forces = np.zeros((len(self.mmcharges), 3))
         for i, l in enumerate(f_lines):
             first = l.split(str(i + 1) + ' 199  ')
-            assert(len(first) == 2), 'Problem reading FORCES_CHG.dat'
+            assert len(first) == 2, 'Problem reading FORCES_CHG.dat'
             f = first[-1].split()
             pc_forces[i] = [float(x) for x in f]
 

@@ -1,8 +1,12 @@
+# fmt: off
+import io
+
+from ase.build import bulk
+from ase.collections import g2
+from ase.io import iread, write
+
+
 def test_traj_bytesio():
-    from ase.io import iread, write
-    from ase.build import bulk
-    from ase.collections import g2
-    import io
 
     images = [bulk('Si') + bulk('Fe')] + list(g2)
 

@@ -1,3 +1,5 @@
+# fmt: off
+
 """LAMMPS has the options to use several internal units (which can be different
 from the ones used in ase).  Mapping is therefore necessary.
 
@@ -5,6 +7,7 @@ See: https://lammps.sandia.gov/doc/units.html
  """
 
 from ase import units
+
 from . import unitconvert_constants as u
 
 # !TODO add reduced Lennard-Jones units?

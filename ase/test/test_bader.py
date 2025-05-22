@@ -1,10 +1,11 @@
+# fmt: off
 from pathlib import Path
 
 from ase.build import molecule
 from ase.io.bader import attach_charges
 
 
-def test_bader():
+def test_bader(testdir):
     fname = 'ACF.dat'
     Path(fname).write_text("""
        #         X           Y           Z        CHARGE     MIN DIST
@@ -27,4 +28,4 @@ def test_bader():
         print('Atom', atom.symbol, 'Bader charge', atom.charge)
 
     # O is negatively charged
-    assert(atoms[0].charge < -1 and atoms[0].charge > -2)
+    assert atoms[0].charge < -1 and atoms[0].charge > -2

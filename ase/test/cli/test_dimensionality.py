@@ -1,4 +1,6 @@
+# fmt: off
 import pytest
+
 import ase.build
 from ase.io import write
 
@@ -17,7 +19,7 @@ def build_layer():
     ],
     ids=['layer', 'bulk'],
 )
-def file(request):
+def file(request, testdir):
     atoms, dimtype = request.param
     file = f'atoms.{dimtype}.cfg'
     write(file, atoms)

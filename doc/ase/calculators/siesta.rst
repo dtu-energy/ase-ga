@@ -11,7 +11,7 @@ SIESTA_ is a density-functional theory code for very large systems
 based on atomic orbital (LCAO) basis sets.
 
 
-.. _SIESTA: https://departments.icmab.es/leem/siesta/
+.. _SIESTA: https://siesta-project.org/siesta/
 
 
 
@@ -24,9 +24,9 @@ where ``PREFIX.fdf``/``PREFIX.out`` are the placeholders for the
 input/output files. This variable allows you to specify serial or parallel 
 execution of SIESTA.
 Examples: ``siesta < PREFIX.fdf > PREFIX.out`` and
-``mpirun -np 4 /bin/siesta4.0 < PREFIX.fdf > PREFIX.out``.
+``mpirun -np 4 /bin/siesta-5.0 < PREFIX.fdf > PREFIX.out``.
 
-A default directory holding pseudopotential files :file:`.vps/.psf` can be
+A default directory holding pseudopotential files :file:`.psml/.psf` can be
 defined to avoid defining this every time the calculator is used.
 This directory can be set by the environment variable
 :envvar:`SIESTA_PP_PATH`.
@@ -54,13 +54,13 @@ keyword               type      default value description
 ``pseudo_qualifier``  ``str``   ``None``      String for picking out specific type
                                               type of pseudopotentials. Giving
                                               ``example`` means that
-                                              ``H.example.psf`` or
-                                              ``H.example.vps`` will be used. None
+                                              ``H.example.psml`` or
+                                              ``H.example.psf`` will be used. None
                                               means that the XC.functional keyword
                                               is used, e.g. ``H.lda.psf``
-``symlink_pseudos``   ``bool``  ``---``       Whether psedos will be sym-linked 
+``symlink_pseudos``   ``bool``  ``---``       Whether pseudos will be sym-linked 
                                               into the execution directory. If 
-                                              False they will be copied in stead.
+                                              False they will be copied instead.
                                               Default is True on Unix and False on
                                               Windows.
 ===================== ========= ============= =====================================
@@ -112,7 +112,7 @@ keywords, even if it breaks calculator functionality.
 The complete list of the FDF entries can be found in the official `SIESTA
 manual`_.
 
-.. _SIESTA manual: https://departments.icmab.es/leem/siesta/Documentation/Manuals/manuals.html
+.. _SIESTA manual:  https://siesta-project.org/siesta/Documentation/
 
 Example
 =======
@@ -194,25 +194,26 @@ to an atom, the general calculator keywords are used.
 Pseudopotentials
 ================
 
-Pseudopotential files in the ``.psf`` or ``.vps`` formats are needed.
-Pseudopotentials generated from the ABINIT code and converted to
-the SIESTA format are available in the `SIESTA`_ website.
-A database of user contributed pseudopotentials is also available there.
+Siesta requires for pseudopotential files in the ``.psml`` or ``.psf`` formats. 
+Up-to-date information on Siesta compatible pseudopotential formats and databases 
+can be accessed on the `pseudopotentials section`_ of the siesta-project website.
 
-Optimized GGA–PBE pseudos and DZP basis sets for some common elements
-are also available from the `SIMUNE`_ website.
+* Curated pseudopotential databases in ``.psml`` format are available at PseudoDojo_. These are supported by SIESTA 5.0 and later versions.
+* Optimized GGA–PBE pseudos in ``.psf`` format and DZP basis sets for some common elements are also available from the `SIMUNE`_ website.
+* PSML pseudopotentials can be generated with the `ONCVPSP generator`_.
 
-You can also find an on-line pseudopotential generator_ from the
-OCTOPUS code.
+.. _pseudopotentials section: https://siesta-project.org/siesta/Documentation/Pseudopotentials/
 
-.. _SIMUNE: https://www.simuneatomistics.com/siesta-pro/siesta-pseudos-and-basis-database/
+.. _PseudoDojo: http://www.pseudo-dojo.org/
 
-.. _generator: http://www.tddft.org/programs/octopus/wiki/index.php/Pseudopotentials
+.. _SIMUNE:  https://www.simuneatomistics.com/siesta-toolkit/siesta-pseudos-and-basis-database/
+
+.. _ONCVPSP generator: https://github.com/oncvpsp/oncvpsp
 
 
 Species can also be used to specify pseudopotentials:
 
->>> specie = Specie(symbol='H', tag=1, pseudopotential='H.example.psf')
+>>> specie = Specie(symbol='H', tag=1, pseudopotential='H.example.psml')
 
 When specifying the pseudopotential in this manner, both absolute
 and relative paths can be given.

@@ -1,11 +1,14 @@
+# fmt: off
 from time import time
+
 import pytest
+
 import ase.db
 from ase import Atoms
 
 
 @pytest.mark.parametrize('name', ['x.json', 'x.db'])
-def test_db(name):
+def test_db(name, testdir):
     print(name)
     db = ase.db.connect(name, append=False)
     db.write(Atoms(), x=1, data={'a': 1})

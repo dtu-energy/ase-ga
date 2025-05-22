@@ -1,8 +1,8 @@
 To Run the espresso calculation, you need:
-    First to download the pseudo potential C.pw-mt_fhi.UPF and O.pw-mt_fhi.UPF
-    from the Quantum espresso website, and to copy them into your pseudo directory
-    of your espresso installation.
-    then you run,
-    pw.x <co2.scf.in >co2.scf.out
-    ph.x <co2.ph.in > co2.ph.out
-    dynmat.x <co2.dm.in > co2.dm.out
+First to download the pseudo potential C.pw-mt_fhi.UPF and O.pw-mt_fhi.UPF
+from the Quantum espresso website, and to copy them into your pseudo directory
+of your espresso installation.
+then you run,
+pw.x <co2.scf.in >co2.scf.out
+ph.x <co2.ph.in > co2.ph.out
+dynmat.x <co2.dm.in > co2.dm.out

@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 A module for reading and writing crystal structures from JSV
 See http://www.jcrystal.com/steffenweber/JAVA/JSV/jsv.html
@@ -11,8 +13,8 @@ import re
 import numpy as np
 
 import ase
+from ase.geometry import cell_to_cellpar, cellpar_to_cell
 from ase.spacegroup import Spacegroup, crystal
-from ase.geometry import cellpar_to_cell, cell_to_cellpar
 
 
 def read_jsv(f):
@@ -65,17 +67,17 @@ def read_jsv(f):
                 if len(tokens) > 5:
                     shell_numbers[i] = float(tokens[5])  # float?
         elif tag == 'bonds':
-            for i in range(nbond):
+            for _ in range(nbond):
                 f.readline()
             bonds = NotImplemented
         elif tag == 'poly':
-            for i in range(npoly):
+            for _ in range(npoly):
                 f.readline()
             poly = NotImplemented
         elif tag == 'origin':
             origin = NotImplemented
         else:
-            raise ValueError('Unknown tag: "%s"' % tag)
+            raise ValueError(f'Unknown tag: "{tag}"')
 
     if headline == 'asymmetric_unit_cell':
         atoms = crystal(symbols=symbols,
@@ -96,7 +98,7 @@ def read_jsv(f):
                           )
         atoms.info['spacegroup'] = Spacegroup(spacegroup)
     else:
-        raise ValueError('Invalid JSV file type: "%s"' % headline)
+        raise ValueError(f'Invalid JSV file type: "{headline}"')
 
     atoms.info['title'] = title
     atoms.info['labels'] = labels
@@ -112,29 +114,29 @@ def read_jsv(f):
     return atoms
 
 
-def write_jsv(f, atoms):
+def write_jsv(fd, atoms):
     """Writes JSV file."""
-    f.write('asymmetric_unit_cell\n')
+    fd.write('asymmetric_unit_cell\n')
 
-    f.write('[cell]')
+    fd.write('[cell]')
     for v in cell_to_cellpar(atoms.cell):
-        f.write('  %g' % v)
-    f.write('\n')
+        fd.write('  %g' % v)
+    fd.write('\n')
 
-    f.write('[natom]  %d\n' % len(atoms))
-    f.write('[nbond]  0\n')  # FIXME
-    f.write('[npoly]  0\n')  # FIXME
+    fd.write('[natom]  %d\n' % len(atoms))
+    fd.write('[nbond]  0\n')  # FIXME
+    fd.write('[npoly]  0\n')  # FIXME
 
     if 'spacegroup' in atoms.info:
         sg = Spacegroup(atoms.info['spacegroup'])
-        f.write('[space_group]  %d %d\n' % (sg.no, sg.setting))
+        fd.write('[space_group]  %d %d\n' % (sg.no, sg.setting))
     else:
-        f.write('[space_group]  1  1\n')
+        fd.write('[space_group]  1  1\n')
 
-    f.write('[title] %s\n' % atoms.info.get('title', 'untitled'))
+    fd.write('[title] %s\n' % atoms.info.get('title', 'untitled'))
 
-    f.write('\n')
-    f.write('[atoms]\n')
+    fd.write('\n')
+    fd.write('[atoms]\n')
     if 'labels' in atoms.info:
         labels = atoms.info['labels']
     else:
@@ -142,15 +144,16 @@ def write_jsv(f, atoms):
                   enumerate(atoms.get_chemical_symbols())]
     numbers = atoms.get_atomic_numbers()
     scaled = atoms.get_scaled_positions()
-    for l, n, p in zip(labels, numbers, scaled):
-        f.write('%-4s  %2d  %9.6f  %9.6f  %9.6f\n' % (l, n, p[0], p[1], p[2]))
+    for label, n, p in zip(labels, numbers, scaled):
+        fd.write('%-4s  %2d  %9.6f  %9.6f  %9.6f\n'
+                 % (label, n, p[0], p[1], p[2]))
 
-    f.write('Label  AtomicNumber  x y z (repeat natom times)\n')
+    fd.write('Label  AtomicNumber  x y z (repeat natom times)\n')
 
-    f.write('\n')
-    f.write('[bonds]\n')
+    fd.write('\n')
+    fd.write('[bonds]\n')
 
-    f.write('\n')
-    f.write('[poly]\n')
+    fd.write('\n')
+    fd.write('[poly]\n')
 
-    f.write('\n')
+    fd.write('\n')

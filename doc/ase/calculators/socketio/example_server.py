@@ -1,9 +1,9 @@
 import sys
 
 from ase.build import molecule
+from ase.calculators.socketio import SocketIOCalculator
 from ase.io import write
 from ase.optimize import BFGS
-from ase.calculators.socketio import SocketIOCalculator
 
 unixsocket = 'ase_server_socket'
 
@@ -13,8 +13,7 @@ write('initial.traj', atoms)
 
 opt = BFGS(atoms, trajectory='opt.driver.traj', logfile='opt.driver.log')
 
-with SocketIOCalculator(log=sys.stdout,
-                        unixsocket=unixsocket) as calc:
+with SocketIOCalculator(log=sys.stdout, unixsocket=unixsocket) as calc:
     # Server is now running and waiting for connections.
     # If you want to launch the client process here directly,
     # instead of manually in the terminal, uncomment these lines:

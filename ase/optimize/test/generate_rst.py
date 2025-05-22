@@ -1,13 +1,9 @@
+# fmt: off
+
 import os
 import re
-dirlist = os.listdir('.')
-name = r'.*\.csv'
-filterre = re.compile(name)
-dirlist = list(filter(filterre.search, dirlist))
-namelist = [d.strip('.csv') for d in dirlist]
 
-f = open('testoptimize.rst', 'w')
-f.write("""\
+rst = """\
 .. _optimizer_tests:
 
 ===============
@@ -22,28 +18,46 @@ The most important performance characteristics of an optimizer is the
 total optimization time.
 Different optimizers may perform the same number of steps, but along a different
 path, so the time spent on calculation of energy/forces will be different.
-""")
+"""
 
-for name in namelist:
-    lines = open(name + '.csv', 'r').read().split('\n')
-    firstline = lines.pop(0)
-    f.write(
-        '\n' +
-        name + '\n' +
-        '=' * len(name) + '\n'
-        'Calculator used: %s\n' % firstline.split(',')[-1] +
-        '\n' +
-        '=============== ===== ================= ========== ===============\n' +
-        'Optimizer       Steps Force evaluations Energy     Note           \n' +
-        '=============== ===== ================= ========== ===============\n'
-    )
-    for line in lines:
-        if len(line):
-            print(line.split(','))
-            f.write(
-                '%-15s %5s %17s %10s %s\n' % tuple(line.split(','))
+
+header = 'Optimizer       Steps Force evaluations Energy     Note           \n'
+bars = '=============== ===== ================= ========== ===============\n'
+
+
+def main():
+    dirlist = os.listdir('.')
+    name = r'.*\.csv'
+    filterre = re.compile(name)
+    dirlist = list(filter(filterre.search, dirlist))
+    namelist = [d.strip('.csv') for d in dirlist]
+
+    with open('testoptimize.rst', 'w') as fd:
+        fd.write(rst)
+
+        for name in namelist:
+            lines = open(name + '.csv').read().split('\n')
+            firstline = lines.pop(0)
+            fd.write(
+                '\n' +
+                name + '\n' +
+                '=' * len(name) + '\n'
+                'Calculator used: %s\n' % firstline.split(',')[-1] +
+                '\n' +
+                bars +
+                header +
+                bars
             )
-    f.write(
-        '=============== ===== ================= ========== ===============\n'
-    )
-f.close()
+            for line in lines:
+                if len(line):
+                    print(line.split(','))
+                    fd.write(
+                        '%-15s %5s %17s %10s %s\n' % tuple(line.split(','))
+                    )
+            fd.write(
+                bars
+            )
+
+
+if __name__ == '__main__':
+    main()

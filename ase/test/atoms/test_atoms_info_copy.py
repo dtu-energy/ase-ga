@@ -1,5 +1,8 @@
+# fmt: off
+from ase import Atoms
+
+
 def test_atoms_info_copy():
-    from ase import Atoms
 
     at1 = Atoms('H2', positions=[[0., 0., 0.],
                                  [1., 0., 0.]])

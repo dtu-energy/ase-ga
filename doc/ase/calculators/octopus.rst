@@ -24,18 +24,16 @@ Examples
 Structure optimization
 ----------------------
 
-Structure optimization of ethanol molecule:
+Structure optimization of molecule:
 
 
-.. literalinclude:: octopus_ethanol.py
+.. literalinclude:: octopus_h2o.py
 
 Numerical parameters can be specified as strings as well.
 
-The Octopus default ``BoxShape`` is used unless specified otherwise.
-This means that the cell of non-periodic Atoms is ignored unless
-``BoxShape = parallelepiped``.  In the calculation above, if
-``BoxShape`` is removed, the calculation will default to ``BoxShape =
-minimum`` and the specified vacuum will have no effect.
+If the atoms have any cell vectors, then
+``BoxShape`` will be ``parallelepiped`` unless user specifies
+another ``BoxShape``.
 
 
 Periodic system

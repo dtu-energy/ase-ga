@@ -1,9 +1,12 @@
-def test_qchem_calculator():
-    import numpy as np
-    from ase.build import molecule
-    from ase.calculators.qchem import QChem
-    from ase.optimize import LBFGS
+# fmt: off
+import numpy as np
 
+from ase.build import molecule
+from ase.calculators.qchem import QChem
+from ase.optimize import LBFGS
+
+
+def test_qchem_calculator(qchem_factory):
     mol = molecule('C2H6')
     calc = QChem(label='calc/ethane',
                  method='B3LYP',
@@ -25,6 +28,6 @@ def test_qchem_calculator():
                   [0.10132204, 0.05804009, -0.07538475]]),
         atol=0.05)
 
-    opt = LBFGS(mol)
-    opt.run()
+    with LBFGS(mol) as opt:
+        opt.run()
     assert opt.converged()

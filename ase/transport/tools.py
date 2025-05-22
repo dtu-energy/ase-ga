@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 
@@ -69,7 +71,7 @@ def fermidistribution(energy, kt):
     # energy can be a single number or a list
     assert kt >= 0., 'Negative temperature encountered!'
 
-    if kt==0:
+    if kt == 0:
         if isinstance(energy, float):
             return int(energy / 2. <= 0)
         else:

@@ -1,15 +1,21 @@
+# fmt: off
 # additional tests of the dftb I/O
-import numpy as np
 from io import StringIO
-from ase.atoms import Atoms
-from ase.units import AUT, Bohr, second
-from ase.io.dftb import (read_dftb, read_dftb_lattice,
-                         read_dftb_velocities, write_dftb_velocities)
 
+import numpy as np
+
+from ase.atoms import Atoms
+from ase.io.dftb import (
+    read_dftb,
+    read_dftb_lattice,
+    read_dftb_velocities,
+    write_dftb_velocities,
+)
+from ase.units import AUT, Bohr, second
 
 # test ase.io.dftb.read_dftb
 # with GenFormat-style Geometry section, periodic and non-periodic
-fd_genformat_periodic = StringIO(u"""
+fd_genformat_periodic = StringIO("""
 Geometry = GenFormat {
 4  S
 O    C    H
@@ -28,7 +34,7 @@ Driver = {}
 """)
 
 
-fd_genformat_nonperiodic = StringIO(u"""
+fd_genformat_nonperiodic = StringIO("""
 Geometry = GenFormat {
 4  C
 O    C    H
@@ -68,7 +74,7 @@ def test_read_dftb_genformat():
 
 # test ase.io.dftb.read_dftb (with explicit geometry specification;
 # this GaAs geometry is borrowed from the DFTB+ v19.1 manual)
-fd_explicit = StringIO(u"""
+fd_explicit = StringIO("""
 Geometry = {
   TypeNames = { "Ga" "As" }
   TypesAndCoordinates [Angstrom] = {
@@ -102,7 +108,7 @@ def test_read_dftb_explicit():
 
 
 # test ase.io.dftb.read_dftb_lattice
-fd_lattice = StringIO(u"""
+fd_lattice = StringIO("""
  MD step: 0
  Lattice vectors (A)
   26.1849388999576 5.773808884828536E-006 9.076696618724854E-006

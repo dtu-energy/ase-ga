@@ -1,9 +1,9 @@
 import numpy as np
+
 import ase.build
 from ase import Atoms
-from ase.visualize import view
 from ase.geometry.dimensionality import isolate_components
-
+from ase.visualize import view
 
 # build two slabs of different types of MoS2
 rep = [4, 4, 1]
@@ -18,7 +18,7 @@ atoms.cell[2, 2] = 14.0
 
 # isolate each component in the whole material
 result = isolate_components(atoms)
-print("counts:", [(k, len(v)) for k, v in sorted(result.items())])
+print('counts:', [(k, len(v)) for k, v in sorted(result.items())])
 
 for dim, components in result.items():
     for atoms in components:

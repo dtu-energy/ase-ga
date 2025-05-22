@@ -1,8 +1,9 @@
 from ase.build import niggli_reduce
 from ase.calculators.singlepoint import SinglePointCalculator
-from ase.optimize import FIRE
 from ase.constraints import ExpCellFilter
 from ase.ga import set_raw_score
+from ase.optimize import FIRE
+
 try:
     from asap3 import EMT
 except ImportError:
@@ -13,8 +14,9 @@ def finalize(atoms, energy=None, forces=None, stress=None):
     # Finalizes the atoms by attaching a SinglePointCalculator
     # and setting the raw score as the negative of the total energy
     atoms.wrap()
-    calc = SinglePointCalculator(atoms, energy=energy, forces=forces,
-                                 stress=stress)
+    calc = SinglePointCalculator(
+        atoms, energy=energy, forces=forces, stress=stress
+    )
     atoms.calc = calc
     raw_score = -atoms.get_potential_energy()
     set_raw_score(atoms, raw_score)

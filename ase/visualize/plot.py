@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.io.utils import PlottingVariables, make_patch_list
 
 
@@ -27,7 +29,7 @@ class Matplotlib(PlottingVariables):
 
 def animate(images, ax=None,
             interval=200,  # in ms; same default value as in FuncAnimation
-            save_count=100,
+            save_count=None,  # ignored as of 2023 with newer matplotlib
             **parameters):
     """Convert sequence of atoms objects into Matplotlib animation.
 
@@ -41,24 +43,13 @@ def animate(images, ax=None,
 
     fig = ax.get_figure()
 
-    nframes = [0]
-
     def drawimage(atoms):
         ax.clear()
         ax.axis('off')
         plot_atoms(atoms, ax=ax, **parameters)
-        nframes[0] += 1
-        # Animation will stop without warning if we don't have len().
-        # Write a warning if we may be missing frames:
-        if not hasattr(images, '__len__') and nframes[0] == save_count:
-            import warnings
-            warnings.warn('Number of frames reached animation savecount {}; '
-                          'some frames may not be saved.'
-                          .format(save_count))
 
     animation = FuncAnimation(fig, drawimage, frames=images,
                               init_func=lambda: None,
-                              save_count=save_count,
                               interval=interval)
     return animation
 

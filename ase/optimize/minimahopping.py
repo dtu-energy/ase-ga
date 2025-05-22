@@ -1,11 +1,14 @@
+# fmt: off
+
 import os
+
 import numpy as np
+
 from ase import io, units
+from ase.md import MDLogger, VelocityVerlet
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.optimize import QuasiNewton
 from ase.parallel import paropen, world
-from ase.md import VelocityVerlet
-from ase.md import MDLogger
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 
 
 class MinimaHopping:
@@ -37,9 +40,9 @@ class MinimaHopping:
         self._atoms = atoms
         for key in kwargs:
             if key not in self._default_settings:
-                raise RuntimeError('Unknown keyword: %s' % key)
+                raise RuntimeError(f'Unknown keyword: {key}')
         for k, v in self._default_settings.items():
-            setattr(self, '_%s' % k, kwargs.pop(k, v))
+            setattr(self, f'_{k}', kwargs.pop(k, v))
 
         # when a MD sim. has passed a local minimum:
         self._passedminimum = PassedMinimum()
@@ -225,17 +228,17 @@ class MinimaHopping:
         if cat == 'init':
             if world.rank == 0:
                 if os.path.exists(self._logfile):
-                    raise RuntimeError('File exists: %s' % self._logfile)
-            f = paropen(self._logfile, 'w')
-            f.write('par: %12s %12s %12s\n' % ('T (K)', 'Ediff (eV)',
-                                               'mdmin'))
-            f.write('ene: %12s %12s %12s\n' % ('E_current', 'E_previous',
-                                               'Difference'))
-            f.close()
+                    raise RuntimeError(f'File exists: {self._logfile}')
+            fd = paropen(self._logfile, 'w')
+            fd.write('par: %12s %12s %12s\n' % ('T (K)', 'Ediff (eV)',
+                                                'mdmin'))
+            fd.write('ene: %12s %12s %12s\n' % ('E_current', 'E_previous',
+                                                'Difference'))
+            fd.close()
             return
-        f = paropen(self._logfile, 'a')
+        fd = paropen(self._logfile, 'a')
         if cat == 'msg':
-            line = 'msg: %s' % message
+            line = f'msg: {message}'
         elif cat == 'par':
             line = ('par: %12.4f %12.4f %12i' %
                     (self._temperature, self._Ediff, self._mdmin))
@@ -247,8 +250,8 @@ class MinimaHopping:
                         (current, previous, current - previous))
             else:
                 line = ('ene: %12.5f' % current)
-        f.write(line + '\n')
-        f.close()
+        fd.write(line + '\n')
+        fd.close()
 
     def _optimize(self):
         """Perform an optimization."""
@@ -459,11 +462,11 @@ class PassedMinimum:
             return None
         status = True
         index = -1
-        for i_up in range(self._nup):
+        for _ in range(self._nup):
             if energies[index] < energies[index - 1]:
                 status = False
             index -= 1
-        for i_down in range(self._ndown):
+        for _ in range(self._ndown):
             if energies[index] > energies[index - 1]:
                 status = False
             index -= 1
@@ -498,7 +501,7 @@ class MHPlot:
         """Reads relevant parts of the log file."""
         data = []  # format: [energy, status, temperature, ediff]
 
-        with open(os.path.join(self._rundirectory, self._logname), 'r') as fd:
+        with open(os.path.join(self._rundirectory, self._logname)) as fd:
             lines = fd.read().splitlines()
 
         step_almost_over = False
@@ -613,9 +616,9 @@ class MHPlot:
             return
         energies = [self._data[step - 1][0]]
         file = os.path.join(self._rundirectory, 'md%05i.traj' % step)
-        traj = io.Trajectory(file, 'r')
-        for atoms in traj:
-            energies.append(atoms.get_potential_energy())
+        with io.Trajectory(file, 'r') as traj:
+            for atoms in traj:
+                energies.append(atoms.get_potential_energy())
         xi = step - 1 + .5
         if len(energies) > 2:
             xf = xi + (step + 0.25 - xi) * len(energies) / (len(energies) - 2.)
@@ -633,9 +636,9 @@ class MHPlot:
         file = os.path.join(self._rundirectory, 'qn%05i.traj' % index)
         if os.path.getsize(file) == 0:
             return
-        traj = io.Trajectory(file, 'r')
-        energies = [traj[0].get_potential_energy(),
-                    traj[-1].get_potential_energy()]
+        with io.Trajectory(file, 'r') as traj:
+            energies = [traj[0].get_potential_energy(),
+                        traj[-1].get_potential_energy()]
         if index > 0:
             file = os.path.join(self._rundirectory, 'md%05i.traj' % index)
             atoms = io.read(file, index=-3)

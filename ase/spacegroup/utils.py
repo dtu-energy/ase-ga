@@ -1,7 +1,12 @@
+# fmt: off
+
 from typing import List
+
 import numpy as np
+
 from ase import Atoms
-from .spacegroup import Spacegroup, _SPACEGROUP
+
+from .spacegroup import _SPACEGROUP, Spacegroup
 
 __all__ = ('get_basis', )
 
@@ -78,8 +83,8 @@ def _get_basis_spglib(atoms: Atoms, tol: float = 1e-5) -> np.ndarray:
     if not _has_spglib():
         # Give a reasonable alternative solution to this function.
         raise ImportError(
-            ('This function requires spglib. Use "get_basis" and specify '
-             'the spacegroup instead, or install spglib.'))
+            'This function requires spglib. Use "get_basis" and specify '
+            'the spacegroup instead, or install spglib.')
 
     scaled_positions = atoms.get_scaled_positions()
     reduced_indices = _get_reduced_indices(atoms, tol=tol)
@@ -151,23 +156,24 @@ def get_basis(atoms: Atoms,
             # We have reached this point either because spglib is not installed,
             # or ASE was explicitly required
             raise ValueError(
-                ('A space group must be specified for the native ASE '
-                 'implementation. Try using the spglib version instead, '
-                 'or explicitly specifying a space group.'))
+                'A space group must be specified for the native ASE '
+                'implementation. Try using the spglib version instead, '
+                'or explicitly specifying a space group.')
         return _get_basis_ase(atoms, spacegroup, tol=tol)
 
 
 def _get_reduced_indices(atoms: Atoms, tol: float = 1e-5) -> List[int]:
     """Get a list of the reduced atomic indices using spglib.
     Note: Does no checks to see if spglib is installed.
-    
+
     :param atoms: ase Atoms object to reduce
     :param tol: ``float``, numeric tolerance for positional comparisons
     """
-    import spglib
+    from ase.spacegroup.symmetrize import spglib_get_symmetry_dataset
 
     # Create input for spglib
     spglib_cell = (atoms.get_cell(), atoms.get_scaled_positions(),
                    atoms.numbers)
-    symmetry_data = spglib.get_symmetry_dataset(spglib_cell, symprec=tol)
-    return list(set(symmetry_data['equivalent_atoms']))
+    symmetry_data = spglib_get_symmetry_dataset(spglib_cell,
+                                                symprec=tol)
+    return list(set(symmetry_data.equivalent_atoms))

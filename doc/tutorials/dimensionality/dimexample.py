@@ -1,7 +1,6 @@
 import ase.build
-from ase.visualize import view
 from ase.geometry.dimensionality import analyze_dimensionality
-
+from ase.visualize import view
 
 atoms = ase.build.mx2(formula='MoS2', kind='2H', a=3.18, thickness=3.19)
 atoms.cell[2, 2] = 7.0

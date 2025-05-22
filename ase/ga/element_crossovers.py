@@ -1,3 +1,5 @@
+# fmt: off
+
 """Crossover classes, that cross the elements in the supplied
 atoms objects.
 
@@ -12,6 +14,7 @@ class ElementCrossover(OffspringCreator):
     the atoms objects cross.
 
     """
+
     def __init__(self, element_pool, max_diff_elements,
                  min_percentage_elements, verbose, rng=np.random):
         OffspringCreator.__init__(self, verbose, rng=rng)
@@ -72,6 +75,7 @@ class OnePointElementCrossover(ElementCrossover):
     rng: Random number generator
         By default numpy.random.
     """
+
     def __init__(self, element_pool, max_diff_elements=None,
                  min_percentage_elements=None, verbose=False, rng=np.random):
         ElementCrossover.__init__(self, element_pool, max_diff_elements,
@@ -123,8 +127,8 @@ class OnePointElementCrossover(ElementCrossover):
         for a in f[:cut] + m[cut:]:
             indi.append(a)
 
-        parent_message = ':Parents {0} {1}'.format(f.info['confid'],
-                                                   m.info['confid'])
+        parent_message = ':Parents {} {}'.format(f.info['confid'],
+                                                 m.info['confid'])
         return (self.finalize_individual(indi),
                 self.descriptor + parent_message)
 
@@ -132,6 +136,7 @@ class OnePointElementCrossover(ElementCrossover):
 class TwoPointElementCrossover(ElementCrossover):
     """Crosses two individuals by choosing two cross points
     at random"""
+
     def __init__(self, element_pool, max_diff_elements=None,
                  min_percentage_elements=None, verbose=False):
         ElementCrossover.__init__(self, element_pool,

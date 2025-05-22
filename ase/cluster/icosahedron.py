@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 from ase import Atoms
@@ -10,12 +12,15 @@ def Icosahedron(symbol, noshells, latticeconstant=None):
 
     Parameters
     ----------
-    symbol: The chemical symbol (or atomic number) of the element.
+    symbol : str or int
+        The chemical symbol (or atomic number) of the element.
 
-    noshells: The number of shells (>= 1).
+    noshells : int
+        The number of shells (>= 1).
 
-    latticeconstant (optional): The lattice constant. If not given,
-    then it is extracted form ase.data.
+    latticeconstant : float, optional
+        The lattice constant. If not given, then it is extracted from
+        `ase.data`.
     """
 
     symbol, atomic_number, latticeconstant = get_element_info(
@@ -65,7 +70,7 @@ def Icosahedron(symbol, noshells, latticeconstant=None):
                    8: (4, 5), 9: (6, 7),
                    10: (4, 5), 11: (6, 7)}
 
-            for k in range(0, 12):
+            for k in range(12):
                 v0 = n * verticies[k]
                 v1 = (verticies[map[k][0]] - verticies[k])
                 v2 = (verticies[map[k][1]] - verticies[k])
@@ -84,7 +89,7 @@ def Icosahedron(symbol, noshells, latticeconstant=None):
                    2: (9, 7, 8, 5,),
                    3: (11, 7, 10, 5)}
 
-            for k in range(0, 4):
+            for k in range(4):
                 v0 = n * verticies[k]
                 v1 = (verticies[map[k][0]] - verticies[k])
                 v2 = (verticies[map[k][1]] - verticies[k])

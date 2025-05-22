@@ -1,52 +1,21 @@
-import os
-
-import pytest
+# fmt: off
 import numpy as np
+import pytest
 
 from ase import Atoms
+from ase.build import molecule
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms, FixBondLength
 from ase.db import connect
 from ase.io import read
-from ase.build import molecule
-
-names = ['testase.json', 'testase.db', 'postgresql', 'mysql', 'mariadb']
 
 
-@pytest.mark.parametrize('name', names)
-def test_db2(name):
-    if name == 'postgresql':
-        pytest.importorskip('psycopg2')
-        if os.environ.get('POSTGRES_DB'):  # gitlab-ci
-            name = 'postgresql://ase:ase@postgres:5432/testase'
-        else:
-            name = os.environ.get('ASE_TEST_POSTGRES_URL')
-            if name is None:
-                return
-    elif name == 'mysql':
-        pytest.importorskip('pymysql')
-        if os.environ.get('CI_PROJECT_DIR'):  # gitlab-ci
-            name = 'mysql://root:ase@mysql:3306/testase_mysql'
-        else:
-            name = os.environ.get('MYSQL_DB_URL')
-
-        if name is None:
-            return
-    elif name == 'mariadb':
-        pytest.importorskip('pymysql')
-        if os.environ.get('CI_PROJECT_DIR'):  # gitlab-ci
-            name = 'mariadb://root:ase@mariadb:3306/testase_mysql'
-        else:
-            name = os.environ.get('MYSQL_DB_URL')
-
-        if name is None:
-            return
+@pytest.mark.parametrize('dbtype', ['json', 'db'])
+def test_db2(testdir, dbtype):
+    name = f'testase.{dbtype}'
 
     c = connect(name)
     print(name, c)
-
-    if 'postgres' in name or 'mysql' in name or 'mariadb' in name:
-        c.delete([row.id for row in c.select()])
 
     id = c.reserve(abc=7)
     c.delete([d.id for d in c.select(abc=7)])
@@ -86,7 +55,7 @@ def test_db2(name):
     f3 = c.get_atoms(C=1).get_forces()
     assert abs(f1 - f3).max() < 1e-14
 
-    a = read(name, index='id={}'.format(id))[0]
+    a = read(name, index=f'id={id}')[0]
     f4 = a.get_forces()
     assert abs(f1 - f4).max() < 1e-14
 
@@ -105,7 +74,13 @@ def test_db2(name):
         c.write(ch4, foo=['bar', 2])  # not int, bool, float or str
 
     with pytest.raises(ValueError):
-        c.write(Atoms(), pi='3.14')  # number as a string
+        c.write(Atoms(), pi='3.14')  # float as a string
+
+    with pytest.raises(ValueError):
+        c.write(Atoms(), pi_rounded='3')  # int as a string
+
+    with pytest.raises(ValueError):
+        c.write(Atoms(), relaxed='False')  # bool as a string
 
     with pytest.raises(ValueError):
         c.write(Atoms(), fmax=0.0)  # reserved word
@@ -139,8 +114,10 @@ def test_db2(name):
     offset = 2
     assert next(c.select(offset=offset)).id == ids[offset]
 
+    assert 'grr' in c.get_all_key_names()
 
-def test_sqlite_user():
+
+def test_sqlite_user(testdir):
     """Make sure user=someone works.  Is called username in SQLite."""
     db = connect('test_user.db')
     assert list(db.select(user='someone')) == []

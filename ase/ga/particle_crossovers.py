@@ -1,7 +1,11 @@
-from ase.ga.offspring_creator import OffspringCreator
-from ase import Atoms
+# fmt: off
+
 from itertools import chain
+
 import numpy as np
+
+from ase import Atoms
+from ase.ga.offspring_creator import OffspringCreator
 
 
 class Crossover(OffspringCreator):
@@ -53,8 +57,8 @@ class CutSpliceCrossover(Crossover):
         indi = self.initialize_individual(f)
         indi.info['data']['parents'] = [i.info['confid'] for i in parents]
 
-        theta = self.rng.rand() * 2 * np.pi  # 0,2pi
-        phi = self.rng.rand() * np.pi  # 0,pi
+        theta = self.rng.random() * 2 * np.pi  # 0,2pi
+        phi = self.rng.random() * np.pi  # 0,pi
         e = np.array((np.sin(phi) * np.cos(theta),
                       np.sin(theta) * np.sin(phi),
                       np.cos(phi)))
@@ -114,7 +118,7 @@ class CutSpliceCrossover(Crossover):
             # correct_by: dictionary that specifies how many
             # of the atom_numbers should be removed (a negative number)
             # or added (a positive number)
-            correct_by = dict([(j, opt_sm.count(j)) for j in set(opt_sm)])
+            correct_by = {j: opt_sm.count(j) for j in set(opt_sm)}
             for n in cur_sm:
                 correct_by[n] -= 1
             correct_in = tmpf if self.rng.choice([0, 1]) else tmpm
@@ -138,9 +142,9 @@ class CutSpliceCrossover(Crossover):
             d = [-np.dot(e, sv)] * 2
             d[0] += np.sqrt(np.dot(e, sv)**2 - lsv**2 + min_dist**2)
             d[1] -= np.sqrt(np.dot(e, sv)**2 - lsv**2 + min_dist**2)
-            l = sorted([abs(i) for i in d])[0] / 2. + eps
-            if l > maxl:
-                maxl = l
+            L = sorted([abs(i) for i in d])[0] / 2. + eps
+            if L > maxl:
+                maxl = L
         tmpf.translate(e * maxl)
         tmpm.translate(-e * maxl)
 
@@ -148,8 +152,8 @@ class CutSpliceCrossover(Crossover):
         for atom in chain(tmpf, tmpm):
             indi.append(atom)
 
-        parent_message = ':Parents {0} {1}'.format(f.info['confid'],
-                                                   m.info['confid'])
+        parent_message = ':Parents {} {}'.format(f.info['confid'],
+                                                 m.info['confid'])
         return (self.finalize_individual(indi),
                 self.descriptor + parent_message)
 
@@ -171,7 +175,7 @@ class CutSpliceCrossover(Crossover):
         an = atoms.numbers
         for i in range(len(atoms)):
             pos = atoms[i].position
-            for j, d in enumerate([norm(k - pos) for k in ap[i:]]):
+            for j, d in enumerate(norm(k - pos) for k in ap[i:]):
                 if d == 0:
                     continue
                 min_dist = self.blmin[tuple(sorted((an[i], an[j + i])))]
@@ -184,7 +188,7 @@ class CutSpliceCrossover(Crossover):
         ap = atoms.get_positions()
         for i in range(len(atoms)):
             pos = atoms[i].position
-            for j, d in enumerate([norm(k - pos) for k in ap[i:]]):
+            for j, d in enumerate(norm(k - pos) for k in ap[i:]):
                 if d == 0:
                     continue
                 if d < mind:

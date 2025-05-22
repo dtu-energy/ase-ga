@@ -4,3 +4,4 @@ Chemical symbols
 ================
 
 .. autoclass:: Symbols
+  :members:

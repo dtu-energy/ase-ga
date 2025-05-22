@@ -1,24 +1,34 @@
+# fmt: off
+
 import collections
 from functools import reduce, singledispatch
-from typing import (Any, Dict, Iterable, List, Optional,
-                    overload, Sequence, TypeVar, Union)
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import numpy as np
-from ase.spectrum.dosdata import DOSData, RawDOSData, GridDOSData, Info
-from ase.utils.plotting import SimplePlottingAxes
+from matplotlib.axes import Axes
 
-# This import is for the benefit of type-checking / mypy
-if False:
-    import matplotlib.axes
+from ase.spectrum.dosdata import DOSData, Floats, GridDOSData, Info, RawDOSData
+from ase.utils.plotting import SimplePlottingAxes
 
 
 class DOSCollection(collections.abc.Sequence):
     """Base class for a collection of DOSData objects"""
+
     def __init__(self, dos_series: Iterable[DOSData]) -> None:
         self._data = list(dos_series)
 
     def _sample(self,
-                energies: Sequence[float],
+                energies: Floats,
                 width: float = 0.1,
                 smearing: str = 'Gauss') -> np.ndarray:
         """Sample the DOS data at chosen points, with broadening
@@ -51,10 +61,10 @@ class DOSCollection(collections.abc.Sequence):
              xmax: float = None,
              width: float = 0.1,
              smearing: str = 'Gauss',
-             ax: 'matplotlib.axes.Axes' = None,
+             ax: Axes = None,
              show: bool = False,
              filename: str = None,
-             mplargs: dict = None) -> 'matplotlib.axes.Axes':
+             mplargs: dict = None) -> Axes:
         """Simple plot of collected DOS data, resampled onto a grid
 
         If the special key 'label' is present in self.info, this will be set
@@ -126,8 +136,8 @@ class DOSCollection(collections.abc.Sequence):
 
     @classmethod
     def from_data(cls,
-                  energies: Sequence[float],
-                  weights: Sequence[Sequence[float]],
+                  energies: Floats,
+                  weights: Sequence[Floats],
                   info: Sequence[Info] = None) -> 'DOSCollection':
         """Create a DOSCollection from data sharing a common set of energies
 
@@ -152,8 +162,8 @@ class DOSCollection(collections.abc.Sequence):
                    for row_weights, row_info in zip(weights, info))
 
     @staticmethod
-    def _check_weights_and_info(weights: Sequence[Sequence[float]],
-                                info: Union[Sequence[Info], None],
+    def _check_weights_and_info(weights: Sequence[Floats],
+                                info: Optional[Sequence[Info]],
                                 ) -> Sequence[Info]:
         if info is None:
             info = [{} for _ in range(len(weights))]
@@ -187,10 +197,10 @@ class DOSCollection(collections.abc.Sequence):
         """Compare with another DOSCollection for testing purposes"""
         if not isinstance(other, type(self)):
             return False
-        elif not len(self) == len(other):
+        elif len(self) != len(other):
             return False
         else:
-            return all([a._almost_equals(b) for a, b in zip(self, other)])
+            return all(a._almost_equals(b) for a, b in zip(self, other))
 
     def total(self) -> DOSData:
         """Sum all the DOSData in this Collection and label it as 'Total'"""
@@ -276,7 +286,8 @@ class DOSCollection(collections.abc.Sequence):
         matches = self._select_to_list(self, info_selection, negative=True)
         return type(self)(matches)
 
-    def sum_by(self, *info_keys: str) -> 'DOSCollection':
+    # Use typehint *info_keys: str from python3.11+
+    def sum_by(self, *info_keys) -> 'DOSCollection':
         """Return a DOSCollection with some data summed by common attributes
 
         For example, if ::
@@ -348,7 +359,7 @@ class DOSCollection(collections.abc.Sequence):
 
 
 @singledispatch
-def _add_to_collection(other: DOSCollection,
+def _add_to_collection(other: Union[DOSData, DOSCollection],
                        collection: DOSCollection) -> DOSCollection:
     if isinstance(other, type(collection)):
         return type(collection)(list(collection) + list(other))
@@ -377,7 +388,7 @@ class RawDOSCollection(DOSCollection):
 
 class GridDOSCollection(DOSCollection):
     def __init__(self, dos_series: Iterable[GridDOSData],
-                 energies: Optional[Sequence[float]] = None) -> None:
+                 energies: Optional[Floats] = None) -> None:
         dos_list = list(dos_series)
         if energies is None:
             if len(dos_list) == 0:
@@ -387,7 +398,9 @@ class GridDOSCollection(DOSCollection):
         else:
             self._energies = np.asarray(energies)
 
-        self._weights = np.empty((len(dos_list), len(self._energies)), float)
+        self._weights: np.ndarray = np.empty(
+            (len(dos_list), len(self._energies)), float,
+        )
         self._info = []
 
         for i, dos_data in enumerate(dos_list):
@@ -395,16 +408,17 @@ class GridDOSCollection(DOSCollection):
                 raise TypeError("GridDOSCollection can only store "
                                 "GridDOSData objects.")
             if (dos_data.get_energies().shape != self._energies.shape
-                or not np.allclose(dos_data.get_energies(), self._energies)):
+                    or not np.allclose(dos_data.get_energies(),
+                                       self._energies)):
                 raise ValueError("All GridDOSData objects in GridDOSCollection"
                                  " must have the same energy axis.")
             self._weights[i, :] = dos_data.get_weights()
             self._info.append(dos_data.info)
 
-    def get_energies(self) -> Sequence[float]:
+    def get_energies(self) -> Floats:
         return self._energies.copy()
 
-    def get_all_weights(self) -> Sequence[Sequence[float]]:
+    def get_all_weights(self) -> Union[Sequence[Floats], np.ndarray]:
         return self._weights.copy()
 
     def __len__(self) -> int:
@@ -430,8 +444,8 @@ class GridDOSCollection(DOSCollection):
 
     @classmethod
     def from_data(cls,
-                  energies: Sequence[float],
-                  weights: Sequence[Sequence[float]],
+                  energies: Floats,
+                  weights: Sequence[Floats],
                   info: Sequence[Info] = None) -> 'GridDOSCollection':
         """Create a GridDOSCollection from data with a common set of energies
 
@@ -533,10 +547,10 @@ class GridDOSCollection(DOSCollection):
              xmax: float = None,
              width: float = None,
              smearing: str = 'Gauss',
-             ax: 'matplotlib.axes.Axes' = None,
+             ax: Axes = None,
              show: bool = False,
              filename: str = None,
-             mplargs: dict = None) -> 'matplotlib.axes.Axes':
+             mplargs: dict = None) -> Axes:
         """Simple plot of collected DOS data, resampled onto a grid
 
         If the special key 'label' is present in self.info, this will be set
@@ -586,11 +600,11 @@ class GridDOSCollection(DOSCollection):
         return ax
 
     @staticmethod
-    def _plot_broadened(ax: 'matplotlib.axes.Axes',
-                        energies: Sequence[float],
+    def _plot_broadened(ax: Axes,
+                        energies: Floats,
                         all_y: np.ndarray,
                         all_labels: Sequence[str],
-                        mplargs: Union[Dict, None]):
+                        mplargs: Optional[Dict]):
         """Plot DOS data with labels to axes
 
         This is separated into another function so that subclasses can

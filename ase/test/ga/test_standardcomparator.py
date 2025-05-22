@@ -1,11 +1,16 @@
-def test_standardcomparator():
-    from ase.ga.standard_comparators import (InteratomicDistanceComparator,
-                                             EnergyComparator, RawScoreComparator,
-                                             SequentialComparator)
-    from ase import Atoms
-    from ase.calculators.singlepoint import SinglePointCalculator
-    from ase.ga import set_raw_score
+# fmt: off
+from ase import Atoms
+from ase.calculators.singlepoint import SinglePointCalculator
+from ase.ga import set_raw_score
+from ase.ga.standard_comparators import (
+    EnergyComparator,
+    InteratomicDistanceComparator,
+    RawScoreComparator,
+    SequentialComparator,
+)
 
+
+def test_standardcomparator():
 
     a1 = Atoms('AgAgAg', positions=[[0, 0, 0], [1.5, 0, 0], [1.5, 1.5, 0]])
     a2 = Atoms('AgAgAg', positions=[[0, 0, 0], [1.4, 0, 0], [1.5, 1.5, 0]])
@@ -22,13 +27,11 @@ def test_standardcomparator():
                                           dE=0.3)
     assert comp1.looks_like(a1, a2)
 
-
     comp2 = InteratomicDistanceComparator(n_top=3,
                                           pair_cor_cum_diff=0.03,
                                           pair_cor_max=0.7,
                                           dE=0.15)
     assert not comp2.looks_like(a1, a2)
-
 
     comp3 = InteratomicDistanceComparator(n_top=3,
                                           pair_cor_cum_diff=0.02,
@@ -36,20 +39,17 @@ def test_standardcomparator():
                                           dE=0.3)
     assert not comp3.looks_like(a1, a2)
 
-
     hard_E_comp = EnergyComparator(dE=1.0)
     assert hard_E_comp.looks_like(a1, a2)
 
     soft_E_comp = EnergyComparator(dE=.01)
     assert not soft_E_comp.looks_like(a1, a2)
 
-
     set_raw_score(a1, .1)
     set_raw_score(a2, .27)
 
     rs_comp = RawScoreComparator(0.15)
     assert not rs_comp.looks_like(a1, a2)
-
 
     comp1 = SequentialComparator([hard_E_comp, rs_comp], [0, 0])
     assert not comp1.looks_like(a1, a2)

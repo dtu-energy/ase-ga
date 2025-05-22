@@ -1,9 +1,14 @@
+# fmt: off
+
 """Modules for calculating thermochemical information from computational
 outputs."""
 
 import os
 import sys
+from warnings import warn
+
 import numpy as np
+from scipy.integrate import trapezoid
 
 from ase import units
 
@@ -14,10 +19,7 @@ class ThermoChem:
 
     def get_ZPE_correction(self):
         """Returns the zero-point vibrational energy correction in eV."""
-        zpe = 0.
-        for energy in self.vib_energies:
-            zpe += 0.5 * energy
-        return zpe
+        return 0.5 * np.sum(self.vib_energies)
 
     def _vibrational_energy_contribution(self, temperature):
         """Calculates the change in internal energy due to vibrations from
@@ -66,15 +68,22 @@ class HarmonicThermo(ThermoChem):
         the potential energy in eV (e.g., from atoms.get_potential_energy)
         (if potentialenergy is unspecified, then the methods of this
         class can be interpreted as the energy corrections)
+    ignore_imag_modes : bool
+        If True, any imaginary frequencies will be ignored in the calculation
+        of the thermochemical properties. If False (default), an error will
+        be raised if any imaginary frequencies are present.
     """
 
-    def __init__(self, vib_energies, potentialenergy=0.):
-        self.vib_energies = vib_energies
+    def __init__(self, vib_energies, potentialenergy=0.,
+                 ignore_imag_modes=False):
+        self.ignore_imag_modes = ignore_imag_modes
+
         # Check for imaginary frequencies.
-        if sum(np.iscomplex(self.vib_energies)):
-            raise ValueError('Imaginary vibrational energies are present.')
-        else:
-            self.vib_energies = np.real(self.vib_energies)  # clear +0.j
+        vib_energies, n_imag = _clean_vib_energies(
+            vib_energies, ignore_imag_modes=ignore_imag_modes
+        )
+        self.vib_energies = vib_energies
+        self.n_imag = n_imag
 
         self.potentialenergy = potentialenergy
 
@@ -162,10 +171,11 @@ class HinderedThermo(ThermoChem):
 
     vib_energies : list
         a list of all the vibrational energies of the adsorbate (e.g., from
-        ase.vibrations.Vibrations.get_energies). The number of energies
-        should match the number of degrees of freedom of the adsorbate;
-        i.e., 3*n, where n is the number of atoms. Note that this class does
-        not check that the user has supplied the correct number of energies.
+        ase.vibrations.Vibrations.get_energies). If atoms is not provided,
+        then the number of energies must match the number of degrees of freedom
+        of the adsorbate; i.e., 3*n, where n is the number of atoms. Note
+        that this class does not check that the user has supplied the
+        correct number of energies.
         Units of energies are eV.
     trans_barrier_energy : float
         the translational energy barrier in eV. This is the barrier for an
@@ -197,12 +207,18 @@ class HinderedThermo(ThermoChem):
         For example, propane bound through its end carbon has a symmetry
         number of 1 but propane bound through its middle carbon has a symmetry
         number of 2. (if symmetrynumber is unspecified, then the default is 1)
+    ignore_imag_modes : bool
+        If True, any imaginary frequencies present after the 3N-3 cut will not
+        be included in the calculation of the thermochemical properties. If
+        False (default), an error will be raised if imaginary frequencies are
+        present after the 3N-3 cut.
     """
 
     def __init__(self, vib_energies, trans_barrier_energy, rot_barrier_energy,
                  sitedensity, rotationalminima, potentialenergy=0.,
-                 mass=None, inertia=None, atoms=None, symmetrynumber=1):
-        self.vib_energies = sorted(vib_energies, reverse=True)[:-3]
+                 mass=None, inertia=None, atoms=None, symmetrynumber=1,
+                 ignore_imag_modes=False):
+
         self.trans_barrier_energy = trans_barrier_energy * units._e
         self.rot_barrier_energy = rot_barrier_energy * units._e
         self.area = 1. / sitedensity / 100.0**2
@@ -210,6 +226,24 @@ class HinderedThermo(ThermoChem):
         self.potentialenergy = potentialenergy
         self.atoms = atoms
         self.symmetry = symmetrynumber
+        self.ignore_imag_modes = ignore_imag_modes
+
+        # Sort the vibrations
+        vib_energies = list(vib_energies)
+        vib_energies.sort(key=np.abs)
+
+        # Keep only the relevant vibrational energies (3N-3)
+        if atoms:
+            vib_energies = vib_energies[-(3 * len(atoms) - 3):]
+        else:
+            vib_energies = vib_energies[-(len(vib_energies) - 3):]
+
+        # Check for imaginary frequencies.
+        vib_energies, n_imag = _clean_vib_energies(
+            vib_energies, ignore_imag_modes=ignore_imag_modes
+        )
+        self.vib_energies = vib_energies
+        self.n_imag = n_imag
 
         if (mass or atoms) and (inertia or atoms):
             if mass:
@@ -225,12 +259,6 @@ class HinderedThermo(ThermoChem):
             raise RuntimeError('Either mass and inertia of the '
                                'adsorbate must be specified or '
                                'atoms must be specified.')
-
-        # Make sure no imaginary frequencies remain.
-        if sum(np.iscomplex(self.vib_energies)):
-            raise ValueError('Imaginary frequencies are present.')
-        else:
-            self.vib_energies = np.real(self.vib_energies)  # clear +0.j
 
         # Calculate hindered translational and rotational frequencies
         self.freq_t = np.sqrt(self.trans_barrier_energy / (2 * self.mass *
@@ -426,33 +454,48 @@ class IdealGasThermo(ThermoChem):
         the total electronic spin. (0 for molecules in which all electrons
         are paired, 0.5 for a free radical with a single unpaired electron,
         1.0 for a triplet with two unpaired electrons, such as O_2.)
+    ignore_imag_modes : bool
+        If True, any imaginary frequencies present after the 3N-5/3N-6 cut
+        will not be included in the calculation of the thermochemical
+        properties. If False (default), a ValueError will be raised if
+        any imaginary frequencies remain after the 3N-5/3N-6 cut.
     """
 
     def __init__(self, vib_energies, geometry, potentialenergy=0.,
-                 atoms=None, symmetrynumber=None, spin=None, natoms=None):
+                 atoms=None, symmetrynumber=None, spin=None, natoms=None,
+                 ignore_imag_modes=False):
         self.potentialenergy = potentialenergy
         self.geometry = geometry
         self.atoms = atoms
         self.sigma = symmetrynumber
         self.spin = spin
-        if natoms is None:
-            if atoms:
-                natoms = len(atoms)
+        self.ignore_imag_modes = ignore_imag_modes
+        if natoms is None and atoms:
+            natoms = len(atoms)
+        self.natoms = natoms
+
+        # Sort the vibrations
+        vib_energies = list(vib_energies)
+        vib_energies.sort(key=np.abs)
+
         # Cut the vibrations to those needed from the geometry.
         if natoms:
             if geometry == 'nonlinear':
-                self.vib_energies = vib_energies[-(3 * natoms - 6):]
+                vib_energies = vib_energies[-(3 * natoms - 6):]
             elif geometry == 'linear':
-                self.vib_energies = vib_energies[-(3 * natoms - 5):]
+                vib_energies = vib_energies[-(3 * natoms - 5):]
             elif geometry == 'monatomic':
-                self.vib_energies = []
-        else:
-            self.vib_energies = vib_energies
-        # Make sure no imaginary frequencies remain.
-        if sum(np.iscomplex(self.vib_energies)):
-            raise ValueError('Imaginary frequencies are present.')
-        else:
-            self.vib_energies = np.real(self.vib_energies)  # clear +0.j
+                vib_energies = []
+            else:
+                raise ValueError(f"Unsupported geometry: {geometry}")
+
+        # Check for imaginary frequencies.
+        vib_energies, n_imag = _clean_vib_energies(
+            vib_energies, ignore_imag_modes=ignore_imag_modes
+        )
+        self.vib_energies = vib_energies
+        self.n_imag = n_imag
+
         self.referencepressure = 1.0e5  # Pa
 
     def get_enthalpy(self, temperature, verbose=True):
@@ -533,7 +576,7 @@ class IdealGasThermo(ThermoChem):
         elif self.geometry == 'nonlinear':
             inertias = (self.atoms.get_moments_of_inertia() * units._amu /
                         (10.0**10)**2)  # kg m^2
-            S_r = np.sqrt(np.pi * np.product(inertias)) / self.sigma
+            S_r = np.sqrt(np.pi * np.prod(inertias)) / self.sigma
             S_r *= (8.0 * np.pi**2 * units._k * temperature /
                     units._hplanck**2)**(3.0 / 2.0)
             S_r = units.kB * (np.log(S_r) + 3.0 / 2.0)
@@ -664,18 +707,18 @@ class CrystalThermo(ThermoChem):
 
         zpe_list = omega_e / 2.
         if self.formula_units == 0:
-            zpe = np.trapz(zpe_list * dos_e, omega_e)
+            zpe = trapezoid(zpe_list * dos_e, omega_e)
         else:
-            zpe = np.trapz(zpe_list * dos_e, omega_e) / self.formula_units
+            zpe = trapezoid(zpe_list * dos_e, omega_e) / self.formula_units
         write(fmt % ('E_ZPE', zpe))
         U += zpe
 
         B = 1. / (units.kB * temperature)
         E_vib = omega_e / (np.exp(omega_e * B) - 1.)
         if self.formula_units == 0:
-            E_phonon = np.trapz(E_vib * dos_e, omega_e)
+            E_phonon = trapezoid(E_vib * dos_e, omega_e)
         else:
-            E_phonon = np.trapz(E_vib * dos_e, omega_e) / self.formula_units
+            E_phonon = trapezoid(E_vib * dos_e, omega_e) / self.formula_units
         write(fmt % ('E_phonon', E_phonon))
         U += E_phonon
 
@@ -710,9 +753,9 @@ class CrystalThermo(ThermoChem):
         S_vib = (omega_e / (temperature * (np.exp(omega_e * B) - 1.)) -
                  units.kB * np.log(1. - np.exp(-omega_e * B)))
         if self.formula_units == 0:
-            S = np.trapz(S_vib * dos_e, omega_e)
+            S = trapezoid(S_vib * dos_e, omega_e)
         else:
-            S = np.trapz(S_vib * dos_e, omega_e) / self.formula_units
+            S = trapezoid(S_vib * dos_e, omega_e) / self.formula_units
 
         write('-' * 49)
         write(fmt % ('S', S, S * temperature))
@@ -746,3 +789,42 @@ class CrystalThermo(ThermoChem):
         write(fmt % ('F', F))
         write('=' * 23)
         return F
+
+
+def _clean_vib_energies(vib_energies, ignore_imag_modes=False):
+    """Checks for presence of imaginary vibrational modes and removes
+    them if ignore_imag_modes is True. Also removes +0.j from real
+    vibrational energies.
+
+    Inputs:
+
+    vib_energies : list
+        a list of the vibrational energies
+
+    ignore_imag_modes : bool
+        If True, any imaginary frequencies will be removed. If False,
+        (default), an error will be raised if imaginary frequencies are
+        present.
+
+    Outputs:
+
+    vib_energies : list
+        a list of the cleaned vibrational energies with imaginary frequencies
+        removed if ignore_imag_modes is True.
+
+    n_imag : int
+        the number of imaginary frequencies removed
+    """
+    if ignore_imag_modes:
+        n_vib_energies = len(vib_energies)
+        vib_energies = [v for v in vib_energies if np.real(v) > 0]
+        n_imag = n_vib_energies - len(vib_energies)
+        if n_imag > 0:
+            warn(f"{n_imag} imag modes removed", UserWarning)
+    else:
+        if sum(np.iscomplex(vib_energies)):
+            raise ValueError('Imaginary vibrational energies are present.')
+        n_imag = 0
+    vib_energies = np.real(vib_energies)  # clear +0.j
+
+    return vib_energies, n_imag

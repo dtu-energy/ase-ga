@@ -19,6 +19,7 @@ This module defines the following variables:
 .. data:: vdw_radii
 .. data:: atomic_masses_iupac2016
 .. data:: atomic_masses_legacy
+.. data:: cohesive_energies
 
 All of these are lists that should be indexed with an atomic number:
 

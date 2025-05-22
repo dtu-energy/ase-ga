@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.calculators.calculator import Parameters
 
 """
@@ -9,6 +11,7 @@ class PAOBasisBlock(Parameters):
     """
     Representing a block in PAO.Basis for one species.
     """
+
     def __init__(self, block):
         """
         Parameters:
@@ -50,6 +53,7 @@ class Species(Parameters):
     can be set be a ghost species, meaning that they will not be considered
     atoms, but the corresponding basis set will be used.
     """
+
     def __init__(self,
                  symbol,
                  basis_set='DZP',
@@ -81,7 +85,7 @@ def format_fdf(key, value):
             new_value + '\n' + \
             '%endblock ' + key + '\n'
     else:
-        string = '%s\t%s\n' % (key, new_value)
+        string = f'{key}\t{new_value}\n'
 
     return string
 

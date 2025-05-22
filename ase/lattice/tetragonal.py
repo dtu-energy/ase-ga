@@ -1,3 +1,5 @@
+# fmt: off
+
 """Function-like objects creating tetragonal lattices.
 
 The following lattice creators are defined:
@@ -5,8 +7,10 @@ The following lattice creators are defined:
     CenteredTetragonal
 """
 
-from ase.lattice.orthorhombic import (SimpleOrthorhombicFactory,
-                                      BodyCenteredOrthorhombicFactory)
+from ase.lattice.orthorhombic import (
+    BodyCenteredOrthorhombicFactory,
+    SimpleOrthorhombicFactory,
+)
 
 
 class _Tetragonalize:
@@ -28,10 +32,11 @@ class _Tetragonalize:
         self.latticeconstant = lattice
         self.orthobase.make_crystal_basis(self)
 
-        
+
 class SimpleTetragonalFactory(_Tetragonalize, SimpleOrthorhombicFactory):
     "A factory for creating simple tetragonal lattices."
     orthobase = SimpleOrthorhombicFactory
+
 
 SimpleTetragonal = SimpleTetragonalFactory()
 
@@ -40,5 +45,6 @@ class CenteredTetragonalFactory(_Tetragonalize,
                                 BodyCenteredOrthorhombicFactory):
     "A factory for creating centered tetragonal lattices."
     orthobase = BodyCenteredOrthorhombicFactory
+
 
 CenteredTetragonal = CenteredTetragonalFactory()

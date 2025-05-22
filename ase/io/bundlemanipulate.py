@@ -1,3 +1,5 @@
+# fmt: off
+
 """Functions for in-place manipulation of bundletrajectories.
 
 This module defines a number of functions that can be used to
@@ -14,8 +16,8 @@ Usage from command line:
 python -m ase.io.bundlemanipulate inbundle outbundle [start [end [step]]]
 """
 
-import os
 import json
+import os
 from typing import Optional
 
 import numpy as np
@@ -35,10 +37,10 @@ def copy_frames(inbundle, outbundle, start=0, end=None, step=1,
     if metadata['backend'] == 'ulm':
         backend = UlmBundleBackend(True, metadata['ulm.singleprecision'])
     elif metadata['backend'] == 'pickle':
-        raise IOError("Input BundleTrajectory uses the 'pickle' backend.  " +
+        raise OSError("Input BundleTrajectory uses the 'pickle' backend.  " +
                       "This is not longer supported for security reasons")
     else:
-        raise IOError("Unknown backend type '{}'".format(metadata['backend']))
+        raise OSError("Unknown backend type '{}'".format(metadata['backend']))
 
     if start < 0:
         start += nframes
@@ -58,8 +60,8 @@ def copy_frames(inbundle, outbundle, start=0, end=None, step=1,
 
     # Make the new bundle directory
     os.mkdir(outbundle)
-    with open(os.path.join(outbundle, 'metadata.json'), 'w') as f:
-        json.dump(metadata, f, indent=2)
+    with open(os.path.join(outbundle, 'metadata.json'), 'w') as fd:
+        json.dump(metadata, fd, indent=2)
 
     for nout, nin in enumerate(frames):
         if verbose:
@@ -104,7 +106,7 @@ def copy_frames(inbundle, outbundle, start=0, end=None, step=1,
                 # First we read the ID's from frame 0 and N
                 assert 'ID_0.ulm' in firstnames and 'ID_0.ulm' in names
                 backend.nfrag = fragments0
-                f0_id, dummy = backend.read_split(
+                f0_id, _dummy = backend.read_split(
                     os.path.join(inbundle, "F0"), "ID"
                 )
                 backend.nfrag = fragments1
@@ -118,7 +120,7 @@ def copy_frames(inbundle, outbundle, start=0, end=None, step=1,
                         arrayname = name.split('_')[0]
                         print("    Reading", arrayname)
                         backend.nfrag = fragments0
-                        f0_data, dummy = backend.read_split(
+                        f0_data, _dummy = backend.read_split(
                             os.path.join(inbundle, "F0"), arrayname
                         )
                         # Sort data
@@ -132,7 +134,7 @@ def copy_frames(inbundle, outbundle, start=0, end=None, step=1,
                         for i, s in enumerate(fn_sizes):
                             segment = f0_data[pointer:pointer + s]
                             pointer += s
-                            backend.write(outdir, '{}_{}'.format(arrayname, i),
+                            backend.write(outdir, f'{arrayname}_{i}',
                                           segment)
     # Finally, write the number of frames
     with open(os.path.join(outbundle, 'frames'), 'w') as fd:
@@ -146,30 +148,31 @@ def read_bundle_info(name):
     Returns (metadata, nframes)
     """
     if not os.path.isdir(name):
-        raise IOError("No directory (bundle) named '%s' found." % (name,))
+        raise OSError(f"No directory (bundle) named '{name}' found.")
 
     metaname = os.path.join(name, 'metadata.json')
 
     if not os.path.isfile(metaname):
         if os.path.isfile(os.path.join(name, 'metadata')):
-            raise IOError("Found obsolete metadata in unsecure Pickle format.  Refusing to load.")
+            raise OSError(
+                "Found obsolete metadata in unsecure Pickle format.  "
+                "Refusing to load.")
         else:
-            raise IOError("'{}' does not appear to be a BundleTrajectory "
+            raise OSError("'{}' does not appear to be a BundleTrajectory "
                           "(no {})".format(name, metaname))
 
     with open(metaname) as fd:
         mdata = json.load(fd)
 
     if 'format' not in mdata or mdata['format'] != 'BundleTrajectory':
-        raise IOError("'%s' does not appear to be a BundleTrajectory" %
-                      (name,))
+        raise OSError(f"'{name}' does not appear to be a BundleTrajectory")
     if mdata['version'] != 1:
-        raise IOError("Cannot manipulate BundleTrajectories with version "
+        raise OSError("Cannot manipulate BundleTrajectories with version "
                       "number %s" % (mdata['version'],))
     with open(os.path.join(name, "frames")) as fd:
         nframes = int(fd.read())
     if nframes == 0:
-        raise IOError("'%s' is an empty BundleTrajectory" % (name,))
+        raise OSError(f"'{name}' is an empty BundleTrajectory")
     return mdata, nframes
 
 

@@ -1,38 +1,40 @@
+# fmt: off
 import numpy as np
 import pytest
-from ase.build import bulk
 
+from ase.build import bulk
+from ase.calculators.eam import EAM
+from ase.calculators.emt import EMT
+from ase.calculators.lj import LennardJones
 from ase.calculators.qmmm import ForceQMMM, RescaledCalculator
 from ase.eos import EquationOfState
-from ase.optimize import FIRE
-from ase.neighborlist import neighbor_list
 from ase.geometry import get_distances
+from ase.neighborlist import neighbor_list
+from ase.optimize import FIRE
+from ase.units import GPa
 
 
-@pytest.fixture
+@pytest.fixture()
 def mm_calc():
-    from ase.calculators.lj import LennardJones
     bulk_at = bulk("Cu", cubic=True)
     sigma = (bulk_at * 2).get_distance(0, 1) * (2. ** (-1. / 6))
 
     return LennardJones(sigma=sigma, epsilon=0.05)
 
 
-@pytest.fixture
+@pytest.fixture()
 def qm_calc():
-    from ase.calculators.emt import EMT
-
     return EMT()
 
 
-@pytest.fixture
+@pytest.fixture()
 def bulk_at():
     bulk_at = bulk("Cu", cubic=True)
 
     return bulk_at
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_qm_buffer_mask(qm_calc, mm_calc, bulk_at):
     """
     test number of atoms in qm_buffer_mask for
@@ -86,7 +88,7 @@ def test_qm_buffer_mask(qm_calc, mm_calc, bulk_at):
         assert qm_mask_region.sum() == qm_mask.sum()
         buffer_mask_region = region == "buffer"
         assert qm_mask_region.sum() + \
-               buffer_mask_region.sum() == qm_buffer_mask_ref.sum()
+            buffer_mask_region.sum() == qm_buffer_mask_ref.sum()
 
 
 def compare_qm_cell_and_pbc(qm_calc, mm_calc, bulk_at,
@@ -165,7 +167,7 @@ def compare_qm_cell_and_pbc(qm_calc, mm_calc, bulk_at,
                              "buffer_width": 3.61},
                             {"test_size": [1, 4, 4],
                              "expected_pbc": np.array([True, False, False]),
-                             "buffer_width":3.61},
+                             "buffer_width": 3.61},
                              # testing scenario periodic in one direction
                              # and non periodic in the other two
                              # relevant for surfaces.
@@ -193,8 +195,6 @@ def test_rescaled_calculator():
     and comparing it to the desired values
     """
 
-    from ase.calculators.eam import EAM
-    from ase.units import GPa
     # A simple empirical N-body potential for
     # transition metals by M. W. Finnis & J.E. Sinclair
     # https://www.tandfonline.com/doi/abs/10.1080/01418618408244210
@@ -268,7 +268,7 @@ def test_rescaled_calculator():
     v_mm, E_mm = zip(*[strain(bulk_at, e, mm_calc) for e in eps])
 
     eos_mm = EquationOfState(v_mm, E_mm)
-    v0_mm, E0_mm, B_mm = eos_mm.fit()
+    v0_mm, _E0_mm, B_mm = eos_mm.fit()
     B_mm /= GPa
     a0_mm = v0_mm ** (1.0 / 3.0)
 
@@ -277,7 +277,7 @@ def test_rescaled_calculator():
     v_mm_r, E_mm_r = zip(*[strain(bulk_at, e, mm_r) for e in eps])
 
     eos_mm_r = EquationOfState(v_mm_r, E_mm_r)
-    v0_mm_r, E0_mm_r, B_mm_r = eos_mm_r.fit()
+    v0_mm_r, _E0_mm_r, B_mm_r = eos_mm_r.fit()
     B_mm_r /= GPa
     a0_mm_r = v0_mm_r ** (1.0 / 3)
 
@@ -287,7 +287,7 @@ def test_rescaled_calculator():
     assert abs((B_mm_r - B_qm) / B_qm) < 1e-3
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_forceqmmm(qm_calc, mm_calc, bulk_at):
 
     # parameters
@@ -354,7 +354,7 @@ def test_forceqmmm(qm_calc, mm_calc, bulk_at):
     assert du_global[-1] < 1e-10
 
 
-@pytest.fixture
+@pytest.fixture()
 def at0(qm_calc, mm_calc, bulk_at):
     alat = bulk_at.cell[0, 0]
     at0 = bulk_at * 5
@@ -372,8 +372,7 @@ def at0(qm_calc, mm_calc, bulk_at):
     return at0
 
 
-def test_export_xyz(at0):
-
+def test_export_xyz(at0, testdir):
     """
     test the export_extxyz function and checks the region adn forces arrays
     """
@@ -392,7 +391,7 @@ def test_export_xyz(at0):
     original_region = qmmm.get_region_from_masks()
     assert all(original_region == read_atoms.get_array("region"))
 
-    assert "forces" in read_atoms.arrays
+    assert "forces" in read_atoms.calc.results
     # absolute tolerance for comparing forces close to zero
     np.testing.assert_allclose(forces, read_atoms.get_forces(), atol=1.0e-6)
 
@@ -414,8 +413,9 @@ def test_set_masks_from_region(at0, qm_calc, mm_calc):
                           buffer_width=3.61)
 
     # assert that number of qm atoms is different
-    assert not (np.count_nonzero(qmmm.qm_selection_mask) ==
-                np.count_nonzero(test_qmmm.qm_selection_mask))
+    assert np.count_nonzero(qmmm.qm_selection_mask) != np.count_nonzero(
+        test_qmmm.qm_selection_mask
+    )
 
     test_qmmm.set_masks_from_region(region)
 
@@ -426,8 +426,7 @@ def test_set_masks_from_region(at0, qm_calc, mm_calc):
     assert all(region == test_region)
 
 
-def test_import_xyz(at0, qm_calc, mm_calc):
-
+def test_import_xyz(at0, qm_calc, mm_calc, testdir):
     """
     test the import_extxyz function and checks the mapping
     """

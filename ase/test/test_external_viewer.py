@@ -1,14 +1,15 @@
+# fmt: off
 import sys
 
 import pytest
 
+from ase.build import bulk
 from ase.io import read
 from ase.visualize import view
-from ase.visualize.external import PyViewer, CLIViewer
-from ase.build import bulk
+from ase.visualize.viewers import CLI_VIEWERS, CLIViewer, PyViewer
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     return bulk('Au')
 
@@ -31,17 +32,47 @@ def test_view_ase_via_cli(atoms):
     assert status != 0
 
 
+viewers = [
+    # `ase`  # tested above
+    'ngl',
+    # 'mlab',  # TODO: make it available
+    # 'sage',  # TODO: make it available
+    'x3d',
+    # 'avogadro',  # TODO: no CLI?
+    # `ase_gui_cli`  # tested above
+    # 'gopenmol',  # TODO: no CLI?
+    # 'rasmol',  # TODO: no CLI?
+    # `vmd`,  # TODO: no CLI?
+    # 'xmakemol',  # TODO: no CLI?
+]
+
+
+# At the moment nglview raises a DeprecationWarning.
+# https://github.com/nglviewer/nglview/issues/1074
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+@pytest.mark.parametrize('viewer', viewers)
+def test_good_viewer(atoms, viewer):
+    """Test if `viewer` can at least be called without errors."""
+    if viewer == 'ngl':
+        pytest.importorskip('nglview')
+    elif viewer == 'x3d':
+        pytest.importorskip('IPython')
+    view(atoms, viewer=viewer)
+
+
 def test_bad_viewer(atoms):
     with pytest.raises(KeyError):
         view(atoms, viewer='_nonexistent_viewer')
 
 
 def test_py_viewer_mock(atoms, monkeypatch):
-    def mock_view(self, atoms, repeat=None):
+    def mock_view(self, atoms, repeat=None, **kwargs):
+        if repeat is not None:
+            atoms = atoms.repeat(repeat)
         print(f'viewing {atoms} with mock "{self.name}"')
         return (atoms, self.name)
 
-    monkeypatch.setattr(PyViewer, 'sage', mock_view, raising=False)
+    monkeypatch.setattr(PyViewer, 'view', mock_view, raising=False)
 
     (atoms1, name1) = view(atoms, viewer='sage')
     assert name1 == 'sage'
@@ -52,7 +83,7 @@ def test_py_viewer_mock(atoms, monkeypatch):
     assert len(atoms2) == 8 * len(atoms)
 
 
-@pytest.mark.parametrize('viewer', CLIViewer.viewers())
+@pytest.mark.parametrize('viewer', CLI_VIEWERS.values())
 def test_cli_viewer_tempfile(atoms, viewer):
     with viewer.mktemp(atoms) as path:
         atoms1 = read(path)
@@ -63,9 +94,10 @@ def test_cli_viewer_tempfile(atoms, viewer):
     assert not path.exists()
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_viewer():
-    return CLIViewer('dummy', 'traj', [sys.executable, '-m', 'ase', 'info'])
+    return CLIViewer('dummy', 'traj', [sys.executable, '-m', 'ase', 'info',
+                                       '--files'])
 
 
 def test_cli_viewer_blocking(atoms, mock_viewer):

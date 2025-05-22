@@ -1,9 +1,13 @@
 .. module:: ase.utils.xrdebye
 
 ===========================
+Note
+===========================
+A newer implementation of the Debye Scattering Equation can be found at https://github.com/FrederikLizakJohansen/DebyeCalculator which supports more atomic elements, neutron scattering, calculation of pair distribution function data and it is significantly faster on CPU while supporting GPU acceleration. The new implementation can take ase objects as input.
+
+===========================
 X-ray scattering simulation
 ===========================
-
 
 The module for simulation of X-ray scattering properties from the atomic
 level. The approach works only for finite systems, so that periodic boundary
@@ -52,6 +56,7 @@ The considered system is a nanoparticle of silver which is built using
 selected to produce approximately 2 nm sized particle::
 
   from ase.cluster.cubic import FaceCenteredCubic
+  from ase.utils.xrdebye import XrDebye
   import numpy as np
 
   surfaces = [(1, 0, 0), (1, 1, 0), (1, 1, 1)]

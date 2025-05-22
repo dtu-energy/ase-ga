@@ -1,7 +1,10 @@
-import pytest
-from ase.calculators.siesta.siesta_lrtddft import SiestaLRTDDFT
-from ase.build import molecule
+# fmt: off
 import numpy as np
+import pytest
+
+from ase.build import molecule
+from ase.calculators.siesta.siesta_lrtddft import SiestaLRTDDFT
+
 
 def test_siesta_lrtddft(siesta_factory):
 
@@ -18,4 +21,4 @@ def test_siesta_lrtddft(siesta_factory):
 
     freq = np.arange(0.0, 25.0, 0.5)
     pmat = lrtddft.get_polarizability(freq)
-    assert pmat.size == 3*3*freq.size
+    assert pmat.size == 3 * 3 * freq.size

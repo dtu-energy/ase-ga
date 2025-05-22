@@ -1,9 +1,10 @@
-import pytest
+# fmt: off
 import numpy as np
+import pytest
+
 from ase.build import bulk
-from ase.spacegroup import crystal, Spacegroup
+from ase.spacegroup import Spacegroup, crystal, utils
 from ase.spacegroup.spacegroup import SpacegroupValueError
-from ase.spacegroup import utils
 
 
 @pytest.fixture(params=[
@@ -45,8 +46,8 @@ from ase.spacegroup import utils
     },
 ])
 def basis_tests(request):
-    """Fixture which returns a dictionary with some test inputs and expected values
-    for testing the `get_basis` function."""
+    """Fixture which returns a dictionary with some test inputs and
+    expected values for testing the `get_basis` function."""
     return request.param()
 
 
@@ -61,7 +62,8 @@ def test_get_basis(basis_tests):
 
 
 def test_get_basis_infer_sg(basis_tests):
-    """Test inferring spacegroup, which uses 'get_basis_spglib' under the hood"""
+    """Test inferring spacegroup, which uses 'get_basis_spglib' under the
+    hood"""
     pytest.importorskip('spglib')
 
     atoms = basis_tests['atoms']
@@ -95,9 +97,9 @@ def test_get_basis_ase(basis_tests):
 def test_get_basis_wrong_type(basis_tests, spacegroup):
     atoms = basis_tests['atoms']
 
-    with pytest.raises(SpacegroupValueError):
+    with pytest.raises((SpacegroupValueError, TypeError)):
         utils._get_basis_ase(atoms, spacegroup)
-    with pytest.raises(SpacegroupValueError):
+    with pytest.raises((SpacegroupValueError, TypeError)):
         utils.get_basis(atoms, spacegroup=spacegroup)
 
 

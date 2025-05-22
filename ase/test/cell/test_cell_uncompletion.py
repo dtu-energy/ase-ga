@@ -1,5 +1,8 @@
-import pytest
+# fmt: off
 import itertools
+
+import pytest
+
 from ase.cell import Cell
 
 
@@ -14,7 +17,8 @@ def test_uncomplete(cell):
         ucell = cell.uncomplete(pbc)
         assert ucell.rank == sum(pbc & cell.any(1))
 
-    assert all(cell.uncomplete(True).any(1) == cell.any(1)), (cell.uncomplete(True), cell)
+    assert all(cell.uncomplete(True).any(1) == cell.any(1)
+               ), (cell.uncomplete(True), cell)
     assert all(cell.uncomplete(1).any(1) == cell.any(1))
     assert cell.uncomplete(False).rank == 0
     assert cell.uncomplete(0).rank == 0

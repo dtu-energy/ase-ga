@@ -1,10 +1,13 @@
+# fmt: off
+
 "Module for displaying information about the system."
 
 
-import numpy as np
-from ase.gui.i18n import _
 import warnings
 
+import numpy as np
+
+from ase.gui.i18n import _
 
 ucellformat = """\
   {:8.3f}  {:8.3f}  {:8.3f}
@@ -76,7 +79,6 @@ def info(gui):
                 add(_('Unexpected error determining lattice type'))
             else:
                 add(_('Reduced Bravais lattice:\n{}').format(lat))
-
 
         # Print electronic structure information if we have a calculator
         if atoms.calc:

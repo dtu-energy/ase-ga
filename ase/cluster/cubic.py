@@ -1,11 +1,13 @@
+# fmt: off
+
 """
 Function-like objects that creates cubic clusters.
 """
 
 import numpy as np
 
-from ase.data import reference_states as _refstate
 from ase.cluster.factory import ClusterFactory
+from ase.data import reference_states as _refstate
 
 
 class SimpleCubicFactory(ClusterFactory):
@@ -17,17 +19,16 @@ class SimpleCubicFactory(ClusterFactory):
         "Get the lattice constant of an element with cubic crystal structure."
         symmetry = _refstate[self.atomic_numbers[0]]['symmetry']
         if symmetry != self.xtal_name:
-            raise ValueError("Cannot guess the %s " % (self.xtal_name,) +
+            raise ValueError(f"Cannot guess the {self.xtal_name} " +
                              "lattice constant of an element with crystal " +
-                             "structure %s." % (symmetry,))
+                             f"structure {symmetry}.")
         return _refstate[self.atomic_numbers[0]]['a']
 
     def set_basis(self):
         a = self.lattice_constant
         if not isinstance(a, (int, float)):
             raise ValueError(
-                "Improper lattice constant for %s crystal." %
-                (self.xtal_name,))
+                f"Improper lattice constant for {self.xtal_name} crystal.")
 
         self.lattice_basis = np.array([[a, 0., 0.],
                                        [0., a, 0.],

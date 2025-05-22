@@ -1,7 +1,10 @@
+# fmt: off
+
 """ Implementation of a population for maintaining a GA population and
 proposing structures to pair. """
-from math import tanh, sqrt, exp
+from math import exp, sqrt, tanh
 from operator import itemgetter
+
 import numpy as np
 
 from ase.db.core import now
@@ -51,6 +54,7 @@ class Population:
     rng: Random number generator
         By default numpy.random.
     """
+
     def __init__(self, data_connection, population_size,
                  comparator=None, logfile=None, use_extinct=False,
                  rng=np.random):
@@ -140,12 +144,11 @@ class Population:
         """ Returns a copy of the population as it where
         after generation gen"""
         if self.logfile is not None:
-            f = open(self.logfile, 'r')
-            gens = {}
-            for l in f:
-                _, no, popul = l.split(':')
-                gens[int(no)] = [int(i) for i in popul.split(',')]
-            f.close()
+            with open(self.logfile) as fd:
+                gens = {}
+                for line in fd:
+                    _, no, popul = line.split(':')
+                    gens[int(no)] = [int(i) for i in popul.split(',')]
             return [c.copy() for c in self.all_cand[::-1]
                     if c.info['relax_id'] in gens[gen]]
 
@@ -182,7 +185,7 @@ class Population:
                                                             self.all_cand,
                                                             self.comparator)
                     self.pop.append(a)
-                    self.pop.sort(key=lambda x: get_raw_score(x),
+                    self.pop.sort(key=get_raw_score,
                                   reverse=True)
                 return
 
@@ -196,7 +199,7 @@ class Population:
                                                 self.all_cand,
                                                 self.comparator)
         self.pop.append(a)
-        self.pop.sort(key=lambda x: get_raw_score(x), reverse=True)
+        self.pop.sort(key=get_raw_score, reverse=True)
 
     def __get_fitness__(self, indecies, with_history=True):
         """Calculates the fitness using the formula from
@@ -247,13 +250,13 @@ class Population:
             nnf = True
             while nnf:
                 t = self.rng.randint(len(self.pop))
-                if fit[t] > self.rng.rand() * fmax:
+                if fit[t] > self.rng.random() * fmax:
                     c1 = self.pop[t]
                     nnf = False
             nnf = True
             while nnf:
                 t = self.rng.randint(len(self.pop))
-                if fit[t] > self.rng.rand() * fmax:
+                if fit[t] > self.rng.random() * fmax:
                     c2 = self.pop[t]
                     nnf = False
 
@@ -281,7 +284,7 @@ class Population:
         nnf = True
         while nnf:
             t = self.rng.randint(len(self.pop))
-            if fit[t] > self.rng.rand() * fmax:
+            if fit[t] > self.rng.random() * fmax:
                 c1 = self.pop[t]
                 nnf = False
 
@@ -302,11 +305,10 @@ class Population:
                     max_gen = max(gen_nums)
                 except KeyError:
                     max_gen = ' '
-                f = open(self.logfile, 'a')
-                f.write('{time}: {gen}: {pop}\n'.format(time=now(),
-                                                        pop=','.join(ids),
-                                                        gen=max_gen))
-                f.close()
+                with open(self.logfile, 'a') as fd:
+                    fd.write('{time}: {gen}: {pop}\n'.format(time=now(),
+                                                             pop=','.join(ids),
+                                                             gen=max_gen))
 
     def is_uniform(self, func, min_std, pop=None):
         """Tests whether the current population is uniform or diverse.
@@ -365,7 +367,7 @@ class RandomPopulation(Population):
         # Get all relaxed candidates from the database
         ue = self.use_extinct
         all_cand = self.dc.get_all_relaxed_candidates(use_extinct=ue)
-        all_cand.sort(key=lambda x: get_raw_score(x), reverse=True)
+        all_cand.sort(key=get_raw_score, reverse=True)
         # all_cand.sort(key=lambda x: x.get_potential_energy())
 
         if len(all_cand) > 0:
@@ -387,7 +389,7 @@ class RandomPopulation(Population):
                         self.pop.append(c)
                     else:
                         exp_fact = exp(get_raw_score(c) / best_raw)
-                        ratings.append([c, (exp_fact - 1) * self.rng.rand()])
+                        ratings.append([c, (exp_fact - 1) * self.rng.random()])
             ratings.sort(key=itemgetter(1), reverse=True)
 
             for i in range(self.bad_candidates):
@@ -466,6 +468,7 @@ class FitnessSharingPopulation(Population):
         Default is 1, which gives a linear sharing function.
 
     """
+
     def __init__(self, data_connection, population_size,
                  comp_key, threshold, alpha_sh=1.,
                  comparator=None, logfile=None, use_extinct=False):
@@ -474,7 +477,7 @@ class FitnessSharingPopulation(Population):
         self.alpha_sh = alpha_sh
         self.fit_scaling = 1.
 
-        self.sh_cache = dict()
+        self.sh_cache = {}
 
         Population.__init__(self, data_connection, population_size,
                             comparator, logfile, use_extinct)
@@ -524,7 +527,7 @@ class FitnessSharingPopulation(Population):
         # Get all relaxed candidates from the database
         ue = self.use_extinct
         all_cand = self.dc.get_all_relaxed_candidates(use_extinct=ue)
-        all_cand.sort(key=lambda x: get_raw_score(x), reverse=True)
+        all_cand.sort(key=get_raw_score, reverse=True)
 
         if len(all_cand) > 0:
             shared_fit = self.__get_fitness__(all_cand)
@@ -573,13 +576,13 @@ class FitnessSharingPopulation(Population):
             nnf = True
             while nnf:
                 t = self.rng.randint(len(self.pop))
-                if fit[t] > self.rng.rand() * fmax:
+                if fit[t] > self.rng.random() * fmax:
                     c1 = self.pop[t]
                     nnf = False
             nnf = True
             while nnf:
                 t = self.rng.randint(len(self.pop))
-                if fit[t] > self.rng.rand() * fmax:
+                if fit[t] > self.rng.random() * fmax:
                     c2 = self.pop[t]
                     nnf = False
 
@@ -605,6 +608,7 @@ class RankFitnessPopulation(Population):
             The prefactor used in the exponential fitness scaling function.
             Default 0.5
     """
+
     def __init__(self, data_connection, population_size, variable_function,
                  comparator=None, logfile=None, use_extinct=False,
                  exp_function=True, exp_prefactor=0.5):
@@ -645,11 +649,9 @@ class RankFitnessPopulation(Population):
                 ntr.sort(key=lambda x: x[1].info['key_value_pairs'][key],
                          reverse=True)
                 start_rank = -1
-                cor = 0
-                for on, cn in ntr:
+                for cor, (on, cn) in enumerate(ntr):
                     rank = start_rank - cor
                     rank_fit.append([on, cn, rank])
-                    cor += 1
         # The original order is reformed
         rank_fit.sort(key=itemgetter(0), reverse=False)
         return np.array(list(zip(*rank_fit))[2])
@@ -689,7 +691,7 @@ class RankFitnessPopulation(Population):
         # Get all relaxed candidates from the database
         ue = self.use_extinct
         all_cand = self.dc.get_all_relaxed_candidates(use_extinct=ue)
-        all_cand.sort(key=lambda x: get_raw_score(x), reverse=True)
+        all_cand.sort(key=get_raw_score, reverse=True)
 
         if len(all_cand) > 0:
             fitf = self.__get_fitness__(all_cand)
@@ -744,13 +746,13 @@ class RankFitnessPopulation(Population):
             nnf = True
             while nnf:
                 t = self.rng.randint(len(self.pop))
-                if fit[t] > self.rng.rand() * fmax:
+                if fit[t] > self.rng.random() * fmax:
                     c1 = self.pop[t]
                     nnf = False
             nnf = True
             while nnf:
                 t = self.rng.randint(len(self.pop))
-                if fit[t] > self.rng.rand() * fmax:
+                if fit[t] > self.rng.random() * fmax:
                     c2 = self.pop[t]
                     nnf = False
 
@@ -903,7 +905,7 @@ class MultiObjectivePopulation(RankFitnessPopulation):
         # Get all relaxed candidates from the database
         ue = self.use_extinct
         all_cand = self.dc.get_all_relaxed_candidates(use_extinct=ue)
-        all_cand.sort(key=lambda x: get_raw_score(x), reverse=True)
+        all_cand.sort(key=get_raw_score, reverse=True)
 
         if len(all_cand) > 0:
             fitf = self.__get_fitness__(all_cand)

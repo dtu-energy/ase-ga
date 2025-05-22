@@ -1,6 +1,13 @@
+# fmt: off
+
+from typing import Any, List, Optional
+
 import numpy as np
-from ase.md.langevin import Langevin
+from scipy.integrate import trapezoid
+
+from ase import Atoms
 from ase.calculators.mixing import MixedCalculator
+from ase.md.langevin import Langevin
 
 
 class SwitchLangevin(Langevin):
@@ -38,9 +45,19 @@ class SwitchLangevin(Langevin):
         Number of switching steps
     """
 
-    def __init__(self, atoms, calc1, calc2, dt, T=None, friction=None,
-                 n_eq=None, n_switch=None, temperature_K=None,
-                 **langevin_kwargs):
+    def __init__(
+        self,
+        atoms: Atoms,
+        calc1,
+        calc2,
+        dt: float,
+        T: Optional[float] = None,
+        friction: Optional[float] = None,
+        n_eq: Optional[int] = None,
+        n_switch: Optional[int] = None,
+        temperature_K: Optional[float] = None,
+        **langevin_kwargs,
+    ):
         super().__init__(atoms, dt, temperature=T, temperature_K=temperature_K,
                          friction=friction, **langevin_kwargs)
         if friction is None:
@@ -55,7 +72,7 @@ class SwitchLangevin(Langevin):
         calc = MixedCalculator(calc1, calc2, weight1=1.0, weight2=0.0)
         self.atoms.calc = calc
 
-        self.path_data = []
+        self.path_data: List[Any] = []
 
     def run(self):
         """ Run the MD switching simulation """
@@ -69,7 +86,8 @@ class SwitchLangevin(Langevin):
 
         # run switch from calc1 to calc2
         self.path_data.append(
-            [0, self.lam, *self.atoms.calc.get_energy_contributions(self.atoms)])
+            [0, self.lam,
+             *self.atoms.calc.get_energy_contributions(self.atoms)])
         for step in range(1, self.n_switch):
             # update calculator
             self.lam = get_lambda(step, self.n_switch)
@@ -82,7 +100,8 @@ class SwitchLangevin(Langevin):
             # collect data
             self.call_observers()
             self.path_data.append(
-                [step, self.lam, *self.atoms.calc.get_energy_contributions(self.atoms)])
+                [step, self.lam,
+                 *self.atoms.calc.get_energy_contributions(self.atoms)])
 
         self.path_data = np.array(self.path_data)
 
@@ -101,7 +120,7 @@ class SwitchLangevin(Langevin):
         lambdas = self.path_data[:, 1]
         U1 = self.path_data[:, 2]
         U2 = self.path_data[:, 3]
-        delta_F = np.trapz(U2 - U1, lambdas)
+        delta_F = trapezoid(U2 - U1, lambdas)
         return delta_F
 
 

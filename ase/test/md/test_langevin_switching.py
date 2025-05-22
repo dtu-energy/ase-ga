@@ -1,13 +1,15 @@
+# fmt: off
 import numpy as np
 import pytest
-from ase.build import bulk
+
 from ase import units
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+from ase.build import bulk
 from ase.calculators.harmonic import SpringCalculator
 from ase.md.switch_langevin import SwitchLangevin
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_langevin_switching():
     # params
     size = 6
@@ -18,7 +20,7 @@ def test_langevin_switching():
     dt = 10
 
     # for reproducibility
-    np.random.seed(42)
+    rng = np.random.RandomState(42)
 
     # setup atoms and calculators
     atoms = bulk('Al').repeat(size)
@@ -34,20 +36,22 @@ def test_langevin_switching():
     dF_theory = F2 - F1
 
     # switch_forward
-    dyn_forward = SwitchLangevin(atoms, calc1, calc2, dt * units.fs,
-                                 temperature_K=T, friction=0.01,
-                                 n_eq=n_steps, n_switch=n_steps)
-    MaxwellBoltzmannDistribution(atoms, temperature_K=2 * T)
-    dyn_forward.run()
-    dF_forward = dyn_forward.get_free_energy_difference() / len(atoms)
+    with SwitchLangevin(atoms, calc1, calc2, dt * units.fs,
+                        temperature_K=T, friction=0.01,
+                        n_eq=n_steps, n_switch=n_steps,
+                        rng=rng) as dyn_forward:
+        MaxwellBoltzmannDistribution(atoms, temperature_K=2 * T, rng=rng)
+        dyn_forward.run()
+        dF_forward = dyn_forward.get_free_energy_difference() / len(atoms)
 
     # switch_backwards
-    dyn_backward = SwitchLangevin(atoms, calc2, calc1, dt * units.fs,
-                                  temperature_K=T, friction=0.01,
-                                  n_eq=n_steps, n_switch=n_steps)
-    MaxwellBoltzmannDistribution(atoms, temperature_K=2 * T)
-    dyn_backward.run()
-    dF_backward = -dyn_backward.get_free_energy_difference() / len(atoms)
+    with SwitchLangevin(atoms, calc2, calc1, dt * units.fs,
+                        temperature_K=T, friction=0.01,
+                        n_eq=n_steps, n_switch=n_steps,
+                        rng=rng) as dyn_backward:
+        MaxwellBoltzmannDistribution(atoms, temperature_K=2 * T, rng=rng)
+        dyn_backward.run()
+        dF_backward = -dyn_backward.get_free_energy_difference() / len(atoms)
 
     # summary
     dF_switch = (dF_forward + dF_backward) / 2.0

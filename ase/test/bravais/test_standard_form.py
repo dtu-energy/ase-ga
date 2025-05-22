@@ -1,3 +1,4 @@
+# fmt: off
 """Bravais lattice type check.
 
 1) For each Bravais variant, check that we recognize the
@@ -6,12 +7,14 @@ standard cell correctly.
 2) For those Bravais lattices that we can recognize in non-standard form,
    Niggli-reduce them and recognize them as well."""
 
-import pytest
 import numpy as np
+import pytest
 
-from ase.lattice import (get_lattice_from_canonical_cell, all_variants,
-                         identify_lattice)
-
+from ase.lattice import (
+    all_variants,
+    get_lattice_from_canonical_cell,
+    identify_lattice,
+)
 
 variants = [lat for lat in all_variants() if lat.ndim == 3]
 
@@ -34,8 +37,8 @@ def test_lattice(lat):
         # trigger an error in this test.
         return
 
-    stdcell, op = identify_lattice(cell, 1e-4)
+    stdcell, _op = identify_lattice(cell, 1e-4)
     check(stdcell)
-    rcell, op = cell.niggli_reduce()
-    stdcell, op = identify_lattice(rcell, 1e-4)
+    rcell, _op = cell.niggli_reduce()
+    stdcell, _op = identify_lattice(rcell, 1e-4)
     check(stdcell)

@@ -1,5 +1,6 @@
-from ase import Atoms
 from gpaw import GPAW
+
+from ase import Atoms
 
 atoms = Atoms('N')
 atoms.center(vacuum=3.0)

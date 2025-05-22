@@ -1,6 +1,7 @@
+# fmt: off
 import pytest
-from ase.io.cif import read_cif
 
+from ase.io.cif import read_cif
 
 cif = """data_Quartz
 loop_
@@ -17,7 +18,8 @@ _journal_year 1992
 _journal_page_first 177
 _journal_page_last 212
 _publ_section_title
-;Crystal structures of the low-temperature quartz-type phases of SiO2 and GeO2 at elevated pressure
+;Crystal structures of the low-temperature quartz-type phases of\
+ SiO2 and GeO2 at elevated pressure
 
  P = 10.2GPa = 102 kbar
 ;

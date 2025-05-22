@@ -1,3 +1,4 @@
+# fmt: off
 from ase import Atoms
 from ase.calculators.emt import EMT
 from ase.constraints import FixBondLength
@@ -5,7 +6,7 @@ from ase.io import Trajectory
 from ase.optimize import BFGS
 
 
-def test_emt1():
+def test_emt1(testdir):
     a = 3.6
     b = a / 2
     cu = Atoms('Cu2Ag',

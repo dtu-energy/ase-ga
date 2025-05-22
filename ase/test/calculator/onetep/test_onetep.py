@@ -1,14 +1,17 @@
-def test_onetep():
-    from ase.build import molecule
-    from ase.calculators.onetep import Onetep
-    from os.path import isfile, dirname, abspath, join
+# fmt: off
+from os.path import isfile, join
 
+from ase.build import molecule
+from ase.calculators.onetep import Onetep
+
+
+def test_onetep(onetep_factory):
     mol = molecule('H2O')
     mol.center(8)
     calc = Onetep(label='water')
     # Tests conducted with the JTH PAW data set.
     # http://www.abinit.org/downloads/PAW2
-    prefix = dirname(abspath(__file__))
+    prefix = 'hello'
     h_path = join(prefix, 'H.abinit')
     o_path = join(prefix, 'O.abinit')
     if not (isfile(h_path) and isfile(o_path)):

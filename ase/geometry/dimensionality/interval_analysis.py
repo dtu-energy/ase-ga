@@ -1,3 +1,5 @@
+# fmt: off
+
 """Implements the dimensionality scoring parameter.
 
 Method is described in:
@@ -7,14 +9,14 @@ P.M. Larsen, M. Pandey, M. Strange, and K. W. Jacobsen
 Phys. Rev. Materials 3 034003, 2019
 https://doi.org/10.1103/PhysRevMaterials.3.034003
 """
-import numpy as np
 from collections import namedtuple
-from ase.geometry.dimensionality import rank_determination
-from ase.geometry.dimensionality import topology_scaling
+
+import numpy as np
+
+from ase.geometry.dimensionality import rank_determination, topology_scaling
 from ase.geometry.dimensionality.bond_generator import next_bond
 
-
-Kinterval = namedtuple('KInterval', 'dimtype score a b h components cdim')
+KInterval = namedtuple('KInterval', 'dimtype score a b h components cdim')
 
 
 def f(x):
@@ -42,7 +44,7 @@ def build_kinterval(a, b, h, components, cdim, score=None):
     if score is None:
         score = calculate_score(a, b)
 
-    return Kinterval(dimtype=build_dimtype(h), score=score,
+    return KInterval(dimtype=build_dimtype(h), score=score,
                      a=a, b=b, h=h, components=components, cdim=cdim)
 
 
@@ -61,14 +63,14 @@ def merge_intervals(intervals):
     calculated from its k-interval.  This is necessary to maintain the property
     that the scores sum to 1.
     """
-    dimtypes = set([e.dimtype for e in intervals])
+    dimtypes = {e.dimtype for e in intervals}
 
     merged_intervals = []
     for dimtype in dimtypes:
         relevant = [e for e in intervals if e.dimtype == dimtype]
-        combined_score = sum([e.score for e in relevant])
-        amin = min([e.a for e in relevant])
-        bmax = max([e.b for e in relevant])
+        combined_score = sum(e.score for e in relevant)
+        amin = min(e.a for e in relevant)
+        bmax = max(e.b for e in relevant)
         best = max(relevant, key=lambda x: x.score)
         merged = build_kinterval(amin, bmax, best.h, best.components,
                                  best.cdim, score=combined_score)
@@ -82,7 +84,7 @@ def build_kintervals(atoms, method_name):
     method = {'RDA': rank_determination.RDA,
               'TSA': topology_scaling.TSA}[method_name]
 
-    assert all([e in [0, 1] for e in atoms.pbc])
+    assert all(e in [0, 1] for e in atoms.pbc)
     num_atoms = len(atoms)
     intervals = []
     kprev = 0

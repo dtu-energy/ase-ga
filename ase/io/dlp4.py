@@ -1,210 +1,196 @@
-""" Read/Write DL_POLY_4 CONFIG files """
-import re
+# fmt: off
 
-from numpy import zeros, isscalar
+""" Read/Write DL_POLY_4 CONFIG files """
+import itertools
+import re
+from typing import IO, Generator, Iterable, List, Optional, Tuple, Union
+
+import numpy as np
 
 from ase.atoms import Atoms
-from ase.units import _auf, _amu, _auv
-from ase.data import chemical_symbols
 from ase.calculators.singlepoint import SinglePointCalculator
+from ase.data import chemical_symbols
+from ase.units import _amu, _auf, _auv
+from ase.utils import reader, writer
 
-__all__ = ['read_dlp4', 'write_dlp4']
+__all__ = ["read_dlp4", "write_dlp4"]
 
 # dlp4 labels will be registered in atoms.arrays[DLP4_LABELS_KEY]
-DLP4_LABELS_KEY = 'dlp4_labels'
-DLP4_DISP_KEY = 'dlp4_displacements'
-dlp_f_si = 1.0e-10 * _amu / (1.0e-12 * 1.0e-12)  # Å*Da/ps^2
-dlp_f_ase = dlp_f_si / _auf
-dlp_v_si = 1.0e-10 / 1.0e-12  # Å/ps
-dlp_v_ase = dlp_v_si / _auv
+DLP4_LABELS_KEY = "dlp4_labels"
+DLP4_DISP_KEY = "dlp4_displacements"
+DLP_F_SI = 1.0e-10 * _amu / (1.0e-12 * 1.0e-12)  # Å*Da/ps^2
+DLP_F_ASE = DLP_F_SI / _auf
+DLP_V_SI = 1.0e-10 / 1.0e-12  # Å/ps
+DLP_V_ASE = DLP_V_SI / _auv
 
 
-def _get_frame_positions(f):
+def _get_frame_positions(fd: IO) -> Tuple[int, int, int, List[int]]:
     """Get positions of frames in HISTORY file."""
-    # header line contains name of system
-    init_pos = f.tell()
-    f.seek(0)
-    rl = len(f.readline())  # system name, and record size
-    items = f.readline().strip().split()
-    if len(items) == 5:
-        classic = False
-    elif len(items) == 3:
-        classic = True
-    else:
+    init_pos = fd.tell()
+
+    fd.seek(0)
+
+    record_len = len(fd.readline())  # system name, and record size
+
+    items = fd.readline().strip().split()
+
+    if len(items) not in (3, 5):
         raise RuntimeError("Cannot determine version of HISTORY file format.")
 
-    levcfg, imcon, natoms = [int(x) for x in items[0:3]]
-    if classic:
+    levcfg, imcon, natoms = map(int, items[0:3])
+
+    if len(items) == 3:   # DLPoly classic
         # we have to iterate over the entire file
-        startpos = f.tell()
-        pos = []
-        line = True
-        while line:
-            line = f.readline()
-            if 'timestep' in line:
-                pos.append(f.tell())
-        f.seek(startpos)
+        pos = [fd.tell() for line in fd if "timestep" in line]
     else:
         nframes = int(items[3])
-        pos = [((natoms * (levcfg + 2) + 4) * i + 3)
-               * rl for i in range(nframes)]
+        pos = [((natoms * (levcfg + 2) + 4) * i + 3) * record_len
+               for i in range(nframes)]
 
-    f.seek(init_pos)
+    fd.seek(init_pos)
     return levcfg, imcon, natoms, pos
 
 
-def read_dlp_history(f, index=-1, symbols=None):
+@reader
+def read_dlp_history(fd: IO,
+                     index: Optional[Union[int, slice]] = None,
+                     symbols: Optional[List[str]] = None) -> List[Atoms]:
     """Read a HISTORY file.
 
     Compatible with DLP4 and DLP_CLASSIC.
 
-    *Index* can be integer or slice.
+    *Index* can be integer or a slice.
 
     Provide a list of element strings to symbols to ignore naming
     from the HISTORY file.
     """
-    levcfg, imcon, natoms, pos = _get_frame_positions(f)
-    if isscalar(index):
-        selected = [pos[index]]
-    else:
-        selected = pos[index]
-
-    images = []
-    for fpos in selected:
-        f.seek(fpos + 1)
-        images.append(read_single_image(f, levcfg, imcon, natoms,
-                                        is_trajectory=True, symbols=symbols))
-
-    return images
+    return list(iread_dlp_history(fd, index, symbols))
 
 
-def iread_dlp_history(f, symbols=None):
-    """Generator version of read_history"""
-    levcfg, imcon, natoms, pos = _get_frame_positions(f)
-    for p in pos:
-        f.seek(p + 1)
-        yield read_single_image(f, levcfg, imcon, natoms, is_trajectory=True,
+@reader
+def iread_dlp_history(fd: IO,
+                      index: Optional[Union[int, slice]] = None,
+                      symbols: Optional[List[str]] = None
+                      ) -> Generator[Atoms, None, None]:
+    """Generator version of read_dlp_history
+
+    Compatible with DLP4 and DLP_CLASSIC.
+
+    *Index* can be integer or a slice.
+
+    Provide a list of element strings to symbols to ignore naming
+    from the HISTORY file.
+    """
+    levcfg, imcon, natoms, pos = _get_frame_positions(fd)
+
+    positions: Iterable[int] = ()
+    if index is None:
+        positions = pos
+    elif isinstance(index, int):
+        positions = (pos[index],)
+    elif isinstance(index, slice):
+        positions = itertools.islice(pos, index.start, index.stop, index.step)
+
+    for pos_i in positions:
+        fd.seek(pos_i + 1)
+        yield read_single_image(fd, levcfg, imcon, natoms, is_trajectory=True,
                                 symbols=symbols)
 
 
-def read_dlp4(f, symbols=None):
+@reader
+def read_dlp4(fd: IO,
+              symbols: Optional[List[str]] = None) -> Atoms:
     """Read a DL_POLY_4 config/revcon file.
 
-    Typically used indirectly through read('filename', atoms, format='dlp4').
+    Typically used indirectly through read("filename", atoms, format="dlp4").
 
-    Can be unforgiven with custom chemical element names.
+    Can be unforgiving with custom chemical element names.
     Please complain to alin@elena.space for bugs."""
 
-    line = f.readline()
-    line = f.readline().split()
-    levcfg = int(line[0])
-    imcon = int(line[1])
+    fd.readline()
+    levcfg, imcon = map(int, fd.readline().split()[0:2])
 
-    position = f.tell()
-    line = f.readline()
-    tokens = line.split()
-    is_trajectory = tokens[0] == 'timestep'
+    position = fd.tell()
+    is_trajectory = fd.readline().split()[0] == "timestep"
+
     if not is_trajectory:
         # Difficult to distinguish between trajectory and non-trajectory
-        # formats without reading one line too much.
-        f.seek(position)
+        # formats without reading one line too many.
+        fd.seek(position)
 
-    while line:
-        if is_trajectory:
-            tokens = line.split()
-            natoms = int(tokens[2])
-        else:
-            natoms = None
-        yield read_single_image(f, levcfg, imcon, natoms, is_trajectory,
-                                symbols)
-        line = f.readline()
+    natoms = (int(fd.readline().split()[2]) if is_trajectory else None)
+    return read_single_image(fd, levcfg, imcon, natoms, is_trajectory,
+                             symbols)
 
 
-def read_single_image(f, levcfg, imcon, natoms, is_trajectory, symbols=None):
-    cell = zeros((3, 3))
-    ispbc = imcon > 0
-    if ispbc or is_trajectory:
-        for j in range(3):
-            line = f.readline()
-            line = line.split()
-            for i in range(3):
-                try:
-                    cell[j, i] = float(line[i])
-                except ValueError:
-                    raise RuntimeError("error reading cell")
-    if symbols:
-        sym = symbols
-    else:
-        sym = []
+def read_single_image(fd: IO, levcfg: int, imcon: int,
+                      natoms: Optional[int], is_trajectory: bool,
+                      symbols: Optional[List[str]] = None) -> Atoms:
+    """ Read a DLP frame """
+    sym = symbols if symbols else []
     positions = []
     velocities = []
     forces = []
     charges = []
     masses = []
-    disp = []
-
-    if is_trajectory:
-        counter = range(natoms)
-    else:
-        from itertools import count
-        counter = count()
-
+    disps = []
     labels = []
-    mass = None
-    ch = None
-    d = None
 
-    for a in counter:
-        line = f.readline()
-        if not line:
-            a -= 1
-            break
+    is_pbc = imcon > 0
 
-        m = re.match(r'\s*([A-Za-z][a-z]?)(\S*)', line)
-        assert m is not None, line
-        symbol, label = m.group(1, 2)
+    cell = np.zeros((3, 3), dtype=np.float64)
+    if is_pbc or is_trajectory:
+        for j, line in enumerate(itertools.islice(fd, 3)):
+            cell[j, :] = np.array(line.split(), dtype=np.float64)
+
+    i = 0
+    for i, line in enumerate(itertools.islice(fd, natoms), 1):
+        match = re.match(r"\s*([A-Za-z][a-z]?)(\S*)", line)
+        if not match:
+            raise OSError(f"Line {line} does not match valid format.")
+
+        symbol, label = match.group(1, 2)
         symbol = symbol.capitalize()
+
         if is_trajectory:
-            ll = line.split()
-            if len(ll) == 5:
-                mass, ch, d = [float(i) for i in line.split()[2:5]]
-            else:
-                mass, ch = [float(i) for i in line.split()[2:4]]
-
-            charges.append(ch)
+            mass, charge, *disp = map(float, line.split()[2:])
+            charges.append(charge)
             masses.append(mass)
-            disp.append(d)
+            disps.extend(disp if disp else [None])  # type: ignore[list-item]
+
         if not symbols:
-            assert symbol in chemical_symbols
+            if symbol not in chemical_symbols:
+                raise ValueError(
+                    f"Symbol '{symbol}' not found in chemical symbols table"
+                )
             sym.append(symbol)
+
         # make sure label is not empty
-        if label:
-            labels.append(label)
-        else:
-            labels.append('')
+        labels.append(label if label else "")
 
-        x, y, z = f.readline().split()[:3]
-        positions.append([float(x), float(y), float(z)])
+        positions.append([float(x) for x in next(fd).split()[:3]])
         if levcfg > 0:
-            vx, vy, vz = f.readline().split()[:3]
-            velocities.append([float(vx) * dlp_v_ase, float(vy)
-                               * dlp_v_ase, float(vz) * dlp_v_ase])
+            velocities.append([float(x) * DLP_V_ASE
+                               for x in next(fd).split()[:3]])
         if levcfg > 1:
-            fx, fy, fz = f.readline().split()[:3]
-            forces.append([float(fx) * dlp_f_ase, float(fy)
-                           * dlp_f_ase, float(fz) * dlp_f_ase])
+            forces.append([float(x) * DLP_F_ASE
+                           for x in next(fd).split()[:3]])
 
-    if symbols and (a + 1 != len(symbols)):
-        raise ValueError("Counter is at {} but you gave {} symbols"
-                         .format(a + 1, len(symbols)))
+    if symbols and (i != len(symbols)):
+        raise ValueError(
+            f"Counter is at {i} but {len(symbols)} symbols provided."
+        )
 
     if imcon == 0:
-        pbc = False
+        pbc = (False, False, False)
+    elif imcon in (1, 2, 3):
+        pbc = (True, True, True)
     elif imcon == 6:
-        pbc = [True, True, False]
+        pbc = (True, True, False)
+    elif imcon in (4, 5):
+        raise ValueError(f"Unsupported imcon: {imcon}")
     else:
-        assert imcon in [1, 2, 3]
-        pbc = True
+        raise ValueError(f"Invalid imcon: {imcon}")
 
     atoms = Atoms(positions=positions,
                   symbols=sym,
@@ -215,7 +201,7 @@ def read_single_image(f, levcfg, imcon, natoms, is_trajectory, symbols=None):
 
     if is_trajectory:
         atoms.set_masses(masses)
-        atoms.set_array(DLP4_DISP_KEY, disp, float)
+        atoms.set_array(DLP4_DISP_KEY, disps, float)
         atoms.set_initial_charges(charges)
 
     atoms.set_array(DLP4_LABELS_KEY, labels, str)
@@ -223,63 +209,65 @@ def read_single_image(f, levcfg, imcon, natoms, is_trajectory, symbols=None):
         atoms.set_velocities(velocities)
     if levcfg > 1:
         atoms.calc = SinglePointCalculator(atoms, forces=forces)
+
     return atoms
 
 
-def write_dlp4(f, atoms, levcfg=0, title='CONFIG generated by ASE'):
+@writer
+def write_dlp4(fd: IO, atoms: Atoms,
+               levcfg: int = 0,
+               title: str = "CONFIG generated by ASE"):
     """Write a DL_POLY_4 config file.
 
-    Typically used indirectly through write('filename', atoms, format='dlp4').
+    Typically used indirectly through write("filename", atoms, format="dlp4").
 
     Can be unforgiven with custom chemical element names.
     Please complain to alin@elena.space in case of bugs"""
 
-    f.write('{0:72s}\n'.format(title))
+    def float_format(flt):
+        return format(flt, "20.10f")
+
     natoms = len(atoms)
-    npbc = sum(atoms.pbc)
-    if npbc == 0:
+
+    if tuple(atoms.pbc) == (False, False, False):
         imcon = 0
-    elif npbc == 3:
+    elif tuple(atoms.pbc) == (True, True, True):
         imcon = 3
     elif tuple(atoms.pbc) == (True, True, False):
         imcon = 6
     else:
-        raise ValueError('Unsupported pbc: {}.  '
-                         'Supported pbc are 000, 110, and 000.'
-                         .format(atoms.pbc))
+        raise ValueError(f"Unsupported pbc: {atoms.pbc}. "
+                         "Supported pbc are 000, 110, and 111.")
 
-    f.write('{0:10d}{1:10d}{2:10d}\n'.format(levcfg, imcon, natoms))
+    print(f"{title:72s}", file=fd)
+    print(f"{levcfg:10d}{imcon:10d} {natoms}", file=fd)
+
     if imcon > 0:
-        cell = atoms.get_cell()
-        for j in range(3):
-            f.write('{0:20.10f}{1:20.10f}{2:20.10f}\n'.format(
-                cell[j, 0], cell[j, 1], cell[j, 2]))
-    vels = []
-    forces = []
-    if levcfg > 0:
-        vels = atoms.get_velocities() / dlp_v_ase
-    if levcfg > 1:
-        forces = atoms.get_forces() / dlp_f_ase
+        for row in atoms.get_cell():
+            print("".join(map(float_format, row)), file=fd)
+
+    vels = atoms.get_velocities() / DLP_V_ASE if levcfg > 0 else None
+    forces = atoms.get_forces() / DLP_F_ASE if levcfg > 1 else None
 
     labels = atoms.arrays.get(DLP4_LABELS_KEY)
 
-    for i, a in enumerate(atoms):
-        sym = a.symbol
+    for i, atom in enumerate(atoms):
+
+        sym = atom.symbol
         if labels is not None:
             sym += labels[i]
-        f.write("{0:8s}{1:10d}\n{2:20.10f}{3:20.10f}{4:20.10f}\n".format(
-            sym, a.index + 1, a.x, a.y, a.z))
+
+        print(f"{sym:8s}{atom.index + 1:10d}", file=fd)
+
+        to_write = (atom.x, atom.y, atom.z)
+        print("".join(map(float_format, to_write)), file=fd)
+
         if levcfg > 0:
-            if vels is None:
-                f.write("{0:20.10f}{1:20.10f}{2:20.10f}\n".format(
-                    0.0, 0.0, 0.0))
-            else:
-                f.write("{0:20.10f}{1:20.10f}{2:20.10f}\n".format(
-                    vels[a.index, 0], vels[a.index, 1], vels[a.index, 2]))
+            to_write = (vels[atom.index, :]
+                        if vels is not None else (0.0, 0.0, 0.0))
+            print("".join(map(float_format, to_write)), file=fd)
+
         if levcfg > 1:
-            if forces is None:
-                f.write("{0:20.10f}{1:20.10f}{2:20.10f}\n".format(
-                    0.0, 0.0, 0.0))
-            else:
-                f.write("{0:20.10f}{1:20.10f}{2:20.10f}\n".format(
-                    forces[a.index, 0], forces[a.index, 1], forces[a.index, 2]))
+            to_write = (forces[atom.index, :]
+                        if forces is not None else (0.0, 0.0, 0.0))
+            print("".join(map(float_format, to_write)), file=fd)

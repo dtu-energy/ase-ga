@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# fmt: off
+
 """Bash completion for ase.
 
 Put this in your .bashrc::
@@ -24,8 +26,7 @@ def match(word, *suffixes):
 # Beginning of computer generated data:
 commands = {
     'band-structure':
-        ['-q', '--quiet', '-k', '--path', '-n', '--points', '-o',
-         '--output', '-r', '--range'],
+        ['-o', '--output', '-r', '--range'],
     'build':
         ['-M', '--magnetic-moment', '--modify', '-V', '--vacuum', '-v',
          '--vacuum0', '--unit-cell', '--bond-length', '-x',
@@ -71,17 +72,11 @@ commands = {
          '-o', '--output', '-g', '--graph', '-t', '--terminal',
          '--interpolate', '-b', '--bonds', '-s', '--scale'],
     'info':
-        ['-v', '--verbose', '--formats', '--calculators'],
+        ['--files', '-v', '--verbose', '--formats', '--calculators'],
     'nebplot':
         ['--nimages', '--share-x', '--share-y'],
-    'nomad-get':
-        [],
-    'nomad-upload':
-        ['-t', '--token', '-n', '--no-save-token', '-0', '--dry-run'],
     'reciprocal':
-        ['-v', '--verbose', '-p', '--path', '-d', '--dimension',
-         '--no-vectors', '-k', '--k-points', '-i',
-         '--ibz-k-points'],
+        [],
     'run':
         ['-p', '--parameters', '-t', '--tag', '--properties', '-f',
          '--maximum-force', '--constrain-tags', '-s',
@@ -139,13 +134,6 @@ def complete(word, previous, line, point):
                 words.append(path)
 
     return words
-
-
-if sys.version_info[0] == 2:
-    import warnings
-    warnings.warn('Command-line completion running with python2.  '
-                  'Your ASE autocompletion setup is probably outdated.  '
-                  'Please consider rerunning \'ase completion\'.')
 
 
 def main():

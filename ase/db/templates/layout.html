@@ -3,8 +3,8 @@
   <head>
     <meta name="viewport" content="width-device-width, initial-scale=1.0">
 
-{% include 'ase/db/templates/js.html' %}
 {% include 'ase/db/templates/style.html' %}
+{% include 'ase/db/templates/js.html' %}
 {% block head %}
 {% endblock %}
 
@@ -14,9 +14,9 @@
 
   <body {% block BodySettings %}{% endblock %}>
 
-    <div class="container" style="padding: 0px;">
+    <div class="container-fluid" style="padding: 5px;">
       <div class="row">
-        <nav class="navbar navbar-default">
+        <nav class="navbar navbar-default px-1">
           <div class="container-fluid">
             <ul class="nav navbar-nav navbar-right">
               {% block navbar %} {% endblock %}

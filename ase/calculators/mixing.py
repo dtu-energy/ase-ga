@@ -1,73 +1,108 @@
-from ase.calculators.calculator import Calculator, all_changes
-from ase.calculators.calculator import PropertyNotImplementedError
+# fmt: off
+
+from ase.calculators.calculator import (
+    BaseCalculator,
+    CalculatorSetupError,
+    all_changes,
+)
+from ase.stress import full_3x3_to_voigt_6_stress
 
 
-class LinearCombinationCalculator(Calculator):
-    """LinearCombinationCalculator for weighted summation of multiple calculators.
-    """
+class Mixer:
+    def __init__(self, calcs, weights):
+        self.check_input(calcs, weights)
+        common_properties = set.intersection(
+            *(set(calc.implemented_properties) for calc in calcs)
+        )
+        self.implemented_properties = list(common_properties)
+        self.calcs = calcs
+        self.weights = weights
 
-    def __init__(self, calcs, weights, atoms=None):
+    @staticmethod
+    def check_input(calcs, weights):
+        if len(calcs) == 0:
+            raise CalculatorSetupError("Please provide a list of Calculators")
+        if len(weights) != len(calcs):
+            raise ValueError(
+                "The length of the weights must be the same as"
+                " the number of Calculators!"
+            )
+
+    def get_properties(self, properties, atoms):
+        results = {}
+
+        def get_property(prop):
+            contribs = [calc.get_property(prop, atoms) for calc in self.calcs]
+            # ensure that the contribution shapes are the same for stress prop
+            if prop == "stress":
+                shapes = [contrib.shape for contrib in contribs]
+                if not all(shape == shapes[0] for shape in shapes):
+                    if prop == "stress":
+                        contribs = self.make_stress_voigt(contribs)
+                    else:
+                        raise ValueError(
+                            f"The shapes of the property {prop}"
+                            " are not the same from all"
+                            " calculators"
+                        )
+            results[f"{prop}_contributions"] = contribs
+            results[prop] = sum(
+                weight * value for weight, value in zip(self.weights, contribs)
+            )
+
+        for prop in properties:  # get requested properties
+            get_property(prop)
+        for prop in self.implemented_properties:  # cache all available props
+            if all(prop in calc.results for calc in self.calcs):
+                get_property(prop)
+        return results
+
+    @staticmethod
+    def make_stress_voigt(stresses):
+        new_contribs = []
+        for contrib in stresses:
+            if contrib.shape == (6,):
+                new_contribs.append(contrib)
+            elif contrib.shape == (3, 3):
+                new_cont = full_3x3_to_voigt_6_stress(contrib)
+                new_contribs.append(new_cont)
+            else:
+                raise ValueError(
+                    "The shapes of the stress"
+                    " property are not the same"
+                    " from all calculators"
+                )
+        return new_contribs
+
+
+class LinearCombinationCalculator(BaseCalculator):
+    """Weighted summation of multiple calculators."""
+
+    def __init__(self, calcs, weights):
         """Implementation of sum of calculators.
 
         calcs: list
             List of an arbitrary number of :mod:`ase.calculators` objects.
         weights: list of float
             Weights for each calculator in the list.
-        atoms: Atoms object
-            Optional :class:`~ase.Atoms` object to which the calculator will be attached.
         """
+        super().__init__()
+        self.mixer = Mixer(calcs, weights)
+        self.implemented_properties = self.mixer.implemented_properties
 
-        super().__init__(atoms=atoms)
+    def calculate(self, atoms, properties, system_changes):
+        """Calculates all the specific property for each calculator and
+        returns with the summed value.
 
-        if len(calcs) == 0:
-            raise ValueError('The value of the calcs must be a list of Calculators')
-
-        for calc in calcs:
-            if not isinstance(calc, Calculator):
-                raise ValueError('All the calculators should be inherited form the ase\'s Calculator class')
-
-        common_properties = set.intersection(*(set(calc.implemented_properties) for calc in calcs))
-        self.implemented_properties = list(common_properties)
-
-        if not self.implemented_properties:
-            raise PropertyNotImplementedError('There are no common property implemented for the potentials!')
-
-        if len(weights) != len(calcs):
-            raise ValueError('The length of the weights must be the same as the number of calculators!')
-
-        self.calcs = calcs
-        self.weights = weights
-
-    def calculate(self, atoms=None, properties=['energy'], system_changes=all_changes):
-        """ Calculates all the specific property for each calculator and returns with the summed value.
         """
-
-        super().calculate(atoms, properties, system_changes)
-
-        if not set(properties).issubset(self.implemented_properties):
-            raise PropertyNotImplementedError('Some of the requested property is not in the '
-                                              'list of supported properties ({})'.format(self.implemented_properties))
-
-        for w, calc in zip(self.weights, self.calcs):
-            if calc.calculation_required(atoms, properties):
-                calc.calculate(atoms, properties, system_changes)
-
-            for k in properties:
-                if k not in self.results:
-                    self.results[k] = w * calc.results[k]
-                else:
-                    self.results[k] += w * calc.results[k]
-
-    def reset(self):
-        """Clear all previous results recursively from all fo the calculators."""
-        super().reset()
-
-        for calc in self.calcs:
-            calc.reset()
+        self.atoms = atoms.copy()  # for caching of results
+        self.results = self.mixer.get_properties(properties, atoms)
 
     def __str__(self):
-        calculators = ', '.join(calc.__class__.__name__ for calc in self.calcs)
-        return '{}({})'.format(self.__class__.__name__, calculators)
+        calculators = ", ".join(
+            calc.__class__.__name__ for calc in self.mixer.calcs
+        )
+        return f"{self.__class__.__name__}({calculators})"
 
 
 class MixedCalculator(LinearCombinationCalculator):
@@ -92,64 +127,58 @@ class MixedCalculator(LinearCombinationCalculator):
         super().__init__([calc1, calc2], [weight1, weight2])
 
     def set_weights(self, w1, w2):
-        self.weights[0] = w1
-        self.weights[1] = w2
-
-    def calculate(self, atoms=None, properties=['energy'], system_changes=all_changes):
-        """ Calculates all the specific property for each calculator and returns with the summed value.
-        """
-
-        super().calculate(atoms, properties, system_changes)
-        if 'energy' in properties:
-            energy1 = self.calcs[0].get_property('energy', atoms)
-            energy2 = self.calcs[1].get_property('energy', atoms)
-            self.results['energy_contributions'] = (energy1, energy2)
+        self.mixer.weights[0] = w1
+        self.mixer.weights[1] = w2
 
     def get_energy_contributions(self, atoms=None):
-        """ Return the potential energy from calc1 and calc2 respectively """
-        self.calculate(properties=['energy'], atoms=atoms)
-        return self.results['energy_contributions']
+        """Return the potential energy from calc1 and calc2 respectively"""
+        self.calculate(
+            properties=["energy"],
+            atoms=atoms,
+            system_changes=all_changes
+        )
+        return self.results["energy_contributions"]
 
 
 class SumCalculator(LinearCombinationCalculator):
     """SumCalculator for combining multiple calculators.
 
-    This calculator can be used when there are different calculators for the different chemical environment or
-    for example during delta leaning. It works with a list of arbitrary calculators and evaluates them in sequence
-    when it is required.
-    The supported properties are the intersection of the implemented properties in each calculator.
+    This calculator can be used when there are different calculators
+    for the different chemical environment or for example during delta
+    leaning. It works with a list of arbitrary calculators and
+    evaluates them in sequence when it is required.  The supported
+    properties are the intersection of the implemented properties in
+    each calculator.
+
     """
 
-    def __init__(self, calcs, atoms=None):
+    def __init__(self, calcs):
         """Implementation of sum of calculators.
 
         calcs: list
             List of an arbitrary number of :mod:`ase.calculators` objects.
-        atoms: Atoms object
-            Optional :class:`~ase.Atoms` object to which the calculator will be attached.
         """
 
-        weights = [1.] * len(calcs)
-        super().__init__(calcs, weights, atoms)
+        weights = [1.0] * len(calcs)
+        super().__init__(calcs, weights)
 
 
 class AverageCalculator(LinearCombinationCalculator):
-    """AverageCalculator for equal summation of multiple calculators (for thermodynamic purposes)..
-    """
+    """AverageCalculator for equal summation of multiple calculators (for
+    thermodynamic purposes)."""
 
-    def __init__(self, calcs, atoms=None):
+    def __init__(self, calcs):
         """Implementation of average of calculators.
 
         calcs: list
             List of an arbitrary number of :mod:`ase.calculators` objects.
-        atoms: Atoms object
-            Optional :class:`~ase.Atoms` object to which the calculator will be attached.
         """
-
         n = len(calcs)
 
         if n == 0:
-            raise ValueError('The value of the calcs must be a list of Calculators')
+            raise CalculatorSetupError(
+                "The value of the calcs must be a list of Calculators"
+            )
 
         weights = [1 / n] * n
-        super().__init__(calcs, weights, atoms)
+        super().__init__(calcs, weights)

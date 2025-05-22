@@ -33,4 +33,4 @@ ___
 .. automodule:: ase.neighborlist
    :members:
 
-.. _GPAW: http://wiki.fysik.dtu.dk/gpaw
+.. _GPAW: http://gpaw.readthedocs.io

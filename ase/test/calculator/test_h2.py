@@ -1,33 +1,17 @@
+# fmt: off
 import pytest
+
 from ase.build import molecule
-from ase.test.factories import ObsoleteFactoryWrapper
-
-
-required = {'aims': dict(sc_accuracy_rho=5.e-3)}
-
-
-@pytest.mark.parametrize('name', ['aims', 'gamess_us', 'gaussian'])
-def test_h2dft_old(name):
-    factory = ObsoleteFactoryWrapper(name)
-    run(factory)
-
 
 calc = pytest.mark.calculator
 
 
-#@calc('abinit', ecut=200, toldfe=0.0001)
-# Doesn't work with abinit9.
-# We should replace the restart stuff anyway.
 @calc('cp2k', auto_write=True, uks=True)
-# @calc('gpaw', mode='lcao', basis='sz(dzp)')
+@calc('gamess_us')
+@calc('gaussian')
 def test_h2dft(factory):
-    run(factory)
-
-
-def run(factory):
     name = factory.name
-    par = required.get(name, {})
-    calc = factory.calc(label=name, xc='LDA', **par)
+    calc = factory.calc(label=name, xc='LDA')
     h2 = molecule('H2', calculator=calc)
     h2.center(vacuum=2.0)
     e2 = h2.get_potential_energy()
@@ -55,5 +39,5 @@ def run(factory):
     h1 = calc.get_atoms()
     print(h1.get_potential_energy())
     label = 'dir/' + name + '-h1'
-    calc = factory.calc(label=label, atoms=h1, xc='LDA', **par)
+    calc = factory.calc(label=label, atoms=h1, xc='LDA')
     print(h1.get_potential_energy())

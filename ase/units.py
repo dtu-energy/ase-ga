@@ -1,3 +1,5 @@
+# fmt: off
+
 """ase.units
 
 Physical constants and units derived from CODATA for converting
@@ -9,7 +11,6 @@ to and from ase internal units.
 
 from math import pi, sqrt
 
-
 # the version we actually use
 __codata_version__ = '2014'
 
@@ -19,8 +20,9 @@ __codata_version__ = '2014'
 # to a module.
 class Units(dict):
     """Dictionary for units that supports .attribute access."""
+
     def __init__(self, *args, **kwargs):
-        super(Units, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.__dict__ = self
 
 
@@ -97,29 +99,42 @@ CODATA = {
 
     # CODATA 2014 taken from
     # http://arxiv.org/pdf/1507.07956.pdf
-    '2014': {'_c': 299792458.,
-             '_mu0': 4.0e-7 * pi,
-             '_Grav': 6.67408e-11,
-             '_hplanck': 6.626070040e-34,
-             '_e': 1.6021766208e-19,
-             '_me': 9.10938356e-31,
-             '_mp': 1.672621898e-27,
-             '_Nav': 6.022140857e23,
-             '_k': 1.38064852e-23,
-             '_amu': 1.660539040e-27},
+    '2014': {'_c': 299_792_458.,             # Exact
+             '_mu0': 4.0e-7 * pi,            # Exact
+             '_Grav': 6.674_08e-11,          # +/- 0.000_31e-11
+             '_hplanck': 6.626_070_040e-34,  # +/- 0.000_000_081e-34
+             '_e': 1.602_176_6208e-19,       # +/- 0.000_000_0098e-19
+             '_me': 9.109_383_56e-31,        # +/- 0.000_000_11e-31
+             '_mp': 1.672_621_898e-27,       # +/- 0.000_000_021e-27
+             '_Nav': 6.022_140_857e23,       # +/- 0.000_000_074e23
+             '_k': 1.380_648_52e-23,         # +/- 0.000_000_79e-23
+             '_amu': 1.660_539_040e-27},     # +/- 0.000_000_020e-27
 
     # CODATA 2018 taken from
+    # https://physics.nist.gov/cuu/pdf/all_2018.pdf
+    '2018': {'_c': 299_792_458.,             # Exact
+             '_mu0': 1.256_637_062_12e-6,    # +/- 0.000_000_000_19e−6
+             '_Grav': 6.674_30e-11,          # +/- 0.000_15e-11
+             '_hplanck': 6.626_070_15e-34,   # Exact
+             '_e': 1.602_176_634e-19,        # Exact
+             '_me': 9.109_383_7015e-31,      # +/- 0.000_000_0028e-31
+             '_mp': 1.672_621_923_69e-27,    # +/- 0.000_000_000_51e-27
+             '_Nav': 6.022_140_76e23,        # Exact
+             '_k': 1.380_649e-23,            # Exact
+             '_amu': 1.660_539_066_60e-27},  # +/- 0.000_000_000_50e-27
+
+    # CODATA 2022 (current) taken from
     # https://physics.nist.gov/cuu/Constants/index.html
-    '2018': {'_c': 299792458.,            # Exact
-             '_mu0': 4.0e-7 * pi,         # Exact
-             '_Grav': 6.67430e-11,        # +/- 0.000_15e-11
-             '_hplanck': 6.62607015e-34,  # Exact
-             '_e': 1.602176634e-19,       # Exact
-             '_me': 9.1093837015e-31,     # +/- 0.000_000_0028e-31
-             '_mp': 1.67262192369e-27,    # +/- 0.000_000_000_51e-27
-             '_Nav': 6.02214076e23,       # Exact
-             '_k': 1.380649e-23,          # Exact
-             '_amu': 1.66053906660e-27},  # +/- 0.000_000_000_50e-27
+    '2022': {'_c': 299_792_458.,             # Exact
+             '_mu0': 1.256_637_061_27e-6,    # +/- 0.000_000_000_20e−6
+             '_Grav': 6.674_30e-11,          # +/- 0.000_15e-11
+             '_hplanck': 6.626_070_15e-34,   # Exact
+             '_e': 1.602_176_634e-19,        # Exact
+             '_me': 9.109_383_7139e-31,      # +/- 0.000_000_0028e−31
+             '_mp': 1.672_621_925_95e-27,    # +/- 0.000_000_000_52e−27
+             '_Nav': 6.022_140_76e23,        # Exact
+             '_k': 1.380_649e-23,            # Exact
+             '_amu': 1.660_539_068_92e-27},  # +/- 0.000_000_000_52e−27
 }
 
 
@@ -141,6 +156,8 @@ def create_units(codata_version):
         * '2006'
         * '2010'
         * '2014'
+        * '2018'
+        * '2022'
 
     Returns:
 
@@ -157,7 +174,7 @@ def create_units(codata_version):
     try:
         u = Units(CODATA[codata_version])
     except KeyError:
-        raise NotImplementedError('CODATA version "{0}" not implemented'
+        raise NotImplementedError('CODATA version "{}" not implemented'
                                   .format(codata_version))
 
     # derived from the CODATA values

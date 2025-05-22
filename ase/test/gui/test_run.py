@@ -1,17 +1,18 @@
 import os
 from pathlib import Path
 
-import pytest
 import numpy as np
+import pytest
 
-from ase import Atoms
-from ase.calculators.singlepoint import SinglePointCalculator
-from ase.build import molecule, bulk
 import ase.gui.ui as ui
-from ase.gui.i18n import _
+from ase import Atoms
+from ase.build import bulk, molecule
+from ase.calculators.singlepoint import SinglePointCalculator
 from ase.gui.gui import GUI
-from ase.gui.save import save_dialog
+from ase.gui.i18n import _
 from ase.gui.quickinfo import info
+from ase.gui.save import save_dialog
+from ase.test.fio.test_cif import content
 
 
 class GUIError(Exception):
@@ -23,14 +24,14 @@ def mock_gui_error(title, text=None):
     raise GUIError(title, text)
 
 
-@pytest.fixture
+@pytest.fixture()
 def display():
     pytest.importorskip('tkinter')
     if not os.environ.get('DISPLAY'):
         raise pytest.skip('no display')
 
 
-@pytest.fixture
+@pytest.fixture()
 def gui(guifactory):
     return guifactory(None)
 
@@ -41,16 +42,16 @@ def no_blocking_errors_monkeypatch(monkeypatch):
     # want a blocking dialog to lock the whole test suite:
     for name in ['error', 'showerror', 'showwarning', 'showinfo']:
         monkeypatch.setattr(ui, name, mock_gui_error)
-    #orig_ui_error = ui.error
-    #ui.error = mock_gui_error
-    #ui.showerror = mock_gui_error
-    #ui.showwarning = mock_gui_error
-    #ui.showinfo = mock_ugi_error
-    #yield
-    #ui.error = orig_ui_error
+    # orig_ui_error = ui.error
+    # ui.error = mock_gui_error
+    # ui.showerror = mock_gui_error
+    # ui.showwarning = mock_gui_error
+    # ui.showinfo = mock_ugi_error
+    # yield
+    # ui.error = orig_ui_error
 
 
-@pytest.fixture
+@pytest.fixture()
 def guifactory(display):
     guis = []
 
@@ -58,24 +59,33 @@ def guifactory(display):
         gui = GUI(images)
         guis.append(gui)
         return gui
+
     yield factory
 
     for gui in guis:
         gui.exit()
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms(gui):
     atoms = bulk('Ti') * (2, 2, 2)
     gui.new_atoms(atoms)
     return atoms
 
 
-@pytest.fixture
+@pytest.fixture()
 def animation(guifactory):
     images = [bulk(sym) for sym in ['Cu', 'Ag', 'Au']]
     gui = guifactory(images)
     return gui
+
+
+def test_about(gui):
+    ui.about('name', 'version:1.1.1', 'http://webpage.org')
+
+
+def test_helpwindow(gui):
+    ui.helpwindow('some\n multiline\n text')
 
 
 def test_nanotube(gui):
@@ -92,13 +102,32 @@ def test_nanotube(gui):
 
 def test_nanoparticle(gui):
     n = gui.nanoparticle_window()
-    n.element.symbol = 'Cu'
-    n.apply()
+    n.element.symbol = 'W'  # test bcc
     n.set_structure_data()
+    n.apply()
+    assert len(gui.images[0]) == 57
+    assert gui.images[0].get_distance(44, 45) == pytest.approx(2.737, 0.001)
+    n.structure_cb.value = n.structure_names['sc']
+    n.update_structure()
+    n.apply()
+    assert len(gui.images[0]) == 231
+    assert gui.images[0].get_distance(143, 145) == pytest.approx(3.160, 0.001)
+    n.structure_cb.value = n.structure_names['hcp']
+    n.update_structure()
+    n.apply()
+    assert len(gui.images[0]) == 257
+    assert gui.images[0].get_distance(4, 5) == pytest.approx(3.0, 0.001)
+    assert gui.images[0].get_distance(11, 5) == pytest.approx(3.160, 0.001)
+    n.element.symbol = 'Cu'  # test fcc
+    n.set_structure_data()
+    n.apply()
     assert len(gui.images[0]) == 675
-    n.method.value = 'wulff'
+    assert gui.images[0].get_distance(0, 1) == pytest.approx(2.553, 0.001)
+    n.method_cb.value = 'wulff'
     n.update_gui_method()
     n.apply()
+    assert len(gui.images[0]) == 135
+    assert gui.images[0].get_distance(0, 1) == pytest.approx(2.553, 0.001)
 
 
 def test_color(gui):
@@ -126,25 +155,42 @@ def test_settings(gui):
     s.scale_radii()
 
 
+def test_magmom_arrows(gui):
+    gui.window['toggle-show-magmoms'] = True
+    gui.new_atoms(molecule('O2'))
+    s = gui.settings()
+    gui.magmom_vector_scale = 0.5
+    s.magmom_vector_scale.value = 2.1
+    s.scale_magmom_vectors()
+    assert gui.magmom_vector_scale == pytest.approx(2.1)
+
+
 def test_rotate(gui):
     gui.window['toggle-show-bonds'] = True
     gui.new_atoms(molecule('H2O'))
     gui.rotate_window()
 
 
-def test_open_and_save(gui):
+def test_open_and_save(gui, testdir):
     mol = molecule('H2O')
-    for i in range(3):
+    for j in range(3):
         mol.write('h2o.json')
     gui.open(filename='h2o.json')
     save_dialog(gui, 'h2o.cif@-1')
 
 
-@pytest.mark.parametrize('filename', [
-    None, 'output.png', 'output.eps',
-    'output.pov', 'output.traj', 'output.traj@0',
-])
-def test_export_graphics(gui, with_bulk_ti, monkeypatch, filename):
+@pytest.mark.parametrize(
+    'filename',
+    [
+        None,
+        'output.png',
+        'output.eps',
+        'output.pov',
+        'output.traj',
+        'output.traj@0',
+    ],
+)
+def test_export_graphics(gui, testdir, with_bulk_ti, monkeypatch, filename):
     # Monkeypatch the blocking dialog:
     monkeypatch.setattr(ui.SaveFileDialog, 'go', lambda event: filename)
     gui.save()
@@ -153,16 +199,15 @@ def test_export_graphics(gui, with_bulk_ti, monkeypatch, filename):
         assert Path(realfilename).is_file()
 
 
-def test_fracocc(gui):
-    from ase.test.fio.test_cif import content
+def test_fracocc(gui, testdir):
     with open('./fracocc.cif', 'w') as fd:
         fd.write(content)
     gui.open(filename='fracocc.cif')
 
 
-def test_povray(gui):
+def test_povray(gui, testdir):
     mol = molecule('H2O')
-    gui.new_atoms(mol) # not gui.set_atoms(mol)
+    gui.new_atoms(mol)  # not gui.set_atoms(mol)
     n = gui.render_window()
     assert n.basename_widget.value == 'H2O'
     n.run_povray_widget.check.deselect()
@@ -174,21 +219,21 @@ def test_povray(gui):
     assert ini.is_file()
     assert pov.is_file()
 
-    with open(ini, 'r') as _:
+    with open(ini) as _:
         _ = _.read()
         assert 'H2O' in _
-    with open(pov, 'r') as _:
+    with open(pov) as _:
         _ = _.read()
         assert 'atom' in _
 
 
-@pytest.fixture
+@pytest.fixture()
 def with_bulk_ti(gui):
     atoms = bulk('Ti') * (2, 2, 2)
     gui.new_atoms(atoms)
 
 
-@pytest.fixture
+@pytest.fixture()
 def modify(gui, with_bulk_ti):
     gui.images.selected[:4] = True
     return gui.modify_atoms()
@@ -204,6 +249,7 @@ def test_select_atoms(gui, with_bulk_ti):
 def test_modify_element(gui, modify):
     class MockElement:
         Z = 79
+
     modify.set_element(MockElement())
     assert all(gui.atoms.symbols[:4] == 'Au')
     assert all(gui.atoms.symbols[4:] == 'Ti')
@@ -226,20 +272,25 @@ def test_modify_magmom(gui, modify):
 
 
 def test_repeat(gui):
-    fe = bulk('Fe')
-    gui.new_atoms(fe)
+    atoms = bulk('Fe')
+    energy = 1.0
+    atoms.calc = SinglePointCalculator(atoms, energy=energy)
+    gui.new_atoms(atoms)
     repeat = gui.repeat_window()
 
     multiplier = [2, 3, 4]
-    expected_atoms = fe * multiplier
-    natoms= np.prod(multiplier)
+    expected_atoms = atoms * multiplier
+    natoms = np.prod(multiplier)
     for i, value in enumerate(multiplier):
         repeat.repeat[i].value = value
 
     repeat.change()
     assert len(gui.atoms) == natoms
     assert gui.atoms.positions == pytest.approx(expected_atoms.positions)
-    assert gui.atoms.cell == pytest.approx(fe.cell[:])  # Still old cell
+    assert gui.atoms.cell == pytest.approx(atoms.cell[:])  # Still old cell
+
+    energy_ref = energy * multiplier[0] * multiplier[1] * multiplier[2]
+    assert gui.images.get_energy(gui.images[0]) == pytest.approx(energy_ref)
 
     repeat.set_unit_cell()
     assert gui.atoms.cell[:] == pytest.approx(expected_atoms.cell[:])
@@ -258,6 +309,31 @@ def test_movie(animation):
     movie = animation.movie_window
     assert movie is not None
 
+    animation.step('Home')
+    assert movie.frame_number.value == 0
+
+    animation.step('Page-Up')
+    assert movie.frame_number.value == 0
+
+    animation.step('Page-Down')
+    assert movie.frame_number.value == 1
+
+    animation.step('Page-Down')
+    assert movie.frame_number.value == 2
+
+    last_index = len(animation.images) - 1
+    animation.step('End')
+    assert movie.frame_number.value == last_index
+
+    animation.step('Page-Down')
+    assert movie.frame_number.value == last_index
+
+    animation.step('Page-Up')
+    assert movie.frame_number.value == last_index - 1
+
+    animation.step('Page-Up')
+    assert movie.frame_number.value == last_index - 2
+
     movie.play()
     movie.stop()
     movie.close()
@@ -269,6 +345,7 @@ def test_reciprocal(gui):
     reciprocal = gui.reciprocal()
     reciprocal.terminate()
     exitcode = reciprocal.wait(timeout=5)
+    reciprocal.stdout.close()
     assert exitcode != 0
 
 
@@ -385,11 +462,39 @@ def test_clipboard_paste_onto_existing(gui):
     assert gui.atoms == ti + h2o
 
 
-@pytest.mark.parametrize('text', [
-    '',
-    'invalid_atoms',
-    '[1, 2, 3]',  # valid JSON but not Atoms
-])
+def test_wrap(gui):
+    """Test the Wrap atoms function."""
+    atoms = bulk('Si')
+    atoms.positions += 1234
+    gui.new_atoms(atoms)
+    unwrapped = atoms.get_scaled_positions(wrap=False)
+    wrapped_ref = atoms.get_scaled_positions(wrap=True)
+
+    assert (unwrapped > 1).all()
+    gui.wrap_atoms()
+    wrapped = gui.images[0].get_scaled_positions(wrap=False)
+    assert (wrapped < 1).all()
+    assert (wrapped >= 0).all()
+    assert wrapped == pytest.approx(wrapped_ref)
+
+
+def test_show_labels(gui):
+    atoms = molecule('CH3CH2OH')
+    gui.new_atoms(atoms)
+    assert gui.get_labels() is None
+    gui.window['show-labels'] = 3  # ugly: magical code for chemical symbols
+    gui.draw()
+    assert list(gui.get_labels()) == list(atoms.symbols)
+
+
+@pytest.mark.parametrize(
+    'text',
+    [
+        '',
+        'invalid_atoms',
+        '[1, 2, 3]',  # valid JSON but not Atoms
+    ],
+)
 def test_clipboard_paste_invalid(gui, text):
     gui.clipboard.set_text(text)
     with pytest.raises(GUIError):
@@ -397,12 +502,13 @@ def test_clipboard_paste_invalid(gui, text):
 
 
 def window():
-
     def hello(event=None):
         print('hello', event)
 
-    menu = [('Hi', [ui.MenuItem('_Hello', hello, 'Ctrl+H')]),
-            ('Hell_o', [ui.MenuItem('ABC', hello, choices='ABC')])]
+    menu = [
+        ('Hi', [ui.MenuItem('_Hello', hello, 'Ctrl+H')]),
+        ('Hell_o', [ui.MenuItem('ABC', hello, choices='ABC')]),
+    ]
     win = ui.MainWindow('Test', menu=menu)
 
     win.add(ui.Label('Hello'))

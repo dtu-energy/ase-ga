@@ -9,7 +9,7 @@ Self-diffusion on the Al(110) surface using the NEB and Dimer method
    :align: right
 
 In this exercise, we will find minimum-energy paths and transition states
-using the :mod:`Nudged Elastic Band <ase.neb>` method. Another method for
+using the :mod:`Nudged Elastic Band <ase.mep.neb>` method. Another method for
 finding the transition state (i.e. the highest-energy state), the Dimer
 method, will also be explored.
 
@@ -40,7 +40,7 @@ understand, and run the script.
 
 * Can you think of a third type of diffusion process?  Hint: It is
   called an exchange process and you can read more about it in the paper listed
-  :mod:`here <ase.dimer>`.
+  :mod:`here <ase.mep.dimer>`.
   Find the barrier for this process, and
   compare the energy barrier with the two other ones.
   (If you give up look at :download:`neb3.py`)
@@ -60,7 +60,7 @@ understand, and run the script.
 In the NEB calculations above we knew the final states, so all we had to do
 was to calculate the path between the initial state and the final state. But
 in some cases we do not know the final state. Then the :mod:`Dimer method
-<ase.dimer>` can be used to find the transition state. The result of a Dimer
+<ase.mep.dimer>` can be used to find the transition state. The result of a Dimer
 calculation will hence not be the complete particle trajectory as in the NEB
 output, but rather the configuration of the transition-state image.
 

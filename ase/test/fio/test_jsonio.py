@@ -1,9 +1,10 @@
-from datetime import datetime
+# fmt: off
 import io
+from datetime import datetime
 
 import numpy as np
 
-from ase.io.jsonio import encode, decode, read_json, write_json
+from ase.io.jsonio import decode, encode, read_json, write_json
 
 
 def test_jsonio():
@@ -11,6 +12,9 @@ def test_jsonio():
     assert decode(encode(np.int64(42))) == 42
 
     c = np.array([0.1j])
+    assert (decode(encode(c)) == c).all()
+
+    c = np.array(['a'])
     assert (decode(encode(c)) == c).all()
 
     fd = io.StringIO()

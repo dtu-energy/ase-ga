@@ -1,15 +1,9 @@
-import sys
-from typing import Dict, Any
-import numpy as np
+# fmt: off
 
-from ase.calculators.calculator import (get_calculator_class,
-                                        names as calcnames,
-                                        PropertyNotImplementedError)
-from ase.constraints import FixAtoms, UnitCellFilter
-from ase.eos import EquationOfState
-from ase.io import read, write, Trajectory
-from ase.optimize import LBFGS
-import ase.db as db
+import sys
+from typing import Any, Dict
+
+import numpy as np
 
 
 class CLICommand:
@@ -32,10 +26,11 @@ class CLICommand:
 
     @staticmethod
     def add_arguments(parser):
+        from ase.calculators.names import names
         parser.add_argument('calculator',
                             help='Name of calculator to use.  '
                             'Must be one of: {}.'
-                            .format(', '.join(calcnames)))
+                            .format(', '.join(names)))
         CLICommand.add_more_arguments(parser)
 
     @staticmethod
@@ -102,6 +97,8 @@ class Runner:
         self.calculate(atoms, args.name)
 
     def calculate(self, atoms, name):
+        from ase.io import write
+
         args = self.args
 
         if args.maximum_force or args.maximum_stress:
@@ -117,6 +114,9 @@ class Runner:
             write(args.output, atoms, append=True)
 
     def build(self, name):
+        import ase.db as db
+        from ase.io import read
+
         if name == '-':
             con = db.connect(sys.stdin, 'json')
             return con.get_atoms(add_additional_information=True)
@@ -128,6 +128,8 @@ class Runner:
             return atoms
 
     def set_calculator(self, atoms, name):
+        from ase.calculators.calculator import get_calculator_class
+
         cls = get_calculator_class(self.calculator_name)
         parameters = str2dict(self.args.parameters)
         if getattr(cls, 'nolabel', False):
@@ -136,10 +138,12 @@ class Runner:
             atoms.calc = cls(label=self.get_filename(name), **parameters)
 
     def calculate_once(self, atoms):
+        from ase.calculators.calculator import PropertyNotImplementedError
+
         args = self.args
 
         for p in args.properties or 'efsdMm':
-            property, method = {'e': ('energy', 'get_potential_energy'),
+            _property, method = {'e': ('energy', 'get_potential_energy'),
                                 'f': ('forces', 'get_forces'),
                                 's': ('stress', 'get_stress'),
                                 'd': ('dipole', 'get_dipole_moment'),
@@ -151,6 +155,10 @@ class Runner:
                 pass
 
     def optimize(self, atoms, name):
+        from ase.constraints import FixAtoms, UnitCellFilter
+        from ase.io import Trajectory
+        from ase.optimize import LBFGS
+
         args = self.args
         if args.constrain_tags:
             tags = [int(t) for t in args.constrain_tags.split(',')]
@@ -170,6 +178,9 @@ class Runner:
         optimizer.run(fmax=fmax)
 
     def eos(self, atoms, name):
+        from ase.eos import EquationOfState
+        from ase.io import Trajectory
+
         args = self.args
 
         traj = Trajectory(self.get_filename(name, 'traj'), 'w', atoms)
@@ -181,7 +192,7 @@ class Runner:
         v1 = atoms.get_volume()
         volumes = strains**3 * v1
         energies = []
-        cell1 = atoms.cell
+        cell1 = atoms.cell.copy()
         for s in strains:
             atoms.set_cell(cell1 * s, scale_atoms=True)
             energies.append(atoms.get_potential_energy())

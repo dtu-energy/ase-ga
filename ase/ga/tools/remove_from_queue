@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """ Program that edits the database in order to requeue a candidate in
 case the relaxation went wrong. """
-from ase.ga.data import DataConnection
 from optparse import OptionParser
+
+from ase.ga.data import DataConnection
 
 try:
     input = raw_input  # Python 2+3 compatibility

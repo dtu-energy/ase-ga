@@ -1,8 +1,10 @@
+# fmt: off
+
 """This module defines the Atom object."""
 
 import numpy as np
 
-from ase.data import atomic_numbers, chemical_symbols, atomic_masses
+from ase.data import atomic_masses, atomic_numbers, chemical_symbols
 
 # Singular, plural, default value:
 names = {'position': ('positions', np.zeros(3)),
@@ -120,13 +122,13 @@ class Atom:
         self.position = pos
 
     def __repr__(self):
-        s = "Atom('%s', %s" % (self.symbol, list(self.position))
+        s = f"Atom('{self.symbol}', {list(self.position)}"
         for name in ['tag', 'momentum', 'mass', 'magmom', 'charge']:
             value = self.get_raw(name)
             if value is not None:
                 if isinstance(value, np.ndarray):
                     value = value.tolist()
-                s += ', %s=%s' % (name, value)
+                s += f', {name}={value}'
         if self.atoms is None:
             s += ')'
         else:

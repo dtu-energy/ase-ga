@@ -1,17 +1,19 @@
-from random import random
-from ase.io import write
 import time
+from random import random
+
+from ase.ga.cutandsplicepairing import CutAndSplicePairing
 from ase.ga.data import DataConnection
+from ase.ga.offspring_creator import OperationSelector
+from ase.ga.parallellocalrun import ParallelLocalRun
 from ase.ga.population import Population
 from ase.ga.standard_comparators import InteratomicDistanceComparator
-from ase.ga.cutandsplicepairing import CutAndSplicePairing
-from ase.ga.offspring_creator import OperationSelector
-from ase.ga.standardmutations import MirrorMutation
-from ase.ga.standardmutations import RattleMutation
-from ase.ga.standardmutations import PermutationMutation
-from ase.ga.utilities import closest_distances_generator
-from ase.ga.utilities import get_all_atom_types
-from ase.ga.parallellocalrun import ParallelLocalRun
+from ase.ga.standardmutations import (
+    MirrorMutation,
+    PermutationMutation,
+    RattleMutation,
+)
+from ase.ga.utilities import closest_distances_generator, get_all_atom_types
+from ase.io import write
 
 population_size = 20
 mutation_probability = 0.3
@@ -23,28 +25,32 @@ da = DataConnection('gadb.db')
 tmp_folder = 'tmp_folder/'
 
 # An extra object is needed to handle the parallel execution
-parallel_local_run = ParallelLocalRun(data_connection=da,
-                                      tmp_folder=tmp_folder,
-                                      n_simul=4,
-                                      calc_script='calc.py')
+parallel_local_run = ParallelLocalRun(
+    data_connection=da, tmp_folder=tmp_folder, n_simul=4, calc_script='calc.py'
+)
 
 atom_numbers_to_optimize = da.get_atom_numbers_to_optimize()
 n_to_optimize = len(atom_numbers_to_optimize)
 slab = da.get_slab()
 all_atom_types = get_all_atom_types(slab, atom_numbers_to_optimize)
-blmin = closest_distances_generator(all_atom_types,
-                                    ratio_of_covalent_radii=0.7)
+blmin = closest_distances_generator(all_atom_types, ratio_of_covalent_radii=0.7)
 
-comp = InteratomicDistanceComparator(n_top=n_to_optimize,
-                                     pair_cor_cum_diff=0.015,
-                                     pair_cor_max=0.7,
-                                     dE=0.02,
-                                     mic=False)
+comp = InteratomicDistanceComparator(
+    n_top=n_to_optimize,
+    pair_cor_cum_diff=0.015,
+    pair_cor_max=0.7,
+    dE=0.02,
+    mic=False,
+)
 pairing = CutAndSplicePairing(slab, n_to_optimize, blmin)
-mutations = OperationSelector([1., 1., 1.],
-                              [MirrorMutation(blmin, n_to_optimize),
-                               RattleMutation(blmin, n_to_optimize),
-                               PermutationMutation(n_to_optimize)])
+mutations = OperationSelector(
+    [1.0, 1.0, 1.0],
+    [
+        MirrorMutation(blmin, n_to_optimize),
+        RattleMutation(blmin, n_to_optimize),
+        PermutationMutation(n_to_optimize),
+    ],
+)
 
 # Relax all unrelaxed structures (e.g. the starting population)
 while da.get_number_of_unrelaxed_candidates() > 0:
@@ -53,16 +59,16 @@ while da.get_number_of_unrelaxed_candidates() > 0:
 
 # Wait until the starting population is relaxed
 while parallel_local_run.get_number_of_jobs_running() > 0:
-    time.sleep(5.)
+    time.sleep(5.0)
 
 # create the population
-population = Population(data_connection=da,
-                        population_size=population_size,
-                        comparator=comp)
+population = Population(
+    data_connection=da, population_size=population_size, comparator=comp
+)
 
 # test n_to_test new candidates
 for i in range(n_to_test):
-    print('Now starting configuration number {0}'.format(i))
+    print(f'Now starting configuration number {i}')
     a1, a2 = population.get_two_candidates()
     a3, desc = pairing.get_new_individual([a1, a2])
     if a3 is None:
@@ -82,6 +88,6 @@ for i in range(n_to_test):
 
 # Wait until the last candidates are relaxed
 while parallel_local_run.get_number_of_jobs_running() > 0:
-    time.sleep(5.)
+    time.sleep(5.0)
 
 write('all_candidates.traj', da.get_all_relaxed_candidates())

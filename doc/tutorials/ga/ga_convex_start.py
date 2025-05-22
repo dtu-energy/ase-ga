@@ -1,15 +1,15 @@
-from pathlib import Path
 import random
+from pathlib import Path
 
 from ase.build import fcc111
 from ase.calculators.emt import EMT
 from ase.data import atomic_numbers, reference_states
-from ase.ga.data import PrepareDB
 from ase.ga import set_raw_score
+from ase.ga.data import PrepareDB
 
 
 def get_avg_lattice_constant(syms):
-    a = 0.
+    a = 0.0
     for m in set(syms):
         a += syms.count(m) * lattice_constants[m]
     return a / len(syms)
@@ -17,23 +17,25 @@ def get_avg_lattice_constant(syms):
 
 metals = ['Cu', 'Pt']
 # Use experimental lattice constants
-lattice_constants = dict((m, reference_states[atomic_numbers[m]]['a'])
-                         for m in metals)
+lattice_constants = {
+    m: reference_states[atomic_numbers[m]]['a'] for m in metals
+}
 
 # Create the references (pure slabs) manually
 pure_slabs = []
 refs = {}
 print('Reference energies:')
 for m in metals:
-    slab = fcc111(m, size=(2, 4, 3), a=lattice_constants[m],
-                  vacuum=5, orthogonal=True)
+    slab = fcc111(
+        m, size=(2, 4, 3), a=lattice_constants[m], vacuum=5, orthogonal=True
+    )
     slab.calc = EMT()
 
     # We save the reference energy as E_A / N
     e = slab.get_potential_energy()
     e_per_atom = e / len(slab)
     refs[m] = e_per_atom
-    print('{0} = {1:.3f} eV/atom'.format(m, e_per_atom))
+    print(f'{m} = {e_per_atom:.3f} eV/atom')
 
     # The mixing energy for the pure slab is 0 by definition
     set_raw_score(slab, 0.0)
@@ -46,15 +48,20 @@ pop_size = 2 * len(slab)
 target = Path('hull.db')
 if target.exists():
     target.unlink()
-db = PrepareDB(target, population_size=pop_size,
-               reference_energies=refs, metals=metals,
-               lattice_constants=lattice_constants)
+db = PrepareDB(
+    target,
+    population_size=pop_size,
+    reference_energies=refs,
+    metals=metals,
+    lattice_constants=lattice_constants,
+)
 
 # We add the pure slabs to the database as relaxed because we have already
 # set the raw_score
 for slab in pure_slabs:
-    db.add_relaxed_candidate(slab,
-                             atoms_string=''.join(slab.get_chemical_symbols()))
+    db.add_relaxed_candidate(
+        slab, atoms_string=''.join(slab.get_chemical_symbols())
+    )
 
 
 # Now we create the rest of the candidates for the initial population
@@ -66,9 +73,13 @@ for i in range(pop_size - 2):
     symbols = [metals[0]] * nA + [metals[1]] * nB + metals
 
     # Making a generic slab with the correct lattice constant
-    slab = fcc111('X', size=(2, 4, 3),
-                  a=get_avg_lattice_constant(symbols),
-                  vacuum=5, orthogonal=True)
+    slab = fcc111(
+        'X',
+        size=(2, 4, 3),
+        a=get_avg_lattice_constant(symbols),
+        vacuum=5,
+        orthogonal=True,
+    )
 
     # Setting the symbols and randomizing the order
     slab.set_chemical_symbols(symbols)

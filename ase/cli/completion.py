@@ -1,3 +1,5 @@
+# fmt: off
+
 """TAB-completion sub-command and update helper funtion.
 
 Run this when ever options are changed::
@@ -7,7 +9,7 @@ Run this when ever options are changed::
 
 import sys
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 # Path of the complete.py script:
 path = Path(__file__).with_name('complete.py')
@@ -54,12 +56,15 @@ def update(path: Path,
             dct[command].extend(arg for arg in args
                                 if arg.startswith('-'))
 
+        def add_argument_group(self, name):
+            return self
+
         def add_mutually_exclusive_group(self, required=False):
             return self
 
     for command, module_name in subcommands:
         module = import_module(module_name)
-        module.CLICommand.add_arguments(Subparser(command))  # type: ignore
+        module.CLICommand.add_arguments(Subparser(command))
 
     txt = 'commands = {'
     for command, opts in sorted(dct.items()):

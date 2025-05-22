@@ -1,10 +1,11 @@
-import numpy as np
-import pytest
+# fmt: off
 import warnings
 
+import numpy as np
+import pytest
+
 from ase import Atom, Atoms
-from ase.io import read
-from ase.io import NetCDFTrajectory
+from ase.io import NetCDFTrajectory, read
 
 
 @pytest.fixture(scope='module')
@@ -21,7 +22,7 @@ def catch_netcdf4_warning():
         yield
 
 
-@pytest.fixture
+@pytest.fixture()
 def co(netCDF4):
     return Atoms([Atom('C', (0, 0, 0)),
                   Atom('O', (0, 0, 1.2))],
@@ -32,7 +33,7 @@ def co(netCDF4):
 def test_netcdftrajectory(co):
     rng = np.random.RandomState(17)
     traj = NetCDFTrajectory('1.nc', 'w', co)
-    for i in range(5):
+    for _ in range(5):
         co.positions[:, 2] += 0.1
         traj.write()
     del traj
@@ -100,8 +101,10 @@ def test_netcdftrajectory(co):
     # File is not created before first write
     co.set_pbc([True, False, False])
     d = co.get_distance(0, 1)
-    with pytest.warns(None):
+
+    with pytest.warns(UserWarning, match='Atoms have nonperiodic'):
         t.write(co)
+
     del t
     # Check pbc
     for c in [1, 1000]:
@@ -113,7 +116,7 @@ def test_netcdftrajectory(co):
     # Append something in Voigt notation
     t = NetCDFTrajectory(fname, 'a')
     for frame, a in enumerate(t):
-        test = rng.random([len(a), 6])
+        test = rng.random((len(a), 6))
         a.set_array('test', test)
         t.write_arrays(a, frame, ['test'])
     del t
@@ -143,7 +146,8 @@ def test_netcdftrajectory(co):
     traj.close()
 
     a = read('5.nc')
-    assert(len(a) == 2)
+    assert len(a) == 2
+
 
 def test_netcdf_with_variable_atomic_numbers(netCDF4):
     # Create a NetCDF file with a per-file definition of atomic numbers. ASE

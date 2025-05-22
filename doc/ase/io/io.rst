@@ -161,3 +161,19 @@ Adding a new file-format to ASE
 Try to model the read/write functions after the *xyz* format as implemented
 in :git:`ase/io/xyz.py` and also read, understand and update
 :git:`ase/io/formats.py`.
+
+Adding a new file-format in a plugin package
+============================================
+
+IO formats can also be implemented in external packages. For this the read
+write functions of the IO format are implemented as normal. To define the
+format the parameters are entered into a :class:`ase.utils.plugins.ExternalIOFormat`
+object.
+
+.. note::
+    The module name of the external IO format has to be absolute and cannot
+    be omitted.
+
+In the configuration of the package an entry point is added under the group
+``ase.ioformats`` which points to the defined :class:`ase.utils.plugins.ExternalIOFormat`
+object. The format of this entry point looks like ``format-name=ase_plugin.io::ioformat``.

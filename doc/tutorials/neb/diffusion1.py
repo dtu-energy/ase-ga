@@ -1,6 +1,6 @@
-from ase.build import fcc100, add_adsorbate
-from ase.constraints import FixAtoms
+from ase.build import add_adsorbate, fcc100
 from ase.calculators.emt import EMT
+from ase.constraints import FixAtoms
 from ase.optimize import QuasiNewton
 
 # 2x2-Al(001) surface with 3 layers and an

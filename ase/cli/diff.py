@@ -1,6 +1,10 @@
+# fmt: off
+
+# Note:
+# Try to avoid module level import statements here to reduce
+# import time during CLI execution
 import sys
-import io
-from ase.io import read
+
 from ase.cli.main import CLIError
 
 template_help = """
@@ -60,7 +64,7 @@ class CLICommand:
     * 1 trajectory file followed by hyphen-minus (ASCII 45): for display
 
     Note deltas are defined as 2 - 1.
-    
+
     Use [FILE]@[SLICE] to select images.
                     """,
             nargs='+')
@@ -98,6 +102,8 @@ generator.  For hierarchical sorting, see template.""")
 
     @staticmethod
     def run(args, parser):
+        import io
+
         if args.template_help:
             print(template_help)
             return
@@ -117,11 +123,13 @@ generator.  For hierarchical sorting, see template.""")
         from ase.cli.template import (
             Table,
             TableFormat,
-            slice_split,
+            energy_delta,
             field_specs_on_conditions,
-            summary_functions_on_conditions,
             rmsd,
-            energy_delta)
+            slice_split,
+            summary_functions_on_conditions,
+        )
+        from ase.io import read
 
         if args.template is None:
             field_specs = field_specs_on_conditions(
@@ -163,7 +171,7 @@ generator.  For hierarchical sorting, see template.""")
                 atoms2 = atoms1
 
                 def header_fmt(c):
-                    return 'image # {}'.format(c)
+                    return f'image # {c}'
             else:
                 file2 = args.file[1]
                 actual_filename, index = slice_split(file2)
@@ -190,10 +198,10 @@ generator.  For hierarchical sorting, see template.""")
                         atoms1 = natoms2 * atoms1
 
                     def header_fmt(c):
-                        return 'sys-ref image # {}'.format(c)
+                        return f'sys-ref image # {c}'
                 else:
                     def header_fmt(c):
-                        return 'sys2-sys1 image # {}'.format(c)
+                        return f'sys2-sys1 image # {c}'
         else:
             atoms2 = atoms1.copy()
             atoms1 = atoms1[:-1]
@@ -201,7 +209,7 @@ generator.  For hierarchical sorting, see template.""")
             natoms2 = natoms1 = natoms1 - 1
 
             def header_fmt(c):
-                return 'images {}-{}'.format(c + 1, c)
+                return f'images {c + 1}-{c}'
 
         natoms = natoms1  # = natoms2
 

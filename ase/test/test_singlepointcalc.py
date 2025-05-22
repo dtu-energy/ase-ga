@@ -1,15 +1,15 @@
+# fmt: off
 from ase.build import fcc111
 from ase.calculators.emt import EMT
-from ase.io import read
 from ase.constraints import FixAtoms
+from ase.io import read
 
 
-def test_singlepointcalc():
+def test_singlepointcalc(testdir):
     """This test makes sure that the forces returned from a
     SinglePointCalculator are immutable. Previously, successive calls to
     atoms.get_forces(apply_constraint=x), with x alternating between True and
     False, would get locked into the constrained variation."""
-
 
     def check_forces():
         """Makes sure the unconstrained forces stay that way."""

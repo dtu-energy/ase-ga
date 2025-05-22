@@ -1,4 +1,6 @@
+# fmt: off
 import itertools
+
 from ase import Atoms
 from ase.geometry import get_distances
 from ase.lattice.cubic import FaceCenteredCubic
@@ -13,7 +15,6 @@ def test_atoms_distance():
     a = Atoms('HOC', positions=[(1, 1, 1), (3, 1, 1), (6, 1, 1)])
     a.set_cell((9, 2, 2))
     a.set_pbc((True, False, False))
-
 
     # Calculate indiviually with mic=True
     assert a.get_distance(0, 1, mic=True) == 2

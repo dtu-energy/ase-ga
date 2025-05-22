@@ -1,9 +1,12 @@
-def test_dmol():
-    from ase.build import bulk, molecule
-    from ase.io import read, write
-    from ase.calculators.dmol import find_transformation
-    import numpy as np
+# fmt: off
+import numpy as np
 
+from ase.build import bulk, molecule
+from ase.calculators.dmol import find_transformation
+from ase.io import read, write
+
+
+def test_dmol():
 
     def check(atoms, ref_atoms, dist_tol=1e-6):
 
@@ -22,12 +25,10 @@ def test_dmol():
         # check symbols
         assert atoms.get_chemical_symbols() == ref_atoms.get_chemical_symbols()
 
-
     ref_molecule = molecule('H2O')
     ref_bulk = bulk('Si', 'diamond')
     ref_molecule_images = [ref_molecule, ref_molecule]
     ref_bulk_images = [ref_bulk, ref_bulk]
-
 
     # .car format
     fname = 'dmol_tmp.car'
@@ -43,13 +44,11 @@ def test_dmol():
         atoms.positions = np.dot(atoms.positions, R)
         check(atoms, ref_bulk)
 
-
     # .incoor format
     fname = 'dmol_tmp.incoor'
     write(fname, ref_bulk, format='dmol-incoor')
     atoms = read(fname, format='dmol-incoor')
     check(atoms, ref_bulk)
-
 
     # .arc format
     fname = 'dmol_tmp.arc'

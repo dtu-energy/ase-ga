@@ -1,11 +1,16 @@
-from typing import List, Sequence, Set, Dict, Union, Iterator
-import warnings
+# fmt: off
+
 import collections.abc
+import numbers
+import warnings
+from typing import Dict, Iterator, List, Sequence, Set, Union
 
 import numpy as np
 
 from ase.data import atomic_numbers, chemical_symbols
 from ase.formula import Formula
+
+Integers = Union[Sequence[int], np.ndarray]
 
 
 def string2symbols(s: str) -> List[str]:
@@ -40,8 +45,8 @@ class Symbols(collections.abc.Sequence):
     Symbols('C2OH6')
     >>> atoms.symbols[:3]
     Symbols('C2O')
-    >>> atoms.symbols == 'H'
-    array([False, False, False,  True,  True,  True,  True,  True,  True], dtype=bool)
+    >>> atoms.symbols == 'H'  # doctest: +ELLIPSIS
+    array([False, False, False,  True,  True,  True,  True,  True,  True]...)
     >>> atoms.symbols[-3:] = 'Pu'
     >>> atoms.symbols
     Symbols('C2OH3Pu3')
@@ -55,6 +60,7 @@ class Symbols(collections.abc.Sequence):
     formatting options and analysis.
 
     """
+
     def __init__(self, numbers) -> None:
         self.numbers = np.asarray(numbers, int)
 
@@ -71,7 +77,7 @@ class Symbols(collections.abc.Sequence):
 
     def __getitem__(self, key) -> Union['Symbols', str]:
         num = self.numbers[key]
-        if np.isscalar(num):
+        if isinstance(num, numbers.Integral):
             return chemical_symbols[num]
         return Symbols(num)
 
@@ -93,7 +99,7 @@ class Symbols(collections.abc.Sequence):
         return self.get_chemical_formula('reduce')
 
     def __repr__(self) -> str:
-        return 'Symbols(\'{}\')'.format(self)
+        return f'Symbols(\'{self}\')'
 
     def __eq__(self, obj) -> bool:
         if not hasattr(obj, '__len__'):
@@ -153,7 +159,7 @@ class Symbols(collections.abc.Sequence):
 
         return formula
 
-    def search(self, symbols) -> Sequence[int]:
+    def search(self, symbols) -> Integers:
         """Return the indices of elements with given symbol or symbols."""
         numbers = set(symbols2numbers(symbols))
         indices = [i for i, number in enumerate(self.numbers)
@@ -164,7 +170,7 @@ class Symbols(collections.abc.Sequence):
         """Return unique symbols as a set."""
         return set(self)
 
-    def indices(self) -> Dict[str, Sequence[int]]:
+    def indices(self) -> Dict[str, Integers]:
         """Return dictionary mapping each unique symbol to indices.
 
         >>> from ase.build import molecule
@@ -177,3 +183,24 @@ class Symbols(collections.abc.Sequence):
         for i, symbol in enumerate(self):
             dct.setdefault(symbol, []).append(i)
         return {key: np.array(value, int) for key, value in dct.items()}
+
+    def species_indices(self) -> Sequence[int]:
+        """Return the indices of each atom within their individual species.
+
+        >>> from ase import Atoms
+        >>> atoms = Atoms('CH3CH2OH')
+        >>> atoms.symbols.species_indices()
+        [0, 0, 1, 2, 1, 3, 4, 0, 5]
+
+         ^  ^  ^  ^  ^  ^  ^  ^  ^
+         C  H  H  H  C  H  H  O  H
+
+        """
+
+        counts: Dict[str, int] = {}
+        result = []
+        for i, n in enumerate(self.numbers):
+            counts[n] = counts.get(n, -1) + 1
+            result.append(counts[n])
+
+        return result

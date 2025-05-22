@@ -1,10 +1,11 @@
+# fmt: off
 import numpy as np
 import pytest
 
 from ase import Atoms
-from ase.io import read
-from ase.build import bulk
 from ase.atoms import symbols2numbers
+from ase.build import bulk
+from ase.io import read
 
 
 def make_STO_atoms():

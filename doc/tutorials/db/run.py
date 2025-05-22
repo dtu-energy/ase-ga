@@ -2,9 +2,9 @@
 import os
 import runpy
 
-from ase.io import read, write
 from ase.cli.main import main
 from ase.db import connect
+from ase.io import read, write
 
 for name in ['bulk.db', 'ads.db', 'refs.db']:
     if os.path.isfile(name):
@@ -14,20 +14,21 @@ for name in ['bulk.db', 'ads.db', 'refs.db']:
 for filename in ['bulk.py', 'ads.py', 'refs.py']:
     runpy.run_path(filename)
 
-for cmd in ['ase db ads.db ads=clean --insert-into refs.db',
-            'ase db ads.db ads=clean --delete --yes',
-            'ase db ads.db pbc=FFF --insert-into refs.db',
-            'ase db ads.db pbc=FFF --delete --yes']:
+for cmd in [
+    'ase db ads.db ads=clean --insert-into refs.db',
+    'ase db ads.db ads=clean --delete --yes',
+    'ase db ads.db pbc=FFF --insert-into refs.db',
+    'ase db ads.db pbc=FFF --delete --yes',
+]:
     main(args=cmd.split()[1:])
 
 runpy.run_path('ea.py')
 
 # Create the figures:
 for n in [1, 2, 3]:
-    a = read('ads.db@Cu{}O'.format(n))[0]
+    a = read(f'ads.db@Cu{n}O')[0]
     a *= (2, 2, 1)
-    renderer = write('cu{}o.pov'.format(n), a,
-                     rotation='-80x')
+    renderer = write(f'cu{n}o.pov', a, rotation='-80x')
     renderer.render()
 
 # A bit of testing:

@@ -1,3 +1,5 @@
+# fmt: off
+
 """Function-like object creating hexagonal lattices.
 
 The following lattice creators are defined:
@@ -77,10 +79,10 @@ class HexagonalFactory(TriclinicFactory):
 
     def print_directions_and_miller(self, txt=""):
         "Print direction vectors and Miller indices."
-        print("Direction vectors of unit cell%s:" % (txt,))
+        print(f"Direction vectors of unit cell{txt}:")
         for i in (0, 1, 2):
             self.print_four_vector("[]", self.directions[i])
-        print("Miller indices of surfaces%s:" % (txt,))
+        print(f"Miller indices of surfaces{txt}:")
         for i in (0, 1, 2):
             self.print_four_vector("()", self.miller[i])
 

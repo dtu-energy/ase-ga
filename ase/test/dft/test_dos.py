@@ -1,9 +1,13 @@
-def test_dos():
-    from ase.atoms import Atoms
-    from ase.calculators.singlepoint import SinglePointDFTCalculator
-    from ase.calculators.singlepoint import SinglePointKPoint
-    from ase.dft.dos import DOS
+# fmt: off
+from ase.atoms import Atoms
+from ase.calculators.singlepoint import (
+    SinglePointDFTCalculator,
+    SinglePointKPoint,
+)
+from ase.dft.dos import DOS
 
+
+def test_dos():
 
     atoms = Atoms('H')
     eFermi = [0, 1]

@@ -1,25 +1,29 @@
+# fmt: off
+
 # Refactor of DOS-like data objects
 # towards replacing ase.dft.dos and ase.dft.pdos
-from abc import ABCMeta, abstractmethod
 import warnings
+from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
-from ase.utils.plotting import SimplePlottingAxes
+from matplotlib.axes import Axes
 
-# This import is for the benefit of type-checking / mypy
-if False:
-    import matplotlib.axes
+from ase.utils.plotting import SimplePlottingAxes
 
 # For now we will be strict about Info and say it has to be str->str. Perhaps
 # later we will allow other types that have reliable comparison operations.
 Info = Dict[str, str]
+
+# Still no good solution to type checking with arrays.
+Floats = Union[Sequence[float], np.ndarray]
 
 
 class DOSData(metaclass=ABCMeta):
     """Abstract base class for a single series of DOS-like data
 
     Only the 'info' is a mutable attribute; DOS data is set at init"""
+
     def __init__(self,
                  info: Info = None) -> None:
         if info is None:
@@ -30,11 +34,11 @@ class DOSData(metaclass=ABCMeta):
             raise TypeError("Info must be a dict or None")
 
     @abstractmethod
-    def get_energies(self) -> Sequence[float]:
+    def get_energies(self) -> Floats:
         """Get energy data stored in this object"""
 
     @abstractmethod
-    def get_weights(self) -> Sequence[float]:
+    def get_weights(self) -> Floats:
         """Get DOS weights stored in this object"""
 
     @abstractmethod
@@ -42,7 +46,7 @@ class DOSData(metaclass=ABCMeta):
         """Returns a copy in which info dict can be safely mutated"""
 
     def _sample(self,
-                energies: Sequence[float],
+                energies: Floats,
                 width: float = 0.1,
                 smearing: str = 'Gauss') -> np.ndarray:
         """Sample the DOS data at chosen points, with broadening
@@ -145,10 +149,10 @@ class DOSData(metaclass=ABCMeta):
              xmax: float = None,
              width: float = 0.1,
              smearing: str = 'Gauss',
-             ax: 'matplotlib.axes.Axes' = None,
+             ax: Axes = None,
              show: bool = False,
              filename: str = None,
-             mplargs: dict = None) -> 'matplotlib.axes.Axes':
+             mplargs: dict = None) -> Axes:
         """Simple 1-D plot of DOS data, resampled onto a grid
 
         If the special key 'label' is present in self.info, this will be set
@@ -190,7 +194,7 @@ class DOSData(metaclass=ABCMeta):
         if 'label' in info:
             return info['label']
         else:
-            return '; '.join(map(lambda x: '{}: {}'.format(x[0], x[1]),
+            return '; '.join(map(lambda x: f'{x[0]}: {x[1]}',
                                  info.items()))
 
 
@@ -203,9 +207,10 @@ class GeneralDOSData(DOSData):
     "energies" and "weights" sequences of equal length at init.
 
     """
+
     def __init__(self,
-                 energies: Sequence[float],
-                 weights: Sequence[float],
+                 energies: Floats,
+                 weights: Floats,
                  info: Info = None) -> None:
         super().__init__(info=info)
 
@@ -282,10 +287,10 @@ class RawDOSData(GeneralDOSData):
         return new_object
 
     def plot_deltas(self,
-                    ax: 'matplotlib.axes.Axes' = None,
+                    ax: Axes = None,
                     show: bool = False,
                     filename: str = None,
-                    mplargs: dict = None) -> 'matplotlib.axes.Axes':
+                    mplargs: dict = None) -> Axes:
         """Simple plot of sparse DOS data as a set of delta functions
 
         Items at the same x-value can overlap and will not be summed together
@@ -344,9 +349,10 @@ class GridDOSData(GeneralDOSData):
       GridDOSData([0.1, 0.2, 0.3], [y1+y4, y2+y5, y3+y6], info={'symbol': 'O'})
 
     """
+
     def __init__(self,
-                 energies: Sequence[float],
-                 weights: Sequence[float],
+                 energies: Floats,
+                 weights: Floats,
                  info: Info = None) -> None:
         n_entries = len(energies)
         if not np.allclose(energies,
@@ -368,7 +374,7 @@ class GridDOSData(GeneralDOSData):
         return current_spacing
 
     def _sample(self,
-                energies: Sequence[float],
+                energies: Floats,
                 width: float = 0.1,
                 smearing: str = 'Gauss') -> np.ndarray:
         current_spacing = self._check_spacing(width)
@@ -396,7 +402,7 @@ class GridDOSData(GeneralDOSData):
         # Take intersection of metadata (i.e. only common entries are retained)
         new_info = dict(set(self.info.items()) & set(other.info.items()))
 
-        # Concatenate the energy/weight data
+        # Sum the energy/weight data
         new_weights = self._data[1, :] + other.get_weights()
 
         new_object = GridDOSData(self._data[0, :], new_weights,
@@ -427,10 +433,10 @@ class GridDOSData(GeneralDOSData):
              xmax: float = None,
              width: float = None,
              smearing: str = 'Gauss',
-             ax: 'matplotlib.axes.Axes' = None,
+             ax: Axes = None,
              show: bool = False,
              filename: str = None,
-             mplargs: dict = None) -> 'matplotlib.axes.Axes':
+             mplargs: dict = None) -> Axes:
         """Simple 1-D plot of DOS data
 
         Data will be resampled onto a grid with `npts` points unless `npts` is

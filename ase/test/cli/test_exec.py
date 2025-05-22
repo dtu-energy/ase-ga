@@ -1,15 +1,17 @@
+# fmt: off
 import pytest
+
 from ase.build import bulk, molecule
 from ase.io import write
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     return bulk('Au')
 
 
-@pytest.fixture
-def fname(atoms):
+@pytest.fixture()
+def fname(atoms, testdir):
     filename = 'file.traj'
     write(filename, atoms)
     return filename
@@ -34,7 +36,7 @@ def test_exec_images(cli, fname, atoms):
     assert out.strip() == str(len(atoms))
 
 
-@pytest.fixture
+@pytest.fixture()
 def images():
     images = []
     for name in ['C6H6', 'H2O', 'CO']:
@@ -42,18 +44,18 @@ def images():
     return images
 
 
-@pytest.fixture
-def fnameimages(images):
+@pytest.fixture()
+def fnameimages(images, testdir):
     filename = 'fileimgs.xyz'
     write(filename, images)
     return filename
 
 
-@pytest.fixture
-def execfilename():
+@pytest.fixture()
+def execfilename(testdir):
     filename = 'execcode.py'
-    with open(filename, 'w') as f:
-        f.write('print(len(atoms))')
+    with open(filename, 'w') as fd:
+        fd.write('print(len(atoms))')
     return filename
 
 

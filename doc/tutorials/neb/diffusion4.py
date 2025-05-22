@@ -1,6 +1,6 @@
-from ase.io import read
 from ase.calculators.emt import EMT
-from ase.neb import NEB
+from ase.io import read
+from ase.mep import NEB
 from ase.optimize import BFGS
 
 # read the last structures (of 5 images used in NEB)

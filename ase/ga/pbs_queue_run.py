@@ -1,9 +1,12 @@
+# fmt: off
+
 """ Class for handling interaction with the PBS queuing system."""
-from ase.io import write
 import os
-from ase.io.trajectory import Trajectory
-from subprocess import Popen, PIPE
 import time
+from subprocess import PIPE, Popen
+
+from ase.io import write
+from ase.io.trajectory import Trajectory
 
 
 class PBSQueueRun:
@@ -31,6 +34,7 @@ class PBSQueueRun:
        qsub_command: The name of the qsub command (default qsub).
        qstat_command: The name of the qstat command (default qstat).
     """
+
     def __init__(self, data_connection, tmp_folder, job_prefix,
                  n_simul, job_template_generator,
                  qsub_command='qsub', qstat_command='qstat',
@@ -54,14 +58,13 @@ class PBSQueueRun:
         self.dc.mark_as_queued(a)
         if not os.path.isdir(self.tmp_folder):
             os.mkdir(self.tmp_folder)
-        fname = '{0}/cand{1}.traj'.format(self.tmp_folder,
-                                          a.info['confid'])
+        fname = '{}/cand{}.traj'.format(self.tmp_folder,
+                                        a.info['confid'])
         write(fname, a)
-        job_name = '{0}_{1}'.format(self.job_prefix, a.info['confid'])
-        f = open('tmp_job_file.job', 'w')
-        f.write(self.job_template_generator(job_name, fname))
-        f.close()
-        os.system('{0} tmp_job_file.job'.format(self.qsub_command))
+        job_name = '{}_{}'.format(self.job_prefix, a.info['confid'])
+        with open('tmp_job_file.job', 'w') as fd:
+            fd.write(self.job_template_generator(job_name, fname))
+        os.system(f'{self.qsub_command} tmp_job_file.job')
 
     def enough_jobs_running(self):
         """ Determines if sufficient jobs are running. """
@@ -73,14 +76,14 @@ class PBSQueueRun:
             to verify that a job needs to be started before
             calling the relax method."""
         self.__cleanup__()
-        p = Popen(['`which {0}` -u `whoami`'.format(self.qstat_command)],
+        p = Popen([f'`which {self.qstat_command}` -u `whoami`'],
                   shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
                   close_fds=True, universal_newlines=True)
         fout = p.stdout
         lines = fout.readlines()
         n_running = 0
-        for l in lines:
-            if l.find(self.job_prefix) != -1:
+        for line in lines:
+            if line.find(self.job_prefix) != -1:
                 n_running += 1
         return n_running
 
@@ -89,8 +92,8 @@ class PBSQueueRun:
             submitted to the queing system. """
         confs = self.dc.get_all_candidates_in_queue()
         for c in confs:
-            fdone = '{0}/cand{1}_done.traj'.format(self.tmp_folder,
-                                                   c)
+            fdone = '{}/cand{}_done.traj'.format(self.tmp_folder,
+                                                 c)
             if os.path.isfile(fdone) and os.path.getsize(fdone) > 0:
                 try:
                     a = []
@@ -103,13 +106,13 @@ class PBSQueueRun:
                         niter += 1
                     if len(a) == 0:
                         txt = 'Could not read candidate ' + \
-                            '{0} from the filesystem'.format(c)
-                        raise IOError(txt)
+                            f'{c} from the filesystem'
+                        raise OSError(txt)
                     a = a[-1]
                     a.info['confid'] = c
                     self.dc.add_relaxed_step(
                         a,
                         find_neighbors=self.find_neighbors,
                         perform_parametrization=self.perform_parametrization)
-                except IOError as e:
+                except OSError as e:
                     print(e)

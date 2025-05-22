@@ -1,10 +1,16 @@
+# fmt: off
 import numpy as np
 from pytest import mark
+
+from ase.calculators.fd import (
+    calculate_numerical_forces,
+    calculate_numerical_stress,
+)
 from ase.lattice.cubic import FaceCenteredCubic
 
 
 @mark.calculator_lite
-def test_energy_forces_stress(KIM):
+def test_energy_forces_stress(KIM, testdir):
     """
     To test that the calculator can produce correct energy and forces.  This
     is done by comparing the energy for an FCC argon lattice with an example
@@ -21,7 +27,8 @@ def test_energy_forces_stress(KIM):
         latticeconstant=3.0,
     )
 
-    # Perturb the x coordinate of the first atom by less than the cutoff distance
+    # Perturb the x coordinate of the first atom by less than the cutoff
+    # distance
     atoms.positions[0, 0] += 0.01
 
     calc = KIM("ex_model_Ar_P_Morse_07C")
@@ -36,8 +43,8 @@ def test_energy_forces_stress(KIM):
     energy_ref = 19.7196709065  # eV
 
     # Compute forces and virial stress numerically
-    forces_numer = calc.calculate_numerical_forces(atoms, d=0.0001)
-    stress_numer = calc.calculate_numerical_stress(atoms, d=0.0001, voigt=True)
+    forces_numer = calculate_numerical_forces(atoms, eps=0.0001)
+    stress_numer = calculate_numerical_stress(atoms, eps=0.0001, voigt=True)
 
     tol = 1e-6
     assert np.isclose(energy, energy_ref, tol)

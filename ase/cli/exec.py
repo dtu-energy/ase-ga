@@ -1,5 +1,8 @@
-from ase.io import read
-import runpy
+# fmt: off
+
+# Note:
+# Try to avoid module level import statements here to reduce
+# import time during CLI execution
 
 
 class CLICommand:
@@ -9,7 +12,7 @@ class CLICommand:
     the input file for each frame of the file. Either of -e or -E
     option should provided for evaluating code given as a string or
     from a file, respectively.
-    
+
     Variables which can be used inside the python code:
     - `index`: Index of the current Atoms object.
     - `atoms`: Current Atoms object.
@@ -44,11 +47,15 @@ class CLICommand:
 
     @staticmethod
     def run(args, parser):
+        import runpy
+
+        from ase.io import read
+
         if not (args.exec_code or args.exec_file):
             parser.error("At least one of '-e' or '-E' must be provided")
 
         if args.read_args:
-            args.read_args = eval("dict({0})"
+            args.read_args = eval("dict({})"
                                   .format(', '.join(args.read_args)))
 
         configs = []

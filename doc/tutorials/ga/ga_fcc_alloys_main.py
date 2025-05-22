@@ -1,11 +1,11 @@
+from ga_fcc_alloys_relax import relax
+
+from ase.ga.convergence import GenerationRepetitionConvergence
 from ase.ga.data import DataConnection
-from ase.ga.element_mutations import RandomElementMutation
 from ase.ga.element_crossovers import OnePointElementCrossover
+from ase.ga.element_mutations import RandomElementMutation
 from ase.ga.offspring_creator import OperationSelector
 from ase.ga.population import Population
-from ase.ga.convergence import GenerationRepetitionConvergence
-
-from ga_fcc_alloys_relax import relax
 
 # Specify the number of generations this script will run
 num_gens = 40
@@ -20,13 +20,14 @@ metals = db.get_param('metals')
 # Specify the procreation operators for the algorithm
 # Try and play with the mutation operators that move to nearby
 # places in the periodic table
-oclist = ([1, 1], [RandomElementMutation(metals),
-                   OnePointElementCrossover(metals)])
+oclist = (
+    [1, 1],
+    [RandomElementMutation(metals), OnePointElementCrossover(metals)],
+)
 operation_selector = OperationSelector(*oclist)
 
 # Pass parameters to the population instance
-pop = Population(data_connection=db,
-                 population_size=population_size)
+pop = Population(data_connection=db, population_size=population_size)
 
 # We form generations in this algorithm run and can therefore set
 # a convergence criteria based on generations

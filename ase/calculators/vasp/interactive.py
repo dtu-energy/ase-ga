@@ -1,16 +1,17 @@
-from subprocess import Popen, PIPE
+# fmt: off
+
+import os
+import time
+from subprocess import PIPE, Popen
 
 from ase.calculators.calculator import Calculator
+from ase.config import cfg
 from ase.io import read
 
 from .create_input import GenerateVaspInput
 
-import time
-import os
-import sys
 
-
-class VaspInteractive(GenerateVaspInput, Calculator):  # type: ignore
+class VaspInteractive(GenerateVaspInput, Calculator):  # type: ignore[misc]
     name = "VaspInteractive"
     implemented_properties = ['energy', 'forces', 'stress']
 
@@ -52,10 +53,10 @@ class VaspInteractive(GenerateVaspInput, Calculator):  # type: ignore
 
         if command is not None:
             self.command = command
-        elif 'VASP_COMMAND' in os.environ:
-            self.command = os.environ['VASP_COMMAND']
-        elif 'VASP_SCRIPT' in os.environ:
-            self.command = os.environ['VASP_SCRIPT']
+        elif 'VASP_COMMAND' in cfg:
+            self.command = cfg['VASP_COMMAND']
+        elif 'VASP_SCRIPT' in cfg:
+            self.command = cfg['VASP_SCRIPT']
         else:
             raise RuntimeError('Please set either command in calculator'
                                ' or VASP_COMMAND environment variable')
@@ -71,8 +72,7 @@ class VaspInteractive(GenerateVaspInput, Calculator):  # type: ignore
         if self.print_log:
             print(text, end=ending)
         self.process.stdin.write(text + ending)
-        if sys.version_info[0] >= 3:
-            self.process.stdin.flush()
+        self.process.stdin.flush()
 
     def _stdout(self, text):
         if self.txt is not None:
@@ -89,13 +89,9 @@ class VaspInteractive(GenerateVaspInput, Calculator):  # type: ignore
             self.initialize(atoms)
             self.write_input(atoms, directory=self.path)
             self._stdout("Starting VASP for initial step...\n")
-            if sys.version_info[0] >= 3:
-                self.process = Popen(self.command, stdout=PIPE,
-                                     stdin=PIPE, stderr=PIPE, cwd=self.path,
-                                     universal_newlines=True)
-            else:
-                self.process = Popen(self.command, stdout=PIPE,
-                                     stdin=PIPE, stderr=PIPE, cwd=self.path)
+            self.process = Popen(self.command, stdout=PIPE,
+                                 stdin=PIPE, stderr=PIPE, cwd=self.path,
+                                 universal_newlines=True)
         else:
             self._stdout("Inputting positions...\n")
             for atom in atoms.get_scaled_positions():
@@ -112,7 +108,7 @@ class VaspInteractive(GenerateVaspInput, Calculator):  # type: ignore
         # or it exited with an error. Either way, we need to raise an error.
 
         raise RuntimeError("VASP exited unexpectedly with exit code {}"
-                           "".format(self.subprocess.poll()))
+                           "".format(self.process.poll()))
 
     def close(self):
         if self.process is None:
@@ -143,10 +139,11 @@ class VaspInteractive(GenerateVaspInput, Calculator):  # type: ignore
 
         new = read(os.path.join(self.path, 'vasprun.xml'), index=-1)
 
-        self.results = {'free_energy': new.get_potential_energy(force_consistent=True),
-                        'energy': new.get_potential_energy(),
-                        'forces': new.get_forces()[self.resort],
-                        'stress': new.get_stress()}
+        self.results = {
+            'free_energy': new.get_potential_energy(force_consistent=True),
+            'energy': new.get_potential_energy(),
+            'forces': new.get_forces()[self.resort],
+            'stress': new.get_stress()}
 
     def __del__(self):
         self.close()

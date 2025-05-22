@@ -1,10 +1,13 @@
+# fmt: off
+
 """ Class for handling several simultaneous jobs.
     The class has been tested on linux and Mac OS X.
 """
-from subprocess import Popen, PIPE
 import os
 import time
-from ase.io import write, read
+from subprocess import PIPE, Popen
+
+from ase.io import read, write
 
 
 class ParallelLocalRun:
@@ -54,8 +57,8 @@ class ParallelLocalRun:
         self.dc.mark_as_queued(a)
         if not os.path.isdir(self.tmp_folder):
             os.mkdir(self.tmp_folder)
-        fname = '{0}/cand{1}.traj'.format(self.tmp_folder,
-                                          a.info['confid'])
+        fname = '{}/cand{}.traj'.format(self.tmp_folder,
+                                        a.info['confid'])
         write(fname, a)
         p = Popen(['python', self.calc_script, fname])
         self.running_pids.append([a.info['confid'], p.pid])
@@ -68,13 +71,13 @@ class ParallelLocalRun:
                   universal_newlines=True)
         (_, fout) = (p.stdin, p.stdout)
         lines = fout.readlines()
-        lines = [l for l in lines if l.find('defunct') == -1]
+        lines = [line for line in lines if line.find('defunct') == -1]
 
         stopped_runs = []
         for i in range(len(self.running_pids) - 1, -1, -1):
             found = False
-            for l in lines:
-                if l.find(str(self.running_pids[i][1])) != -1:
+            for line in lines:
+                if line.find(str(self.running_pids[i][1])) != -1:
                     found = True
                     break
             if not found:
@@ -85,8 +88,8 @@ class ParallelLocalRun:
         for (confid, _) in stopped_runs:
             try:
                 tf = self.tmp_folder
-                a = read('{0}/cand{1}_done.traj'.format(tf,
-                                                        confid))
+                a = read('{}/cand{}_done.traj'.format(tf,
+                                                      confid))
                 self.dc.add_relaxed_step(a)
-            except IOError as e:
+            except OSError as e:
                 print(e)

@@ -5,8 +5,8 @@ How to contribute
 =================
 
 Discussion of ASE development takes place on the
-:ref:`ase-user <contact>` mailing list and on the ``#ase``
-:ref:`IRC channel on freenode <contact>`.
+:ref:`ase-user <contact>` mailing list, the ``#ase``
+:ref:`Matrix channel <contact>`, and on Gitlab_.
 
 We welcome new developers who would like to help work on improving
 ASE.  If you would like to contribute, you should first tell us what
@@ -16,18 +16,18 @@ you want to work on.  Use the :ref:`mailing list <contact>` for that.
 GitLab repository
 =================
 
-All work on the source code takes place on https://about.gitlab.com/ using Git_.
+All work on the source code takes place on Gitlab_.
 
-.. _Git: https://git-scm.com/
+.. _Gitlab: https://gitlab.com/ase/ase
 
 
 Proposed git workflow
 ---------------------
 
-The workflow described here have two elements to them:
+The workflow described here has two elements:
 
 1. The guidelines of project git-branches as a whole.
-2. The workflow of the individual developer, i.e. the standard operating
+2. The workflow of the individual developer, i.e., the standard operating
    procedure when cloning, pulling, pushing etc.
 
 Only the latter will covered at the moment. When the developer team agree

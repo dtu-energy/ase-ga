@@ -1,9 +1,10 @@
+# fmt: off
 """Example, in order to run you must place a pseudopotential 'Na.psf' in
 the folder"""
 
-from ase.units import Ry, eV
-from ase.calculators.siesta import Siesta
 from ase import Atoms
+from ase.calculators.siesta import Siesta
+from ase.units import Ry, eV
 
 Na8 = Atoms('Na8',
             positions=[[-1.90503810, 1.56107288, 0.00000000],

@@ -1,3 +1,4 @@
+# fmt: off
 """Check reading of a sample v_sim .ascii file, and I/O consistency"""
 
 from ase.io import read
@@ -6,7 +7,7 @@ datafile = """\
 Fichier Ni3Au
   1.60800000000000e+01  0.00000000000000e+00  1.60800000000000e+01
   0.00000000000000e+00  0.00000000000000e+00  1.60800000000000e+01
-  
+
 !This is a sample atomic file in ascii format
 !All lines must contain at most 256 characters
 !1st line is arbitrary
@@ -19,7 +20,7 @@ Fichier Ni3Au
 !Please note that the name must contain at most 8 characters (non blank)
 !Please also note that real values are in free format
 ! HOWEVER, (Fortran) format like 1.03D+05 is NOT SUPPORTED
-!         and must be written    1.03E+05 (or 1.03e+05) 
+!         and must be written    1.03E+05 (or 1.03e+05)
 
   4.02000000000000e+00  4.02000000000000e+00  2.01000000000000e+00  Ni
   4.02000000000000e+00  4.02000000000000e+00  6.03000000000000e+00  Ni

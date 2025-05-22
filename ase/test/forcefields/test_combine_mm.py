@@ -1,23 +1,26 @@
+# fmt: off
+from math import cos, pi, sin
+
+import numpy as np
+
+from ase import Atoms, units
+from ase.calculators.combine_mm import CombineMM
+from ase.calculators.counterions import AtomicCounterIon as ACI
+from ase.calculators.fd import calculate_numerical_forces
+from ase.calculators.qmmm import LJInteractionsGeneral
+from ase.calculators.tip3p import TIP3P, angleHOH, rOH
+from ase.calculators.tip3p import epsilon0 as eps3
+from ase.calculators.tip3p import sigma0 as sig3
+from ase.calculators.tip4p import TIP4P
+from ase.calculators.tip4p import epsilon0 as eps4
+from ase.calculators.tip4p import sigma0 as sig4
+
+
 def test_combine_mm():
     """Test CombineMM forces by combining tip3p and tip4p with them selves, and
        by combining tip3p with tip4p and testing against numerical forces.
 
        Also test LJInterationsGeneral with CombineMM """
-
-    from math import cos, sin, pi
-    import numpy as np
-    from ase import Atoms
-    from ase import units
-    from ase.calculators.counterions import AtomicCounterIon as ACI
-    from ase.calculators.combine_mm import CombineMM
-    from ase.calculators.qmmm import LJInteractionsGeneral
-    from ase.calculators.tip3p import TIP3P, rOH, angleHOH
-    from ase.calculators.tip4p import TIP4P
-    from ase.calculators.tip3p import epsilon0 as eps3
-    from ase.calculators.tip3p import sigma0 as sig3
-    from ase.calculators.tip4p import epsilon0 as eps4
-    from ase.calculators.tip4p import sigma0 as sig4
-
 
     def make_atoms():
         r = rOH
@@ -35,7 +38,6 @@ def test_combine_mm():
         dimer.positions[3:, 0] += 2.8
 
         return dimer
-
 
     dimer = make_atoms()
     rc = 3.0
@@ -55,11 +57,10 @@ def test_combine_mm():
                                rc=rc, width=1.0)
 
         F2 = dimer.get_forces()
-        dF = F1-F2
+        dF = F1 - F2
         print(TIPnP)
         print(dF)
         assert abs(dF).max() < 1e-8
-
 
     # Also check a TIP3P/TIP4P combination against numerical forces:
     eps1 = np.array([eps3, 0, 0])
@@ -70,12 +71,11 @@ def test_combine_mm():
                            sig1, eps1, sig2, eps2, rc, 1.0)
 
     F2 = dimer.get_forces()
-    Fn = dimer.calc.calculate_numerical_forces(dimer, 1e-7)
-    dF = F2-Fn
+    Fn = calculate_numerical_forces(dimer, 1e-7)
+    dF = F2 - Fn
     print('TIP3P/TIP4P')
     print(dF)
     assert abs(dF).max() < 1e-8
-
 
     # LJInteractionsGeneral with CombineMM.
     # As it is used within EIQMMM, but avoiding long calculations for tests.
@@ -90,9 +90,8 @@ def test_combine_mm():
 
     mmatoms = ions + dimer
 
-    sigNa = 1.868 * (1.0/2.0)**(1.0/6.0) * 10
+    sigNa = 1.868 * (1.0 / 2.0)**(1.0 / 6.0) * 10
     epsNa = 0.00277 * units.kcal / units.mol
-
 
     # ACI for atoms 0 and 1 of the MM subsystem (2 and 3 for the total system)
     # 1 atom 'per molecule'. The rest is TIP4P, 3 atoms per molecule:
@@ -116,7 +115,7 @@ def test_combine_mm():
 
     lj = LJInteractionsGeneral(sig_qm, eps_qm, sig_mm, eps_mm, 2)
 
-    ecomb, fcomb1, fcomb2 = lj.calculate(faux_qm,
+    ecomb, _fcomb1, _fcomb2 = lj.calculate(faux_qm,
                                          mmatoms,
                                          np.array([0, 0, 0]))
 
@@ -134,19 +133,19 @@ def test_combine_mm():
     sig_mm = sig_mm[1]
     eps_mm = eps_mm[1]
     lj = LJInteractionsGeneral(sig_qm, eps_qm, sig_mm, eps_mm, 4)
-    ea, fa1, fa2 = lj.calculate(faux_qm + ions, mmatoms, np.array([0, 0, 0]))
+    ea, _fa1, _fa2 = lj.calculate(faux_qm + ions, mmatoms, np.array([0, 0, 0]))
 
     # B:
     lj = LJInteractionsGeneral(sig_qm[:2], eps_qm[:2],
                                sig_qm[:2], eps_qm[:2], 2, 2)
 
-    eb, fb1, fb2, = lj.calculate(faux_qm, ions, np.array([0, 0, 0]))
+    eb, _fb1, _fb2, = lj.calculate(faux_qm, ions, np.array([0, 0, 0]))
 
     # C:
     lj = LJInteractionsGeneral(sig_qm[:2], eps_qm[:2],
                                sig_mm, eps_mm,
                                2, 3)
 
-    ec, fc1, fc2, = lj.calculate(ions, dimer, np.array([0, 0, 0]))
+    ec, _fc1, _fc2, = lj.calculate(ions, dimer, np.array([0, 0, 0]))
 
     assert ecomb - (ea + eb) + ec == 0

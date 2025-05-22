@@ -1,5 +1,7 @@
-import pytest
+# fmt: off
 import os
+
+import pytest
 
 
 def installed():

@@ -1,10 +1,12 @@
-from ase.units import Ry
-from ase.io import read
-from ase.calculators.siesta.parameters import Species, PAOBasisBlock
-from ase.calculators.siesta.siesta import Siesta
-from ase.optimize import QuasiNewton
-from ase import Atoms
+# fmt: off
 import numpy as np
+
+from ase import Atoms
+from ase.calculators.siesta.parameters import PAOBasisBlock, Species
+from ase.calculators.siesta.siesta import Siesta
+from ase.io import read
+from ase.optimize import QuasiNewton
+from ase.units import Ry
 
 traj = 'bud.traj'
 

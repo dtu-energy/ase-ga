@@ -1,30 +1,25 @@
-# type: ignore
-import re
-import sys
-from collections import namedtuple
-from functools import partial
+# fmt: off
 
-import numpy as np
+# type: ignore
+import platform
+import re
 import tkinter as tk
 import tkinter.ttk as ttk
-from tkinter.messagebox import askokcancel as ask_question
-from tkinter.messagebox import showerror, showwarning, showinfo
+from collections import namedtuple
+from functools import partial
 from tkinter.filedialog import LoadFileDialog, SaveFileDialog
+from tkinter.messagebox import askokcancel as ask_question
+from tkinter.messagebox import showerror, showinfo, showwarning
+
+import numpy as np
 
 from ase.gui.i18n import _
-
 
 __all__ = [
     'error', 'ask_question', 'MainWindow', 'LoadFileDialog', 'SaveFileDialog',
     'ASEGUIWindow', 'Button', 'CheckButton', 'ComboBox', 'Entry', 'Label',
     'Window', 'MenuItem', 'RadioButton', 'RadioButtons', 'Rows', 'Scale',
-    'showinfo', 'showwarning', 'SpinBox', 'Text']
-
-
-if sys.platform == 'darwin':
-    mouse_buttons = {2: 3, 3: 2}
-else:
-    mouse_buttons = {}
+    'showinfo', 'showwarning', 'SpinBox', 'Text', 'set_windowtype']
 
 
 def error(title, message=None):
@@ -40,6 +35,7 @@ def about(name, version, webpage):
             _('Version') + ': ' + version,
             _('Web-page') + ': ' + webpage]
     win = Window(_('About'))
+    set_windowtype(win.win, 'dialog')
     win.add(Text('\n'.join(text)))
 
 
@@ -49,11 +45,24 @@ def helpbutton(text):
 
 def helpwindow(text):
     win = Window(_('Help'))
+    set_windowtype(win.win, 'dialog')
     win.add(Text(text))
 
 
+def set_windowtype(win, wmtype):
+    # introduced tweak to fix GUI on WSL, https://gitlab.com/ase/ase/-/issues/1511
+    if (platform.platform().find('WSL') and
+    platform.platform().find('microsoft')) != -1:
+        # only on X11, but not on WSL
+        # WM_TYPE, for possible settings see
+        # https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45623487848608
+        # you want dialog, normal or utility most likely
+        if win._windowingsystem == "x11":
+            win.wm_attributes('-type', wmtype)
+
+
 class BaseWindow:
-    def __init__(self, title, close=None):
+    def __init__(self, title, close=None, wmtype='normal'):
         self.title = title
         if close:
             self.win.protocol('WM_DELETE_WINDOW', close)
@@ -62,6 +71,7 @@ class BaseWindow:
 
         self.things = []
         self.exists = True
+        set_windowtype(self.win, wmtype)
 
     def close(self):
         self.win.destroy()
@@ -82,9 +92,9 @@ class BaseWindow:
 
 
 class Window(BaseWindow):
-    def __init__(self, title, close=None):
+    def __init__(self, title, close=None, wmtype='normal'):
         self.win = tk.Toplevel()
-        BaseWindow.__init__(self, title, close)
+        BaseWindow.__init__(self, title, close, wmtype)
 
 
 class Widget:
@@ -207,7 +217,7 @@ class SpinBox(Widget):
 
     def create(self, parent):
         self.widget = self.creator(parent)
-        self.widget.bind('<Return>', lambda event: self.callback())
+        bind_enter(self.widget, lambda event: self.callback())
         self.value = self.initial
         return self.widget
 
@@ -252,7 +262,7 @@ class Entry(Widget):
         self.entry = self.creator(parent)
         self.value = self.initial
         if self.callback:
-            self.entry.bind('<Return>', self.callback)
+            bind_enter(self.entry, self.callback)
         return self.entry
 
     @property
@@ -407,9 +417,16 @@ class MenuItem:
         self.underline = label.find('_')
         self.label = label.replace('_', '')
 
+        is_macos = platform.system() == 'Darwin'
+
         if key:
             if key[:4] == 'Ctrl':
-                self.keyname = '<Control-{0}>'.format(key[-1].lower())
+                self.keyname = f'<Control-{key[-1].lower()}>'
+            elif key[:3] == 'Alt':
+                if is_macos:
+                    self.keyname = f'<Command-{key[-1].lower()}>'
+                else:
+                    self.keyname = f'<Alt-{key[-1].lower()}>'
             else:
                 self.keyname = {
                     'Home': '<Home>',
@@ -427,7 +444,10 @@ class MenuItem:
         else:
             self.callback = callback
 
-        self.key = key
+        if is_macos and key is not None:
+            self.key = key.replace('Alt', 'Command')
+        else:
+            self.key = key
         self.value = value
         self.choices = choices
         self.submenu = submenu
@@ -447,7 +467,7 @@ class MenuItem:
                                  accelerator=self.key,
                                  var=var)
 
-            def callback(key):
+            def callback(key):  # noqa: F811
                 var.set(not var.get())
                 self.callback()
 
@@ -534,7 +554,7 @@ class MainWindow(BaseWindow):
 
 def bind(callback, modifier=None):
     def handle(event):
-        event.button = mouse_buttons.get(event.num, event.num)
+        event.button = event.num
         event.key = event.keysym.lower()
         event.modifier = modifier
         callback(event)
@@ -545,6 +565,12 @@ class ASEFileChooser(LoadFileDialog):
     def __init__(self, win, formatcallback=lambda event: None):
         from ase.io.formats import all_formats, get_ioformat
         LoadFileDialog.__init__(self, win, _('Open ...'))
+        # fix tkinter not automatically setting dialog type
+        # remove from Python3.8+
+        # see https://github.com/python/cpython/pull/25187
+        # and https://bugs.python.org/issue43655
+        # and https://github.com/python/cpython/pull/25592
+        set_windowtype(self.top, 'dialog')
         labels = [_('Automatic')]
         values = ['']
 
@@ -570,7 +596,7 @@ class ASEFileChooser(LoadFileDialog):
 
 def show_io_error(filename, err):
     showerror(_('Read error'),
-              _('Could not read {}: {}'.format(filename, err)))
+              _(f'Could not read {filename}: {err}'))
 
 
 class ASEGUIWindow(MainWindow):
@@ -594,17 +620,17 @@ class ASEGUIWindow(MainWindow):
         self.status = tk.Label(self.win, text='', anchor=tk.W)
         self.status.pack(side=tk.BOTTOM, fill=tk.X)
 
-        right = mouse_buttons.get(3, 3)
         self.canvas.bind('<ButtonPress>', bind(press))
-        self.canvas.bind('<B1-Motion>', bind(move))
-        self.canvas.bind('<B{right}-Motion>'.format(right=right), bind(move))
+        for button in range(1, 4):
+            self.canvas.bind(f'<B{button}-Motion>', bind(move))
         self.canvas.bind('<ButtonRelease>', bind(release))
         self.canvas.bind('<Control-ButtonRelease>', bind(release, 'ctrl'))
         self.canvas.bind('<Shift-ButtonRelease>', bind(release, 'shift'))
         self.canvas.bind('<Configure>', resize)
         if not config['swap_mouse']:
-            self.canvas.bind('<Shift-B{right}-Motion>'.format(right=right),
-                             bind(scroll))
+            for button in (2, 3):
+                self.canvas.bind(f'<Shift-B{button}-Motion>',
+                                 bind(scroll))
         else:
             self.canvas.bind('<Shift-B1-Motion>',
                              bind(scroll))
@@ -647,15 +673,15 @@ class ASEGUIWindow(MainWindow):
             outline = 'black'
             width = 1
         self.canvas.create_arc(*tuple(int(x) for x in bbox),
-                                start=start,
-                                extent=extent,
-                                fill=color,
-                                outline=outline,
-                                width=width)
-
+                               start=start,
+                               extent=extent,
+                               fill=color,
+                               outline=outline,
+                               width=width)
 
     def line(self, bbox, width=1):
-        self.canvas.create_line(*tuple(int(x) for x in bbox), width=width)
+        self.canvas.create_line(*tuple(int(x) for x in bbox), width=width,
+                                fill='black')
 
     def text(self, x, y, txt, anchor=tk.CENTER, color='black'):
         anchor = {'SE': tk.SE}.get(anchor, anchor)
@@ -665,3 +691,13 @@ class ASEGUIWindow(MainWindow):
         id = self.win.after(int(time * 1000), callback)
         # Quick'n'dirty object with a cancel() method:
         return namedtuple('Timer', 'cancel')(lambda: self.win.after_cancel(id))
+
+
+def bind_enter(widget, callback):
+    """Preferred incantation for binding Return/Enter.
+
+    Bindings work differently on different OSes.  This ensures that
+    keypad and normal Return work the same on Linux particularly."""
+
+    widget.bind('<Return>', callback)
+    widget.bind('<KP_Enter>', callback)

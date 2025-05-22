@@ -1,9 +1,12 @@
+# fmt: off
 import filecmp
+
 import pytest
+
 from ase.build import molecule
-from ase.io import read, write
 from ase.calculators.calculator import compare_atoms
 from ase.calculators.emt import EMT
+from ase.io import read, write
 
 
 def atoms_equal(atoms1, atoms2):

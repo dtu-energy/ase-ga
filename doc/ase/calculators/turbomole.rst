@@ -92,13 +92,6 @@ calculator and associating it with an atoms object, e.g.:
     mol.calc = calc
     calc.initialize()
 
-Optionally the calculator will be associated with the atoms object in one step
-with constructing the calculator:
-
-.. code:: python
-
-    calc = Turbomole(atoms=mol, **params)
-
 
 
 
@@ -199,6 +192,17 @@ parameter:
   calc = Turbomole(restart=True, task='gradient', **params)
 
 
+Caveat about using the restart mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When restart mode is set, the calculator reads and parses all relevant data
+groups from the *control* file. The format of the `control` file, especially
+of some data groups, does not allow to guarantee that the parsing is always
+successful and correct. The parsing process may fail and raise an exception
+or the parameters read might be wrong. If you encounter errors due to restart
+mode please file an issue.
+
+
 Policies for files in the working directory
 -------------------------------------------
 
@@ -271,6 +275,7 @@ geometry optimization iterations   int         None           None          True
                             task   str       energy           None          True
                            title   str           ''           None         False
                     total charge   int            0           None         False
+               transition vector   int         None           None          True
                              uhf  bool         None           None         False
            use basis set library  bool         True           None         False
                          use dft  bool         True           None         False
@@ -401,7 +406,8 @@ QM system:
     params = {'esp fit': 'kollman', 'multiplicity': 1}
     dimer = s22['Water_dimer']
     qm_mol = dimer[0:3]
-    calc = Turbomole(atoms=qm_mol, **params)
+    calc = Turbomole(**params)
+    qm_mol.calc = calc
     calc.embed(
         charges=[-0.76, 0.38,  0.38],
         positions=dimer.positions[3:6]

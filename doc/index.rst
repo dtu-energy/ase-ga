@@ -37,11 +37,11 @@ BFGS:   3  19:10:51    -31.492848     0.0023
 Supported :mod:`Calculators <ase.calculators>`
 ==============================================
 
-|abinit| |Asap| |Atomistica| |CASTEP| |CP2K| |CRYSTAL| |deMon| |dftb|
+|ABACUS| |abinit| |Asap| |Atomistica| |BigDFT| |CASTEP| |CP2K| |CRYSTAL| |DeePMD-kit| |deMon| |dftb|
 |dftd4| |DFTK| |elk| |exciting| |EMT|
 |fhi-aims| |fleur| |gamess_us| |gpaw| |gromacs|
 |hotbit| |jdftx| |kim| |lammps| |nwchem|
-|octopus| |onetep| |openmx| |psi4| |qchem| |q_espresso| |siesta| |turbomole| |vasp|
+|octopus| |onetep| |openmx| |plumed|  |psi4| |qchem| |q_espresso| |siesta| |turbomole| |vasp|
 |xtb| |orca|
 :mod:`ACE-Molecule <ase.calculators.acemolecule>`
 :mod:`~ase.calculators.amber`
@@ -62,6 +62,16 @@ Mopac_
 
 News
 ====
+
+* :ref:`ASE version 3.25.0 <releasenotes>` released (11 April 2025).
+
+* :ref:`ASE version 3.24.0 <releasenotes>` released (28 December 2024).
+
+* :ref:`ASE version 3.23.0 <releasenotes>` released (31 May 2024).
+
+* :ref:`ASE version 3.22.1 <releasenotes>` released (1 December 2021).
+
+* :ref:`ASE version 3.22.0 <releasenotes>` released (24 June 2021).
 
 * :ref:`ASE version 3.21.1 <releasenotes>` released (24 January 2021).
 
@@ -189,6 +199,9 @@ Contents
     faq
     ASE Workshop 2019 <workshop/workshop>
 
+.. |ABACUS| image:: static/abacus.png
+   :target: https://gitlab.com/1041176461/ase-abacus
+   :align: middle 
 .. |abinit| image:: static/abinit.png
    :target: ase/calculators/abinit.html
    :align: middle
@@ -197,6 +210,9 @@ Contents
    :align: middle
 .. |Atomistica| image:: static/atomistica.png
    :target: https://github.com/Atomistica/atomistica
+   :align: middle
+.. |BigDFT| image:: static/bigdft.png
+   :target: https://bigdft.org/
    :align: middle
 .. |CASTEP| image:: static/castep.png
    :target: ase/calculators/castep.html
@@ -207,6 +223,10 @@ Contents
 .. |CRYSTAL| image:: static/crystal.png
    :target: ase/calculators/crystal.html
    :align: middle
+.. |DeePMD-kit| image:: static/deepmd-kit.png
+   :target: https://github.com/deepmodeling/deepmd-kit
+   :align: middle
+   :height: 75px
 .. |deMon| image:: static/demon.png
    :target: ase/calculators/demon.html
    :align: middle
@@ -238,7 +258,7 @@ Contents
    :target: ase/calculators/gamess_us.html
    :align: middle
 .. |gpaw| image:: static/gpaw.png
-   :target: https://wiki.fysik.dtu.dk/gpaw/
+   :target: https://gpaw.readthedocs.io/
    :align: middle
 .. |gromacs| image:: static/gromacs.png
    :target: ase/calculators/gromacs.html
@@ -266,6 +286,9 @@ Contents
    :align: middle
 .. |openmx| image:: static/openmx.png
    :target: ase/calculators/openmx.html
+   :align: middle
+.. |plumed| image:: static/plumed.png
+   :target: ase/calculators/plumed.html
    :align: middle
 .. |psi4| image:: static/psi4.png
    :target: ase/calculators/psi4.html

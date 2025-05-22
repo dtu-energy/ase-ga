@@ -1,10 +1,14 @@
+# fmt: off
+
 import numpy as np
+
+from ase.geometry import find_mic
 
 
 def rotation_matrix_from_points(m0, m1):
     """Returns a rigid transformation/rotation matrix that minimizes the
     RMSD between two set of points.
-    
+
     m0 and m1 should be (3, npoints) numpy arrays with
     coordinates as columns::
 
@@ -17,7 +21,7 @@ def rotation_matrix_from_points(m0, m1):
 
     The rotation matrix is computed using quaternion
     algebra as detailed in::
-        
+
         Melander et al. J. Chem. Theory Comput., 2015, 11,1055
     """
 
@@ -48,10 +52,10 @@ def rotation_matrix_from_points(m0, m1):
 
     return R
 
-    
+
 def quaternion_to_matrix(q):
     """Returns a rotation matrix.
-    
+
     Computed from a unit quaternion Input as (4,) numpy array.
     """
 
@@ -70,14 +74,26 @@ def quaternion_to_matrix(q):
 
 def minimize_rotation_and_translation(target, atoms):
     """Minimize RMSD between atoms and target.
-    
-    Rotate and translate atoms to best match target.  For more details, see::
-        
+
+    Rotate and translate atoms to best match target. Disregards rotation if PBC
+    are found. Does not accound for changes in the cell. For more details, see::
+
         Melander et al. J. Chem. Theory Comput., 2015, 11,1055
     """
 
     p = atoms.get_positions()
     p0 = target.get_positions()
+
+    if sum(atoms.pbc) != 0:
+        # maybe we can raise a warning about cell changes here since we don't
+        # account for them?
+
+        # is this the best form of *find_mic version to use?
+        dp_min, _dp_len = find_mic(p - p0, cell=target.cell, pbc=target.pbc)
+
+        # add displacement without net translation
+        p = p0 + dp_min - np.mean(dp_min, axis=0)
+        R = np.eye(3)  # null rotation
 
     # centeroids to origin
     c = np.mean(p, axis=0)
@@ -85,7 +101,8 @@ def minimize_rotation_and_translation(target, atoms):
     c0 = np.mean(p0, axis=0)
     p0 -= c0
 
-    # Compute rotation matrix
-    R = rotation_matrix_from_points(p.T, p0.T)
+    if sum(atoms.pbc) == 0:
+        # Compute rotation matrix
+        R = rotation_matrix_from_points(p.T, p0.T)
 
     atoms.set_positions(np.dot(p, R.T) + c0)

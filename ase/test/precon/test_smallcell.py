@@ -1,4 +1,6 @@
+# fmt: off
 import pytest
+
 from ase.atoms import Atoms
 from ase.optimize.precon import PreconLBFGS
 

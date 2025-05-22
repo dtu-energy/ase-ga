@@ -1,3 +1,5 @@
+# fmt: off
+
 from math import cos, sin, sqrt
 from os.path import basename
 
@@ -7,10 +9,11 @@ from ase.calculators.calculator import PropertyNotImplementedError
 from ase.data import atomic_numbers
 from ase.data.colors import jmol_colors
 from ase.geometry import complete_cell
+from ase.gui.colors import ColorWindow
+from ase.gui.i18n import ngettext
+from ase.gui.render import Render
 from ase.gui.repeat import Repeat
 from ase.gui.rotate import Rotate
-from ase.gui.render import Render
-from ase.gui.colors import ColorWindow
 from ase.gui.utils import get_magmoms
 from ase.utils import rotate
 
@@ -54,11 +57,20 @@ def get_cell_coordinates(cell, shifted=False):
 
 
 def get_bonds(atoms, covalent_radii):
-    from ase.neighborlist import NeighborList
-    nl = NeighborList(covalent_radii * 1.5,
-                      skin=0, self_interaction=False)
-    nl.update(atoms)
-    nbonds = nl.nneighbors + nl.npbcneighbors
+    from ase.neighborlist import PrimitiveNeighborList
+
+    nl = PrimitiveNeighborList(
+        covalent_radii * 1.5,
+        skin=0.0,
+        self_interaction=False,
+        bothways=False,
+    )
+    nl.update(atoms.pbc, atoms.get_cell(complete=True), atoms.positions)
+    number_of_neighbors = sum(indices.size for indices in nl.neighbors)
+    number_of_pbc_neighbors = sum(
+        offsets.any(axis=1).sum() for offsets in nl.displacements
+    )  # sum up all neighbors that have non-zero supercell offsets
+    nbonds = number_of_neighbors + number_of_pbc_neighbors
 
     bonds = np.empty((nbonds, 5), int)
     if nbonds == 0:
@@ -84,22 +96,20 @@ def get_bonds(atoms, covalent_radii):
 class View:
     def __init__(self, rotations):
         self.colormode = 'jmol'  # The default colors
-        self.labels = None
         self.axes = rotate(rotations)
         self.configured = False
         self.frame = None
 
         # XXX
         self.colormode = 'jmol'
-        self.colors = {}
-
-        for i, rgb in enumerate(jmol_colors):
-            self.colors[i] = ('#{0:02X}{1:02X}{2:02X}'
-                              .format(*(int(x * 255) for x in rgb)))
-
+        self.colors = {
+            i: ('#{:02X}{:02X}{:02X}'.format(*(int(x * 255) for x in rgb)))
+            for i, rgb in enumerate(jmol_colors)
+        }
         # scaling factors for vectors
         self.force_vector_scale = self.config['force_vector_scale']
         self.velocity_vector_scale = self.config['velocity_vector_scale']
+        self.magmom_vector_scale = self.config['magmom_vector_scale']
 
         # buttons
         self.b1 = 1  # left
@@ -121,18 +131,29 @@ class View:
 
         fname = self.images.filenames[frame]
         if fname is None:
-            title = 'ase.gui'
+            header = 'ase.gui'
         else:
-            title = basename(fname)
+            # fname is actually not necessarily the filename but may
+            # contain indexing like filename@0
+            header = basename(fname)
 
-        self.window.title = title
+        images_loaded_text = ngettext(
+            'one image loaded',
+            '{} images loaded',
+            len(self.images)
+        ).format(len(self.images))
 
-        self.call_observers()
+        self.window.title = f'{header} — {images_loaded_text}'
 
         if focus:
             self.focus()
         else:
             self.draw()
+
+    def get_bonds(self, atoms):
+        # this method exists rather than just using the standalone function
+        # so that it can be overridden by external libraries
+        return get_bonds(atoms, self.get_covalent_radii(atoms))
 
     def set_atoms(self, atoms):
         natoms = len(atoms)
@@ -146,7 +167,7 @@ class View:
         if self.showing_bonds():
             atomscopy = atoms.copy()
             atomscopy.cell *= self.images.repeat[:, np.newaxis]
-            bonds = get_bonds(atomscopy, self.get_covalent_radii(atoms))
+            bonds = self.get_bonds(atomscopy)
         else:
             bonds = np.empty((0, 5), int)
 
@@ -163,29 +184,29 @@ class View:
         self.X_cell = self.X[natoms:natoms + len(B1)]
         self.X_bonds = self.X[natoms + len(B1):]
 
-        if 1:  # if init or frame != self.frame:
-            cell = atoms.cell
-            ncellparts = len(B1)
-            nbonds = len(bonds)
+        cell = atoms.cell
+        ncellparts = len(B1)
+        nbonds = len(bonds)
 
-            if 1:  # init or (atoms.cell != self.atoms.cell).any():
-                self.X_cell[:] = np.dot(B1, cell)
-                self.B = np.empty((ncellparts + nbonds, 3))
-                self.B[:ncellparts] = np.dot(B2, cell)
+        self.X_cell[:] = np.dot(B1, cell)
+        self.B = np.empty((ncellparts + nbonds, 3))
+        self.B[:ncellparts] = np.dot(B2, cell)
 
-            if nbonds > 0:
-                P = atoms.positions
-                Af = self.images.repeat[:, np.newaxis] * cell
-                a = P[bonds[:, 0]]
-                b = P[bonds[:, 1]] + np.dot(bonds[:, 2:], Af) - a
-                d = (b**2).sum(1)**0.5
-                r = 0.65 * self.get_covalent_radii()
-                x0 = (r[bonds[:, 0]] / d).reshape((-1, 1))
-                x1 = (r[bonds[:, 1]] / d).reshape((-1, 1))
-                self.X_bonds[:] = a + b * x0
-                b *= 1.0 - x0 - x1
-                b[bonds[:, 2:].any(1)] *= 0.5
-                self.B[ncellparts:] = self.X_bonds + b
+        if nbonds > 0:
+            P = atoms.positions
+            Af = self.images.repeat[:, np.newaxis] * cell
+            a = P[bonds[:, 0]]
+            b = P[bonds[:, 1]] + np.dot(bonds[:, 2:], Af) - a
+            d = (b**2).sum(1)**0.5
+            r = 0.65 * self.get_covalent_radii()
+            x0 = (r[bonds[:, 0]] / d).reshape((-1, 1))
+            x1 = (r[bonds[:, 1]] / d).reshape((-1, 1))
+            self.X_bonds[:] = a + b * x0
+            b *= 1.0 - x0 - x1
+            b[bonds[:, 2:].any(1)] *= 0.5
+            self.B[ncellparts:] = self.X_bonds + b
+
+        self.obs.set_atoms.notify()
 
     def showing_bonds(self):
         return self.window['toggle-show-bonds']
@@ -196,22 +217,24 @@ class View:
     def toggle_show_unit_cell(self, key=None):
         self.set_frame()
 
-    def update_labels(self):
+    def get_labels(self):
         index = self.window['show-labels']
         if index == 0:
-            self.labels = None
-        elif index == 1:
-            self.labels = list(range(len(self.atoms)))
-        elif index == 2:
-            self.labels = list(get_magmoms(self.atoms))
-        elif index == 4:
+            return None
+
+        if index == 1:
+            return list(range(len(self.atoms)))
+
+        if index == 2:
+            return list(get_magmoms(self.atoms))
+
+        if index == 4:
             Q = self.atoms.get_initial_charges()
-            self.labels = ['{0:.4g}'.format(q) for q in Q]
-        else:
-            self.labels = self.atoms.get_chemical_symbols()
+            return [f'{q:.4g}' for q in Q]
+
+        return self.atoms.symbols
 
     def show_labels(self):
-        self.update_labels()
         self.draw()
 
     def toggle_show_axes(self, key=None):
@@ -234,6 +257,9 @@ class View:
     def toggle_show_forces(self, key=None):
         self.draw()
 
+    def toggle_show_magmoms(self, key=None):
+        self.draw()
+
     def hide_selected(self):
         self.images.visible[self.images.selected] = False
         self.draw()
@@ -250,7 +276,7 @@ class View:
 
     def colors_window(self, key=None):
         win = ColorWindow(self)
-        self.register_vulnerable(win)
+        self.obs.new_atoms.register(win.notify_atoms_changed)
         return win
 
     def focus(self, x=None):
@@ -352,8 +378,8 @@ class View:
             scalars = np.ma.array(self.get_color_scalars())
             indices = np.clip(((scalars - cmin) / (cmax - cmin) * N +
                                0.5).astype(int),
-                              0, N - 1)
-        return [colorswhite[i] for i in indices.filled(N)]
+                              0, N - 1).filled(N)
+        return [colorswhite[i] for i in indices]
 
     def get_color_scalars(self, frame=None):
         if self.colormode == 'tag':
@@ -415,6 +441,21 @@ class View:
             f = self.get_forces()
             vector_arrays.append(f * self.force_vector_scale)
 
+        if self.window['toggle-show-magmoms']:
+            magmom = get_magmoms(self.atoms)
+            # Turn this into a 3D vector if it is a scalar
+            magmom_vecs = []
+            for i in range(len(magmom)):
+                if isinstance(magmom[i], (int, float)):
+                    magmom_vecs.append(np.array([0, 0, magmom[i]]))
+                elif isinstance(magmom[i], np.ndarray) and len(magmom[i]) == 3:
+                    magmom_vecs.append(magmom[i])
+                else:
+                    raise TypeError('Magmom is not a 3-component vector '
+                                'or a scalar')
+            magmom_vecs = np.array(magmom_vecs)
+            vector_arrays.append(magmom_vecs * 0.5 * self.magmom_vector_scale)
+
         for array in vector_arrays:
             array[:] = np.dot(array, axes) + X[:n]
 
@@ -429,7 +470,7 @@ class View:
         ncell = len(self.X_cell)
         bond_linewidth = self.scale * 0.15
 
-        self.update_labels()
+        labels = self.get_labels()
 
         if self.arrowkey_mode == self.ARROWKEY_MOVE:
             movecolor = GREEN
@@ -442,7 +483,7 @@ class View:
                 if visible[a]:
                     try:
                         kinds = self.atoms.arrays['spacegroup_kinds']
-                        site_occ = self.atoms.info['occupancy'][kinds[a]]
+                        site_occ = self.atoms.info['occupancy'][str(kinds[a])]
                         # first an empty circle if a site is not fully occupied
                         if (np.sum([v for v in site_occ.values()])) < 1.0:
                             fill = '#ffffff'
@@ -471,7 +512,7 @@ class View:
                         # legacy behavior
                         # Draw the atoms
                         if (self.moving and a < len(self.move_atoms_mask)
-                            and self.move_atoms_mask[a]):
+                                and self.move_atoms_mask[a]):
                             circle(movecolor, False,
                                    A[a, 0] - 4, A[a, 1] - 4,
                                    A[a, 0] + ra + 4, A[a, 1] + ra + 4)
@@ -480,10 +521,10 @@ class View:
                                A[a, 0], A[a, 1], A[a, 0] + ra, A[a, 1] + ra)
 
                     # Draw labels on the atoms
-                    if self.labels is not None:
+                    if labels is not None:
                         self.window.text(A[a, 0] + ra / 2,
                                          A[a, 1] + ra / 2,
-                                         str(self.labels[a]))
+                                         str(labels[a]))
 
                     # Draw cross on constrained atoms
                     if constrained[a]:
@@ -519,7 +560,9 @@ class View:
         self.window.update()
 
         if status:
-            self.status(self.atoms)
+            self.status.status(self.atoms)
+
+        self.obs.draw.notify()
 
     def arrow(self, coords, width):
         line = self.window.line
@@ -554,8 +597,7 @@ class View:
 
     def draw_frame_number(self):
         x, y = self.window.size
-        self.window.text(x, y, '{0}/{1}'.format(self.frame + 1,
-                                                len(self.images)),
+        self.window.text(x, y, '{}'.format(self.frame),
                          anchor='SE')
 
     def release(self, event):
@@ -603,7 +645,7 @@ class View:
                 selected[:] = False
             selected[indices] = True
             if (len(indices) == 1 and
-                indices[0] not in self.images.selected_ordered):
+                    indices[0] not in self.images.selected_ordered):
                 selected_ordered += [indices[0]]
             elif len(indices) > 1:
                 selected_ordered = []

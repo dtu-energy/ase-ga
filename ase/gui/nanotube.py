@@ -1,3 +1,5 @@
+# fmt: off
+
 """Window for setting up Carbon nanotubes and similar tubes.
 """
 
@@ -6,7 +8,6 @@ import ase.gui.ui as ui
 from ase.build import nanotube
 from ase.gui.i18n import _
 from ase.gui.widgets import Element, pybutton
-
 
 introtext = _("""\
 Set up a Carbon nanotube by specifying the (n,m) roll-up vector.
@@ -27,6 +28,7 @@ label_template = _('{natoms} atoms, diameter: {diameter:.3f} Å, '
 
 class SetupNanotube:
     """Window for setting up a (Carbon) nanotube."""
+
     def __init__(self, gui):
         self.element = Element('C', self.make)
         self.bondlength = ui.SpinBox(1.42, 0.0, 10.0, 0.01, self.make)
@@ -35,12 +37,12 @@ class SetupNanotube:
         self.length = ui.SpinBox(1, 1, 100, 1, self.make)
         self.description = ui.Label('')
 
-        win = self.win = ui.Window(_('Nanotube'))
+        win = self.win = ui.Window(_('Nanotube'), wmtype='utility')
         win.add(ui.Text(introtext))
         win.add(self.element)
         win.add([_('Bond length: '),
                  self.bondlength,
-                 _(u'Å')])
+                 _('Å')])
         win.add(_('Select roll-up vector (n,m) and tube length:'))
         win.add(['n:', self.n,
                  'm:', self.m,
@@ -59,7 +61,7 @@ class SetupNanotube:
             self.atoms = None
             self.python = None
             self.description.text = ''
-            return
+            return None
 
         n = self.n.value
         m = self.m.value

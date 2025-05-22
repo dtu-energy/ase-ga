@@ -1,10 +1,13 @@
+# fmt: off
+import numpy as np
+
+from ase import Atoms
+from ase.calculators.test import FreeElectrons
+from ase.dft.kpoints import get_special_points
+
+
 def test_hex():
     """Test band structure from different variations of hexagonal cells."""
-    import numpy as np
-    from ase import Atoms
-    from ase.calculators.test import FreeElectrons
-    from ase.dft.kpoints import get_special_points
-
     firsttime = True
     for cell in [[[1, 0, 0], [0.5, 3**0.5 / 2, 0], [0, 0, 1]],
                  [[1, 0, 0], [-0.5, 3**0.5 / 2, 0], [0, 0, 1]],
@@ -15,7 +18,6 @@ def test_hex():
         lat = a.cell.get_bravais_lattice()
         assert lat.name == 'HEX'
         print(repr(a.cell.get_bravais_lattice()))
-        #print(crystal_structure_from_cell(a.cell))
         r = a.cell.reciprocal()
         k = get_special_points(a.cell)['K']
         print(np.dot(k, r))
@@ -34,4 +36,3 @@ def test_hex():
                       labelcoords - labelcoords1,
                       e_skn - e_skn1]:
                 assert abs(d).max() < 1e-13
-        # bs.plot()

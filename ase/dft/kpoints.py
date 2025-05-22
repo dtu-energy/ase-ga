@@ -1,3 +1,5 @@
+# fmt: off
+
 import re
 import warnings
 from typing import Dict
@@ -5,14 +7,14 @@ from typing import Dict
 import numpy as np
 
 import ase  # Annotations
-from ase.utils import jsonable
 from ase.cell import Cell
+from ase.utils import jsonable
 
 
 def monkhorst_pack(size):
     """Construct a uniform sampling of k-space of given size."""
     if np.less_equal(size, 0).any():
-        raise ValueError('Illegal size: %s' % list(size))
+        raise ValueError(f'Illegal size: {list(size)}')
     kpts = np.indices(size).transpose((1, 2, 3, 0)).reshape((-1, 3))
     return (kpts + 0.5) / size - 0.5
 
@@ -45,10 +47,57 @@ def get_monkhorst_pack_size_and_offset(kpts):
         offsets = kpts - kpts0
 
         # All offsets must be identical:
-        if (offsets.ptp(axis=0) < 1e-9).all():
+        if (np.ptp(offsets, axis=0) < 1e-9).all():
             return size, offsets[0].copy()
 
     raise ValueError('Not an ASE-style Monkhorst-Pack grid!')
+
+
+def mindistance2monkhorstpack(atoms, *,
+                              min_distance,
+                              maxperdim=16,
+                              even=True):
+    """Find a Monkhorst-Pack grid (nx, ny, nz) with lowest number of
+       k-points in the *reducible* Brillouin zone, which still satisfying
+       a given minimum distance (`min_distance`) condition in real space
+       (nx, ny, nz)-supercell.
+
+       Compared to ase.calculators.calculator kptdensity2monkhorstpack
+       routine, this metric is based on a physical quantity (real space
+       distance), and it doesn't depend on non-physical quantities, such as
+       the cell vectors, since basis vectors can be always transformed
+       with integer determinant one matrices. In other words, it is
+       invariant to particular choice of cell representations.
+
+       On orthogonal cells, min_distance = 2 * np.pi * kptdensity.
+    """
+    return _mindistance2monkhorstpack(atoms.cell, atoms.pbc,
+                                      min_distance, maxperdim, even)
+
+
+def _mindistance2monkhorstpack(cell, pbc_c, min_distance, maxperdim, even):
+    from ase import Atoms
+    from ase.neighborlist import NeighborList
+
+    step = 2 if even else 1
+    nl = NeighborList([min_distance / 2], skin=0.0,
+                      self_interaction=False, bothways=False)
+
+    def check(nkpts_c):
+        nl.update(Atoms('H', cell=cell @ np.diag(nkpts_c), pbc=pbc_c))
+        return len(nl.get_neighbors(0)[1]) == 0
+
+    def generate_mpgrids():
+        ranges = [range(step, maxperdim + 1, step)
+                  if pbc else range(1, 2) for pbc in pbc_c]
+        nkpts_nc = np.column_stack([*map(np.ravel, np.meshgrid(*ranges))])
+        yield from sorted(nkpts_nc, key=np.prod)
+
+    try:
+        return next(filter(check, generate_mpgrids()))
+    except StopIteration:
+        raise ValueError('Could not find a proper k-point grid for the system.'
+                         ' Try running with a larger maxperdim.')
 
 
 def get_monkhorst_shape(kpts):
@@ -150,9 +199,10 @@ def resolve_custom_points(pathspec, special_points, eps):
     def name_generator():
         counter = 0
         while True:
-            name = 'Kpt{}'.format(counter)
+            name = f'Kpt{counter}'
             yield name
             counter += 1
+
     custom_names = name_generator()
 
     labelseq = []
@@ -167,7 +217,7 @@ def resolve_custom_points(pathspec, special_points, eps):
                 continue
 
             kpt = np.asarray(kpt, float)
-            if not kpt.shape == (3,):
+            if kpt.shape != (3,):
                 raise ValueError(f'Not a valid kpoint: {kpt}')
 
             for key, val in special_points.items():
@@ -187,12 +237,13 @@ def resolve_custom_points(pathspec, special_points, eps):
     assert last == ','
     return ''.join(labelseq), special_points
 
+
 def normalize_special_points(special_points):
     dct = {}
     for name, value in special_points.items():
         if not isinstance(name, str):
             raise TypeError('Expected name to be a string')
-        if not np.shape(value) == (3,):
+        if np.shape(value) != (3,):
             raise ValueError('Expected 3 kpoint coordinates')
         dct[name] = np.asarray(value, float)
     return dct
@@ -220,6 +271,7 @@ class BandPath:
     BandPath(path='GXMGRX,MR', cell=[3x3], special_points={GMRX}, kpts=[40x3])
 
     """
+
     def __init__(self, cell, kpts=None,
                  special_points=None, path=None):
         if kpts is None:
@@ -293,10 +345,9 @@ class BandPath:
         # We should insert a check.
         # I wonder which operations are valid?  They won't be valid
         # if they change lengths, volume etc.
-        special_points = {}
-        for name, value in self.special_points.items():
-            special_points[name] = value @ op
-
+        special_points = {
+            name: value @ op for name, value in self.special_points.items()
+        }
         return BandPath(op.T @ self.cell, kpts=self.kpts @ op,
                         special_points=special_points,
                         path=self.path)
@@ -321,8 +372,8 @@ class BandPath:
         if special_points is None:
             special_points = self.special_points
 
-        pathnames, pathcoords = resolve_kpt_path_string(path, special_points)
-        kpts, x, X = paths2kpts(pathcoords, self.cell, npoints, density)
+        _pathnames, pathcoords = resolve_kpt_path_string(path, special_points)
+        kpts, _x, _X = paths2kpts(pathcoords, self.cell, npoints, density)
         return BandPath(self.cell, kpts, path=path,
                         special_points=special_points)
 
@@ -494,7 +545,7 @@ DEFAULT_KPTS_DENSITY = 5    # points per 1/Angstrom
 
 
 def paths2kpts(paths, cell, npoints=None, density=None):
-    if not(npoints is None or density is None):
+    if npoints is not None and density is not None:
         raise ValueError('You may define npoints or density, but not both.')
     points = np.concatenate(paths)
     dists = points[1:] - points[:-1]

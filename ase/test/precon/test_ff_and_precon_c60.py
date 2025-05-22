@@ -1,14 +1,13 @@
+# fmt: off
 import numpy as np
 import pytest
 
 from ase.build import molecule
-
-from ase.utils.ff import Morse, Angle, Dihedral, VdW
 from ase.calculators.ff import ForceField
-
-from ase.optimize.precon.neighbors import get_neighbours
-from ase.optimize.precon.lbfgs import PreconLBFGS
 from ase.optimize.precon import FF
+from ase.optimize.precon.lbfgs import PreconLBFGS
+from ase.optimize.precon.neighbors import get_neighbours
+from ase.utils.ff import Angle, Dihedral, Morse, VdW
 
 
 @pytest.fixture(scope='module')
@@ -41,11 +40,13 @@ def forcefield_params(atoms0):
     vdws = []
 
     # create neighbor list
-    i_list, j_list, d_list, fixed_atoms = get_neighbours(atoms=a, r_cut=cutoff)
+    i_list, j_list, _d_list, _fixed_atoms = get_neighbours(
+        atoms=a, r_cut=cutoff)
+
     for i, j in zip(i_list, j_list):
         neighbor_list[i].append(j)
-    for i in range(len(neighbor_list)):
-        neighbor_list[i].sort()
+    for neighbor in neighbor_list:
+        neighbor.sort()
 
     # create lists of morse, bending and torsion interactions
     for i in range(len(a)):
@@ -61,9 +62,9 @@ def forcefield_params(atoms0):
                                     a0=angle_a0, cos=True))
                 vdw_list[j, k] = vdw_list[k, j] = False
                 for ll in range(kk + 1, len(neighbor_list[i])):
-                    l = neighbor_list[i][ll]
+                    L = neighbor_list[i][ll]
                     dihedrals.append(Dihedral(atomi=j, atomj=i, atomk=k,
-                                              atoml=l,
+                                              atoml=L,
                                               k=dihedral_k))
 
     # create list of van der Waals interactions
@@ -76,12 +77,12 @@ def forcefield_params(atoms0):
     return dict(morses=morses, angles=angles, dihedrals=dihedrals, vdws=vdws)
 
 
-@pytest.fixture
+@pytest.fixture()
 def calc(forcefield_params):
     return ForceField(**forcefield_params)
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms(atoms0, calc):
     atoms = atoms0.copy()
     atoms.calc = calc
@@ -91,8 +92,11 @@ def atoms(atoms0, calc):
 
 ref_energy = 17.238525
 
-#@pytest.mark.skip('FAILS WITH PYAMG')
-@pytest.mark.slow
+# @pytest.mark.skip('FAILS WITH PYAMG')
+
+
+@pytest.mark.optimize()
+@pytest.mark.slow()
 def test_opt_with_precon(atoms, forcefield_params):
     kw = dict(forcefield_params)
     kw.pop('vdws')

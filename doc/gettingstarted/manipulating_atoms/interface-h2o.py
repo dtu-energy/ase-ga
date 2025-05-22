@@ -1,10 +1,11 @@
 # creates: WL.png, Ni111slab2x2.png, WL_rot_c.png, WL_rot_a.png, WL_wrap.png, interface-h2o-wrap.png
+# flake8: noqa
 import runpy
 
 import numpy as np
 
-from ase.io import read, write
 from ase.build import fcc111
+from ase.io import read, write
 
 runpy.run_path('WL.py')
 
@@ -24,10 +25,9 @@ write('Ni111slab2x2.png', slab)
 print(cell)
 
 # Rotate the unit cell first to get the close lattice match with the slab.
-W.set_cell([[cellW[1, 1], 0, 0],
-            [0, cellW[0, 0], 0],
-            cellW[2]],
-           scale_atoms=False)
+W.set_cell(
+    [[cellW[1, 1], 0, 0], [0, cellW[0, 0], 0], cellW[2]], scale_atoms=False
+)
 write('WL_rot_c.png', W)
 
 # Now rotate atoms just like the unit cell

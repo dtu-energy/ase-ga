@@ -1,10 +1,15 @@
-from ase.gui.i18n import _
-import ase.gui.ui as ui
-from ase.io.pov import write_pov, get_bondpairs
+# fmt: off
+
 from os import unlink
+
 import numpy as np
 
+import ase.gui.ui as ui
+from ase.gui.i18n import _
+from ase.io.pov import get_bondpairs, write_pov
+
 pack = error = Help = 42
+
 
 class Render:
     texture_list = ['ase2', 'ase3', 'glass', 'simple', 'pale',
@@ -13,7 +18,8 @@ class Render:
 
     def __init__(self, gui):
         self.gui = gui
-        self.win = win = ui.Window(_('Render current view in povray ... '))
+        self.win = win = ui.Window(
+            _('Render current view in povray ... '), wmtype='utility')
         win.add(ui.Label(_("Rendering %d atoms.") % len(self.gui.atoms)))
 
         guiwidth, guiheight = self.get_guisize()
@@ -35,7 +41,7 @@ class Render:
         self.basename_widget = ui.Entry(width=30, value=formula,
                                         callback=self.update_outputname)
         win.add([ui.Label(_('Output basename: ')), self.basename_widget])
-        self.povray_executable = ui.Entry(width=30,value='povray')
+        self.povray_executable = ui.Entry(width=30, value='povray')
         win.add([ui.Label(_('POVRAY executable')), self.povray_executable])
         self.outputname_widget = ui.Label()
         win.add([ui.Label(_('Output filename: ')), self.outputname_widget])
@@ -75,7 +81,7 @@ class Render:
 
     def ok(self, *args):
         print("Rendering with povray:")
-        guiwidth, guiheight = self.get_guisize()
+        _guiwidth, guiheight = self.get_guisize()
         width = self.width_widget.value
         height = self.height_widget.value
         # (Do width/height become inconsistent upon gui resize?  Not critical)
@@ -116,20 +122,24 @@ class Render:
             povray_settings['textures'] = self.get_textures()
             povray_settings['colors'] = self.gui.get_colors(rgb=True)
             atoms = self.gui.images.get_atoms(frame)
-            radii_scale = 1                           # atom size multiplier
-            if self.gui.window['toggle-show-bonds']:  # self.gui.config['show_bonds'] is always False
+            radii_scale = 1  # atom size multiplier
+            # self.gui.config['show_bonds'] is always False
+            if self.gui.window['toggle-show-bonds']:
                 print(" | Building bonds")
                 povray_settings['bondatoms'] = get_bondpairs(atoms)
-                radii_scale = 0.65                    # value from draw method of View class
+                radii_scale = 0.65  # value from draw method of View class
             filename = self.update_outputname()
             print(" | Writing files for image", filename, "...")
-            plotting_var_settings['radii'] = radii_scale*self.gui.get_covalent_radii()
+            plotting_var_settings['radii'] = radii_scale * \
+                self.gui.get_covalent_radii()
             renderer = write_pov(
                 filename, atoms,
                 povray_settings=povray_settings,
                 **plotting_var_settings)
             if self.run_povray_widget.value:
-                renderer.render(povray_executable=self.povray_executable.value,clean_up=False)
+                renderer.render(
+                    povray_executable=self.povray_executable.value,
+                    clean_up=False)
             if not self.keep_files_widget.value:
                 print(" | Deleting temporary file ", filename)
                 unlink(filename)
@@ -150,25 +160,25 @@ class Render:
         fname = '.'.join(tokens)
         self.outputname_widget.text = fname
         return fname
-        #if self.movie.get_active():
+        # if self.movie.get_active():
         #    while len(movie_index) + len(str(self.iframe)) < len(
         #            str(self.nimages)):
         #        movie_index += '0'
         #    movie_index = '.' + movie_index + str(self.iframe)
-        #name = self.basename.get_text() + movie_index + '.pov'
-        #self.outputname.set_text(name)
+        # name = self.basename.get_text() + movie_index + '.pov'
+        # self.outputname.set_text(name)
 
     def get_textures(self):
         return [self.texture_widget.value] * len(self.gui.atoms)
-        #natoms = len(self.gui.atoms)
-        #textures = natoms * [
-        #self.texture_list[0]  #self.default_texture.get_active()]
-        #]
-        #for mat in self.materials:
+        # natoms = len(self.gui.atoms)
+        # textures = natoms * [
+        # self.texture_list[0]  #self.default_texture.get_active()]
+        # ]
+        # for mat in self.materials:
         #    sel = mat[1]
         #    t = self.finish_list[mat[2].get_active()]
         #    if mat[0]:
         #        for n, val in enumerate(sel):
         #            if val:
         #                textures[n] = t
-        #return textures
+        # return textures

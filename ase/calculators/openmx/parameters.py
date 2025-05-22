@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 The ASE Calculator for OpenMX <http://www.openmx-square.org>: Python interface
 to the software package for nano-scale material simulations based on density
@@ -17,11 +19,10 @@ functional theories.
     You should have received a copy of the GNU Lesser General Public License
     along with ASE.  If not, see <http://www.gnu.org/licenses/>.
 """
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from ase.calculators.calculator import Parameters
 from ase.calculators.openmx.default_settings import default_dictionary
-
 
 # Keys that have length 3
 tuple_integer_keys = [
@@ -255,7 +256,7 @@ omx_parameter_defaults: Dict[str, Any] = dict(
     maxiter=None,
     energy_cutoff=None,  # Please make sure written in eV unit not Ry
     kpts=None,           # Default value is set to (4, 4, 4) in 'scf_kgrid'
-    band_kpts=tuple(),   # To separate monkhorst and band kpts
+    band_kpts=(),   # To separate monkhorst and band kpts
     eigensolver=None,
     spinpol=None,
     convergence=None,

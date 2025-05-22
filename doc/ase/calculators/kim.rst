@@ -152,6 +152,50 @@ LAMMPS-based simulator model bundled with the KIM API,
 In this case, because ``simulator`` was not specified, the default behavior is that the
 object ``calc`` returned is an instance of :class:`ase.calculators.lammpslib.LAMMPSlib`.
 
+Finally, if one instantiates the calculator for a KIM Portable Model that registers its
+parameters, they can be accessed or mutated using the ``get_parameters`` and
+``set_parameters`` methods.  For example, to print the components of the
+parameters ``epsilons`` and ``sigmas`` in the :doi:`Lennard-Jones universal
+model <10.25950/962b4967>` corresponding to Mo-Mo (index 4879), Mo-S
+(index 2006) and S-S (index 1980) interactions, one can do the following:
+
+::
+
+    model = "LJ_ElliottAkerson_2015_Universal__MO_959249795837_003"
+    calc = KIM(model)
+    print(calc.get_parameters(epsilons=[4879, 2006, 1980],
+                              sigmas=[4879, 2006, 1980])
+
+This will print a dictionary whose keys are the parameter names and whose values
+are lists that each contain two sublists.  The first contains the set of indices
+in the parameters arrays that were requested and the second contains the
+corresponding parameter values:
+
+::
+
+   {'epsilons': [[4879, 2006, 1980],
+                 [4.47499, 4.421814057295943, 4.36927]],
+    'sigmas': [[4879, 2006, 1980],
+               [2.74397, 2.30743, 1.87089]]}
+
+Or, suppose we want to set the values of the components of the ``epsilons``
+parameter of the same model corresponding to Mo-Mo, Mo-S, and S-S to 5.0, 4.5,
+and 4.0, respectively.  In this case, a syntax similar is used:
+
+::
+
+    model = "LJ_ElliottAkerson_2015_Universal__MO_959249795837_003"
+    calc = KIM(model)
+    calc.set_parameters(epsilons=[[4879, 2006, 1980],
+                                  [5.0, 4.5, 4.0]])
+
+.. note::
+   For models with parameter arrays that contain many components, such as the
+   Lennard-Jones universal model above, one must refer to the documentation of
+   the model itself (or its model driver, if it uses one) in order to ascertain
+   the meaning of the different components of the parameter arrays.
+
+
 .. _LAMMPS: http://lammps.sandia.gov
 
 .. rubric:: Footnotes

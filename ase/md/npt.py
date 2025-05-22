@@ -1,4 +1,8 @@
+# fmt: off
+
 '''Constant pressure/stress and temperature dynamics.
+
+**This dynamics is not recommended due to stability problems.**
 
 Combined Nose-Hoover and Parrinello-Rahman dynamics, creating an NPT
 (or N,stress,T) ensemble.
@@ -19,14 +23,14 @@ using a centered difference method [3].
     simulations with centered-difference Stoermer algorithms.", Physical
     Review A, 41, p. 4552 (1990).
 '''
-
 import sys
 import weakref
+from typing import IO, Optional, Tuple, Union
 
 import numpy as np
 
+from ase import Atoms, units
 from ase.md.md import MolecularDynamics
-from ase import units
 
 linalg = np.linalg
 
@@ -39,12 +43,22 @@ class NPT(MolecularDynamics):
     classname = "NPT"  # Used by the trajectory.
     _npt_version = 2   # Version number, used for Asap compatibility.
 
-    def __init__(self, atoms,
-                 timestep, temperature=None, externalstress=None,
-                 ttime=None, pfactor=None,
-                 *, temperature_K=None,
-                 mask=None, trajectory=None, logfile=None, loginterval=1,
-                 append_trajectory=False):
+    def __init__(
+        self,
+        atoms: Atoms,
+        timestep: float,
+        temperature: Optional[float] = None,
+        externalstress: Optional[float] = None,
+        ttime: Optional[float] = None,
+        pfactor: Optional[float] = None,
+        *,
+        temperature_K: Optional[float] = None,
+        mask: Optional[Union[Tuple[int], np.ndarray]] = None,
+        trajectory: Optional[str] = None,
+        logfile: Optional[Union[IO, str]] = None,
+        loginterval: int = 1,
+        append_trajectory: bool = False,
+    ):
         '''Constant pressure/stress and temperature dynamics.
 
         Combined Nose-Hoover and Parrinello-Rahman dynamics, creating an
@@ -80,14 +94,21 @@ class NPT(MolecularDynamics):
             Characteristic timescale of the thermostat, in ASE internal units
             Set to None to disable the thermostat.
 
+            WARNING: Not specifying ttime sets it to None, disabling the
+            thermostat.
+
         pfactor: float
             A constant in the barostat differential equation.  If
             a characteristic barostat timescale of ptime is
-            desired, set pfactor to ptime^2 * B (where ptime is in units matching
+            desired, set pfactor to ptime^2 * B
+            (where ptime is in units matching
             eV, Å, u; and B is the Bulk Modulus, given in eV/Å^3).
             Set to None to disable the barostat.
             Typical metallic bulk moduli are of the order of
             100 GPa or 0.6 eV/A^3.
+
+            WARNING: Not specifying pfactor sets it to None, disabling the
+            barostat.
 
         mask: None or 3-tuple or 3x3 nparray (optional)
             Optional argument.  A tuple of three integers (0 or 1),
@@ -134,16 +155,13 @@ class NPT(MolecularDynamics):
                                    append_trajectory=append_trajectory)
         # self.atoms = atoms
         # self.timestep = timestep
-        if externalstress is None:
+        if externalstress is None and pfactor is not None:
             raise TypeError("Missing 'externalstress' argument.")
-        if ttime is None:
-            raise TypeError("Missing 'ttime' argument.")
-        if pfactor is None:
-            raise TypeError("Missing 'pfactor' argument.")
         self.zero_center_of_mass_momentum(verbose=1)
         self.temperature = units.kB * self._process_temperature(
             temperature, temperature_K, 'eV')
-        self.set_stress(externalstress)
+        if externalstress is not None:
+            self.set_stress(externalstress)
         self.set_mask(mask)
         self.eta = np.zeros((3, 3), float)
         self.zeta = 0.0
@@ -232,7 +250,7 @@ class NPT(MolecularDynamics):
         self.frac_traceless = fracTraceless
 
     def get_strain_rate(self):
-        """Get the strain rate as an upper-triangular 3x3 matrix.
+        """Get the strain rate as a triangular 3x3 matrix.
 
         This includes the fluctuations in the shape of the computational box.
 
@@ -240,14 +258,14 @@ class NPT(MolecularDynamics):
         return np.array(self.eta, copy=1)
 
     def set_strain_rate(self, rate):
-        """Set the strain rate.  Must be an upper triangular 3x3 matrix.
+        """Set the strain rate.  Must be a triangular 3x3 matrix.
 
         If you set a strain rate along a direction that is "masked out"
         (see ``set_mask``), the strain rate along that direction will be
         maintained constantly.
         """
-        if not (rate.shape == (3, 3) and self._isuppertriangular(rate)):
-            raise ValueError("Strain rate must be an upper triangular matrix.")
+        if not (rate.shape == (3, 3) and self._triangular(rate)):
+            raise ValueError("Strain rate must be a triangular matrix.")
         self.eta = rate
         if self.initialized:
             # Recalculate h_past and eta_past so they match the current value.
@@ -257,8 +275,20 @@ class NPT(MolecularDynamics):
         "Get the elapsed time."
         return self.timeelapsed
 
-    def run(self, steps):
-        """Perform a number of time steps."""
+    def irun(self, steps):
+        """Run dynamics algorithm as generator.
+
+        Parameters
+        ----------
+        steps : int
+            Number of dynamics steps to be run.
+
+        Yields
+        ------
+        complete : bool
+            True if the maximum number of steps are reached.
+        """
+
         if not self.initialized:
             self.initialize()
         else:
@@ -266,10 +296,25 @@ class NPT(MolecularDynamics):
                 raise NotImplementedError(
                     "You have modified the atoms since the last timestep.")
 
-        for i in range(steps):
-            self.step()
-            self.nsteps += 1
-            self.call_observers()
+        yield from super().irun(steps)
+
+    def run(self, steps):
+        """Perform a number of time steps.
+
+        Parameters
+        ----------
+        steps : int
+            Number of dynamics steps to be run.
+
+        Yields
+        ------
+        complete : bool
+            True if the maximum number of steps are reached.
+        """
+
+        for complete in self.irun(steps):
+            pass
+        return complete
 
     def have_the_atoms_been_changed(self):
         "Checks if the user has modified the positions or momenta of the atoms"
@@ -313,18 +358,17 @@ class NPT(MolecularDynamics):
 
         if self.frac_traceless == 1:
             eta_future = self.eta_past + self.mask * \
-                self._makeuppertriangular(deltaeta)
+                self._maketriangular(deltaeta)
         else:
             trace_part, traceless_part = self._separatetrace(
-                self._makeuppertriangular(deltaeta))
-            eta_future = self.eta_past + trace_part + self.frac_traceless * traceless_part
+                self._maketriangular(deltaeta))
+            eta_future = (self.eta_past + trace_part +
+                          self.frac_traceless * traceless_part)
 
         deltazeta = 2 * dt * self.tfact * (self.atoms.get_kinetic_energy() -
                                            self.desiredEkin)
         zeta_future = self.zeta_past + deltazeta
         # Advance time
-        # print "Max change in scaled positions:", max(abs(self.q_future.flat - self.q.flat))
-        # print "Max change in basis set", max(abs((h_future - self.h).flat))
         self.timeelapsed += dt
         self.h_past = self.h
         self.h = h_future
@@ -340,12 +384,13 @@ class NPT(MolecularDynamics):
         self.zeta_integrated += dt * self.zeta
         force = self.forcecalculator()
         self._calculate_q_future(force)
-        self.atoms.set_momenta(np.dot(self.q_future - self.q_past, self.h / (2 * dt)) *
-                               self._getmasses())
+        self.atoms.set_momenta(
+            np.dot(self.q_future - self.q_past, self.h / (2 * dt)) *
+            self._getmasses())
         # self.stresscalculator()
 
     def forcecalculator(self):
-        return self.atoms.get_forces()
+        return self.atoms.get_forces(md=True)
 
     def stresscalculator(self):
         return self.atoms.get_stress(include_ideal_gas=True)
@@ -364,14 +409,10 @@ class NPT(MolecularDynamics):
         dt = self.dt
         atoms = self.atoms
         self.h = self._getbox()
-        if not self._isuppertriangular(self.h):
-            print("I am", self)
-            print("self.h:")
-            print(self.h)
-            print("Min:", min((self.h[1, 0], self.h[2, 0], self.h[2, 1])))
-            print("Max:", max((self.h[1, 0], self.h[2, 0], self.h[2, 1])))
+        if not self._istriangular(self.h):
             raise NotImplementedError(
-                "Can (so far) only operate on lists of atoms where the computational box is an upper triangular matrix.")
+                f"Can (so far) only operate on lists of atoms where the "
+                f"computational box is a triangular matrix. {self.h}")
         self.inv_h = linalg.inv(self.h)
         # The contents of the q arrays should migrate in parallel simulations.
         # self._make_special_q_arrays()
@@ -447,7 +488,8 @@ class NPT(MolecularDynamics):
         h = self._getbox()
         if max(abs((h - self.h).ravel())) > limit:
             raise RuntimeError(
-                "The unit cell of the atoms does not match the unit cell stored in the file.")
+                "The unit cell of the atoms does not match "
+                "the unit cell stored in the file.")
         self.inv_h = linalg.inv(self.h)
         self.q = np.dot(self.atoms.get_positions(), self.inv_h) - 0.5
         self._calculate_q_past_and_future()
@@ -575,7 +617,8 @@ class NPT(MolecularDynamics):
         beta = dt * np.dot(self.h, np.dot(self.eta + 0.5 * self.zeta * id3,
                                           self.inv_h))
         inv_b = linalg.inv(beta + id3)
-        self.q_future = np.dot(2 * self.q + np.dot(self.q_past, beta - id3) + alpha,
+        self.q_future = np.dot(2 * self.q +
+                               np.dot(self.q_past, beta - id3) + alpha,
                                inv_b)
 
     def _calculate_q_past_and_future(self):
@@ -588,7 +631,7 @@ class NPT(MolecularDynamics):
         dt = self.dt
         for i in range(2):
             self.q_past = self.q - dt * np.dot(p / m, self.inv_h)
-            self._calculate_q_future(self.atoms.get_forces())
+            self._calculate_q_future(self.atoms.get_forces(md=True))
             p = np.dot(self.q_future - self.q_past, self.h / (2 * dt)) * m
             e = ekin(p)
             if e < 1e-5:
@@ -605,24 +648,44 @@ class NPT(MolecularDynamics):
                         * (self.stresscalculator() - self.externalstress))
         if self.frac_traceless == 1:
             self.eta_past = self.eta - self.mask * \
-                self._makeuppertriangular(deltaeta)
+                self._maketriangular(deltaeta)
         else:
             trace_part, traceless_part = self._separatetrace(
-                self._makeuppertriangular(deltaeta))
-            self.eta_past = self.eta - trace_part - self.frac_traceless * traceless_part
+                self._maketriangular(deltaeta))
+            self.eta_past = (self.eta - trace_part -
+                             self.frac_traceless * traceless_part)
 
-    def _makeuppertriangular(self, sixvector):
-        "Make an upper triangular matrix from a 6-vector."
-        return np.array(((sixvector[0], sixvector[5], sixvector[4]),
-                         (0,            sixvector[1], sixvector[3]),
-                         (0,            0,            sixvector[2])))
-
-    def _isuppertriangular(self, m):
-        "Check that a matrix is on upper triangular form."
+    @staticmethod
+    def _isuppertriangular(m) -> bool:
+        "Check that a 3x3 matrix is of upper triangular form."
         return m[1, 0] == m[2, 0] == m[2, 1] == 0.0
 
+    @classmethod
+    def _islowertriangular(cls, m) -> bool:
+        "Check that a 3x3 matrix is of lower triangular form."
+        return cls._isuppertriangular(m.T)
+
+    @classmethod
+    def _istriangular(cls, m) -> bool:
+        "Check that a 3x3 matrix is of triangular form."
+        return cls._isuppertriangular(m) or cls._islowertriangular(m)
+
+    def _maketriangular(self, sixvector):
+        "Make 3x3 triangular matrix from a 6-vector."
+        if self._isuppertriangular(self.h):
+            return np.array(((sixvector[0], sixvector[5], sixvector[4]),
+                            (0, sixvector[1], sixvector[3]),
+                            (0, 0, sixvector[2])))
+
+        if self._islowertriangular(self.h):
+            return np.array(((sixvector[0], 0, 0),
+                            (sixvector[5], sixvector[1], 0),
+                            (sixvector[4], sixvector[3], sixvector[2])))
+
     def _calculateconstants(self):
-        "(Re)calculate some constants when pfactor, ttime or temperature have been changed."
+        """(Re)calculate some constants when pfactor,
+        ttime or temperature have been changed."""
+
         n = self._getnatoms()
         if self.ttime is None:
             self.tfact = 0.0
@@ -645,7 +708,7 @@ class NPT(MolecularDynamics):
     # A few helper methods, which have been placed in separate methods
     # so they can be replaced in the parallel version.
     def _synchronize(self):
-        """Synchronizes eta, h and zeta on all processors in a parallel simulation.
+        """Synchronize eta, h and zeta on all processors.
 
         In a parallel simulation, eta, h and zeta are communicated
         from the master to all slaves, to prevent numerical noise from
@@ -653,7 +716,7 @@ class NPT(MolecularDynamics):
 
         In a serial simulation, do nothing.
         """
-        pass  # This is a serial simulation object.  Do nothing.
+        # This is a serial simulation object.  Do nothing.
 
     def _getnatoms(self):
         """Get the number of atoms.

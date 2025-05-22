@@ -4,10 +4,429 @@
 Release notes
 =============
 
+A comprehensive list of changes can be found in the :ref:`changelog`.
+
 Git master branch
 =================
 
 :git:`master <>`.
+
+* No changes yet
+
+
+Version 3.25.0
+==============
+
+11 April 2025: :git:`3.25.0 <../3.25.0>`
+
+Version 3.24.0
+==============
+
+28 December 2024: :git:`3.24.0 <../3.24.0>`
+
+Requirements
+------------
+
+* The minimum supported Python version has increased to 3.9 (:mr:`3473`)
+
+Breaking changes
+----------------
+
+* The ``master`` parameter to each Optimizer is now passed via ``**kwargs`` and so becomes keyword-only. (:mr:`3424`)
+* Removed legacy ``read_cell`` and ``write_cell`` functions from ase.io.castep. (:mr:`3435`)
+* Removed deprecated ``force_consistent`` option from Optimizer (:mr:`3424`)
+* :class:`ase.spectrum.band_structure.BandStructurePlot`: the ``plot_with_colors()`` has been removed and its features merged into the ``plot()`` method.
+
+Highlights
+----------
+
+* Major improvements to :func:`~ase.build.find_optimal_cell_shape`: improve target metric; ensure rotationally invariant results; avoid negative determinants; improved performance via vectorisation (:mr:`3404`, :mr:`3441`, :mr:`3474`). The ``norm`` argument to :func:`ase.build.supercells.get_deviation_from_optimal_cell_shape` is now deprecated.
+* Added new :class:`~ase.calculators.fd.FiniteDifferenceCalculator`, which wraps other calculator for finite-difference forces and strains (:mr:`3509`)
+* Added two new MD thermostats: :class:`ase.md.bussi.Bussi` (:mr:`3350`) and :class:`ase.md.nose_hoover_chain.NoseHooverChainNVT` (:mr:`3508`)
+* Added atom-projected partial phonon dos to :func:`ase.phonons.Phonons.get_dos` (:mr:`3460`)
+* New module :mod:`ase.pourbaix` written to replace
+  :class:`ase.phasediagram.Pourbaix` (:mr:`3280`), with improved energy definition and visualisation
+
+
+Version 3.23.0
+==============
+
+31 May 2024: :git:`3.23.0 <../3.23.0>`
+
+* Add :class:`~ase.constraints.FixSubsetCom` to fix the center of mass of the
+  specified subset of atoms (:mr:`3193`).
+
+* Add the ``indices`` option to :meth:`ase.Atoms.get_center_of_mass` to compute
+  the center of mass of the specified subset of atoms (:mr:`3193`).
+
+* All saddle-point search and minimum-energy path methods have been moved
+  into a new :mod:`ase.mep` module. You should start importing from this
+  location; e.g., ``from ase.mep import NEB, DyNEB`` (:mr:`2974`).
+
+* Fix :meth:`ase.constraints.FixCom.adjust_momenta` to have no center-of-mass
+  momentum (:mr:`2947`)
+
+* :func:`ase.build.surface.graphene` now takes a ``thickness`` argument
+  (:mr:`2963`)
+
+* :func:`ase.build.bulk` now assigns initial magnetic moments
+  to BCC Fe, Co, and Ni.
+
+* :func:`ase.build.make_supercell` can now control how to order the atoms in
+  the supercell via the option ``order`` (:mr:`2800`)
+
+* :meth:`~ase.cell.Cell.mask` returns the mask of nonzero cell vectors,
+  an array of three booleans.
+
+* :meth:`~ase.cell.Cell.reciprocal` now guarantees that cell vectors
+  which are zero correspond to reciprocal cell vectors that are also
+  zero.  Previously the reciprocal cell vectors could have small
+  nonzero values due to floating point tolerance.
+
+* The :class:`~ase.cell.Cell` object now has
+  :meth:`~ase.cell.Cell.normal` and :meth:`~ase.cell.Cell.normals`
+  which calculate normal vectors to one or all pairs of cell vectors.
+  Also added
+  :meth:`~ase.cell.Cell.area` and
+  :meth:`~ase.cell.Cell.areas`, which return the area spanned by one
+  or all pairs of cell vectors.
+
+* New ``a2b`` and ``periodic`` formats for :class:`~ase.formula.Formula`
+  objects.  See :meth:`ase.formula.Formula.format`.  The ``abc`` format
+  has been renamed to ``ab2``.
+
+* IO formats can now be implemented in separate packages and registered
+  in ase with the entry point ``ase.ioformats`` in the external package
+  configuration. This entry point only accepts objects of the type
+  :class:`~ase.utils.plugins.ExternalIOFormat`.
+
+* :class:`ase.phonons.Displacement` now has a ``comm`` keyword argument to
+  better support parallelization.
+
+* Fix :func:`ase.build.rotate.minimize_rotation_and_translation` for
+  systems with periodic boundary conditions.
+
+* Fix :func:`ase.io.db.row.AtomsRow.charge`, which was looking for
+  ``inital_charges`` instead of ``initial_charges``.
+
+* Fixed definition of the Lennard-Jones potential in :mod:`ase.utils.ff`
+  (:mr:`2842`)
+
+* The ``x3d`` viewer has improved aesthetics (:mr:`2831`)
+
+* Added a function, :func:`ase.dft.kpoints.mindistance2monkhorstpack`, to
+  construct a Monkhorst-Pack grid (:mr:`2811`)
+
+* Fixed turbomole calculator parsing issues when `=` are present in data
+  groups (:mr:`2808`)
+
+* Fixed round-trip dict (de)serialization with ``FixedMode`` constraint
+  (:mr:`2801`)
+
+* Show total number of rows in ASE database (:mr:`2797`)
+
+* Fix units of magnetic moments in ASE database (:mr:`2793`)
+
+* General improvements to POVRay colors (:mr:`2775`, :mr:`2767`)
+
+* Remove deprecated CLI functions, such as the old ``ase-gui`` command
+  (:mr:`2770`)
+
+* Fix calculation of stresses in :func:`ase.stress.full_3x3_to_voigt_6_stress`
+  (:mr:`2765`)
+
+* Add polarization parser for FHI-AIMS calculator (:mr:`2763`)
+
+* Fix bug in :func:`ase.atoms.Atoms.get_center_of_mass` (:mr:`2712`)
+
+* Fix multiprocessing bug with :class:`ase.neb.NEB` (:mr:`2695`)
+
+* NEB calculations now call ``get_forces()`` instead of ``get_potential_energy()``
+  followed by ``get_forces()`` to prevent duplicate work (:mr:`2678`)
+
+* Improve performance of :func:`ase.build.supercells.make_supercell` for
+  large supercells (:mr:`2639`)
+
+* Fix conservation of momentum in :class:`ase.md.langevin.Langevin`
+  (:mr:`2632`)
+
+* Fix bug in :class:`ase.vibrations.Vibrations` causing property
+  calculations to always use the default method (:mr:`3012`)
+
+* Replaced :class:`ase.phasediagram.Pourbaix` class (to be deprecated)
+  with the :mod:`ase.pourbaix` module. The latter includes a
+  `~ase.pourbaix.Pourbaix` class able to plot a complete diagram given a
+  set of references. The decomposition energy is now shown on a colormap
+  and the phase boundaries are determined with a plane intersection method.
+  (:mr:`3280`)
+
+Calculators:
+
+* Accelerate :class:`~ase.calculators.emt.EMT` using NumPy more (:mr:`3241`)
+
+* Remove ``ase.calculators.vasp.vasp_auxiliary.xdat2traj``. Use ``ase.io`` instead
+  (:mr:`2948`)
+
+* Created new module :mod:`ase.calculators.harmonic` with the
+  :class:`ase.calculators.harmonic.HarmonicCalculator`
+  for calculations with a Hessian-based harmonic force field. Can be used to
+  compute Anharmonic Corrections to the Harmonic Approximation.
+
+* Created new :class:`ase.calculators.plumed.Plumed` that is an interface
+  between ASE and Plumed_ for carrying out enhanced sampling methods and MD
+  postprocessing.
+
+* :class:`ase.calculators.kim.kimmodel.KIMModelCalculator` updated to allow
+  users to change the parameters of OpenKIM portable models at run time (see
+  https://openkim.org/doc/repository/kim-content/ for an explanation of types
+  of OpenKIM models).
+
+* :class:`ase.calculators.mopac.MOPAC` updated to support MOPAC_
+  version 22, which was released under GPL in May 2022.  When using
+  this MOPAC version or newer, the output "final heat of formation"
+  will be interpreted as potential/free energy for ASE purposes.
+
+* Fix ordering of kpoint and spin indices in
+  :func:`ase.calulators.abc.GetOutputsMixin.get_eigenvalues`
+
+* :class:`ase.calculators.vasp.Vasp` now supports the ``efermi`` and ``nelmgw``.
+
+* The :class:`ase.calculators.orca.ORCA` calculator has been
+  refactored to be based on :class:`ase.calculators.GenericFileIOCalculator`.
+
+* The :class:`ase.calculators.abinit.AbinitProfile` now correctly executes in
+  the user-specified directory.
+
+* Fix reading of eigenvalues in :mod:`ase.calculators.dftb` (:mr:`2819`)
+
+* Added an ``energies`` property to the ``lammpslib`` calculator (:mr:`2799`)
+
+* :func:`ase.calculator.lammpslib.is_upper_triangular` is deprecated. Use the
+  method outlined in
+  `this StackOverflow post <https://stackoverflow.com/a/26912166>`_ (:mr:`3102`)
+
+* :func:`ase.calculator.lammpslib.convert_cell` is deprecated. Please use
+  :func:`ase.calculators.lammps.coordinatetransform.calc_rotated_cell` instead.
+  (:mr:`3102`)
+
+* Fix ``lsubsrot`` typo in VASP calculator to ``lsubrot`` (:mr:`2762`)
+
+* Fix atomic polarizability for boron in
+  :class:`ase.calculators.bond_polarizability.LippincottStuttman` (:mr:`2759`)
+
+* ``dielectric_tensor`` and ``born_effective_charges`` parsing have been added to
+  the aims and VASP calculators (:mr:`2750`)
+
+* Update MOPAC calculator to support v22 (:mr:`2745`)
+
+* Fix ordering of forces in ``lammpsrun`` calculator when used with MPI (:mr:`2737`)
+
+* FLEUR calculator has been removed in favor of external package (:mr:`2736`)
+
+* Compatability fixes for newer versions of Octopus (:mr:`2734`)
+
+* Fixed conversion of force units between LAMMPS and ASE (:mr:`2720`)
+
+* ORCA calculator now returns the correct energy in internal geometry
+  optimizations (:mr:`2699`)
+
+* Support for 24Mar2022 version of LAMMPS in ``lammpsrun`` calculator (:mr:`2693`)
+
+* DFTB+ calculator now supports the use of an xTB Hamiltonian (:mr:`2682`)
+
+* Fix WIEN2K writer when ``rmt`` is not ``None`` (:mr:`2677`)
+
+* CP2K calculator support for libcx inputs (:mr:`2676`)
+
+* Fix bug in ``ase run --equation-of-state`` (:mr:`2675`)
+
+* Support PBCs in Plumed calculator (:mr:`2671`)
+
+* Support z-matrix format for ``FixCartesian``` constraints in Siesta (:mr:`2669`)
+
+* Support spin-orbit coupling and non-colinear calculations in Siesta
+  (:mr:`2665`, :mr:`2665`)
+
+* Support ``k_grid_density`` keyword in FHI-AIMS calculator (:mr:`2662`)
+
+* Fix storing of ``special_params`` in VASP calculator (:mr:`2661`)
+
+* Fix VASP OUTCAR parsing for systems with over 10 unique elements (:mr:`2658`)
+
+* Cache all available properties in the mixing calculators (:mr:`2646`)
+
+* Refactoring and bug fixes for :class:`ase.calculators.dftd3.DFTD3` (:mr:`2615`)
+
+* Added :func:`ase.calculators.vasp.Vasp.read_vib_modes` and
+  :func:`ase.calculators.vasp.Vasp.get_vibrations` to read VASP-calculated
+  vibrational modes (:mr:`2605`)
+
+.. _Plumed: https://www.plumed.org/
+.. _MOPAC: https://doi.org/10.5281/zenodo.6511958
+
+* :class:`ase.calculators.nwchem.NWChem` now supports
+  making initial guesses for wavefunctions using smaller basis
+  sets and faster theories
+
+* :class:`ase.calculators.nwchem.NWChem` added support for
+  direct and RI-MP2 computations.
+
+Algorithms:
+
+* Fix bugs in :class:`~ase.neighborlist.PrimitiveNeighborList` when used with
+  ``bothways=True`` and either ``self_interaction=True`` or ``sorted=True``
+  (:mr:`3239`)
+
+* Change :func:`ase.optimize.optimize.Dynamics.irun` so that it yields its
+  convergence status *after* logging and dumping for the corresponding step
+  (:issue:`1339`; :mr:`3072`)
+
+* :class:`ExpCellFilter` is deprecated. Use :class:`FrechetCellFilter` instead.
+  (:mr:`2981`)
+
+* Fix inconsistency of ``mask`` in :class:`FixCartesian` between the argument
+  and the attribute. (:mr:`3195`)
+
+Optimizers:
+
+* Add :class:`ase.optimize.climbfixinternals.BFGSClimbFixInternals` class for
+  transition state search and optimization along internal reaction coordinates
+  (:mr:`2299`)
+
+* :func:`ase.optimize.optimize.Optimizers.irun` and
+  :func:`ase.optimize.optimize.Optimizers.run` now respect ``steps=0`` (:issue:`1183`;
+  :issue:`1258`; :mr:`2922`).
+
+* Added the ``.trajectory`` attribute to :class:`ase.optimize.optimize.Dynamics`
+  (:mr:`2901`).
+
+* Fixed a bug when :class:`ase.optimize.precon.precon.PreconImages` is initialized with
+  a list of ``precon`` objects (:mr:`2875`)
+
+* :class:`ase.optimize.mdmin.MDMin` now takes in a ``maxstep`` parameter that
+  directly restricts how much atoms can move in a single optimization step
+  (:mr:`3065`).
+
+* Removed ``Berny`` optimizer (:mr:`3151`)
+
+Thermochemistry:
+
+* All thermochemistry modules now sort the vibrational energies before
+  cutting them down to the physically appropriate amount.
+
+I/O:
+
+* Add support for reading Mulliken, Löwdin, or Hirshfeld atomic charges in
+  :func:`ase.io.gaussian.read_gaussian_out` (:mr:`3332`)
+
+* Add support for reading POSCAR files with negative and multiple scaling
+  factors in :func:`ase.io.vasp.read_vasp` (:mr:`3029`)
+
+* Fix parsing of dipole moment in :mod:`ase.io.nwchem` from output files
+  with trailing spaces (:mr:`3018`)
+
+* Fix to read and write a compressed trajectory file like ``xxx.traj.gz``
+  (:mr:`2997`)
+
+* Fix ``index`` of :func:`ase.io.vasp.read_vasp_xdatcar` to be consistent with
+  :func:`ase.io.read` (:mr:`2993`)
+
+* Change ``write_lammps_data`` not to reshape the cell by default (:mr:`2986`)
+
+* Fix :func:`ase.io.lammpsdata.write_lammps_data` to tilt the cell correctly
+  (:mr:`2986`)
+
+* GaussView-formatted ``.mol`` files can now be read (:mr:`2956`)
+
+* Reading of "chemical json" file types is assigned to names ``*.cjson``
+  as used in avogadro2_
+
+* Fixes ``IndexError`` when :func:`lammps_data_to_ase_atoms` is run on a system
+  with 1 atom.
+
+* Added several missing ``__init__`` parameters to ``self`` in
+  :class:`ase.io.trajectory.TrajectoryReader` and
+  :class:`ase.io.trajectory.TrajectoryWriter`.
+
+* Add an option to :func:`ase.io.lammpsdata.write_lamps_data` to print
+  the atomic masses.
+
+* Add support for reading CUBE files with "negative" number of atoms, as is common
+  in Gaussian.
+
+* Fix parsing of periodic boundary conditions for ``extxyz`` format.
+
+* Increase compatibility of CIF parser
+
+* Extended XYZ writer now works with ``GenericFileIOCalculator``
+
+* Add numerical stress skips for SCF re-initialization in
+  :class:`ase.io.aims.AimsOutCalcChunk`.
+
+* Deprecated calling :func:`ase.io.aims.write_aims` with ``velocities``. Use
+  ``write_velocities`` instead (:mr:`2910`).
+
+* Fix ``ValueError`` that was raised when using quaternions with
+  :func:`ase.io.lammpsrun.lammps_data_to_ase_atoms`.
+
+* :class:`ase.io.castep.CASTEP` now suports reading ``.castep`` force blocks
+
+* :class:`ase.io.castep.CASTEP` no longer reads symmetry operations.
+
+* Added :func:`ase.io.abinit.read_abinit_gsr` to read a netcdf file (:mr:`2855`)
+
+* SDF reader can now read file with >100 atoms (:mr:`2845`)
+
+* :func:`ase.io.v_sim.read_v_sim` now properly accounts for periodic boundary
+  conditions (:mr:`2835`)
+
+* Bug fix in the :mod:`ase.io.aims` parser for reading the eigenvalues (:mr:`2825`)
+
+* Recognize ``.castep`` files from Materials Studio (:mr:`2822`)
+
+* Enable reading of GPAW stresses from gpaw-out file (:mr:`2798`)
+
+* Add support for reading a VASP VTST CENTCAR file (:mr:`2751`)
+
+* Fix I/O for FHI-aims when the minimal basis set is used (:mr:`2738`)
+
+* Fix XYZ read/write round-trip when initial and final charges are set (:mr:`2692`)
+
+* CASTEP I/O can now read/write custom masses (:mr:`2686`)
+
+* Default dmol3 extension for arc files is now .arc (:mr:`2686`)
+
+* Add PBC support for :mod:`ase.io.cube` (:mr:`2679`)
+
+* Fix ``sort_by_id=True`` setting in :func:`ase.io.lammpsdata.read_lammps_data`
+  (:mr:`2660`)
+
+* More robust GPAW log file reading (:mr:`2609`)
+
+* Fix for PDB file I/O involving trajectories (:mr:`2598`)
+
+* Improved XCrysden file I/O (:mr:`2594`)
+
+* Fix JSON encoder for Atoms objects with ``FixAtoms`` constraints (:mr:`2592`)
+
+* Removed ``ase.io.gaussian_reader`` (:mr:`2329`)
+
+.. _avogadro2: https://www.openchemistry.org/projects/avogadro2
+
+
+Version 3.22.1
+==============
+
+1 December 2021: :git:`3.22.1 <../3.22.1>`
+
+* Fixed compatibility of Brillouin zone plotting with matplotlib 3.5+.
+
+
+Version 3.22.0
+==============
+
+24 June 2021: :git:`3.22.0 <../3.22.0>`
+
 
 Calculators:
 
@@ -15,11 +434,128 @@ Calculators:
   handling of various periodic boundary conditions.
   Functions to import and export files with QM/MM mapping were also added.
 
+* It is now possible to use :class:`~ase.calculators.abinit.Abinit`
+  together with :class:`~ase.calculators.socketio.SocketIOCalculator`.
+  Requires Abinit 9.4+.
+
+* It is now possible to pass a function to
+  :class:`~ase.calculators.socketio.SocketIOCalculator` to customize
+  startup of a socket client.  This decouples socket I/O calculators
+  from :class:`~ase.calculators.calculator.FileIOCalculator`.
+
+* Added :class:`~ase.calculators.socketio.PySocketIOClient`, a helper class
+  for using the socket I/O calculator with Python clients.
+
+* OpenKIM calculator updated to support kimpy 2.0.0.
+
+* DFTB+ calculator now reads dipole moments.
+
+Algorithms:
+
+* Dedicated class :class:`ase.vibrations.VibrationsData` to improve
+  the representation of vibrational modes and associated data.
+
+* Major refactoring of :class:`ase.vibrations.Vibrations`.
+  The calculated vibrational data can now be exported as
+  a :class:`~ase.vibrations.VibrationsData` object.
+
+* :meth:`phonons.get_dos` now returns a DOS object based on the new
+  framework in :mod:`ase.spectrum`.
+
+* :class:`ase.vibrations.Vibrations` and :class:`ase.phonons.Phonons`
+  now use a simplified caching system where forces for each
+  displacement are saved in JSON files inside a subdirectory.  This
+  breaks old cached calculations.  Old vibrations calculations can be
+  ported using a migration tool; see ``python3 -m
+  ase.vibrations.pickle2json --help``.
+
+* Added :class:`ase.md.contour_exploration.ContourExploration`.
+  It evolves systems at fixed potential energy. This is useful for tracing
+  potential energy contour lines or rapidly exploring the potential
+  energy surface of a system and can be tuned to preferentially sample
+  highly curved regions of the potential energy surface.
+
+* :class:`ase.neb.NEB` has been overhauled and given support for
+  preconditioning via a new `precon` argument to its constructor,
+  and two newly supported methods, `spline` for spline-interpolated
+  tangets and `string` for the string method, both of which support
+  preconditioning. The default behaviour should be unchanged.
+
+* Interpolating NEB images on constrained atoms will now raise an
+  error if the interpolated positions would become different depending
+  on whether the constraints were applied.  Pass
+  ``apply_constraint=True`` or ``False`` to
+  :meth:`ase.neb.NEB.interpolate` or :func:`ase.neb.interpolate` to
+  choose a specific behaviour and silence the error.
+
+* 3D Brillouin zone plots are now guaranteed isometric with Matplotlib 3.3+.
+
 I/O:
 
+* Gaussian input file parsing has been greatly improved.  The parser now
+  extracts all variables from the input file.
+
 * Reading of "chemical json" file types with name ``*.cml`` is enabled.
+
 * LAMMPS dump: Reading of elements column added, with priority over types
   if given. All four of the position specifier columns read correctly now.
+
+* Format readers that would by default read or write specific files
+  into current working directory no longer do so.  A path, whether
+  absolute or relative, is now mandatory for all I/O functions.
+
+* The Siesta .XV format is now a recognized I/O format, ``siesta-xv``.
+
+* Parsing an OUTCAR file will now produce an Atoms object
+  with periodic boundary conditions.
+
+Breaking changes:
+
+* For security, ASE no longer uses pickle for any kind of file I/O.
+  This is because a maliciously crafted pickle file can execute
+  arbitrary code.
+
+  Features that used pickle now either use JSON, no longer support
+  saving, or require a manual port of older pickle files using a
+  migration tool.  If you have many old calculations and rely on your
+  own old (trusted) pickle files which cannot be loaded now, consider
+  writing and contributing a migration tool for those files.
+
+  The old PickleTrajectory format can still be loaded
+  by manually overriding the security check.
+
+  Pickle is still used for communication between processes started by
+  ASE (such as plotting tools in the GUI), which is not a security problem
+  since an attacker cannot tamper with the data unless the system is
+  already compromised.
+
+GUI:
+
+* Added Finnish translation.
+
+Bug fixes:
+
+* Fix deadlock with DFTD3 calculator in MPI calculations.
+* Fix parsing of Quantum Espresso outputs with more than 1000 atoms.
+* Write netcdf trajectories compatible with Amber 20.
+* Fix bug where constraints could be applied inconsistently in MD
+  simulations.
+* Allow disabling thermostat and barostat in NPT molecular dynamics.
+* Fix problem with whitespace in CIF parser.
+* Fix a problem where constraints would be applied inconsistently in
+  MD simulations.  As the interactions between MD and constraints are
+  not trivial, users should in general verify carefully that simulations
+  behave physically correctly.
+* Fix issue where occupancies in ``atoms.info`` would subtly change
+  type when saved to JSON and reloaded.
+
+
+Web-page:
+
+* There used to be two versions of the ASE web-page which was quite
+  confusing.  The https://wiki.fysik.dtu.dk/ase/dev/ web-page has now been
+  dropped.  There is now only https://wiki.fysik.dtu.dk/ase/ and it documents
+  the use of the in development version of ASE.
 
 
 Version 3.21.1
@@ -97,6 +633,13 @@ Command-line interface:
 
 Algorithms:
 
+* Removed ``ase.build.voids`` (:mr:`2078`)
+
+* Removed unused code in ``ase.transport.tools`` (:mr:`2077`)
+
+* Removed ``ase.visualize.primiplotter`` and ``ase.visualize.fieldplotter``
+  (:mr:`2060`)
+
 * Changed units for molecular dynamics modules.  They now accept the
   temperature in Kelvin as a keyword-only argument ``temperature_K``
   and Berendsen NPT accepts the pressure in eV/Å³ as a keyword-only
@@ -138,6 +681,8 @@ Algorithms:
 
 Calculators:
 
+* Removed ``ase.calculators.ase_qmmm_manyqm`` (:mr:`2092`)
+
 * The ``ignore_bad_restart_file`` argument supported by many calculators
   has been deprecated.  The user should choose this kind of behaviour
   explicitly.
@@ -154,7 +699,7 @@ Calculators:
   :class:`ase.calculators.socketio.SocketIOCalculator`.
 
 * :class:`~ase.calculators.vasp.Vasp` now uses the newer implementation
-  formerly known as Vasp2.
+  formerly known as ``Vasp2``. ``Vasp2`` is deprecated.
 
 * Added smooth cutoff option to :class:`ase.calculators.lj.LennardJones`.
   This makes the forces continuous as atoms move past the cutoff radius.
@@ -166,6 +711,10 @@ Calculators:
   for most calculators (abinit, lammpsrun, )
 
 I/O:
+
+* Removed ``ase.io.iwm`` (:mr:`2064`)
+
+* Removed ``ase.io.plt`` (:mr:`2057`)
 
 * Reads Wannier90 ``.wout`` files.
   See :func:`ase.io.wannier90.read_wout` and
@@ -225,12 +774,17 @@ Version 3.19.3
 
  * Minor fix related to package version requirements on pypi.
 
+ * Deprecated calling the :class:`ase.optimize.fire.FIRE` constructor
+   with ``maxmove``; please use ``maxstep`` (:mr:`1725`).
+
 Version 3.20.0
 ==============
 
 8 August 2020: :git:`3.20.0 <../3.20.0>`
 
 General changes:
+
+* Removed old ``ase.data`` modules (:mr:`1720`)
 
 * :meth:`~ase.Atoms.get_calculator` and :meth:`~ase.Atoms.set_calculator`
   are deprecated.  Use ``atoms.calc`` instead.
@@ -267,6 +821,12 @@ Development:
 
 Algorithms:
 
+* Removed ``ase.build.adsorb`` (:mr:`1845`)
+
+* Removed unused code in ``ase.utils.ff`` (:mr:`1844`)
+
+* Removed ``ase.utils.extrapolate`` (:mr:`1808`)
+
 * Functions for attaching structures in :mod:`attach <ase.build>` introduced.
 
 * Standardize optimizers maximum step variable name to maxstep and default
@@ -281,6 +841,7 @@ Algorithms:
   <https://stokes.byu.edu/iso/findsym.php>`_ due to lack of users and
   maintainers.  If you need this, please find it in git history,
   make it work, and write tests.
+  (:mr:`1692`)
 
 * The tangent estimates used to make the nudged elastic band (NEB) plots are
   slightly improved to use center, rather than forward differences. This does
@@ -342,6 +903,7 @@ I/O:
   which requires Python 2.7.
 
 * Removed Dacapo-NetCDF reader which has not worked since ancient times.
+  (:mr:`1892`)
 
 GUI:
 
@@ -365,6 +927,7 @@ Calculators:
 
 * Removed interface to :ref:`Dacapo <jacapo>` due to lack of users and
   maintainers.
+  (:mr:`1721`, :mr:`1604`)
 
 * Completely refactored :mod:`Gaussian <ase.calculators.gaussian>` calculator.
   The new calculator should be completely backwards compatible with the
@@ -399,6 +962,9 @@ Version 3.19.2
 * Compatibility fixes related to matplotlib:
   Update png writer to be compatible with matplotlib 3.3.0.
   Update incompatible calls to ``matplotlib.use()``.
+
+* Deprecated calling :class:`ase.calculators.vasp.vasp2.Vasp2` constructor
+  with directory in ``label`` parameter (:mr:`1940`)
 
 Version 3.19.1
 ==============
@@ -451,7 +1017,7 @@ Algorithms:
   :class:`ase.constraints.FixScaledParametricRelations`, and
   :class:`ase.constraints.FixCartesianParametricRelations` to
   :mod:`ase.constraints`. These constraints are based off the work
-  in: https://arxiv.org/abs/1908.01610, and allows for the positions and cell of a
+  in: :arxiv:`1908.01610`, and allows for the positions and cell of a
   structure to be optimized in a reduced parameter space.
 
 * Added :func:`ase.build.graphene` for building graphene monolayers.
@@ -536,6 +1102,8 @@ Version 3.18.2
 * Fix an issue with the binary package (wheel) of 3.18.1.
   No bugfixes as such.
 
+* Deprecated ``ase.calculator.siesta.base_siesta``
+
 
 Version 3.18.1
 ==============
@@ -548,6 +1116,8 @@ Version 3.18.1
   Use ``atoms.pbc`` instead; this works the same as always.
   Also, the :class:`~ase.cell.Cell` object now exposes almost the entire
   ``ndarray`` interface.  For a list of smaller bugfixes, see the git log.
+
+* Deprecated ``ase.Atoms.get_number_of_atoms`` (:mr:`1295`)
 
 
 Version 3.18.0
@@ -679,9 +1249,6 @@ I/O:
 
 * Database supports user defined tables
 
-* Preliminary :class:`~ase.formula.Formula` type added.  Collects all
-  formula manipulation functionality in one place.
-
 * Support for reading and writing DL_POLY format.
 
 * Support for reading CP2K DCD format.
@@ -750,7 +1317,7 @@ Algorithms:
 
 * New Gaussian Process (GP) regression optimizer
   (:class:`~ase.optimize.GPMin`).  Check out this `performance test
-  <https://wiki.fysik.dtu.dk/gpaw/devel/ase_optimize/ase_optimize.html>`_.
+  <https://gpaw.readthedocs.io/devel/ase_optimize/ase_optimize.html>`_.
 
 * New filter for lattice optimization,
   :class:`~ase.constraints.ExpCellFilter`, based on an exponential
@@ -1456,10 +2023,15 @@ Version 3.5.0
 
 
 .. _ASAP: https://wiki.fysik.dtu.dk/asap
-.. _GPAW: https://wiki.fysik.dtu.dk/gpaw/documentation/xc/vdwcorrection.html
+.. _GPAW: https://gpaw.readthedocs.io/documentation/xc/vdwcorrection.html
 
 
 Version 3.4.1
 =============
 
 11 August 2010: :git:`3.4.1 <../3.4.1>`.
+
+
+.. toctree::
+
+  changelog.rst

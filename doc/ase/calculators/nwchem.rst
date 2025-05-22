@@ -66,7 +66,7 @@ Parameters
 The NWChem calculator represents nested keyword blocks in the input file using
 nested Python dictionaries. For example, consider the following block of input::
 
-  memory 1024mb
+  memory 1024 mb
 
   dft
     xc B3LYP
@@ -80,7 +80,7 @@ nested Python dictionaries. For example, consider the following block of input::
 This would be represented by the following keyword arguments to the NWChem
 calculator::
 
-  NWChem(memory='1024mb',
+  NWChem(memory='1024 mb',
          dft=dict(xc='B3LYP',
                   mult=2,
                   odft=None,

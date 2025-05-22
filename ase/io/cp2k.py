@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Reader for CP2Ks DCD_ALIGNED_CELL format and restart files.
 
@@ -14,14 +16,15 @@ Some parts are adapted from the extxyz reader.
 Contributed by Patrick Melix <chemistry@melix.me>
 """
 
-import numpy as np
-from itertools import islice
 import os
+from itertools import islice
 
-from ase.atoms import Atoms, Atom
+import numpy as np
+
+from ase.atoms import Atom, Atoms
 from ase.cell import Cell
-from ase.io.formats import index2range
 from ase.data import atomic_numbers
+from ase.io.formats import index2range
 
 __all__ = ['read_cp2k_dcd', 'iread_cp2k_dcd', 'read_cp2k_restart']
 
@@ -152,7 +155,7 @@ class DCDImageIterator:
                               indices.start, indices.stop, indices.step)
         except ValueError:
             # Negative indices. Adjust slice to positive numbers.
-            dtype, natoms, nsteps, header_end = _read_metainfo(fd)
+            _dtype, _natoms, nsteps, _header_end = _read_metainfo(fd)
             indices_tuple = indices.indices(nsteps + 1)
             iterator = islice(self.ichunks(fd, self.ref_atoms, self.aligned),
                               *indices_tuple)
@@ -182,7 +185,7 @@ def read_cp2k_dcd(fileobj, index=-1, ref_atoms=None, aligned=False):
     if ref_atoms:
         symbols = ref_atoms.get_chemical_symbols()
     else:
-        symbols = ['X' for i in range(natoms)]
+        symbols = ['X' for _ in range(natoms)]
     if natoms != len(symbols):
         raise ValueError("Length of ref_atoms does not match natoms "
                          "from dcd file")
@@ -254,7 +257,7 @@ def read_cp2k_restart(fileobj):
                 found = True
                 break
         if not found:
-            raise RuntimeError("No {:} section found!".format(section_header))
+            raise RuntimeError(f"No {section_header} section found!")
 
     def _read_cell(data):
         """Helper to read cell data, returns cell and pbc"""
@@ -270,7 +273,7 @@ def read_cp2k_restart(fileobj):
                     idx = char2idx[line[:2]]
                     cell[idx] = [float(x) for x in line.split()[1:]]
                     pbc[idx] = True
-            if not set([len(v) for v in cell]) == {3}:
+            if {len(v) for v in cell} != {3}:
                 raise RuntimeError("Bad Cell Definition found.")
         return cell, pbc
 

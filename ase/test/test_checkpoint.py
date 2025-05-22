@@ -1,5 +1,4 @@
-import os
-
+# fmt: off
 import numpy as np
 
 from ase import Atom
@@ -19,14 +18,7 @@ def op2(a, m):
     return a, a.positions[0]
 
 
-def test_sqlite():
-    print('test_single_file')
-
-    try:
-        os.remove('checkpoints.db')
-    except OSError:
-        pass
-
+def test_sqlite(testdir):
     CP = Checkpoint('checkpoints.db')
     a = Diamond('Si', size=[2, 2, 2])
     a = CP(op1)(a, 1.0)
@@ -41,47 +33,42 @@ def test_sqlite():
     assert a == op1a
     a, ra = CP(op2)(a, 2.0)
     assert a == op2a
-    assert(np.abs(ra - op2ra).max() < 1e-5)
+    assert np.abs(ra - op2ra).max() < 1e-5
 
 
 def rattle_calc(atoms, calc):
-    try:
-        os.remove('checkpoints.db')
-    except OSError:
-        pass
-
     orig_atoms = atoms.copy()
 
     # first do a couple of calculations
-    np.random.seed(0)
-    atoms.rattle()
+    rng = np.random.RandomState(0)
+    atoms.rattle(rng=rng)
     cp_calc_1 = CheckpointCalculator(calc)
     atoms.calc = cp_calc_1
     e11 = atoms.get_potential_energy()
     f11 = atoms.get_forces()
-    atoms.rattle()
+    atoms.rattle(rng=rng)
     e12 = atoms.get_potential_energy()
     f12 = atoms.get_forces()
 
     # then re-read them from checkpoint file
     atoms = orig_atoms
-    np.random.seed(0)
-    atoms.rattle()
+    rng = np.random.RandomState(0)
+    atoms.rattle(rng=rng)
     cp_calc_2 = CheckpointCalculator(calc)
     atoms.calc = cp_calc_2
     e21 = atoms.get_potential_energy()
     f21 = atoms.get_forces()
-    atoms.rattle()
+    atoms.rattle(rng=rng)
     e22 = atoms.get_potential_energy()
     f22 = atoms.get_forces()
 
     assert e11 == e21
     assert e12 == e22
-    assert(np.abs(f11 - f21).max() < 1e-5)
-    assert(np.abs(f12 - f22).max() < 1e-5)
+    assert np.abs(f11 - f21).max() < 1e-5
+    assert np.abs(f12 - f22).max() < 1e-5
 
 
-def test_new_style_interface():
+def test_new_style_interface(testdir):
     calc = LennardJones()
     atoms = bulk('Cu')
     rattle_calc(atoms, calc)

@@ -1,15 +1,17 @@
+# fmt: off
 import pytest
+
 from ase import Atoms
 from ase.build import molecule
 from ase.symbols import Symbols
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     return molecule('CH3CH2OH')
 
 
-@pytest.fixture
+@pytest.fixture()
 def symbols(atoms):
     return atoms.symbols
 

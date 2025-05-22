@@ -1,5 +1,6 @@
-import pytest
+# fmt: off
 import numpy as np
+import pytest
 
 from ase import Atoms
 from ase.calculators.emt import EMT
@@ -7,7 +8,7 @@ from ase.optimize import BFGS, BFGSLineSearch
 from ase.optimize.precon import Exp, PreconLBFGS
 
 
-@pytest.fixture
+@pytest.fixture()
 def positions():
     pos = np.array([
         [5.8324672234339969, 8.5510800490537271, 5.686535793302002],
@@ -27,7 +28,7 @@ def positions():
     return pos
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms(positions):
     atoms = Atoms('Pt13', positions=positions, cell=[15] * 3)
     atoms.calc = EMT()
@@ -43,6 +44,7 @@ labels = [
 optimizers = [BFGS, BFGSLineSearch, PreconLBFGS, PreconLBFGS]
 
 
+@pytest.mark.optimize()
 @pytest.mark.parametrize(
     'optcls, name',
     zip(optimizers, labels),
@@ -54,8 +56,8 @@ def test_linesearch(optcls, name, atoms, positions):
         kwargs['precon'] = Exp(A=3)
         kwargs['use_armijo'] = 'Armijo' in name
 
-    opt = optcls(atoms, **kwargs)
-    opt.run(steps=1)
+    with optcls(atoms, **kwargs) as opt:
+        opt.run(steps=1)
 
     dr = atoms.get_positions() - positions
     steplengths = (dr**2).sum(1)**0.5

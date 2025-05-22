@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 netcdftrajectory - I/O trajectory files in the AMBER NetCDF convention
 
@@ -17,17 +19,16 @@ or Ovito (http://www.ovito.org/, starting with version 2.3).
 """
 
 
+import collections
 import os
 import warnings
+from functools import reduce
 
 import numpy as np
 
 import ase
-
 from ase.data import atomic_masses
 from ase.geometry import cellpar_to_cell
-import collections
-from functools import reduce
 
 
 class NetCDFTrajectory:
@@ -294,7 +295,7 @@ class NetCDFTrajectory:
                     # data remains consistent.
                     if np.any(self._get_variable(array) != data):
                         raise ValueError('Trying to write Atoms object with '
-                                         'incompatible data for the {0} '
+                                         'incompatible data for the {} '
                                          'array.'.format(array))
                 else:
                     self._add_array(atoms, array, data.dtype, data.shape)
@@ -319,7 +320,7 @@ class NetCDFTrajectory:
                 # data remains consistent.
                 if np.any(self._get_variable(array) != data):
                     raise ValueError('Trying to write Atoms object with '
-                                     'incompatible data for the {0} '
+                                     'incompatible data for the {} '
                                      'array.'.format(array))
             else:
                 self._add_array(atoms, array, data.dtype, data.shape)
@@ -332,6 +333,7 @@ class NetCDFTrajectory:
         self.nc.ConventionVersion = '1.0'
         self.nc.program = 'ASE'
         self.nc.programVersion = ase.__version__
+        self.nc.title = "MOL"
 
         if self._frame_dim not in self.nc.dimensions:
             self.nc.createDimension(self._frame_dim, None)
@@ -413,7 +415,7 @@ class NetCDFTrajectory:
                         self.nc.createDimension(self._Voigt_dim, 6)
                     dims += [self._Voigt_dim]
                 else:
-                    raise TypeError("Don't know how to dump array of shape {0}"
+                    raise TypeError("Don't know how to dump array of shape {}"
                                     " into NetCDF trajectory.".format(shape))
             if hasattr(type, 'char'):
                 t = self.dtype_conv.get(type.char, type)
@@ -428,13 +430,13 @@ class NetCDFTrajectory:
                     return self.nc.variables[n]
             if exc:
                 raise RuntimeError(
-                    'None of the variables {0} was found in the '
+                    'None of the variables {} was found in the '
                     'NetCDF trajectory.'.format(', '.join(name)))
         else:
             if name in self.nc.variables:
                 return self.nc.variables[name]
             if exc:
-                raise RuntimeError('Variables {0} was found in the NetCDF '
+                raise RuntimeError('Variables {} was found in the NetCDF '
                                    'trajectory.'.format(name))
         return None
 
@@ -564,11 +566,10 @@ class NetCDFTrajectory:
             if momenta is not None:
                 momenta *= self.masses.reshape(-1, 1)
 
-            # Fill info dict with additional data found in the NetCDF file
-            info = {}
-            for name in self.extra_per_frame_atts:
-                info[name] = np.array(self.nc.variables[name][i])
-
+            info = {
+                name: np.array(self.nc.variables[name][i])
+                for name in self.extra_per_frame_atts
+            }
             # Create atoms object
             atoms = ase.Atoms(
                 positions=positions,
@@ -619,7 +620,7 @@ class NetCDFTrajectory:
 
         All other arguments are stored, and passed to the function.
         """
-        if not isinstance(function, collections.Callable):
+        if not isinstance(function, collections.abc.Callable):
             raise ValueError('Callback object must be callable.')
         self.pre_observers.append((function, interval, args, kwargs))
 
@@ -633,7 +634,7 @@ class NetCDFTrajectory:
 
         All other arguments are stored, and passed to the function.
         """
-        if not isinstance(function, collections.Callable):
+        if not isinstance(function, collections.abc.Callable):
             raise ValueError('Callback object must be callable.')
         self.post_observers.append((function, interval, args, kwargs))
 

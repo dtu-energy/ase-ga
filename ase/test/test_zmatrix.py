@@ -1,5 +1,7 @@
-import pytest
+# fmt: off
 import numpy as np
+import pytest
+
 from ase.io.zmatrix import parse_zmatrix
 
 pos_ref = pytest.approx(np.array([

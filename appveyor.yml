@@ -2,14 +2,14 @@ environment:
   matrix:
     # For Python versions available on Appveyor, see
     # http://www.appveyor.com/docs/installed-software#python
-    #  # Python 3.6
-    #- PYTHON: "C:\\Python36"
-    # Python 3.6 - 64-bit
-    - PYTHON: "C:\\Python36-x64"
-    #  # Conda 3.6
-    #- PYTHON: "C:\\Miniconda36"
-    #  # Conda 3.6 64-bit
-    #- PYTHON: "C:\\Miniconda36-x64"
+    #  # Python 3.9
+    #- PYTHON: "C:\\Python39"
+    # Python 3.9 - 64-bit
+    - PYTHON: "C:\\Python39-x64"
+    #  # Conda 3.9
+    #- PYTHON: "C:\\Miniconda39"
+    #  # Conda 3.9 64-bit
+    #- PYTHON: "C:\\Miniconda39-x64"
 
 install:
   # Prepend chosen Python to the PATH of this build
@@ -26,19 +26,19 @@ install:
       {
         echo "install with conda"
         conda update -yq conda
-        conda install -yq pip wheel numpy scipy pyflakes matplotlib flask pytest pytest-mock
+        conda install -yq pip=21.0.1 wheel numpy scipy pyflakes matplotlib flask pytest pytest-mock
       }
       else
       {
         echo "install with pip"
         #pip install --upgrade pip
-        python.exe -m pip install --upgrade pip
-        pip install wheel pytest
+        python.exe -m pip install --upgrade pip==21.0.1
+        pip install wheel pytest --disable-pip-version-check
       }
   # install ase into the current python
   - "echo %cd%"
   - "where pip"
-  - "pip install .[test]"
+  - "pip install .[test] --disable-pip-version-check"
 
 build: off
 

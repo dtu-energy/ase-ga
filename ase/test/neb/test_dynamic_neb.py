@@ -1,14 +1,16 @@
+# fmt: off
 import numpy as np
 import pytest
 
 from ase import Atoms
 from ase.build import fcc111
 from ase.calculators.emt import EMT as OrigEMT
-from ase.dyneb import DyNEB
+from ase.mep import DyNEB
 from ase.optimize import BFGS
 
 
-@pytest.mark.slow
+@pytest.mark.optimize()
+@pytest.mark.slow()
 def test_dynamic_neb():
     # Global counter of force evaluations:
     force_evaluations = [0]
@@ -83,9 +85,10 @@ def test_dynamic_neb():
         run_NEB()
 
     # Check force calculation count for default and dynamic NEB implementations
-    print('\n# Force calls with default NEB: {}'.format(force_calls[0]))
-    print('# Force calls with dynamic NEB: {}'.format(force_calls[1]))
-    print('# Force calls with dynamic and scaled NEB: {}\n'.format(force_calls[2]))
+    print(f'\n# Force calls with default NEB: {force_calls[0]}')
+    print(f'# Force calls with dynamic NEB: {force_calls[1]}')
+    print('# Force calls with dynamic and scaled NEB: {}\n'.format(
+        force_calls[2]))
     assert force_calls[2] < force_calls[1] < force_calls[0]
 
     # Assert reaction barriers are within 1 meV of default NEB

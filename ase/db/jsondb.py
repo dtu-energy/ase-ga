@@ -1,13 +1,15 @@
+# fmt: off
+
 import os
 import sys
 from contextlib import ExitStack
 
 import numpy as np
 
-from ase.db.core import Database, ops, lock, now
+from ase.db.core import Database, lock, now, ops
 from ase.db.row import AtomsRow
-from ase.io.jsonio import encode, decode
-from ase.parallel import world, parallel_function
+from ase.io.jsonio import decode, encode
+from ase.parallel import parallel_function, world
 
 
 class JSONDatabase(Database):
@@ -25,7 +27,7 @@ class JSONDatabase(Database):
         nextid = 1
 
         if (isinstance(self.filename, str) and
-            os.path.isfile(self.filename)):
+                os.path.isfile(self.filename)):
             try:
                 bigdct, ids, nextid = self._read_json()
             except (SyntaxError, ValueError):
@@ -78,8 +80,8 @@ class JSONDatabase(Database):
             if self.filename is not sys.stdin:
                 self.filename.seek(0)
 
-        if not isinstance(bigdct, dict) or not ('ids' in bigdct
-                                                or 1 in bigdct):
+        if not isinstance(bigdct, dict) or ('ids' not in bigdct and 1 not in
+                                            bigdct):
             from ase.io.formats import UnknownFileTypeError
             raise UnknownFileTypeError('Does not resemble ASE JSON database')
 
@@ -104,13 +106,13 @@ class JSONDatabase(Database):
             print('{', end='', file=fd)
             for id in ids:
                 dct = bigdct[id]
-                txt = ',\n '.join('"{0}": {1}'.format(key, encode(dct[key]))
+                txt = ',\n '.join(f'"{key}": {encode(dct[key])}'
                                   for key in sorted(dct.keys()))
-                print('"{0}": {{\n {1}}},'.format(id, txt), file=fd)
+                print(f'"{id}": {{\n {txt}}},', file=fd)
             if self._metadata is not None:
-                print('"metadata": {0},'.format(encode(self.metadata)), file=fd)
-            print('"ids": {0},'.format(ids), file=fd)
-            print('"nextid": {0}}}'.format(nextid), file=fd)
+                print(f'"metadata": {encode(self.metadata)},', file=fd)
+            print(f'"ids": {ids},', file=fd)
+            print(f'"nextid": {nextid}}}', file=fd)
 
     @parallel_function
     @lock
@@ -122,7 +124,7 @@ class JSONDatabase(Database):
         self._write_json(bigdct, myids, nextid)
 
     def _get_row(self, id):
-        bigdct, ids, nextid = self._read_json()
+        bigdct, ids, _nextid = self._read_json()
         if id is None:
             assert len(ids) == 1
             id = ids[0]
@@ -166,8 +168,8 @@ class JSONDatabase(Database):
             return
 
         try:
-            bigdct, ids, nextid = self._read_json()
-        except IOError:
+            bigdct, ids, _nextid = self._read_json()
+        except OSError:
             return
 
         if not limit:
@@ -205,7 +207,7 @@ class JSONDatabase(Database):
     @property
     def metadata(self):
         if self._metadata is None:
-            bigdct, myids, nextid = self._read_json()
+            bigdct, _myids, _nextid = self._read_json()
             self._metadata = bigdct.get('metadata', {})
         return self._metadata.copy()
 
@@ -214,3 +216,13 @@ class JSONDatabase(Database):
         bigdct, ids, nextid = self._read_json()
         self._metadata = dct
         self._write_json(bigdct, ids, nextid)
+
+    def get_all_key_names(self):
+        keys = set()
+        bigdct, ids, _nextid = self._read_json()
+        for id in ids:
+            dct = bigdct[id]
+            kvp = dct.get('key_value_pairs')
+            if kvp:
+                keys.update(kvp)
+        return keys

@@ -15,4 +15,4 @@
 *.pckl
 
 # These are OK (images for the supported calculators):
-!/doc/static/*.png
+!/static/*.png

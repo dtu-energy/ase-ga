@@ -1,3 +1,5 @@
+# fmt: off
+
 from ase.atoms import Atoms
 from ase.utils import reader, writer
 
@@ -45,10 +47,10 @@ def write_crystal(fd, atoms):
     # write symmetry operations (not implemented yet for
     # higher symmetries than C1)
     fd.write(' %2s \n' % (1))
-    fd.write(' %.17E %.17E %.17E \n' % (1, 0, 0))
-    fd.write(' %.17E %.17E %.17E \n' % (0, 1, 0))
-    fd.write(' %.17E %.17E %.17E \n' % (0, 0, 1))
-    fd.write(' %.17E %.17E %.17E \n' % (0, 0, 0))
+    fd.write(f' {1:.17E} {0:.17E} {0:.17E} \n')
+    fd.write(f' {0:.17E} {1:.17E} {0:.17E} \n')
+    fd.write(f' {0:.17E} {0:.17E} {1:.17E} \n')
+    fd.write(f' {0:.17E} {0:.17E} {0:.17E} \n')
 
     # write coordinates
     fd.write(' %8s \n' % (len(atoms)))

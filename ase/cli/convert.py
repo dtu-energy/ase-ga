@@ -1,6 +1,8 @@
-import os
+# fmt: off
 
-from ase.io import read, write
+# Note:
+# Try to avoid module level import statements here to reduce
+# import time during CLI execution
 
 
 class CLICommand:
@@ -59,6 +61,10 @@ class CLICommand:
 
     @staticmethod
     def run(args, parser):
+        import os
+
+        from ase.io import read, write
+
         if args.verbose:
             print(', '.join(args.input), '->', args.output)
         if args.arrays:
@@ -70,10 +76,10 @@ class CLICommand:
             if args.verbose:
                 print('Filtering to include info: ', ', '.join(args.info))
         if args.read_args:
-            args.read_args = eval("dict({0})"
+            args.read_args = eval("dict({})"
                                   .format(', '.join(args.read_args)))
         if args.write_args:
-            args.write_args = eval("dict({0})"
+            args.write_args = eval("dict({})"
                                    .format(', '.join(args.write_args)))
 
         configs = []
@@ -88,9 +94,9 @@ class CLICommand:
         new_configs = []
         for atoms in configs:
             if args.arrays:
-                atoms.arrays = dict((k, atoms.arrays[k]) for k in args.arrays)
+                atoms.arrays = {k: atoms.arrays[k] for k in args.arrays}
             if args.info:
-                atoms.info = dict((k, atoms.info[k]) for k in args.info)
+                atoms.info = {k: atoms.info[k] for k in args.info}
             if args.exec_code:
                 # avoid exec() for Py 2+3 compat.
                 eval(compile(args.exec_code, '<string>', 'exec'))
@@ -102,7 +108,7 @@ class CLICommand:
         configs = new_configs
 
         if not args.force and os.path.isfile(args.output):
-            parser.error('File already exists: {}'.format(args.output))
+            parser.error(f'File already exists: {args.output}')
 
         if args.split_output:
             for i, atoms in enumerate(configs):

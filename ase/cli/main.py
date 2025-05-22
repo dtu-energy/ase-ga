@@ -1,5 +1,6 @@
+# fmt: off
+
 import argparse
-import sys
 import textwrap
 from importlib import import_module
 
@@ -20,17 +21,15 @@ commands = [
     # ('show', 'ase.cli.show'),
     ('test', 'ase.test'),
     ('gui', 'ase.gui.ag'),
-    ('db', 'ase.db.cli'),
+    ('db', 'ase.cli.db'),
     ('run', 'ase.cli.run'),
     ('band-structure', 'ase.cli.band_structure'),
     ('build', 'ase.cli.build'),
     ('dimensionality', 'ase.cli.dimensionality'),
     ('eos', 'ase.eos'),
-    ('ulm', 'ase.io.ulm'),
+    ('ulm', 'ase.cli.ulm'),
     ('find', 'ase.cli.find'),
     ('nebplot', 'ase.cli.nebplot'),
-    ('nomad-upload', 'ase.cli.nomad'),
-    ('nomad-get', 'ase.cli.nomadget'),
     ('convert', 'ase.cli.convert'),
     ('reciprocal', 'ase.cli.reciprocal'),
     ('completion', 'ase.cli.completion'),
@@ -45,7 +44,7 @@ def main(prog='ase', description='ASE command line tool.',
                                      description=description,
                                      formatter_class=Formatter)
     parser.add_argument('--version', action='version',
-                        version='%(prog)s-{}'.format(version))
+                        version=f'%(prog)s-{version}')
     parser.add_argument('-T', '--traceback', action='store_true')
     subparsers = parser.add_subparsers(title='Sub-commands',
                                        dest='command')
@@ -111,7 +110,7 @@ def main(prog='ase', description='ASE command line tool.',
             if args.traceback:
                 raise
             else:
-                l1 = '{}: {}\n'.format(x.__class__.__name__, x)
+                l1 = f'{x.__class__.__name__}: {x}\n'
                 l2 = ('To get a full traceback, use: {} -T {} ...'
                       .format(prog, args.command))
                 parser.error(l1 + l2)
@@ -140,9 +139,3 @@ class Formatter(argparse.HelpFormatter):
                 out += textwrap.fill(block, width=width) + '\n'
             out += '\n'
         return out[:-1]
-
-def old():
-    cmd = sys.argv[0].split('-')[-1]
-    print('Please use "ase {cmd}" instead of "ase-{cmd}"'.format(cmd=cmd))
-    sys.argv[:1] = ['ase', cmd]
-    main()

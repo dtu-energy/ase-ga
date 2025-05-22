@@ -1,8 +1,10 @@
-def test_dimer():
-    from ase import Atom, Atoms
-    from ase.calculators.lj import LennardJones
-    from ase.constraints import FixBondLength
+# fmt: off
+from ase import Atom, Atoms
+from ase.calculators.lj import LennardJones
+from ase.constraints import FixBondLength
 
+
+def test_dimer():
     dimer = Atoms([Atom('X', (0, 0, 0)),
                    Atom('X', (0, 0, 1))],
                   calculator=LennardJones(),

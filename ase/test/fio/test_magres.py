@@ -1,8 +1,12 @@
+# fmt: off
+import numpy as np
+
+from ase.build import bulk
+from ase.calculators.singlepoint import SinglePointDFTCalculator
+from ase.io import read, write
+
+
 def test_magres():
-    import numpy as np
-    from ase.io import read, write
-    from ase.build import bulk
-    from ase.calculators.singlepoint import SinglePointDFTCalculator
 
     # Test with fictional data
     si2 = bulk('Si')
@@ -26,3 +30,9 @@ def test_magres():
     assert (np.trace(si2.get_array('ms')[0]) == 3)
     assert (np.all(np.isclose(si2.get_array('efg')[:, 2, 2], -2)))
     assert (np.all(np.isclose(si2.calc.results['sus'], np.eye(3) * 2)))
+
+
+def test_magres_large(datadir):
+
+    # Test with big structure
+    assert len(read(datadir / "large_atoms.magres")) == 240

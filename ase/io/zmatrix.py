@@ -1,12 +1,15 @@
-from typing import Dict, List, Tuple, Union, Optional
-from numbers import Real
-from collections import namedtuple
+# fmt: off
+
 import re
+from collections import namedtuple
+from numbers import Real
 from string import digits
+from typing import Dict, List, Optional, Tuple, Union
+
 import numpy as np
+
 from ase import Atoms
 from ase.units import Angstrom, Bohr, nm
-
 
 # split on newlines or semicolons
 _re_linesplit = re.compile(r'\n|;')
@@ -15,8 +18,17 @@ _re_defs = re.compile(r'\s*=\s*|\s+')
 
 
 _ZMatrixRow = namedtuple(
-    'ZMatrixRow', 'ind1 dist ind2 a_bend ind3 a_dihedral',
+    '_ZMatrixRow', 'ind1 dist ind2 a_bend ind3 a_dihedral',
 )
+
+
+ThreeFloats = Union[Tuple[float, float, float], np.ndarray]
+
+
+def require(condition):
+    # (This is not good error handling, but it replaces assertions.)
+    if not condition:
+        raise RuntimeError('Internal requirement violated')
 
 
 class _ZMatrixToAtoms:
@@ -31,9 +43,9 @@ class _ZMatrixToAtoms:
         self.dconv = self.get_units('distance', dconv)  # type: float
         self.aconv = self.get_units('angle', aconv)  # type: float
         self.set_defs(defs)
-        self.name_to_index: Optional[Dict[str, int]] = dict()
-        self.symbols = []  # type: List[str]
-        self.positions = []  # type: List[Tuple[float, float, float]]
+        self.name_to_index: Optional[Dict[str, int]] = {}
+        self.symbols: List[str] = []
+        self.positions: List[ThreeFloats] = []
 
     @property
     def nrows(self):
@@ -50,7 +62,7 @@ class _ZMatrixToAtoms:
 
     def set_defs(self, defs: Union[Dict[str, float], str,
                                    List[str], None]) -> None:
-        self.defs = dict()  # type: Dict[str, float]
+        self.defs = {}  # type: Dict[str, float]
         if defs is None:
             return
 
@@ -98,7 +110,8 @@ class _ZMatrixToAtoms:
 
         self.name_to_index[name] = self.nrows
 
-    def validate_indices(self, *indices: int) -> None:
+    # Use typehint *indices: str from python3.11+
+    def validate_indices(self, *indices) -> None:
         """Raises an error if indices in a Z-matrix row are invalid."""
         if any(np.array(indices) >= self.nrows):
             raise ValueError('An invalid Z-matrix was provided! Row {} refers '
@@ -113,25 +126,25 @@ class _ZMatrixToAtoms:
                              .format(self.nrows, indices))
 
     def parse_row(self, row: str) -> Tuple[
-            str, Union[_ZMatrixRow, Tuple[float, float, float]],
+            str, Union[_ZMatrixRow, ThreeFloats],
     ]:
         tokens = row.split()
         name = tokens[0]
         self.set_index(name)
         if len(tokens) == 1:
-            assert self.nrows == 0
+            require(self.nrows == 0)
             return name, np.zeros(3, dtype=float)
 
         ind1 = self.get_index(tokens[1])
         if ind1 == -1:
-            assert len(tokens) == 5
+            require(len(tokens) == 5)
             return name, np.array(list(map(self.get_var, tokens[2:])),
                                   dtype=float)
 
         dist = self.dconv * self.get_var(tokens[2])
 
         if len(tokens) == 3:
-            assert self.nrows == 1
+            require(self.nrows == 1)
             self.validate_indices(ind1)
             return name, np.array([dist, 0, 0], dtype=float)
 
@@ -139,7 +152,7 @@ class _ZMatrixToAtoms:
         a_bend = self.aconv * self.get_var(tokens[4])
 
         if len(tokens) == 5:
-            assert self.nrows == 2
+            require(self.nrows == 2)
             self.validate_indices(ind1, ind2)
             return name, _ZMatrixRow(ind1, dist, ind2, a_bend, None, None)
 
@@ -149,7 +162,7 @@ class _ZMatrixToAtoms:
         return name, _ZMatrixRow(ind1, dist, ind2, a_bend, ind3,
                                  a_dihedral)
 
-    def add_atom(self, name: str, pos: Tuple[float, float, float]) -> None:
+    def add_atom(self, name: str, pos: ThreeFloats) -> None:
         """Sets the symbol and position of an atom."""
         self.symbols.append(
             ''.join([c for c in name if c not in digits]).capitalize()

@@ -1,6 +1,10 @@
+# fmt: off
+import numpy as np
+
+from ase import Atoms
+
+
 def test_center_nonperiodic():
-    import numpy as np
-    from ase import Atoms
 
     a = Atoms('H')
     a.center(about=[0., 0., 0.])
@@ -9,7 +13,6 @@ def test_center_nonperiodic():
 
     assert not a.cell.any()
     assert not a.positions.any()
-
 
     a.cell = [0., 2., 0.]
     a.center()

@@ -1,25 +1,29 @@
-from ase import Atoms
+# fmt: off
+import pytest
+
+from ase import units
+from ase.build import bulk
 from ase.calculators.emt import EMT
-from ase.md import VelocityVerlet
 from ase.io import Trajectory
+from ase.md import VelocityVerlet
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 
 
-def test_md():
-    a = 3.6
-    b = a / 2
-    fcc = Atoms('Cu', positions=[(0, 0, 0)],
-                cell=[(0, b, b), (b, 0, b), (b, b, 0)],
-                pbc=1)
-    fcc *= (2, 1, 1)
-    fcc.calc = EMT()
-    fcc.set_momenta([(0.9, 0.0, 0.0), (-0.9, 0, 0)])
+@pytest.fixture(name="atoms")
+def fixture_atoms():
+    atoms = bulk("Au") * 2
+    MaxwellBoltzmannDistribution(atoms, temperature_K=100.0)
+    atoms.calc = EMT()
+    return atoms
 
+
+def test_md(atoms, testdir):
     def f():
-        print(fcc.get_potential_energy(), fcc.get_total_energy())
+        print(atoms.get_potential_energy(), atoms.get_total_energy())
 
-    with VelocityVerlet(fcc, timestep=0.1) as md:
+    with VelocityVerlet(atoms, timestep=0.1) as md:
         md.attach(f)
-        with Trajectory('Cu2.traj', 'w', fcc) as traj:
+        with Trajectory('Cu2.traj', 'w', atoms) as traj:
             md.attach(traj.write, interval=3)
             md.run(steps=20)
 
@@ -27,3 +31,14 @@ def test_md():
         traj[-1]
 
     # Really?? No assertion at all?
+
+
+@pytest.mark.parametrize("md_class", [VelocityVerlet])
+def test_run_twice(md_class, atoms):
+    """Test if `steps` increments `max_steps` when `run` is called twice."""
+    steps = 5
+    with md_class(atoms, timestep=1.0 * units.fs) as md:
+        md.run(steps=steps)
+        md.run(steps=steps)
+    assert md.nsteps == 2 * steps
+    assert md.max_steps == 2 * steps

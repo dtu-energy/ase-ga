@@ -1,12 +1,14 @@
 # creates: saxs.png, xrd.png
 
-from ase.utils.xrdebye import XrDebye
-from ase.cluster.cubic import FaceCenteredCubic
 import numpy as np
 
+from ase.cluster.cubic import FaceCenteredCubic
+from ase.utils.xrdebye import XrDebye
+
 # create nanoparticle with approx. 2 nm diameter
-atoms = FaceCenteredCubic('Ag', [(1, 0, 0), (1, 1, 0), (1, 1, 1)],
-                          [6, 8, 8], 4.09)
+atoms = FaceCenteredCubic(
+    'Ag', [(1, 0, 0), (1, 1, 0), (1, 1, 1)], [6, 8, 8], 4.09
+)
 # setup for desired wavelength
 xrd = XrDebye(atoms=atoms, wavelength=0.50523)
 # calculate and plot diffraction pattern

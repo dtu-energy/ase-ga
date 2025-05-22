@@ -1,12 +1,14 @@
+# fmt: off
 import pytest
-from ase.spacegroup import crystal
-from ase.data import atomic_numbers,  atomic_masses
-from ase.optimize import QuasiNewton
-from ase.constraints import UnitCellFilter
 from numpy.testing import assert_allclose
 
+from ase.data import atomic_masses, atomic_numbers
+from ase.filters import UnitCellFilter
+from ase.optimize import QuasiNewton
+from ase.spacegroup import crystal
 
-@pytest.mark.calculator_lite
+
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator('lammpsrun')
 def test_NaCl_minimize(factory):
     a = 6.15
@@ -16,7 +18,6 @@ def test_NaCl_minimize(factory):
 
     # Buckingham parameters from
     # https://physics.stackexchange.com/questions/250018
-
 
     pair_style = 'buck/coul/long 12.0'
     pair_coeff = ['1 1 3796.9 0.2603 124.90']
@@ -49,8 +50,8 @@ def test_NaCl_minimize(factory):
         nacl.get_potential_energy()
 
         ucf = UnitCellFilter(nacl)
-        dyn = QuasiNewton(ucf, force_consistent=False)
-        dyn.run(fmax=1.0E-2)
+        with QuasiNewton(ucf) as dyn:
+            dyn.run(fmax=1.0E-2)
 
         assert_allclose(nacl.get_potential_energy(), -1897.208861729178,
                         atol=1e-4, rtol=1e-4)

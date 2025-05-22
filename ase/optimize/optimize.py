@@ -1,97 +1,145 @@
-"""Structure optimization. """
+# fmt: off
 
-import sys
+"""Structure optimization. """
 import time
+import warnings
+from collections.abc import Callable
+from functools import cached_property
 from math import sqrt
 from os.path import isfile
+from pathlib import Path
+from typing import IO, Any, Dict, List, Optional, Tuple, Union
 
-from ase.io.jsonio import read_json, write_json
+from ase import Atoms
 from ase.calculators.calculator import PropertyNotImplementedError
-from ase.parallel import world, barrier
-from ase.io.trajectory import Trajectory
-import collections.abc
+from ase.filters import UnitCellFilter
+from ase.parallel import world
+from ase.utils import IOContext
+from ase.utils.abc import Optimizable
+
+DEFAULT_MAX_STEPS = 100_000_000
 
 
 class RestartError(RuntimeError):
     pass
 
 
-class Dynamics:
+class OptimizableAtoms(Optimizable):
+    def __init__(self, atoms):
+        self.atoms = atoms
+
+    def get_positions(self):
+        return self.atoms.get_positions()
+
+    def set_positions(self, positions):
+        self.atoms.set_positions(positions)
+
+    def get_forces(self):
+        return self.atoms.get_forces()
+
+    @cached_property
+    def _use_force_consistent_energy(self):
+        # This boolean is in principle invalidated if the
+        # calculator changes.  This can lead to weird things
+        # in multi-step optimizations.
+        try:
+            self.atoms.get_potential_energy(force_consistent=True)
+        except PropertyNotImplementedError:
+            # warnings.warn(
+            #     'Could not get force consistent energy (\'free_energy\').  '
+            #     'Please make sure calculator provides \'free_energy\', even '
+            #     'if equal to the ordinary energy.  '
+            #     'This will raise an error in future versions of ASE.',
+            #     FutureWarning)
+            return False
+        else:
+            return True
+
+    def get_potential_energy(self):
+        force_consistent = self._use_force_consistent_energy
+        return self.atoms.get_potential_energy(
+            force_consistent=force_consistent)
+
+    def iterimages(self):
+        # XXX document purpose of iterimages
+        return self.atoms.iterimages()
+
+    def __len__(self):
+        # TODO: return 3 * len(self.atoms), because we want the length
+        # of this to be the number of DOFs
+        return len(self.atoms)
+
+
+class Dynamics(IOContext):
     """Base-class for all MD and structure optimization classes."""
 
     def __init__(
-        self, atoms, logfile, trajectory, append_trajectory=False, master=None
+        self,
+        atoms: Atoms,
+        logfile: Optional[Union[IO, Path, str]] = None,
+        trajectory: Optional[Union[str, Path]] = None,
+        append_trajectory: bool = False,
+        master: Optional[bool] = None,
+        comm=world,
+        *,
+        loginterval: int = 1,
     ):
         """Dynamics object.
 
-        Parameters:
-
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms : Atoms object
             The Atoms object to operate on.
 
-        logfile: file object or str
+        logfile : file object, Path, or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        trajectory: Trajectory object or str
-            Attach trajectory object.  If *trajectory* is a string a
-            Trajectory will be constructed.  Use *None* for no
-            trajectory.
+        trajectory : Trajectory object, str, or Path
+            Attach a trajectory object. If *trajectory* is a string/Path, a
+            Trajectory will be constructed. Use *None* for no trajectory.
 
-        append_trajectory: boolean
+        append_trajectory : bool
             Defaults to False, which causes the trajectory file to be
             overwriten each time the dynamics is restarted from scratch.
             If True, the new structures are appended to the trajectory
             file instead.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
+        master : bool
+            Defaults to None, which causes only rank 0 to save files. If set to
+            true, this rank will save files.
+
+        comm : Communicator object
+            Communicator to handle parallel file reading and writing.
+
+        loginterval : int, default: 1
+            Only write a log line for every *loginterval* time steps.
         """
-
         self.atoms = atoms
-        try:
-            self._files_to_be_closed = []
-            if master is None:
-                master = world.rank == 0
-            if not master:
-                logfile = None
-            elif isinstance(logfile, str):
-                if logfile == "-":
-                    logfile = sys.stdout
-                else:
-                    logfile = self.ensureclose(open(logfile, "a"))
-            self.logfile = logfile
+        self.optimizable = atoms.__ase_optimizable__()
+        self.logfile = self.openfile(file=logfile, comm=comm, mode='a')
+        self.observers: List[Tuple[Callable, int, Tuple, Dict[str, Any]]] = []
+        self.nsteps = 0
+        self.max_steps = 0  # to be updated in run or irun
+        self.comm = comm
 
-            self.observers = []
-            self.nsteps = 0
-            # maximum number of steps placeholder with maxint
-            self.max_steps = 100000000
+        if trajectory is not None:
+            if isinstance(trajectory, str) or isinstance(trajectory, Path):
+                from ase.io.trajectory import Trajectory
+                mode = "a" if append_trajectory else "w"
+                trajectory = self.closelater(Trajectory(
+                    trajectory, mode=mode, master=master, comm=comm
+                ))
+            self.attach(
+                trajectory,
+                interval=loginterval,
+                atoms=self.optimizable,
+            )
 
-            if trajectory is not None:
-                if isinstance(trajectory, str):
-                    mode = "a" if append_trajectory else "w"
-                    trajectory = self.ensureclose(Trajectory(
-                        trajectory, mode=mode, atoms=atoms, master=master
-                    ))
-                self.attach(trajectory)
-        except BaseException:
-            self._closefiles()
-            raise
+        self.trajectory = trajectory
 
-    def ensureclose(self, closeable):
-        self._files_to_be_closed.append(closeable)
-        return closeable
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        self._closefiles()
-
-    def _closefiles(self):
-        for closeable in self._files_to_be_closed:
-            closeable.close()
+    def todict(self) -> Dict[str, Any]:
+        raise NotImplementedError
 
     def get_number_of_steps(self):
         return self.nsteps
@@ -99,8 +147,30 @@ class Dynamics:
     def insert_observer(
         self, function, position=0, interval=1, *args, **kwargs
     ):
-        """Insert an observer."""
-        if not isinstance(function, collections.abc.Callable):
+        """Insert an observer.
+
+        This can be used for pre-processing before logging and dumping.
+
+        Examples
+        --------
+        >>> from ase.build import bulk
+        >>> from ase.calculators.emt import EMT
+        >>> from ase.optimize import BFGS
+        ...
+        ...
+        >>> def update_info(atoms, opt):
+        ...     atoms.info["nsteps"] = opt.nsteps
+        ...
+        ...
+        >>> atoms = bulk("Cu", cubic=True) * 2
+        >>> atoms.rattle()
+        >>> atoms.calc = EMT()
+        >>> with BFGS(atoms, logfile=None, trajectory="opt.traj") as opt:
+        ...     opt.insert_observer(update_info, atoms=atoms, opt=opt)
+        ...     opt.run(fmax=0.05, steps=10)
+        True
+        """
+        if not isinstance(function, Callable):
             function = function.write
         self.observers.insert(position, (function, interval, args, kwargs))
 
@@ -118,7 +188,7 @@ class Dynamics:
             d = self.todict()
             d.update(interval=interval)
             function.set_description(d)
-        if not hasattr(function, "__call__"):
+        if not isinstance(function, Callable):
             function = function.write
         self.observers.append((function, interval, args, kwargs))
 
@@ -136,57 +206,88 @@ class Dynamics:
             if call:
                 function(*args, **kwargs)
 
-    def irun(self):
-        """Run dynamics algorithm as generator. This allows, e.g.,
-        to easily run two optimizers or MD thermostats at the same time.
+    def irun(self, steps=DEFAULT_MAX_STEPS):
+        """Run dynamics algorithm as generator.
 
-        Examples:
+        Parameters
+        ----------
+        steps : int, default=DEFAULT_MAX_STEPS
+            Number of dynamics steps to be run.
+
+        Yields
+        ------
+        converged : bool
+            True if the forces on atoms are converged.
+
+        Examples
+        --------
+        This method allows, e.g., to run two optimizers or MD thermostats at
+        the same time.
         >>> opt1 = BFGS(atoms)
         >>> opt2 = BFGS(StrainFilter(atoms)).irun()
         >>> for _ in opt2:
-        >>>     opt1.run()
+        ...     opt1.run()
         """
 
-        # compute initial structure and log the first step
-        self.atoms.get_forces()
+        # update the maximum number of steps
+        self.max_steps = self.nsteps + steps
 
-        # yield the first time to inspect before logging
-        yield False
+        # compute the initial step
+        self.optimizable.get_forces()
 
+        # log the initial step
         if self.nsteps == 0:
             self.log()
-            self.call_observers()
+
+            # we write a trajectory file if it is None
+            if self.trajectory is None:
+                self.call_observers()
+            # We do not write on restart w/ an existing trajectory file
+            # present. This duplicates the same entry twice
+            elif len(self.trajectory) == 0:
+                self.call_observers()
+
+        # check convergence
+        is_converged = self.converged()
+        yield is_converged
 
         # run the algorithm until converged or max_steps reached
-        while not self.converged() and self.nsteps < self.max_steps:
-
+        while not is_converged and self.nsteps < self.max_steps:
             # compute the next step
             self.step()
             self.nsteps += 1
-
-            # let the user inspect the step and change things before logging
-            # and predicting the next step
-            yield False
 
             # log the step
             self.log()
             self.call_observers()
 
-        # finally check if algorithm was converged
-        yield self.converged()
+            # check convergence
+            is_converged = self.converged()
+            yield is_converged
 
-    def run(self):
+    def run(self, steps=DEFAULT_MAX_STEPS):
         """Run dynamics algorithm.
 
         This method will return when the forces on all individual
         atoms are less than *fmax* or when the number of steps exceeds
-        *steps*."""
+        *steps*.
 
-        for converged in Dynamics.irun(self):
+        Parameters
+        ----------
+        steps : int, default=DEFAULT_MAX_STEPS
+            Number of dynamics steps to be run.
+
+        Returns
+        -------
+        converged : bool
+            True if the forces on atoms are converged.
+        """
+
+        for converged in Dynamics.irun(self, steps=steps):
             pass
         return converged
 
-    def converged(self, *args):
+    def converged(self):
         """" a dummy function as placeholder for a real criterion, e.g. in
         Optimizer """
         return False
@@ -206,153 +307,162 @@ class Optimizer(Dynamics):
 
     # default maxstep for all optimizers
     defaults = {'maxstep': 0.2}
+    _deprecated = object()
 
     def __init__(
         self,
-        atoms,
-        restart,
-        logfile,
-        trajectory,
-        master=None,
-        append_trajectory=False,
-        force_consistent=False,
+        atoms: Atoms,
+        restart: Optional[str] = None,
+        logfile: Optional[Union[IO, str, Path]] = None,
+        trajectory: Optional[Union[str, Path]] = None,
+        append_trajectory: bool = False,
+        **kwargs,
     ):
-        """Structure optimizer object.
+        """
 
-        Parameters:
-
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
         restart: str
-            Filename for restart file.  Default value is *None*.
+            Filename for restart file. Default value is *None*.
 
-        logfile: file object or str
+        logfile: file object, Path, or str
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        trajectory: Trajectory object or str
-            Attach trajectory object.  If *trajectory* is a string a
-            Trajectory will be constructed.  Use *None* for no
+        trajectory: Trajectory object, Path, or str
+            Attach trajectory object. If *trajectory* is a string a
+            Trajectory will be constructed. Use *None* for no
             trajectory.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
-
-        append_trajectory: boolean
+        append_trajectory: bool
             Appended to the trajectory file instead of overwriting it.
 
-        force_consistent: boolean or None
-            Use force-consistent energy calls (as opposed to the energy
-            extrapolated to 0 K).  If force_consistent=None, uses
-            force-consistent energies if available in the calculator, but
-            falls back to force_consistent=False if not.
-        """
-        Dynamics.__init__(
-            self,
-            atoms,
-            logfile,
-            trajectory,
-            append_trajectory=append_trajectory,
-            master=master,
-        )
+        kwargs : dict, optional
+            Extra arguments passed to :class:`~ase.optimize.optimize.Dynamics`.
 
-        self.force_consistent = force_consistent
-        if self.force_consistent is None:
-            self.set_force_consistent()
+        """
+        super().__init__(
+            atoms=atoms,
+            logfile=logfile,
+            trajectory=trajectory,
+            append_trajectory=append_trajectory,
+            **kwargs,
+        )
 
         self.restart = restart
 
-        # initialize attribute
         self.fmax = None
 
         if restart is None or not isfile(restart):
             self.initialize()
         else:
             self.read()
-            barrier()
+            self.comm.barrier()
+
+    def read(self):
+        raise NotImplementedError
 
     def todict(self):
         description = {
             "type": "optimization",
             "optimizer": self.__class__.__name__,
         }
+        # add custom attributes from subclasses
+        for attr in ('maxstep', 'alpha', 'max_steps', 'restart',
+                     'fmax'):
+            if hasattr(self, attr):
+                description.update({attr: getattr(self, attr)})
         return description
 
     def initialize(self):
         pass
 
-    def irun(self, fmax=0.05, steps=None):
-        """ call Dynamics.irun and keep track of fmax"""
-        self.fmax = fmax
-        if steps:
-            self.max_steps = steps
-        return Dynamics.irun(self)
+    def irun(self, fmax=0.05, steps=DEFAULT_MAX_STEPS):
+        """Run optimizer as generator.
 
-    def run(self, fmax=0.05, steps=None):
-        """ call Dynamics.run and keep track of fmax"""
+        Parameters
+        ----------
+        fmax : float
+            Convergence criterion of the forces on atoms.
+        steps : int, default=DEFAULT_MAX_STEPS
+            Number of optimizer steps to be run.
+
+        Yields
+        ------
+        converged : bool
+            True if the forces on atoms are converged.
+        """
         self.fmax = fmax
-        if steps:
-            self.max_steps = steps
-        return Dynamics.run(self)
+        return Dynamics.irun(self, steps=steps)
+
+    def run(self, fmax=0.05, steps=DEFAULT_MAX_STEPS):
+        """Run optimizer.
+
+        Parameters
+        ----------
+        fmax : float
+            Convergence criterion of the forces on atoms.
+        steps : int, default=DEFAULT_MAX_STEPS
+            Number of optimizer steps to be run.
+
+        Returns
+        -------
+        converged : bool
+            True if the forces on atoms are converged.
+        """
+        self.fmax = fmax
+        return Dynamics.run(self, steps=steps)
 
     def converged(self, forces=None):
         """Did the optimization converge?"""
         if forces is None:
-            forces = self.atoms.get_forces()
-        if hasattr(self.atoms, "get_curvature"):
-            return (forces ** 2).sum(
-                axis=1
-            ).max() < self.fmax ** 2 and self.atoms.get_curvature() < 0.0
-        return (forces ** 2).sum(axis=1).max() < self.fmax ** 2
+            forces = self.optimizable.get_forces()
+        return self.optimizable.converged(forces, self.fmax)
 
     def log(self, forces=None):
         if forces is None:
-            forces = self.atoms.get_forces()
+            forces = self.optimizable.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(
-            force_consistent=self.force_consistent
-        )
+        e = self.optimizable.get_potential_energy()
         T = time.localtime()
         if self.logfile is not None:
             name = self.__class__.__name__
             if self.nsteps == 0:
                 args = (" " * len(name), "Step", "Time", "Energy", "fmax")
-                msg = "%s  %4s %8s %15s %12s\n" % args
+                msg = "%s  %4s %8s %15s  %12s\n" % args
                 self.logfile.write(msg)
 
-                if self.force_consistent:
-                    msg = "*Force-consistent energies used in optimization.\n"
-                    self.logfile.write(msg)
-
-            ast = {1: "*", 0: ""}[self.force_consistent]
-            args = (name, self.nsteps, T[3], T[4], T[5], e, ast, fmax)
-            msg = "%s:  %3d %02d:%02d:%02d %15.6f%1s %12.4f\n" % args
+            args = (name, self.nsteps, T[3], T[4], T[5], e, fmax)
+            msg = "%s:  %3d %02d:%02d:%02d %15.6f %15.6f\n" % args
             self.logfile.write(msg)
-
             self.logfile.flush()
 
     def dump(self, data):
-        if world.rank == 0 and self.restart is not None:
+        from ase.io.jsonio import write_json
+        if self.comm.rank == 0 and self.restart is not None:
             with open(self.restart, 'w') as fd:
                 write_json(fd, data)
 
     def load(self):
+        from ase.io.jsonio import read_json
         with open(self.restart) as fd:
             try:
+                from ase.optimize import BFGS
+                if not isinstance(self, BFGS) and isinstance(
+                    self.atoms, UnitCellFilter
+                ):
+                    warnings.warn(
+                        "WARNING: restart function is untested and may result "
+                        "in unintended behavior. Namely orig_cell is not "
+                        "loaded in the UnitCellFilter. Please test on your own"
+                        " to ensure consistent results."
+                    )
                 return read_json(fd, always_array=False)
             except Exception as ex:
                 msg = ('Could not decode restart file as JSON.  '
-                       f'You may need to delete the restart file {self.restart}')
+                       'You may need to delete the restart file '
+                       f'{self.restart}')
                 raise RestartError(msg) from ex
-
-    def set_force_consistent(self):
-        """Automatically sets force_consistent to True if force_consistent
-        energies are supported by calculator; else False."""
-        try:
-            self.atoms.get_potential_energy(force_consistent=True)
-        except PropertyNotImplementedError:
-            self.force_consistent = False
-        else:
-            self.force_consistent = True

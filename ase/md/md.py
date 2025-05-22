@@ -1,15 +1,21 @@
-"""Molecular Dynamics."""
+# fmt: off
 
+"""Molecular Dynamics."""
 import warnings
+from typing import IO, Optional, Union
+
 import numpy as np
 
-from ase.optimize.optimize import Dynamics
+from ase import Atoms, units
 from ase.md.logger import MDLogger
-from ase.io.trajectory import Trajectory
-from ase import units
+from ase.optimize.optimize import Dynamics
 
 
-def process_temperature(temperature, temperature_K, orig_unit):
+def process_temperature(
+    temperature: Optional[float],
+    temperature_K: Optional[float],
+    orig_unit: str,
+) -> float:
     """Handle that temperature can be specified in multiple units.
 
     For at least a transition period, molecular dynamics in ASE can
@@ -32,7 +38,7 @@ def process_temperature(temperature, temperature_K, orig_unit):
     orig_unit: str
         Unit used for the `temperature`` parameter.  Must be 'K' or 'eV'.
 
-    Exactly one of the two temperature parameters must be different from 
+    Exactly one of the two temperature parameters must be different from
     None, otherwise an error is issued.
 
     Return value: Temperature in Kelvin.
@@ -57,44 +63,62 @@ def process_temperature(temperature, temperature_K, orig_unit):
 class MolecularDynamics(Dynamics):
     """Base-class for all MD classes."""
 
-    def __init__(self, atoms, timestep, trajectory, logfile=None,
-                 loginterval=1, append_trajectory=False):
+    def __init__(
+        self,
+        atoms: Atoms,
+        timestep: float,
+        trajectory: Optional[str] = None,
+        logfile: Optional[Union[IO, str]] = None,
+        loginterval: int = 1,
+        **kwargs,
+    ):
         """Molecular Dynamics object.
 
-        Parameters:
-
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms : Atoms object
             The Atoms object to operate on.
 
-        timestep: float
+        timestep : float
             The time step in ASE time units.
 
-        trajectory: Trajectory object or str
+        trajectory : Trajectory object or str
             Attach trajectory object.  If *trajectory* is a string a
             Trajectory will be constructed.  Use *None* for no
             trajectory.
 
-        logfile: file object or str (optional)
+        logfile : file object or str (optional)
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        loginterval: int (optional)
-            Only write a log line for every *loginterval* time steps.  
-            Default: 1
+        loginterval : int, default: 1
+            Only write a log line for every *loginterval* time steps.
 
-        append_trajectory: boolean (optional)
-            Defaults to False, which causes the trajectory file to be
-            overwriten each time the dynamics is restarted from scratch.
-            If True, the new structures are appended to the trajectory
-            file instead.
+        kwargs : dict, optional
+            Extra arguments passed to :class:`~ase.optimize.optimize.Dynamics`.
         """
         # dt as to be attached _before_ parent class is initialized
         self.dt = timestep
 
-        Dynamics.__init__(self, atoms, logfile=None, trajectory=None)
+        super().__init__(
+            atoms,
+            logfile=None,
+            trajectory=trajectory,
+            loginterval=loginterval,
+            **kwargs,
+        )
 
+        # Some codes (e.g. Asap) may be using filters to
+        # constrain atoms or do other things.  Current state of the art
+        # is that "atoms" must be either Atoms or Filter in order to
+        # work with dynamics.
+        #
+        # In the future, we should either use a special role interface
+        # for MD, or we should ensure that the input is *always* a Filter.
+        # That way we won't need to test multiple cases.  Currently,
+        # we do not test /any/ kind of MD with any kind of Filter in ASE.
+        self.atoms = atoms
         self.masses = self.atoms.get_masses()
-        self.max_steps = None
 
         if 0 in self.masses:
             warnings.warn('Zero mass encountered in atoms; this will '
@@ -106,26 +130,10 @@ class MolecularDynamics(Dynamics):
         if not self.atoms.has('momenta'):
             self.atoms.set_momenta(np.zeros([len(self.atoms), 3]))
 
-        # Trajectory is attached here instead of in Dynamics.__init__
-        # to respect the loginterval argument.
-        try:
-            if trajectory is not None:
-                if isinstance(trajectory, str):
-                    mode = "a" if append_trajectory else "w"
-                    trajectory = self.ensureclose(
-                        Trajectory(trajectory, mode=mode, atoms=atoms)
-                    )
-                self.attach(trajectory, interval=loginterval)
-
-            if logfile:
-                logger = self.ensureclose(
-                    MDLogger(dyn=self, atoms=atoms, logfile=logfile))
-                self.attach(logger, loginterval)
-
-        except BaseException:
-            self._closefiles()
-            raise
-
+        if logfile:
+            logger = self.closelater(
+                MDLogger(dyn=self, atoms=atoms, logfile=logfile))
+            self.attach(logger, loginterval)
 
     def todict(self):
         return {'type': 'molecular-dynamics',
@@ -133,14 +141,34 @@ class MolecularDynamics(Dynamics):
                 'timestep': self.dt}
 
     def irun(self, steps=50):
-        """ Call Dynamics.irun and adjust max_steps """
-        self.max_steps = steps + self.nsteps
-        return Dynamics.irun(self)
+        """Run molecular dynamics algorithm as a generator.
+
+        Parameters
+        ----------
+        steps : int, default=DEFAULT_MAX_STEPS
+            Number of molecular dynamics steps to be run.
+
+        Yields
+        ------
+        converged : bool
+            True if the maximum number of steps are reached.
+        """
+        return Dynamics.irun(self, steps=steps)
 
     def run(self, steps=50):
-        """ Call Dynamics.run and adjust max_steps """
-        self.max_steps = steps + self.nsteps
-        return Dynamics.run(self)
+        """Run molecular dynamics algorithm.
+
+        Parameters
+        ----------
+        steps : int, default=DEFAULT_MAX_STEPS
+            Number of molecular dynamics steps to be run.
+
+        Returns
+        -------
+        converged : bool
+            True if the maximum number of steps are reached.
+        """
+        return Dynamics.run(self, steps=steps)
 
     def get_time(self):
         return self.nsteps * self.dt

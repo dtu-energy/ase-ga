@@ -1,150 +1,110 @@
+# fmt: off
+
+"""This is the implementation of the exciting I/O functions.
+
+The main roles these functions do is write exciting ground state
+input files and read exciting ground state ouput files.
+
+Right now these functions all written without a class to wrap them. This
+could change in the future but was done to make things simpler.
+
+These functions are primarily called by the exciting caculator in
+ase/calculators/exciting/exciting.py.
+
+See the correpsonding test file in ase/test/io/test_exciting.py.
+
+Plan is to add parsing of eigenvalues in the next iteration using
+excitingtools.exciting_dict_parsers.groundstate_parser.parse_eigval
+
+Note: excitingtools must be installed using `pip install excitingtools` for
+the exciting io to work.
 """
-This is the implementation of the exciting I/O functions
-The functions are called with read write using the format "exciting"
+from pathlib import Path
+from typing import Dict, Optional, Union
 
-"""
-
-import numpy as np
-import xml.etree.ElementTree as ET
-from ase.atoms import Atoms
-from ase.units import Bohr
-from ase.utils import writer
-from xml.dom import minidom
+import ase
 
 
-def read_exciting(fileobj, index=-1):
-    """Reads structure from exiting xml file.
+def parse_output(info_out_file_path):
+    """Parse exciting INFO.OUT output file using excitingtools.
 
-    Parameters
-    ----------
-    fileobj: file object
-        File handle from which data should be read.
+    Note, excitingtools works by returning a dictionary that contains
+    two high level keys. Initialization and results. Initialization
+    contains data about how the calculation was setup (e.g. structure,
+    maximum number of planewaves, etc...) and the results
+    gives SCF cycle result information (e.g. total energy).
 
-    Other parameters
-    ----------------
-    index: integer -1
-        Not used in this implementation.
+    Args:
+        info_out_file_path: path to an INFO.out exciting output file.
+    Returns:
+        A dictionary containing information about how the calculation was setup
+        and results from the calculations SCF cycles.
     """
+    from excitingtools.exciting_dict_parsers.groundstate_parser import (
+        parse_info_out,
+    )
 
-    # Parse file into element tree
-    doc = ET.parse(fileobj)
-    root = doc.getroot()
-    speciesnodes = root.find('structure').iter('species')
-    symbols = []
-    positions = []
-    basevects = []
-    atoms = None
-    # Collect data from tree
-    for speciesnode in speciesnodes:
-        symbol = speciesnode.get('speciesfile').split('.')[0]
-        natoms = speciesnode.iter('atom')
-        for atom in natoms:
-            x, y, z = atom.get('coord').split()
-            positions.append([float(x), float(y), float(z)])
-            symbols.append(symbol)
-    # scale unit cell accorting to scaling attributes
-    if 'scale' in doc.find('structure/crystal').attrib:
-        scale = float(str(doc.find('structure/crystal').attrib['scale']))
-    else:
-        scale = 1
-
-    if 'stretch' in doc.find('structure/crystal').attrib:
-        a, b, c = doc.find('structure/crystal').attrib['stretch'].text.split()
-        stretch = np.array([float(a), float(b), float(c)])
-    else:
-        stretch = np.array([1.0, 1.0, 1.0])
-    basevectsn = root.findall('structure/crystal/basevect')
-    for basevect in basevectsn:
-        x, y, z = basevect.text.split()
-        basevects.append(np.array([float(x) * Bohr * stretch[0],
-                                   float(y) * Bohr * stretch[1],
-                                   float(z) * Bohr * stretch[2]
-                                   ]) * scale)
-    atoms = Atoms(symbols=symbols, cell=basevects)
-
-    atoms.set_scaled_positions(positions)
-    if 'molecule' in root.find('structure').attrib.keys():
-        if root.find('structure').attrib['molecule']:
-            atoms.set_pbc(False)
-    else:
-        atoms.set_pbc(True)
-
-    return atoms
+    # Check for the file:
+    if not Path(info_out_file_path).is_file():
+        raise FileNotFoundError
+    return parse_info_out(info_out_file_path)
 
 
-@writer
-def write_exciting(fileobj, images):
-    """writes exciting input structure in XML
+def write_input_xml_file(
+        file_name, atoms: ase.Atoms, ground_state_input: Dict,
+        species_path, title=None,
+        properties_input: Optional[Dict] = None):
+    """Write input xml file for exciting calculation.
 
-    Parameters
-    ----------
-    filename : str
-        Name of file to which data should be written.
-    images : Atom Object or List of Atoms objects
-        This function will write the first Atoms object to file.
-
-    Returns
-    -------
+    Args:
+        file_name: where to save the input xml file.
+        atoms: ASE Atoms object.
+        ground_state_input: ground state parameters for run.
+        properties_input: optional additional parameters to run
+            after performing the ground state calculation (e.g. bandstructure
+            or DOS.)
     """
-    root = atoms2etree(images)
-    rough_string = ET.tostring(root, 'utf-8')
-    reparsed = minidom.parseString(rough_string)
-    pretty = reparsed.toprettyxml(indent="\t")
-    fileobj.write(pretty)
+    from excitingtools import (
+        ExcitingGroundStateInput,
+        ExcitingInputXML,
+        ExcitingPropertiesInput,
+        ExcitingStructure,
+    )
+
+    # Convert ground state dictionary into expected input object.
+    ground_state = ExcitingGroundStateInput(**ground_state_input)
+    structure = ExcitingStructure(atoms, species_path=species_path)
+    # If we are running futher calculations such as bandstructure/DOS.
+    if properties_input is not None:
+        properties_input = ExcitingPropertiesInput(**properties_input)
+    else:
+        properties_input = ExcitingPropertiesInput()
+    input_xml = ExcitingInputXML(structure=structure,
+                                 groundstate=ground_state,
+                                 properties=properties_input,
+                                 title=title)
+
+    input_xml.write(file_name)
 
 
-def atoms2etree(images):
-    """This function creates the XML DOM corresponding
-     to the structure for use in write and calculator
+def ase_atoms_from_exciting_input_xml(
+        input_xml_path: Union[Path, str]) -> ase.Atoms:
+    """Helper function to read structure from input.xml file.
 
-    Parameters
-    ----------
+    Note, this function operates on the input.xml file that is the input
+    to an exciting calculation. It parses the structure data given in the file
+    and returns it in an ase Atoms object. Note this information can also be
+    taken from an INFO.out file using parse_output. This script is more
+    lightweight than parse_output since the input xml is significantly smaller
+    than an INFO.out file and is XML structured making the parsing easier.
 
-    images : Atom Object or List of Atoms objects
+    Args:
+        input_xml_path: Path where input.xml file lives.
 
-    Returns
-    -------
-    root : etree object
-        Element tree of exciting input file containing the structure
+    Returns:
+        ASE atoms object with all the relevant fields filled.
     """
-    if not isinstance(images, (list, tuple)):
-        images = [images]
-
-    root = ET.Element('input')
-    root.set(
-        '{http://www.w3.org/2001/XMLSchema-instance}noNamespaceSchemaLocation',
-        'http://xml.exciting-code.org/excitinginput.xsd')
-
-    title = ET.SubElement(root, 'title')
-    title.text = ''
-    structure = ET.SubElement(root, 'structure')
-    crystal = ET.SubElement(structure, 'crystal')
-    atoms = images[0]
-    for vec in atoms.cell:
-        basevect = ET.SubElement(crystal, 'basevect')
-        basevect.text = '%.14f %.14f %.14f' % tuple(vec / Bohr)
-
-    oldsymbol = ''
-    oldrmt = -1
-    newrmt = -1
-    scaled = atoms.get_scaled_positions()
-    for aindex, symbol in enumerate(atoms.get_chemical_symbols()):
-        if 'rmt' in atoms.arrays:
-            newrmt = atoms.get_array('rmt')[aindex] / Bohr
-        if symbol != oldsymbol or newrmt != oldrmt:
-            speciesnode = ET.SubElement(structure, 'species',
-                                        speciesfile='%s.xml' % symbol,
-                                        chemicalSymbol=symbol)
-            oldsymbol = symbol
-            if 'rmt' in atoms.arrays:
-                oldrmt = atoms.get_array('rmt')[aindex] / Bohr
-                if oldrmt > 0:
-                    speciesnode.attrib['rmt'] = '%.4f' % oldrmt
-
-        atom = ET.SubElement(speciesnode, 'atom',
-                             coord='%.14f %.14f %.14f' % tuple(scaled[aindex]))
-        if 'momenta' in atoms.arrays:
-            atom.attrib['bfcmt'] = '%.14f %.14f %.14f' % tuple(
-                atoms.get_array('mommenta')[aindex])
-
-    return root
+    from excitingtools.exciting_obj_parsers.input_xml import parse_input_xml
+    from excitingtools.structure.ase_utilities import exciting_structure_to_ase
+    structure = parse_input_xml(input_xml_path).structure
+    return exciting_structure_to_ase(structure)

@@ -1,12 +1,13 @@
-"""This module contains functions to read from QBox output files"""
+# fmt: off
 
-from ase import Atom, Atoms
-from ase.calculators.singlepoint import SinglePointCalculator
-from ase.utils import reader
+"""This module contains functions to read from QBox output files"""
 
 import re
 import xml.etree.ElementTree as ET
 
+from ase import Atom, Atoms
+from ase.calculators.singlepoint import SinglePointCalculator
+from ase.utils import reader
 
 # Compile regexs for fixing XML
 re_find_bad_xml = re.compile(r'<(/?)([A-z]+) expectation ([a-z]+)')
@@ -35,7 +36,7 @@ def read_qbox(f, index=-1):
     is_qball = 'qb@LL' in version.text or 'qball' in version.text
 
     # Load in atomic species
-    species = dict()
+    species = {}
     if is_qball:
         # Read all of the lines between release and the first call to `run`
         species_data = []
@@ -105,8 +106,8 @@ def _find_blocks(fp, tag, stopwords='[qbox]'):
         list of xml.ElementTree, parsed XML blocks found by this class
     """
 
-    start_tag = '<%s' % tag
-    end_tag = '</%s>' % tag
+    start_tag = f'<{tag}'
+    end_tag = f'</{tag}>'
 
     blocks = []  # Stores all blocks
     cur_block = []  # Block being filled
@@ -172,7 +173,7 @@ def _parse_frame(tree, species):
     if stress_tree is None:
         stresses = None
     else:
-        stresses = [float(stress_tree.find('sigma_%s' % x).text)
+        stresses = [float(stress_tree.find(f'sigma_{x}').text)
                     for x in ['xx', 'yy', 'zz', 'yz', 'xz', 'xy']]
 
     # Create the Atoms object

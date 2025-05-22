@@ -1,7 +1,9 @@
-def test_graphene():
-    from ase import Atoms
-    from ase.calculators.crystal import CRYSTAL
+# fmt: off
+from ase import Atoms
+from ase.calculators.crystal import CRYSTAL
 
+
+def test_graphene(crystal_factory):
     with open('basis', 'w') as fd:
         fd.write("""6 4
     0 0 6 2.0 1.0
@@ -15,11 +17,10 @@ def test_graphene():
      3.665 -0.3959 0.2365
      0.7705 1.216 0.8606
     0 1 1 0.0 1.0
-     0.26 1.0 1.0 
+     0.26 1.0 1.0
     0 3 1 0.0 1.0
      0.8 1.0
     """)
-
 
     geom = Atoms('C2',
                  cell=[[0.21680326E+01, -0.12517142E+01, 0.000000000E+00],

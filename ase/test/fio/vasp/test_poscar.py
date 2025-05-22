@@ -1,19 +1,22 @@
+# fmt: off
 # import inspect
-import pytest
-import numpy as np
 from shutil import copyfile
+
+import numpy as np
+import pytest
+
 # from ase import Atoms
-from ase.io import read # , iread
+from ase.io import read  # , iread
 
 
-@pytest.fixture
+@pytest.fixture()
 def outcar(datadir):
     return datadir / 'vasp' / 'OUTCAR_example_1'
 
-@pytest.fixture
+
+@pytest.fixture()
 def poscar_no_species(datadir):
     return datadir / 'vasp' / 'POSCAR_example_1'
-
 
 
 def test_read_poscar_no_species(outcar, poscar_no_species, tmp_path):

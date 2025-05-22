@@ -1,3 +1,5 @@
+# fmt: off
+
 # ******NOTICE***************
 # optimize.py module by Travis E. Oliphant
 #
@@ -6,10 +8,14 @@
 # *****END NOTICE************
 
 import time
+from typing import IO, Optional, Union
+
 import numpy as np
-from numpy import eye, absolute, sqrt, isinf
-from ase.utils.linesearch import LineSearch
+from numpy import absolute, eye, isinf, sqrt
+
+from ase import Atoms
 from ase.optimize.optimize import Optimizer
+from ase.utils.linesearch import LineSearch
 
 # These have been copied from Numeric's MLab.py
 # I don't think they made the transition to scipy_core
@@ -22,24 +28,34 @@ __version__ = '0.1'
 
 
 class BFGSLineSearch(Optimizer):
-    def __init__(self, atoms, restart=None, logfile='-', maxstep=None,
-                 trajectory=None, c1=0.23, c2=0.46, alpha=10.0, stpmax=50.0,
-                 master=None, force_consistent=None):
+    def __init__(
+        self,
+        atoms: Atoms,
+        restart: Optional[str] = None,
+        logfile: Union[IO, str] = '-',
+        maxstep: float = None,
+        trajectory: Optional[str] = None,
+        c1: float = 0.23,
+        c2: float = 0.46,
+        alpha: float = 10.0,
+        stpmax: float = 50.0,
+        **kwargs,
+    ):
         """Optimize atomic positions in the BFGSLineSearch algorithm, which
         uses both forces and potential energy information.
 
-        Parameters:
-
-        atoms: Atoms object
+        Parameters
+        ----------
+        atoms: :class:`~ase.Atoms`
             The Atoms object to relax.
 
-        restart: string
-            Pickle file used to store hessian matrix. If set, file with
+        restart: str
+            JSON file used to store hessian matrix. If set, file with
             such a name will be searched and hessian matrix stored will
             be used, if the file exists.
 
-        trajectory: string
-            Pickle file used to store trajectory of atomic movement.
+        trajectory: str
+            Trajectory file used to store optimisation path.
 
         maxstep: float
             Used to set the maximum distance an atom can move per
@@ -49,15 +65,10 @@ class BFGSLineSearch(Optimizer):
             If *logfile* is a string, a file with that name will be opened.
             Use '-' for stdout.
 
-        master: boolean
-            Defaults to None, which causes only rank 0 to save files.  If
-            set to true,  this rank will save files.
+        kwargs : dict, optional
+            Extra arguments passed to
+            :class:`~ase.optimize.optimize.Optimizer`.
 
-        force_consistent: boolean or None
-            Use force-consistent energy calls (as opposed to the energy
-            extrapolated to 0 K).  By default (force_consistent=None) uses
-            force-consistent energies if available in the calculator, but
-            falls back to force_consistent=False if not.
         """
         if maxstep is None:
             self.maxstep = self.defaults['maxstep']
@@ -81,8 +92,7 @@ class BFGSLineSearch(Optimizer):
         self.no_update = False
         self.replay = False
 
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory,
-                           master, force_consistent=force_consistent)
+        Optimizer.__init__(self, atoms, restart, logfile, trajectory, **kwargs)
 
     def read(self):
         self.r0, self.g0, self.e0, self.task, self.H = self.load()
@@ -95,19 +105,15 @@ class BFGSLineSearch(Optimizer):
         self.e0 = None
         self.rep_count = 0
 
-    def step(self, f=None):
-        atoms = self.atoms
+    def step(self, forces=None):
+        optimizable = self.optimizable
 
-        if f is None:
-            f = atoms.get_forces()
+        if forces is None:
+            forces = optimizable.get_forces()
 
-        from ase.neb import NEB
-        if isinstance(atoms, NEB):
-            raise TypeError('NEB calculations cannot use the BFGSLineSearch'
-                            ' optimizer. Use BFGS or another optimizer.')
-        r = atoms.get_positions()
+        r = optimizable.get_positions()
         r = r.reshape(-1)
-        g = -f.reshape(-1) / self.alpha
+        g = -forces.reshape(-1) / self.alpha
         p0 = self.p
         self.update(r, g, self.r0, self.g0, p0)
         # o,v = np.linalg.eigh(self.B)
@@ -115,8 +121,8 @@ class BFGSLineSearch(Optimizer):
 
         self.p = -np.dot(self.H, g)
         p_size = np.sqrt((self.p**2).sum())
-        if p_size <= np.sqrt(len(atoms) * 1e-10):
-            self.p /= (p_size / np.sqrt(len(atoms)*1e-10))
+        if p_size <= np.sqrt(len(optimizable) * 1e-10):
+            self.p /= (p_size / np.sqrt(len(optimizable) * 1e-10))
         ls = LineSearch()
         self.alpha_k, e, self.e0, self.no_update = \
             ls._line_search(self.func, self.fprime, r, self.p, g, e, self.e0,
@@ -126,15 +132,15 @@ class BFGSLineSearch(Optimizer):
             raise RuntimeError("LineSearch failed!")
 
         dr = self.alpha_k * self.p
-        atoms.set_positions((r + dr).reshape(len(atoms), -1))
+        optimizable.set_positions((r + dr).reshape(len(optimizable), -1))
         self.r0 = r
         self.g0 = g
         self.dump((self.r0, self.g0, self.e0, self.task, self.H))
 
     def update(self, r, g, r0, g0, p0):
-        self.I = eye(len(self.atoms) * 3, dtype=int)
+        self.I = eye(len(self.optimizable) * 3, dtype=int)
         if self.H is None:
-            self.H = eye(3 * len(self.atoms))
+            self.H = eye(3 * len(self.optimizable))
             # self.B = np.linalg.inv(self.H)
             return
         else:
@@ -165,35 +171,33 @@ class BFGSLineSearch(Optimizer):
 
     def func(self, x):
         """Objective function for use of the optimizers"""
-        self.atoms.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_positions(x.reshape(-1, 3))
         self.function_calls += 1
         # Scale the problem as SciPy uses I as initial Hessian.
-        return (self.atoms.get_potential_energy(
-                force_consistent=self.force_consistent) / self.alpha)
+        return self.optimizable.get_potential_energy() / self.alpha
 
     def fprime(self, x):
         """Gradient of the objective function for use of the optimizers"""
-        self.atoms.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_positions(x.reshape(-1, 3))
         self.force_calls += 1
         # Remember that forces are minus the gradient!
         # Scale the problem as SciPy uses I as initial Hessian.
-        f = self.atoms.get_forces().reshape(-1)
-        return - f / self.alpha
+        forces = self.optimizable.get_forces().reshape(-1)
+        return - forces / self.alpha
 
     def replay_trajectory(self, traj):
         """Initialize hessian from old trajectory."""
         self.replay = True
+        from ase.utils import IOContext
 
-        closelater = None
+        with IOContext() as files:
+            if isinstance(traj, str):
+                from ase.io.trajectory import Trajectory
+                traj = files.closelater(Trajectory(traj, mode='r'))
 
-        if isinstance(traj, str):
-            from ase.io.trajectory import Trajectory
-            traj = closelater = Trajectory(traj, 'r')
-
-        try:
             r0 = None
             g0 = None
-            for i in range(0, len(traj) - 1):
+            for i in range(len(traj) - 1):
                 r = traj[i].get_positions().ravel()
                 g = - traj[i].get_forces().ravel() / self.alpha
                 self.update(r, g, r0, g0, self.p)
@@ -202,29 +206,23 @@ class BFGSLineSearch(Optimizer):
                 g0 = g.copy()
             self.r0 = r0
             self.g0 = g0
-        finally:
-            if closelater is not None:
-                closelater.close()
 
     def log(self, forces=None):
         if self.logfile is None:
             return
         if forces is None:
-            forces = self.atoms.get_forces()
+            forces = self.optimizable.get_forces()
         fmax = sqrt((forces**2).sum(axis=1).max())
-        e = self.atoms.get_potential_energy(
-            force_consistent=self.force_consistent)
+        e = self.optimizable.get_potential_energy()
         T = time.localtime()
         name = self.__class__.__name__
         w = self.logfile.write
         if self.nsteps == 0:
             w('%s  %4s[%3s] %8s %15s  %12s\n' %
-              (' '*len(name), 'Step', 'FC', 'Time', 'Energy', 'fmax'))
-            if self.force_consistent:
-                w('*Force-consistent energies used in optimization.\n')
-        w('%s:  %3d[%3d] %02d:%02d:%02d %15.6f%1s %12.4f\n'
+              (' ' * len(name), 'Step', 'FC', 'Time', 'Energy', 'fmax'))
+        w('%s:  %3d[%3d] %02d:%02d:%02d %15.6f %12.4f\n'
             % (name, self.nsteps, self.force_calls, T[3], T[4], T[5], e,
-               {1: '*', 0: ''}[self.force_consistent], fmax))
+               fmax))
         self.logfile.flush()
 
 

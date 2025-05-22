@@ -1,3 +1,5 @@
+# fmt: off
+
 """Module for wrapping an array without being an array.
 
 This can be desirable because we would like atoms.cell to be like an array,
@@ -24,8 +26,8 @@ for all the interesting ndarray methods.
 
 
 from functools import update_wrapper
-import numpy as np
 
+import numpy as np
 
 inplace_methods = ['__iadd__', '__imul__', '__ipow__', '__isub__',
                    '__itruediv__', '__imatmul__']

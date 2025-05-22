@@ -21,20 +21,6 @@ omit =
     # Since we don't plan to test it as such, we exclude it from the listing.
     ../optimize/test/*.py
 
-    # TODO: Test external calculators and add to listing.
-    ../calculators/gaussian.py
-    ../calculators/crystal.py
-    ../calculators/demonnano.py
-    ../calculators/qchem.py
-    ../calculators/amber.py
-    ../calculators/turbomole.py
-    ../calculators/onetep.py
-    ../calculators/dmol.py
-    ../calculators/mopac.py
-    ../calculators/castep.py
-    ../calculators/gulp.py
-    ../calculators/demon/demon.py
-    ../calculators/demon/demon_io.py
 
 [html]
 directory = coverage-html

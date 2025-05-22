@@ -1,10 +1,12 @@
+# fmt: off
+
 import pickle
 import sys
 
 import numpy as np
 
-from ase.gui.i18n import _
 import ase.gui.ui as ui
+from ase.gui.i18n import _
 
 graph_help_text = _("""\
 Symbols:
@@ -33,7 +35,7 @@ Symbols:
 
 class Graphs:
     def __init__(self, gui):
-        win = ui.Window('Graphs')
+        win = ui.Window('Graphs', wmtype='utility')
         self.expr = ui.Entry('', 50, self.plot)
         win.add([self.expr, ui.helpbutton(graph_help_text)])
 
@@ -65,6 +67,12 @@ class Graphs:
     def save(self):
         dialog = ui.SaveFileDialog(self.gui.window.win,
                                    _('Save data to file ... '))
+        # fix tkinter not automatically setting dialog type
+        # remove from Python3.8+
+        # see https://github.com/python/cpython/pull/25187
+        # and https://bugs.python.org/issue43655
+        # and https://github.com/python/cpython/pull/25592
+        ui.set_windowtype(dialog.top, 'dialog')
         filename = dialog.go()
         if filename:
             expr = self.expr.value

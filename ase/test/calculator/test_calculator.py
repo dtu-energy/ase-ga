@@ -1,7 +1,9 @@
+# fmt: off
 from pathlib import Path
-import pytest
-from ase.calculators.calculator import Calculator
 
+import pytest
+
+from ase.calculators.calculator import Calculator
 
 
 def test_directory_and_label():

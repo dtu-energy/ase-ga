@@ -1,7 +1,9 @@
+# fmt: off
 import pytest
+
+from ase import Atoms
 from ase.calculators.calculator import kpts2kpts
 from ase.lattice import all_variants
-from ase import Atoms
 
 
 # This function tests whether giving a bandpath

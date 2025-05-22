@@ -1,7 +1,10 @@
+# fmt: off
+from ase import Atoms
+from ase.constraints import FixBondLengths
+
+
 def test_fixbonds():
     """Test Atoms.__delitem__ with FixAtoms constraint."""
-    from ase import Atoms
-    from ase.constraints import FixBondLengths
 
     a = Atoms('H3')
     a.constraints = FixBondLengths([(1, 2)])

@@ -1,22 +1,27 @@
+# fmt: off
+
 # flake8: noqa
 import logging
 import math
+
 import numpy as np
 
-###CO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# CO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 try:
     import scipy
     import scipy.linalg
     have_scipy = True
 except ImportError:
     have_scipy = False
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 from ase.utils import longsum
 
 logger = logging.getLogger(__name__)
 
-###CO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# CO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
 class LinearPath:
     """Describes a linear search path of the form t -> t g
     """
@@ -33,7 +38,6 @@ class LinearPath:
         return alpha * self.dirn
 
 
-
 def nullspace(A, myeps=1e-10):
     """The RumPath class needs the ability to compute the null-space of
     a small matrix. This is provided here. But we now also need scipy!
@@ -45,11 +49,10 @@ def nullspace(A, myeps=1e-10):
     u, s, vh = scipy.linalg.svd(A)
     padding = max(0, np.shape(A)[1] - np.shape(s)[0])
     null_mask = np.concatenate(((s <= myeps),
-                                np.ones((padding,),dtype=bool)),
+                                np.ones((padding,), dtype=bool)),
                                axis=0)
     null_space = scipy.compress(null_mask, vh, axis=0)
     return scipy.transpose(null_space)
-
 
 
 class RumPath:
@@ -85,7 +88,8 @@ class RumPath:
         """
 
         if not have_scipy:
-            raise RuntimeError("RumPath depends on scipy, which could not be imported")
+            raise RuntimeError(
+                "RumPath depends on scipy, which could not be imported")
 
         # keep some stuff stored
         self.rotation_factors = rotation_factors
@@ -97,10 +101,10 @@ class RumPath:
         # rotations to individual position vectors!
         # we will eventually store the stretch in w, X is just a reference
         # to x_start with different shape
-        w = dirn.copy().reshape( [3, len(dirn)/3] )
-        X = x_start.reshape( [3, len(dirn)/3] )
+        w = dirn.copy().reshape([3, len(dirn) / 3])
+        X = x_start.reshape([3, len(dirn) / 3])
 
-        for I in rigid_units: # I is a list of indices for one molecule
+        for I in rigid_units:  # I is a list of indices for one molecule
             # get the positions of the i-th molecule, subtract mean
             x = X[:, I]
             y = x - x.mean(0).T  # PBC?
@@ -110,12 +114,12 @@ class RumPath:
             # compute the system to solve for K (see accompanying note!)
             #   A = \sum_j Yj Yj'
             #   b = \sum_j Yj' fj
-            A = np.zeros((3,3))
+            A = np.zeros((3, 3))
             b = np.zeros(3)
             for j in range(len(I)):
-                Yj = np.array( [ [  y[1,j],     0.0, -y[2,j] ],
-                                 [ -y[0,j],  y[2,j],     0.0 ],
-                                 [     0.0, -y[1,j],  y[0,j] ] ] )
+                Yj = np.array([[y[1, j], 0.0, -y[2, j]],
+                               [-y[0, j], y[2, j], 0.0],
+                               [0.0, -y[1, j], y[0, j]]])
                 A += np.dot(Yj.T, Yj)
                 b += np.dot(Yj.T, f[:, j])
             # If the directions y[:,j] span all of R^3 (canonically this is true
@@ -130,20 +134,19 @@ class RumPath:
             b -= np.dot(np.dot(N, N.T), b)
             A += np.dot(N, N.T)
             k = scipy.linalg.solve(A, b, sym_pos=True)
-            K = np.array( [ [   0.0,  k[0], -k[2] ],
-                            [ -k[0],   0.0,  k[1] ],
-                            [  k[2], -k[1],   0.0 ] ] )
+            K = np.array([[0.0, k[0], -k[2]],
+                          [-k[0], 0.0, k[1]],
+                          [k[2], -k[1], 0.0]])
             # now remove the rotational component from the search direction
             # ( we actually keep the translational component as part of w,
             #   but this could be changed as well! )
-            w[:, I] -=  np.dot(K, y)
+            w[:, I] -= np.dot(K, y)
             # store K and y
             self.K.append(K)
             self.y.append(y)
 
         # store the stretch (no need to copy here, since w is already a copy)
         self.stretch = w
-
 
     def step(self, alpha):
         """perform a step in the line-search, given a step-length alpha
@@ -165,11 +168,11 @@ class RumPath:
             #      I + t K + 1/2 t^2 K^2 + 1/6 t^3 K^3 - I
             #                            = t K (I + 1/2 t K (I + 1/3 t K))
             aK = alpha * rf * K
-            s[:, I] += np.dot(aK, y + 0.5 * np.dot(aK, y + 1/3. * np.dot( aK, y )) )
+            s[:, I] += np.dot(aK, y + 0.5 * np.dot(aK,
+                              y + 1 / 3. * np.dot(aK, y)))
 
         return s.ravel()
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
 class LineSearchArmijo:
@@ -197,12 +200,11 @@ class LineSearchArmijo:
 
         self.c1 = c1
 
+        # CO : added rigid_units and rotation_factors
 
-        ###CO : added rigid_units and rotation_factors
-    def run(self, x_start, dirn, a_max=None, a_min=None, a1=None, 
+    def run(self, x_start, dirn, a_max=None, a_min=None, a1=None,
             func_start=None, func_old=None, func_prime_start=None,
             rigid_units=None, rotation_factors=None, maxstep=None):
-
         """Perform a backtracking / quadratic-interpolation linesearch
             to find an appropriate step length with Armijo condition.
         NOTE THIS LINESEARCH DOES NOT IMPOSE WOLFE CONDITIONS!
@@ -224,7 +226,7 @@ class LineSearchArmijo:
                 function will return a value scaled with respect to dirn.
             a_max: an upper bound on the maximum step length allowed. Default is 2.0.
             a_min: a lower bound on the minimum step length allowed. Default is 1e-10.
-                A RuntimeError is raised if this bound is violated 
+                A RuntimeError is raised if this bound is violated
                 during the line search.
             a1: the initial guess for an acceptable step length. If no value is
                 given, this will be set automatically, using quadratic
@@ -256,11 +258,11 @@ class LineSearchArmijo:
             RuntimeError for problems encountered during iteration
         """
 
-        a1 = self.handle_args(x_start, dirn, a_max, a_min, a1, func_start, 
+        a1 = self.handle_args(x_start, dirn, a_max, a_min, a1, func_start,
                               func_old, func_prime_start, maxstep)
 
         # DEBUG
-        logger.debug("a1(auto) = ", a1)
+        logger.debug("a1(auto) = %e", a1)
 
         if abs(a1 - 1.0) <= 0.5:
             a1 = 1.0
@@ -271,7 +273,7 @@ class LineSearchArmijo:
         phi_a_final = None
         num_iter = 0
 
-        ###CO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        # CO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         # create a search-path
         if rigid_units is None:
             # standard linear search-path
@@ -282,22 +284,23 @@ class LineSearchArmijo:
             # if rigid_units != None, but rotation_factors == None, then
             # raise an error.
             if rotation_factors == None:
-                raise RuntimeError('RumPath cannot be created since rotation_factors == None')
+                raise RuntimeError(
+                    'RumPath cannot be created since rotation_factors == None')
             path = RumPath(x_start, dirn, rigid_units, rotation_factors)
-        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
-        while(True):
+        while (True):
 
             logger.debug("-----------NEW ITERATION OF LINESEARCH----------")
             logger.debug("Number of linesearch iterations: %d", num_iter)
             logger.debug("a1 = %e", a1)
 
-            ###CO replaced: func_a1 = self.func(x_start + a1 * self.dirn)
+            # CO replaced: func_a1 = self.func(x_start + a1 * self.dirn)
             func_a1 = self.func(x_start + path.step(a1))
             phi_a1 = func_a1
             # compute sufficient decrease (Armijo) condition
-            suff_dec = (phi_a1 <= self.func_start+self.c1*a1*self.phi_prime_start)
+            suff_dec = (phi_a1 <= self.func_start +
+                        self.c1 * a1 * self.phi_prime_start)
 
             # DEBUG
             # print("c1*a1*phi_prime_start = ", self.c1*a1*self.phi_prime_start,
@@ -313,14 +316,14 @@ class LineSearchArmijo:
                 a_final = a1
                 phi_a_final = phi_a1
                 logger.debug("Linesearch returned a = %e, phi_a = %e",
-                            a_final, phi_a_final)
+                             a_final, phi_a_final)
                 logger.debug("-----------LINESEARCH COMPLETE-----------")
-                return a_final, phi_a_final, num_iter==0
+                return a_final, phi_a_final, num_iter == 0
 
             # we don't have sufficient decrease, so we need to compute a
             # new trial step-length
             at = -  ((self.phi_prime_start * a1) /
-                (2*((phi_a1 - self.func_start)/a1 - self.phi_prime_start)))
+                     (2 * ((phi_a1 - self.func_start) / a1 - self.phi_prime_start)))
             logger.debug("quadratic_min: initial at = %e", at)
 
             # because a1 does not satisfy Armijo it follows that at must
@@ -329,18 +332,16 @@ class LineSearchArmijo:
             # therefore, we should now only check that at has not become too small,
             # in which case it is likely that nonlinearity has played a big role
             # here, so we take an ultra-conservative backtracking step
-            a1 = max( at, a1 / 10.0 )
+            a1 = max(at, a1 / 10.0)
             if a1 > at:
-                logger.debug("at (%e) < a1/10: revert to backtracking a1/10", at)
+                logger.debug(
+                    "at (%e) < a1/10: revert to backtracking a1/10", at)
 
         # (end of while(True) line-search loop)
     # (end of run())
 
-
-
     def handle_args(self, x_start, dirn, a_max, a_min, a1, func_start, func_old,
                     func_prime_start, maxstep):
-
         """Verify passed parameters and set appropriate attributes accordingly.
 
         A suitable value for the initial step-length guess will be either
@@ -383,7 +384,10 @@ class LineSearchArmijo:
 
         self.phi_prime_start = longsum(self.func_prime_start * self.dirn)
         if self.phi_prime_start >= 0:
-            logger.error("Passed direction which is not downhill. Aborting...")
+            logger.error(
+                "Passed direction which is not downhill. Aborting...: %e",
+                self.phi_prime_start
+            )
             raise ValueError("Direction is not downhill.")
         elif math.isinf(self.phi_prime_start):
             logger.error("Passed func_prime_start and dirn which are too big. "
@@ -394,27 +398,28 @@ class LineSearchArmijo:
             if func_old is not None:
                 # Interpolating a quadratic to func and func_old - see NW
                 # equation 3.60
-                a1 = 2*(self.func_start - self.func_old)/self.phi_prime_start
+                a1 = 2 * (self.func_start - self.func_old) / \
+                    self.phi_prime_start
                 logger.debug("Interpolated quadratic, obtained a1 = %e", a1)
         if a1 is None or a1 > a_max:
             logger.debug("a1 greater than a_max. Reverting to default value "
-                           "a1 = 1.0")
+                         "a1 = 1.0")
             a1 = 1.0
         if a1 is None or a1 < self.tol:
             logger.debug("a1 is None or a1 < self.tol. Reverting to default value "
-                           "a1 = 1.0")
+                         "a1 = 1.0")
             a1 = 1.0
         if a1 is None or a1 < self.a_min:
             logger.debug("a1 is None or a1 < a_min. Reverting to default value "
-                           "a1 = 1.0")
+                         "a1 = 1.0")
             a1 = 1.0
 
         if maxstep is None:
             maxstep = 0.2
         logger.debug("maxstep = %e", maxstep)
-        
+
         r = np.reshape(dirn, (-1, 3))
-        steplengths = ((a1*r)**2).sum(1)**0.5
+        steplengths = ((a1 * r)**2).sum(1)**0.5
         maxsteplength = np.max(steplengths)
         if maxsteplength >= maxstep:
             a1 *= maxstep / maxsteplength

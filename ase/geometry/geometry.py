@@ -1,3 +1,5 @@
+# fmt: off
+
 # Copyright (C) 2010, Jesper Friis
 # (see accompanying license files for details).
 
@@ -8,11 +10,13 @@ different orientations.
 """
 
 import itertools
+
 import numpy as np
+
+from ase.cell import Cell
 from ase.geometry import complete_cell
 from ase.geometry.minkowski_reduction import minkowski_reduce
 from ase.utils import pbc2pbc
-from ase.cell import Cell
 
 
 def translate_pretty(fractional, pbc):
@@ -120,9 +124,12 @@ def get_layers(atoms, miller, tolerance=0.001):
     Example:
 
     >>> import numpy as np
+
     >>> from ase.spacegroup import crystal
+    >>> from ase.geometry.geometry import get_layers
+
     >>> atoms = crystal('Al', [(0,0,0)], spacegroup=225, cellpar=4.05)
-    >>> np.round(atoms.positions, decimals=5)
+    >>> np.round(atoms.positions, decimals=5)  # doctest: +NORMALIZE_WHITESPACE
     array([[ 0.   ,  0.   ,  0.   ],
            [ 0.   ,  2.025,  2.025],
            [ 2.025,  0.   ,  2.025],
@@ -227,18 +234,20 @@ def find_mic(v, cell, pbc=True):
 
 
 def conditional_find_mic(vectors, cell, pbc):
-    """Return list of vector arrays and corresponding list of vector lengths
-    for a given list of vector arrays. The minimum image convention is applied
-    if cell and pbc are set. Can be used like a simple version of get_distances.
+    """Return vectors and their lengths considering cell and pbc.
+
+    The minimum image convention is applied if cell and pbc are set.
+    This can be used like a simple version of get_distances.
     """
+    vectors = np.array(vectors)
     if (cell is None) != (pbc is None):
         raise ValueError("cell or pbc must be both set or both be None")
     if cell is not None:
         mics = [find_mic(v, cell, pbc) for v in vectors]
         vectors, vector_lengths = zip(*mics)
     else:
-        vector_lengths = np.linalg.norm(vectors, axis=2)
-    return [np.asarray(v) for v in vectors], vector_lengths
+        vector_lengths = np.sqrt(np.add.reduce(vectors**2, axis=-1))
+    return vectors, vector_lengths
 
 
 def get_angles(v0, v1, cell=None, pbc=None):
@@ -279,7 +288,7 @@ def get_angles_derivatives(v0, v1, cell=None, pbc=None):
     sin_angles = np.sin(angles)
     cos_angles = np.cos(angles)
     if (sin_angles == 0.).any():  # identify singularities
-        raise ZeroDivisionError('Singularity for angle derivative')
+        raise ZeroDivisionError('Singularity for derivative of a planar angle')
 
     product = nv0 * nv1
     deriv_d0 = (-(v1 / product[:, np.newaxis]  # derivatives by atom 0
@@ -313,7 +322,7 @@ def get_dihedrals(v0, v1, v2, cell=None, pbc=None):
     undefined_v = np.all(v == 0.0, axis=1)
     undefined_w = np.all(w == 0.0, axis=1)
     if np.any([undefined_v, undefined_w]):
-        raise ZeroDivisionError('Undefined dihedral')
+        raise ZeroDivisionError('Undefined dihedral for planar inner angle')
 
     x = np.einsum('ij,ij->i', v, w)
     y = np.einsum('ij,ij->i', np.cross(v1n, v, axis=1), w)
@@ -334,17 +343,19 @@ def get_dihedrals_derivatives(v0, v1, v2, cell=None, pbc=None):
     (v0, v1, v2), (nv0, nv1, nv2) = conditional_find_mic([v0, v1, v2], cell,
                                                          pbc)
 
-    v0 /= nv0[:, np.newaxis]
-    v1 /= nv1[:, np.newaxis]
-    v2 /= nv2[:, np.newaxis]
-    normal_v01 = np.cross(v0, v1, axis=1)
-    normal_v12 = np.cross(v1, v2, axis=1)
-    cos_psi01 = np.einsum('ij,ij->i', v0, v1)  # == np.sum(v0 * v1, axis=1)
+    v0n = v0 / nv0[:, np.newaxis]
+    v1n = v1 / nv1[:, np.newaxis]
+    v2n = v2 / nv2[:, np.newaxis]
+    normal_v01 = np.cross(v0n, v1n, axis=1)
+    normal_v12 = np.cross(v1n, v2n, axis=1)
+    cos_psi01 = np.einsum('ij,ij->i', v0n, v1n)  # == np.sum(v0 * v1, axis=1)
     sin_psi01 = np.sin(np.arccos(cos_psi01))
-    cos_psi12 = np.einsum('ij,ij->i', v1, v2)
+    cos_psi12 = np.einsum('ij,ij->i', v1n, v2n)
     sin_psi12 = np.sin(np.arccos(cos_psi12))
     if (sin_psi01 == 0.).any() or (sin_psi12 == 0.).any():
-        raise ZeroDivisionError('Undefined derivative for undefined dihedral')
+        msg = ('Undefined derivative for undefined dihedral with planar inner '
+               'angle')
+        raise ZeroDivisionError(msg)
 
     deriv_d0 = -normal_v01 / (nv0 * sin_psi01**2)[:, np.newaxis]  # by atom 0
     deriv_d3 = normal_v12 / (nv2 * sin_psi12**2)[:, np.newaxis]  # by atom 3
@@ -405,7 +416,7 @@ def get_distances_derivatives(v0, cell=None, pbc=None):
     (v0, ), (dists, ) = conditional_find_mic([v0], cell, pbc)
 
     if (dists <= 0.).any():  # identify singularities
-        raise ZeroDivisionError('Singularity for distance derivative')
+        raise ZeroDivisionError('Singularity for derivative of a zero distance')
 
     derivs_d0 = np.einsum('i,ij->ij', -1. / dists, v0)  # derivatives by atom 0
     derivs_d1 = -derivs_d0                              # derivatives by atom 1
@@ -419,29 +430,12 @@ def get_duplicate_atoms(atoms, cutoff=0.1, delete=False):
     Identify all atoms which lie within the cutoff radius of each other.
     Delete one set of them if delete == True.
     """
-    from scipy.spatial.distance import pdist
-    dists = pdist(atoms.get_positions(), 'sqeuclidean')
-    dup = np.nonzero(dists < cutoff**2)
-    rem = np.array(_row_col_from_pdist(len(atoms), dup[0]))
-    if delete:
-        if rem.size != 0:
-            del atoms[rem[:, 0]]
-    else:
-        return rem
-
-
-def _row_col_from_pdist(dim, i):
-    """Calculate the i,j index in the square matrix for an index in a
-    condensed (triangular) matrix.
-    """
-    i = np.array(i)
-    b = 1 - 2 * dim
-    x = (np.floor((-b - np.sqrt(b**2 - 8 * i)) / 2)).astype(int)
-    y = (i + x * (b + x + 2) / 2 + 1).astype(int)
-    if i.shape:
-        return list(zip(x, y))
-    else:
-        return [(x, y)]
+    dists = get_distances(atoms.positions, cell=atoms.cell, pbc=atoms.pbc)[1]
+    dup = np.argwhere(dists < cutoff)
+    dup = dup[dup[:, 0] < dup[:, 1]]  # indices at upper triangle
+    if delete and dup.size != 0:
+        del atoms[dup[:, 0]]
+    return dup
 
 
 def permute_axes(atoms, permutation):

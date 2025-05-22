@@ -1,6 +1,9 @@
+# fmt: off
+from ase.build import molecule
+from ase.constraints import FixAtoms
+
+
 def test_repeat_FixAtoms():
-    from ase.build import molecule
-    from ase.constraints import FixAtoms
 
     N = 2
 

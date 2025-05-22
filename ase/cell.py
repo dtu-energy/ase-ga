@@ -1,9 +1,12 @@
-import ase
-from typing import Mapping, Sequence, Union
-import numpy as np
-from ase.utils.arraywrapper import arraylike
-from ase.utils import pbc2pbc
+# fmt: off
 
+from typing import Mapping, Sequence, Union
+
+import numpy as np
+
+import ase
+from ase.utils import pbc2pbc
+from ase.utils.arraywrapper import arraylike
 
 __all__ = ['Cell']
 
@@ -97,6 +100,8 @@ class Cell:
     def get_bravais_lattice(self, eps=2e-4, *, pbc=True):
         """Return :class:`~ase.lattice.BravaisLattice` for this cell:
 
+        >>> from ase.cell import Cell
+
         >>> cell = Cell.fromcellpar([4, 4, 4, 60, 60, 60])
         >>> print(cell.get_bravais_lattice())
         FCC(a=5.65685)
@@ -113,8 +118,8 @@ class Cell:
 
         """
         from ase.lattice import identify_lattice
-        pbc = self.any(1) & pbc2pbc(pbc)
-        lat, op = identify_lattice(self, eps=eps, pbc=pbc)
+        pbc = self.mask() & pbc2pbc(pbc)
+        lat, _op = identify_lattice(self, eps=eps, pbc=pbc)
         return lat
 
     def bandpath(
@@ -157,6 +162,9 @@ class Cell:
 
         Example
         -------
+
+        >>> from ase.cell import Cell
+
         >>> cell = Cell.fromcellpar([4, 4, 4, 60, 60, 60])
         >>> cell.bandpath('GXW', npoints=20)
         BandPath(path='GXW', cell=[3x3], special_points={GKLUWX}, kpts=[20x3])
@@ -189,13 +197,15 @@ class Cell:
     def complete(self):
         """Convert missing cell vectors into orthogonal unit vectors."""
         from ase.geometry.cell import complete_cell
-        cell = Cell(complete_cell(self.array))
-        return cell
+        return Cell(complete_cell(self.array))
 
     def copy(self):
         """Return a copy of this cell."""
-        cell = Cell(self.array.copy())
-        return cell
+        return Cell(self.array.copy())
+
+    def mask(self):
+        """Boolean mask of which cell vectors are nonzero."""
+        return self.any(1)
 
     @property
     def rank(self) -> int:
@@ -203,7 +213,7 @@ class Cell:
 
         Equal to the number of nonzero lattice vectors."""
         # The name ndim clashes with ndarray.ndim
-        return self.any(1).sum()  # type: ignore
+        return sum(self.mask())
 
     @property
     def orthorhombic(self) -> bool:
@@ -219,16 +229,11 @@ class Cell:
         """Return an array with the three angles alpha, beta, and gamma."""
         return self.cellpar()[3:].copy()
 
-    def __array__(self, dtype=float):
-        if dtype != float:
-            raise ValueError('Cannot convert cell to array of type {}'
-                             .format(dtype))
-        return self.array
+    def __array__(self, dtype=None, copy=False):
+        return np.array(self.array, dtype=dtype, copy=copy)
 
     def __bool__(self):
         return bool(self.any())  # need to convert from np.bool_
-
-    __nonzero__ = __bool__
 
     @property
     def volume(self) -> float:
@@ -264,8 +269,34 @@ class Cell:
     def reciprocal(self) -> 'Cell':
         """Get reciprocal lattice as a Cell object.
 
+        The reciprocal cell is defined such that
+
+            cell.reciprocal() @ cell.T == np.diag(cell.mask())
+
+        within machine precision.
+
         Does not include factor of 2 pi."""
-        return Cell(np.linalg.pinv(self).transpose())
+        icell = Cell(np.linalg.pinv(self).transpose())
+        icell[~self.mask()] = 0.0  # type: ignore[index]
+        return icell
+
+    def normal(self, i):
+        """Normal vector of the two vectors with index different from i.
+
+        This is the cross product of those vectors in cyclic order from i."""
+        return np.cross(self[i - 2], self[i - 1])
+
+    def normals(self):
+        """Normal vectors of each axis as a 3x3 matrix."""
+        return np.array([self.normal(i) for i in range(3)])
+
+    def area(self, i):
+        """Area spanned by the two vectors with index different from i."""
+        return np.linalg.norm(self.normal(i))
+
+    def areas(self):
+        """Areas spanned by cell vector pairs (1, 2), (2, 0), and (0, 2)."""
+        return np.linalg.norm(self.normals(), axis=1)
 
     def __repr__(self):
         if self.orthorhombic:
@@ -273,7 +304,7 @@ class Cell:
         else:
             numbers = self.tolist()
 
-        return 'Cell({})'.format(numbers)
+        return f'Cell({numbers})'
 
     def niggli_reduce(self, eps=1e-5):
         """Niggli reduce this cell, returning a new cell and mapping.
@@ -289,7 +320,7 @@ class Cell:
 
         See also :func:`ase.geometry.minkowski_reduction.minkowski_reduce`."""
         from ase.geometry.minkowski_reduction import minkowski_reduce
-        cell, op = minkowski_reduce(self, self.any(1))
+        cell, op = minkowski_reduce(self, self.mask())
         result = Cell(cell)
         return result, op
 
@@ -299,13 +330,18 @@ class Cell:
         permuted = Cell(self[permutation][:, permutation])
         return permuted
 
-    def standard_form(self):
-        """Rotate axes such that unit cell is lower triangular. The cell
+    def standard_form(self, form='lower'):
+        """Rotate axes such that unit cell is lower/upper triangular. The cell
         handedness is preserved.
 
         A lower-triangular cell with positive diagonal entries is a canonical
         (i.e. unique) description. For a left-handed cell the diagonal entries
         are negative.
+
+        Parameters:
+
+        form: str
+            'lower' or 'upper' triangular form. The default is 'lower'.
 
         Returns:
 
@@ -316,8 +352,7 @@ class Cell:
             is the input cell and rcell is the lower triangular (output) cell.
         """
 
-        # get cell handedness (right or left)
-        sign = np.sign(np.linalg.det(self))
+        sign = self.handedness
         if sign == 0:
             sign = 1
 
@@ -325,9 +360,16 @@ class Cell:
         # Q is an orthogonal matrix and L is a lower triangular matrix. The
         # decomposition is a unique description if the diagonal elements are
         # all positive (negative for a left-handed cell).
-        Q, L = np.linalg.qr(self.T)
-        Q = Q.T
-        L = L.T
+        if form == 'lower':
+            Q, L = np.linalg.qr(self.T)
+            Q = Q.T
+            L = L.T
+        elif form == 'upper':
+            Q, L = np.linalg.qr(self.T[::-1, ::-1])
+            Q = Q.T[::-1, ::-1]
+            L = L.T[::-1, ::-1]
+        else:
+            raise ValueError('form must be either "lower" or "upper"')
 
         # correct the signs of the diagonal elements
         signs = np.sign(np.diag(L))

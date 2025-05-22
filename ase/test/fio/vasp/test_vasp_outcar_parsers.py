@@ -1,8 +1,10 @@
+# fmt: off
+# flake8: noqa
+import numpy as np
 import pytest
 
-import numpy as np
-from ase.io import ParseError
 import ase.io.vasp_parsers.vasp_outcar_parsers as vop
+from ase.io import ParseError
 
 
 def compare_result_to_expected(result, exp):
@@ -69,13 +71,20 @@ def test_convert_stress(stress, expected):
     assert np.allclose(vop.convert_vasp_outcar_stress(stress), expected)
 
 
-@pytest.mark.parametrize('line, expected', [
-    ("  in kB      -4.29429    -4.58894    -4.50342     0.50047    -0.94049     0.36481",
-     [-4.29429, -4.58894, -4.50342, 0.50047, -0.94049, 0.36481]),
-    ("  in kB     -47.95544   -39.91706   -34.79627     9.20266   -15.74132    -1.85167",
-     [-47.95544, -39.91706, -34.79627, 9.20266, -15.74132, -1.85167]),
-],
-                         ids=['stress1', 'stress2'])
+L1 = ("  in kB      -4.29429    -4.58894    -4.50342 "
+      "    0.50047    -0.94049     0.36481")
+L2 = ("  in kB     -47.95544   -39.91706   -34.79627  "
+      "   9.20266   -15.74132    -1.85167")
+
+
+@pytest.mark.parametrize(
+    'line, expected',
+    [
+        (L1,
+         [-4.29429, -4.58894, -4.50342, 0.50047, -0.94049, 0.36481]),
+        (L2,
+         [-47.95544, -39.91706, -34.79627, 9.20266, -15.74132, -1.85167])],
+    ids=['stress1', 'stress2'])
 def test_stress(line, expected, do_test_stress):
     """Test reading a particular line for parsing stress"""
     do_test_stress(line, vop.convert_vasp_outcar_stress(expected))
@@ -161,6 +170,19 @@ def test_magmom(do_test_parser):
     do_test_parser(header, cursor, lines, parser, expected)
 
 
+def test_non_collinear_magmom(do_test_parser):
+    lines = """
+     number of electron      31.9999969 magnetization       6.0504868     -0.0017494     -0.0024904
+     """
+    lines = lines.splitlines()
+    cursor = 1
+    header = {}
+    expected = {'magmom': [6.0504868, -0.0017494, -0.0024904]}
+
+    parser = vop.Magmom()
+    do_test_parser(header, cursor, lines, parser, expected)
+
+
 def test_magmom_wrong_line():
     """Test a line which we test should not be read as magmom"""
     lines = ['   NELECT =     180.0000    total number of electrons']
@@ -189,6 +211,47 @@ def test_magmoms(do_test_parser):
     header = {'natoms': 6}
     expected = {'magmoms': [-0.038, -0.038, -0.038, -0.038, -0.053, 3.231]}
 
+    parser = vop.Magmoms()
+    do_test_parser(header, cursor, lines, parser, expected)
+
+
+def test_non_collinearmagmoms(do_test_parser):
+    lines = """
+     magnetization (x)
+
+    # of ion       s       p       d       tot
+    ------------------------------------------
+        1        0.143   0.564   4.442   5.149
+        2        0.143   0.564   4.441   5.148
+    --------------------------------------------------
+    tot          0.285   1.129   8.883  10.297
+
+
+
+     magnetization (y)
+
+    # of ion       s       p       d       tot
+    ------------------------------------------
+        1       -0.000  -0.000  -0.005  -0.005
+        2        0.000   0.000   0.002   0.002
+    --------------------------------------------------
+    tot         -0.000   0.000  -0.003  -0.003
+
+
+
+     magnetization (z)
+
+    # of ion       s       p       d       tot
+    ------------------------------------------
+        1       -0.000   0.000  -0.004  -0.004
+        2        0.000   0.000   0.001   0.001
+    --------------------------------------------------
+    tot         -0.000   0.001  -0.004  -0.003
+    """
+    lines = lines.splitlines()
+    cursor = 1
+    header = {'natoms': 2}
+    expected = {'magmoms': [[5.149, -0.005, -0.004], [5.148, 0.002, 0.001]]}
     parser = vop.Magmoms()
     do_test_parser(header, cursor, lines, parser, expected)
 
@@ -285,6 +348,18 @@ def test_kpoints():
         assert kpt.weight == pytest.approx(exp_w[i])
         assert np.allclose(kpt.eps_n, exp_eps_n[i])
         assert np.allclose(kpt.f_n, exp_f_n[i])
+
+
+def test_kpoints_header_multiple_lines():
+    # Correct line
+    line1 = "k-points           NKPTS =      2   k-points in BZ     NKDIM =      2   number of bands    NBANDS=    336"
+    # Wrong line (unclear when this is written.)
+    line2 = "k-points           NKPTS =      1   k-points in BZ     NKDIM ="
+
+    parser = vop.KpointHeader()
+
+    assert parser.has_property(0, [line1])
+    assert not parser.has_property(0, [line2])
 
 
 def test_kpoints_header(do_test_header_parser):
@@ -466,32 +541,30 @@ def test_potcar_repeated_entry():
 
     lines = """
     POTCAR:    PAW_PBE Ni 02Aug2007
-    POTCAR:    PAW_PBE Ni 02Aug2007
-    POTCAR:    PAW_PBE H1.25 02Aug2007 
     POTCAR:    PAW_PBE H1.25 02Aug2007
     POTCAR:    PAW_PBE Au_GW 02Aug2007
+    POTCAR:    PAW_PBE Ni 02Aug2007
+    POTCAR:    PAW_PBE H1.25 02Aug2007 
     POTCAR:    PAW_PBE Au_GW 02Aug2007
     """
     # Prepare input as list of strings
-    lines = lines.split('\n')
+    lines = lines.splitlines()[1:]
 
     # Emulate the parser, reading the lines 1-by-1
     parser = vop.SpeciesTypes()
-    result = parser.parse(1, lines)
-    result2 = parser.parse(2, lines)
-    assert result == result2
-    assert result == {'species': ['Ni']}
-    result = parser.parse(3, lines)
-    result2 = parser.parse(4, lines)
-    assert result == result2
-    assert result == {'species': ['Ni', 'H']}
-    result = parser.parse(5, lines)
-    result2 = parser.parse(6, lines)
-    assert result == result2
-    assert result == {'species': ['Ni', 'H', 'Au']}
+    for line in lines:
+        if not line.strip():
+            # Blank line, just skip
+            continue
+        line = [line]
 
-    assert len(parser.species) == 3
-    assert parser.species_count == 6
+        assert parser.has_property(0, line)
+        parser.parse(0, line)
+    assert len(parser.species) == 6
+    assert parser.species == ['Ni', 'H', 'Au', 'Ni', 'H', 'Au']
+    assert len(parser.get_species()) == 3
+
+    assert parser.get_species() == ['Ni', 'H', 'Au']
 
 
 def test_default_header_parser_make_parsers():
@@ -512,8 +585,74 @@ def test_default_header_parser_make_parsers():
         # We should've made instances of the same type
         assert type(p1) == type(p2)
         assert p1.get_name() == p2.get_name()
-        assert p1.LINE_DELIMITER == p2.LINE_DELIMITER
-        assert p1.LINE_DELIMITER is not None
+        if isinstance(p1, vop.SimpleProperty):
+            assert p1.LINE_DELIMITER == p2.LINE_DELIMITER
+            assert p1.LINE_DELIMITER is not None
         # However, they should not actually BE the same parser
         # but separate instances, i.e. two separate memory addresses
         assert p1 is not p2
+
+
+def test_vasp6_kpoints_reading():
+    """Vasp6 v6.2 introduced a new line in the kpoints lines.
+    Verify we can read them.
+    """
+
+    lines = """
+     spin component 1
+
+    k-point     1 :       0.0000    0.0000   0.0000
+    band No.  band energies     occupation
+        1      -10.000      1.00000
+        2       0.0000      1.00000
+
+    k-point     2 :       0.1250    0.0417    0.0417
+    band No.  band energies     occupation
+        1      -10.000      1.00000
+        2       -5.000      1.00000
+     Fermi energy:         -6.789
+
+     spin component 2
+
+    k-point     1 :       0.0000    0.0000   0.0000
+    band No.  band energies     occupation
+        1      -10.000      1.00000
+        2       0.0000      1.00000
+
+    k-point     2 :       0.1250    0.0417    0.0417
+    band No.  band energies     occupation
+        1      -10.000      1.00000
+        2       -5.000      1.00000
+     Fermi energy:         -8.123
+
+    """
+    lines = lines.splitlines()
+    cursor = 1
+    header = {
+        'nbands': 2,
+        'spinpol': True,
+        'nkpts': 2,
+        'kpt_weights': [1, 0.75]
+    }
+
+    parser = vop.Kpoints(header=header)
+    assert parser.has_property(cursor, lines)
+
+    kpts = parser.parse(cursor, lines)['kpts']
+
+    # Some expected values
+    exp_s = [0, 0, 1, 1]  # spin
+    exp_w = 2 * [1, 0.75]  # weights
+    exp_eps_n = [
+        [-10, 0.],
+        [-10, -5],
+        [-10, 0],
+        [-10, -5],
+    ]
+    exp_f_n = 4 * [[1.0, 1.0]]
+    # Test the first two kpoints
+    for i, kpt in enumerate(kpts):
+        assert kpt.s == exp_s[i]
+        assert kpt.weight == pytest.approx(exp_w[i])
+        assert np.allclose(kpt.eps_n, exp_eps_n[i])
+        assert np.allclose(kpt.f_n, exp_f_n[i])

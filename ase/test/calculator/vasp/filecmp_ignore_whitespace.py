@@ -1,3 +1,4 @@
+# fmt: off
 import re
 
 
@@ -6,8 +7,8 @@ def normalize_file_whitespace(text):
     whitespace with one space, and remove trailing blank lines"""
 
     lines_out = []
-    for l in text.strip().splitlines():
-        lines_out.append(re.sub(r'\s+', ' ', l.strip()))
+    for line in text.strip().splitlines():
+        lines_out.append(re.sub(r'\s+', ' ', line.strip()))
     return '\n'.join(lines_out)
 
 

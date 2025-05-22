@@ -1,9 +1,13 @@
+# fmt: off
 import io
+
 import numpy as np
+
 from ase import Atoms
-from ase.units import Ha, Bohr
+
 # from ase.io import read
-from ase.calculators.openmx.reader import read_openmx, read_eigenvalues
+from ase.calculators.openmx.reader import read_eigenvalues, read_openmx
+from ase.units import Bohr, Ha
 
 openmx_out_sample = """
 System.CurrentDirectory        ./
@@ -98,9 +102,9 @@ coordinates.forces>
 """
 
 
-def test_openmx_out():
-    with open('openmx_fio_test.out', 'w') as f:
-        f.write(openmx_out_sample)
+def test_openmx_out(config_file):
+    with open('openmx_fio_test.out', 'w') as fd:
+        fd.write(openmx_out_sample)
     atoms = read_openmx('openmx_fio_test')
     tol = 1e-2
 
@@ -213,12 +217,12 @@ def test_openmx_read_eigenvalues():
     tol = 1e-2
     # reader.py -> `def read_file(filename...)` -> patterns
     eigenvalues_pattern = "Eigenvalues (Hartree)"
-    with io.StringIO(openmx_eigenvalues_gamma_sample) as f:
+    with io.StringIO(openmx_eigenvalues_gamma_sample) as fd:
         while True:
-            line = f.readline()
+            line = fd.readline()
             if eigenvalues_pattern in line:
                 break
-        eigenvalues = read_eigenvalues(line, f)
+        eigenvalues = read_eigenvalues(line, fd)
 
     gamma_eigenvalues = np.array([[[-0.96233478518931, -0.96233478518931],
                                   [-0.94189339856450, -0.94189339856450],
@@ -233,12 +237,12 @@ def test_openmx_read_eigenvalues():
 
     assert np.all(np.isclose(eigenvalues, gamma_eigenvalues, atol=tol))
 
-    with io.StringIO(openmx_eigenvalues_bulk_sample) as f:
+    with io.StringIO(openmx_eigenvalues_bulk_sample) as fd:
         while True:
-            line = f.readline()
+            line = fd.readline()
             if eigenvalues_pattern in line:
                 break
-        eigenvalues = read_eigenvalues(line, f)
+        eigenvalues = read_eigenvalues(line, fd)
 
     bulk_eigenvalues = np.array([[[-2.33424746491277, -2.33424746917880],
                                  [-2.33424055817432, -2.33424056243807],

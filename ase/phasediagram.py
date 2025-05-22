@@ -1,14 +1,17 @@
+# fmt: off
+
 import fractions
 import functools
 import re
 from collections import OrderedDict
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
 
 import numpy as np
 from scipy.spatial import ConvexHull
 
 import ase.units as units
 from ase.formula import Formula
+from ase.utils import deprecated
 
 _solvated: List[Tuple[str, Dict[str, int], float, bool, float]] = []
 
@@ -29,12 +32,12 @@ def float2str(x):
     n = f.numerator
     d = f.denominator
     if abs(n / d - f) > 1e-6:
-        return '{:.3f}'.format(f)
+        return f'{f:.3f}'
     if d == 0:
         return '0'
     if f.denominator == 1:
         return str(n)
-    return '{}/{}'.format(f.numerator, f.denominator)
+    return f'{f.numerator}/{f.denominator}'
 
 
 def solvated(symbols):
@@ -116,13 +119,16 @@ def print_results(results):
         total_energy += coef * energy
         if abs(coef) < 1e-7:
             continue
-        print('{:14}{:>10}{:12.3f}'.format(name, float2str(coef), energy))
+        print(f'{name:14}{float2str(coef):>10}{energy:12.3f}')
     print('------------------------------------')
-    print('Total energy: {:22.3f}'.format(total_energy))
+    print(f'Total energy: {total_energy:22.3f}')
     print('------------------------------------')
 
 
 class Pourbaix:
+    @deprecated(
+        'Use ase.pourbaix.Pourbaix.  '
+        'This class will be removed in a future version of ASE.')
     def __init__(self, references, formula=None, T=300.0, **kwargs):
         """Pourbaix object.
 
@@ -133,6 +139,8 @@ class Pourbaix:
             keyword arguments: ``Pourbaix(refs, Zn=1, O=1)``.
         T: float
             Temperature in Kelvin.
+
+        .. deprecated:: 3.24.0
         """
 
         if formula:
@@ -253,9 +261,7 @@ class Pourbaix:
         result = linprog(c=energies,
                          A_eq=np.transpose(eq2),
                          b_eq=eq1,
-                         bounds=bounds,
-                         options={'lstsq': True,
-                                  'presolve': True})
+                         bounds=bounds)
 
         if verbose:
             print_results(zip(names, result.x, energies))
@@ -298,8 +304,8 @@ class Pourbaix:
             text.append((x, y, name))
 
         if plot:
-            import matplotlib.pyplot as plt
             import matplotlib.cm as cm
+            import matplotlib.pyplot as plt
             if ax is None:
                 ax = plt.gca()
 
@@ -324,7 +330,7 @@ class Pourbaix:
         return a, compositions, text
 
     def colorfunction(self, U, pH, colors):
-        coefs, energy = self.decompose(U, pH, verbose=False)
+        coefs, _energy = self.decompose(U, pH, verbose=False)
         indices = tuple(sorted(np.where(abs(coefs) > 1e-3)[0]))
         color = colors.get(indices)
         if color is None:
@@ -387,7 +393,7 @@ class PhaseDiagram:
             print('Species:', ', '.join(self.symbols))
             print('References:', len(self.references))
             for i, (count, energy, name, natoms) in enumerate(self.references):
-                print('{:<5}{:10}{:10.3f}'.format(i, name, energy))
+                print(f'{i:<5}{name:10}{energy:10.3f}')
 
         self.points = np.zeros((len(self.references), ns + 1))
         for s, (count, energy, name, natoms) in enumerate(self.references):
@@ -399,6 +405,12 @@ class PhaseDiagram:
             # Simple case that qhull would choke on:
             self.simplices = np.arange(ns).reshape((1, ns))
             self.hull = np.ones(ns, bool)
+        elif ns == 1:
+            # qhull also doesn't like ns=1:
+            i = self.points[:, 1].argmin()
+            self.simplices = np.array([[i]])
+            self.hull = np.zeros(len(self.points), bool)
+            self.hull[i] = True
         else:
             hull = ConvexHull(self.points[:, 1:])
 
@@ -443,29 +455,31 @@ class PhaseDiagram:
 
         # Find the simplex with positive coordinates that sum to
         # less than one:
-        eps = 1e-15
+        eps = 1e-14
+        candidates = []
         for i, Y in enumerate(X):
             try:
                 x = np.linalg.solve((Y[1:] - Y[:1]).T, -Y[0])
             except np.linalg.linalg.LinAlgError:
                 continue
             if (x > -eps).all() and x.sum() < 1 + eps:
-                break
-        else:
-            assert False, X
+                indices = self.simplices[i]
+                points = self.points[indices]
 
-        indices = self.simplices[i]
-        points = self.points[indices]
+                scaledcoefs = [1 - x.sum()]
+                scaledcoefs.extend(x)
 
-        scaledcoefs = [1 - x.sum()]
-        scaledcoefs.extend(x)
+                energy = N * np.dot(scaledcoefs, points[:, -1])
+                candidates.append((energy, indices, points, scaledcoefs))
 
-        energy = N * np.dot(scaledcoefs, points[:, -1])
+        # Pick the one with lowest energy:
+        energy, indices, points, scaledcoefs = min(
+            candidates, key=lambda x: x[0])
 
         coefs = []
         results = []
         for coef, s in zip(scaledcoefs, indices):
-            count, e, name, natoms = self.references[s]
+            _count, e, name, natoms = self.references[s]
             coef *= N / natoms
             coefs.append(coef)
             results.append((name, coef, e))
@@ -498,7 +512,7 @@ class PhaseDiagram:
                 from mpl_toolkits.mplot3d import Axes3D
                 Axes3D  # silence pyflakes
             fig = plt.figure()
-            ax = fig.gca(projection=projection)
+            ax = fig.add_subplot(projection=projection)
         else:
             if dims == 3 and not hasattr(ax, 'set_zlim'):
                 raise ValueError('Cannot make 3d plot unless axes projection '

@@ -1,3 +1,5 @@
+# fmt: off
+
 import numpy as np
 
 from ase import Atoms
@@ -47,7 +49,8 @@ def Decahedron(symbol, p, q, r, latticeconstant=None):
                                np.sin(t * 2. + np.pi / 2.), 0.],
                               [np.cos(t * 3. + np.pi / 2.),
                                np.sin(t * 3. + np.pi / 2.), 0.],
-                              [np.cos(t * 4. + np.pi / 2.), np.sin(t * 4. + np.pi / 2.), 0.]])
+                              [np.cos(t * 4. + np.pi / 2.), np.sin(
+                                  t * 4. + np.pi / 2.), 0.]])
 
     # Number of atoms on the five fold axis and a nice constant
     h = p + q + 2 * r - 1

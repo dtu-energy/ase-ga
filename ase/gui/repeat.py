@@ -1,10 +1,12 @@
+# fmt: off
+
 import ase.gui.ui as ui
 from ase.gui.i18n import _
 
 
 class Repeat:
     def __init__(self, gui):
-        win = ui.Window(_('Repeat'))
+        win = ui.Window(_('Repeat'), wmtype='utility')
         win.add(_('Repeat atoms:'))
         self.repeat = [ui.SpinBox(r, 1, 9, 1, self.change)
                        for r in gui.images.repeat]

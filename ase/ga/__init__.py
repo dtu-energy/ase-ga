@@ -10,7 +10,7 @@ of an atoms object.
 def set_raw_score(atoms, raw_score):
     """Set the raw_score of an atoms object in the
     atoms.info['key_value_pairs'] dictionary.
-    
+
     Parameters
     ----------
     atoms : Atoms object
@@ -38,26 +38,26 @@ def get_raw_score(atoms):
     """
     return atoms.info['key_value_pairs']['raw_score']
 
-    
+
 def set_parametrization(atoms, parametrization):
     if 'data' not in atoms.info:
         atoms.info['data'] = {}
     atoms.info['data']['parametrization'] = parametrization
 
-    
+
 def get_parametrization(atoms):
     if 'parametrization' in atoms.info['data']:
         return atoms.info['data']['parametrization']
     else:
         raise ValueError('Trying to get the parametrization before it is set!')
 
-        
+
 def set_neighbor_list(atoms, neighbor_list):
     if 'data' not in atoms.info:
         atoms.info['data'] = {}
     atoms.info['data']['neighborlist'] = neighbor_list
 
-    
+
 def get_neighbor_list(atoms):
     if 'neighborlist' in atoms.info['data']:
         return atoms.info['data']['neighborlist']

@@ -1,13 +1,24 @@
+# fmt: off
 import numpy as np
 import pytest
+
 from ase import Atoms
 from ase.formula import Formula
 
 
 def test_formula_things():
     assert Formula('A3B2C2D').format('abc') == 'DB2C2A3'
+    assert Formula('A3B2C2D').format('ab2') == 'DB2C2A3'
+    assert Formula('A3B2C2D').format('a2b') == 'A3B2C2D'
     assert str(Formula('HHOOO', format='reduce')) == 'H2O3'
     assert Formula('HHOOOUO').format('reduce') == 'H2O3UO'
+
+
+@pytest.mark.parametrize('f',
+                         ['SiC', 'MoS2', 'GaAs', 'CO', 'NH3'])
+def test_periodic(f):
+    for fmt in ['ab2', 'a2b', 'periodic']:
+        assert Formula(f, format=fmt).format('periodic') == f
 
 
 def test_atoms_formula_things():
@@ -49,6 +60,11 @@ def test_convert():
     assert str(Formula('AgAg').convert('hill')) == 'Ag2'
 
 
+def test_formula_on_formula():
+    formula = Formula('CH3CH2OH')
+    assert formula == Formula(formula)
+
+
 @pytest.mark.parametrize(
     'x',
     ['H2O', '10H2O', '2(CuO2(H2O)2)10', 'Cu20+H2', 'H' * 15, 'AuBC2', ''])
@@ -56,7 +72,7 @@ def test_formulas(x):
     f = Formula(x)
     y = str(f)
     assert y == x
-    print(f.count(), '{:latex}'.format(f))
+    print(f.count(), f'{f:latex}')
     a, b = divmod(f, 'H2O')
     assert a * Formula('H2O') + b == f
     assert f != 117  # check that formula can be compared to non-formula object

@@ -13,7 +13,17 @@ Run all tests with::
 
   ase test
 
-This requires installing pytest and pytest-xdist.
+This requires installing ``pytest``, ``pytest-mock`` and ``pytest-xdist``.
+You can install these dependencies automatically by running::
+
+  pip install ase[test]
+
+Tests for some calculators require data files in
+https://gitlab.com/ase/ase-datafiles.
+You can enable these tests by running::
+
+  pip install --user --upgrade git+https://gitlab.com/ase/ase-datafiles.git
+
 See ``ase test --help`` for more information.
 
 You can also run ``pytest`` directly from within the ``ase.test`` directory.

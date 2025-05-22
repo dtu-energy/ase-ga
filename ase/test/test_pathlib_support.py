@@ -1,14 +1,19 @@
+# fmt: off
 """Test reading/writing in ASE on pathlib objects"""
 
-from pathlib import Path
 import io
+from pathlib import Path
+
+import pytest
+
 from ase.build import molecule
 from ase.io import read, write
 from ase.utils import PurePath, convert_string_to_fd, reader, writer
 
-
 # Test reader/writer
 teststr = 'Teststring!'
+
+
 @writer
 def mywrite(file, fdcmp=None):
     assert isinstance(file, io.TextIOBase)
@@ -36,38 +41,37 @@ def myread(file, fdcmp=None):
         assert file is fdcmp
 
 
-def test_pathlib_support():
+def test_pathlib_support(testdir):
     path = Path('tmp_plib_testdir')
 
     # Test PurePath catches path
     assert isinstance(path, PurePath)
 
-
     path.mkdir(exist_ok=True)
 
     myf = path / 'test.txt'
 
-    fd = convert_string_to_fd(myf)
-    assert isinstance(fd, io.TextIOBase)
-    fd.close()
+    with pytest.warns(FutureWarning):
+        fd = convert_string_to_fd(myf)
+        fd.close()
+        assert isinstance(fd, io.TextIOBase)
 
-    fd = convert_string_to_fd(str(myf))
-    assert isinstance(fd, io.TextIOBase)
-    fd.close()
-
+    with pytest.warns(FutureWarning):
+        fd = convert_string_to_fd(str(myf))
+        fd.close()
+        assert isinstance(fd, io.TextIOBase)
 
     for f in [myf, str(myf)]:
         myf.unlink()                # Remove the file first
         mywrite(f)
         myread(f)
 
-
     # Check reader, writer on open filestream
     # Here, the filestream shouldn't be altered
-    with myf.open('w') as f:
-        mywrite(f, fdcmp=f)
-    with myf.open('r') as f:
-        myread(f, fdcmp=f)
+    with myf.open('w') as fd:
+        mywrite(fd, fdcmp=fd)
+    with myf.open('r') as fd:
+        myread(fd, fdcmp=fd)
 
     # Check that we can read and write atoms with pathlib
     atoms = molecule('H2', vacuum=5)

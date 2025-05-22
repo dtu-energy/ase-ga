@@ -1,9 +1,13 @@
-def test_h2o():
-    import ase.calculators.demon as demon
-    from ase import Atoms
-    from ase.optimize import BFGS
-    import numpy as np
+# fmt: off
+import numpy as np
 
+from ase import Atoms
+from ase.calculators.demon import Demon
+from ase.calculators.fd import calculate_numerical_forces
+from ase.optimize import BFGS
+
+
+def test_h2o(demon_factory):
     tol = 1.0e-6
 
     # d = 0.9575
@@ -21,12 +25,14 @@ def test_h2o():
     auxis = {'all': 'GEN-A2*'}
     input_arguments = {'GRID': 'FINE'}
 
-    calc = demon.Demon(basis=basis,
-                       auxis=auxis,
-                       scftype='RKS TOL=1.0E-6 CDF=1.0E-5',
-                       guess='TB',
-                       xc=['BLYP', 'BASIS'],
-                       input_arguments=input_arguments)
+    calc = Demon(
+        basis=basis,
+        auxis=auxis,
+        scftype='RKS TOL=1.0E-6 CDF=1.0E-5',
+        guess='TB',
+        xc=['BLYP', 'BASIS'],
+        input_arguments=input_arguments,
+    )
 
     atoms.calc = calc
 
@@ -41,7 +47,7 @@ def test_h2o():
     print(error)
 
     tol = 1.0e-6
-    assert(error < tol)
+    assert error < tol
 
     # dipole
     dipole = atoms.get_dipole_moment()
@@ -54,10 +60,10 @@ def test_h2o():
     print(error)
 
     tol = 1.0e-4
-    assert(error < tol)
+    assert error < tol
 
     # numerical forces
-    forces_num = calc.calculate_numerical_forces(atoms, d=0.001)
+    forces_num = calculate_numerical_forces(atoms, eps=0.001)
 
     ref = np.array([[-1.26056746e-01, 4.10007559e-01, 2.85719551e-04],
                     [4.28062314e-01, 2.56059142e-02, 2.17691110e-04],
@@ -70,7 +76,7 @@ def test_h2o():
     print(error)
 
     tol = 1.0e-4
-    assert(error < tol)
+    assert error < tol
 
     # analytical forces
     forces_an = atoms.get_forces()
@@ -86,11 +92,11 @@ def test_h2o():
     print(error)
 
     tol = 1.0e-3
-    assert(error < tol)
+    assert error < tol
 
     # optimize geometry
-    dyn = BFGS(atoms)
-    dyn.run(fmax=0.01)
+    with BFGS(atoms) as dyn:
+        dyn.run(fmax=0.01)
 
     positions = atoms.get_positions()
 
@@ -105,6 +111,6 @@ def test_h2o():
     print(error)
 
     tol = 1.0e-3
-    assert(error < tol)
+    assert error < tol
 
     print('tests passed')

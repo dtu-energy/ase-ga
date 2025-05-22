@@ -16,36 +16,36 @@ applied to all kinds of materials, irrespective of the atomic species
 involved, and also allows for the investigation of the core
 region. The website is http://exciting-code.org/
 
-The module depends on lxml  https://lxml.de/
+``exciting``'s implementation in ASE requires excitingtools which is a PyPI
+package that helps with the writing and reading of input/output files.
+https://pypi.org/project/excitingtools/
 
+Currently, use of ``exciting`` is limited to ground state properties.
 
-There are two ways to construct the exciting calculator.
+The ExcitingGroundStateCalculator is initialized with:
 
-1. Using keyword arguments to specify groundstate attributes
-2. Use paramdict to specify an input file  structure with a data structure of dictionaries.
+* An ExcitingRunner object where the executable path is specified. If you're only planning on writing input
+  files and reading output files you can feed an empty string as the executable
+  path to the ExcitingRunner option.
+* Ground state input options as a dictionary such as ngridk (k-points grid),
+  rgkmax which dictates the muffin tin to planewave cutoff. More attributes can
+  be found here: http://exciting-code.org/ref:groundstate
+* The directory where to run the calculation.
+* Species path directory where information about settings to use in terms of
+  for example the muffin tin defaults for each species can be found.
+* Optional title that get's given to the exciting ground state input xml file.
 
-See also the tutorial on the web page of exciting: http://exciting-code.org/lithium-atomic-simulation-environment
-
-
-Constructor with Groundstate Keywords
--------------------------------------
-
-One is by giving parameters of the ground state in the
-constructor. The possible attributes can be found at
-http://exciting-code.org/ref:groundstate::
-
-    Exciting(bin='excitingser', kpts=(4, 4, 4), xctype='LDA_PW')
-
-
-Parameter Dictionary
---------------------
-
-When the paramdict keyword is used, the calculator translates the dictionary given into the exciting XML file format.
-Note $EXCITINGROOT environmental variable should be set: details at http://exciting-code.org/tutorials-boron
+The calculator translates the ground state input options dictionary given into
+the exciting input XML file format, aptly named input.xml. Note, for running a
+simulation the $EXCITINGROOT environmental variable should be set: details at
+http://exciting-code.org/tutorials-boron
 
 .. literalinclude:: exciting.py
 
-The calculator constructure above is used to create this exciting input file:
+Here's an example of a ground state input xml file created using the
+ExcitingGroundStateCalculator. Note, if you're not interested in running A
+simulation and simply just writing the input file you can use the
+ExcitingGroundStateTemplate class' write_input() method.
 
 .. highlight:: xml
 
@@ -89,15 +89,18 @@ The calculator constructure above is used to create this exciting input file:
     </input>
 
 The translation follows the following rules:
-String values are translated to attributes. Nested dictionaries are translated to sub elements.
-A list of dictionaries is translated to a list of sub elements named after the key of which the list is the value.
-The special key "text()" results in text content of the enclosing tag.
+String values are translated to attributes. Nested dictionaries are translated
+to sub elements. A list of dictionaries is translated to a list of sub elements
+named after the key of which the list is the value. The special key "text()"
+results in text content of the enclosing tag.
 
 
 Muffin Tin Radius
 =================
 
-Sometimes it is necessary to specify a fixed muffin tin radius different from the default. The muffin tin radii can be set by adding a custom array to the atoms object with the name "rmt":
+Sometimes it is necessary to specify a fixed muffin tin radius different from
+the default. The muffin tin radii can be set by adding a custom array to the
+atoms object with the name "rmt":
 
 
 .. highlight:: python
@@ -107,12 +110,13 @@ Sometimes it is necessary to specify a fixed muffin tin radius different from th
     atoms.new_array('rmt', np.array([-1.0, -1.0, 2.3, 2.0] * Bohr))
 
 
-Each entry corresponds to one atom. If the rmt value is negative, the default value is used. This array is correctly updated if the atoms are added or removed.
+Each entry corresponds to one atom. If the rmt value is negative, the default
+value is used. This array is correctly updated if the atoms are added or removed.
 
 Exciting Calculator Class
 =========================
 
-.. autoclass:: ase.calculators.exciting.Exciting
+.. autoclass:: ase.calculators.exciting.exciting.ExcitingGroundStateCalculator
 
 
 

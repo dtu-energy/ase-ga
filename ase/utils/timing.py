@@ -1,9 +1,11 @@
+# fmt: off
+
 # Copyright (C) 2003  CAMP
 # Please see the accompanying LICENSE file for further information.
 
 
-import inspect
 import functools
+import inspect
 import sys
 import time
 
@@ -46,7 +48,6 @@ class Timer:
 
     def print_info(self, calc):
         """Override to get to write info during calculator's initialize()."""
-        pass
 
     def start(self, name):
         names = tuple(self.running + [name])
@@ -100,7 +101,7 @@ class Timer:
         t0 = time.time()
         tot = t0 - self.t0
 
-        n = max([len(names[-1]) + len(names) for names in self.timers]) + 1
+        n = max(len(names[-1]) + len(names) for names in self.timers) + 1
         line = '-' * (n + 26) + '\n'
         out.write('%-*s    incl.     excl.\n' % (n, 'Timing:'))
         out.write(line)
@@ -162,6 +163,7 @@ class timer:
                 return x + y
 
         """
+
     def __init__(self, name):
         self.name = name
 

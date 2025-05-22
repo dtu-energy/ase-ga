@@ -1,18 +1,19 @@
+# fmt: off
 import pytest
 
 from ase import Atom, Atoms
-from ase.io import Trajectory, read
-from ase.constraints import FixBondLength
 from ase.calculators.calculator import PropertyNotImplementedError
+from ase.constraints import FixBondLength
+from ase.io import Trajectory, read
 
 
-@pytest.fixture
+@pytest.fixture()
 def co():
     return Atoms([Atom('C', (0, 0, 0)),
                   Atom('O', (0, 0, 1.2))])
 
 
-@pytest.fixture
+@pytest.fixture()
 def trajfile_and_images(co):
     fname = '1.traj'
     co = co.copy()
@@ -20,7 +21,7 @@ def trajfile_and_images(co):
     with Trajectory(fname, 'w', co) as traj:
         written = []
 
-        for i in range(5):
+        for _ in range(5):
             co.positions[:, 2] += 0.1
             traj.write()
             written.append(co.copy())
@@ -64,12 +65,12 @@ def trajfile_and_images(co):
     return fname, written
 
 
-@pytest.fixture
+@pytest.fixture()
 def trajfile(trajfile_and_images):
     return trajfile_and_images[0]
 
 
-@pytest.fixture
+@pytest.fixture()
 def images(trajfile_and_images):
     return trajfile_and_images[1]
 

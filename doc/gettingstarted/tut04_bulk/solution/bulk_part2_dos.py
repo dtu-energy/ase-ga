@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 from gpaw import GPAW
+
 from ase.dft.dos import DOS
 
 calc = GPAW('bulk.Ag.gpw')
-#energies, weights = calc.get_dos(npts=800, width=0)
 
 dos = DOS(calc, npts=800, width=0)
 energies = dos.get_energies()

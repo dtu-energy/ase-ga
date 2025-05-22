@@ -2,7 +2,7 @@
 Nudged elastic band
 ===================
 
-.. module:: ase.neb
+.. module:: ase.mep.neb
    :synopsis: Nudged Elastic Band method.
 
 The Nudged Elastic Band method is a technique for finding transition paths
@@ -47,7 +47,7 @@ Example of use, between initial and final state which have been previously
 saved in A.traj and B.traj::
 
   from ase import io
-  from ase.neb import NEB
+  from ase.mep import NEB
   from ase.optimize import MDMin
   # Read initial and final states:
   initial = io.read('A.traj')
@@ -82,7 +82,7 @@ Interpolation
 
    Interpolate path linearly from initial to final state.
 
-.. function:: interpolate(images)
+.. autofunction:: interpolate
 
    Interpolate path linearly from initial to final state. This standalone
    function can be used independently of the NEB class, but is functionally
@@ -93,7 +93,7 @@ Interpolation
    Create an improved path from initial to final state using the IDPP approach
    [4]. This will start from an initial guess of a linear interpolation.
 
-.. function:: idpp_interpolate(images)
+.. autofunction:: idpp_interpolate
 
    Generate an IDPP pathway from a set of images. This differs
    from above in that more IDPP-specific parameters can be specified,
@@ -196,7 +196,7 @@ To use the climbing image NEB method, instantiate the NEB object like this::
 Scaled and dynamic optimizations
 ================================
 
-.. autoclass:: ase.dyneb.DyNEB
+.. autoclass:: ase.mep.dyneb.DyNEB
 
 The convergence of images is often non-uniform, and a large fraction of
 computational resources can be spent calculating images that are below
@@ -204,10 +204,9 @@ the convergence criterion. This can be avoided with a dynamic optimization
 method that monitors the convergence of each image. Dynamic optimization
 is implemented as a subclass of the NEB method::
 
-    from ase.dyneb import DyNEB
+    from ase.mep import DyNEB
     neb = DyNEB(images, fmax=0.05, dynamic_relaxation=True)
 
->>>>>>> refs/remotes/origin/split-neb-methods
 where ``fmax`` must be identical to the ``fmax`` of the optimizer.
 
 .. note::
@@ -253,16 +252,17 @@ only some of them have a calculator attached::
 Create the NEB object with ``NEB(images, parallel=True)``.
 For a complete example using GPAW_, see here_.
 
-.. _GPAW: https://wiki.fysik.dtu.dk/gpaw
-.. _gpaw-python: https://wiki.fysik.dtu.dk/gpaw/documentation/manual.html#parallel-calculations
-.. _here: https://wiki.fysik.dtu.dk/gpaw/tutorials/neb/neb.html
+.. _GPAW: https://gpaw.readthedocs.io/
+.. _gpaw-python: https://gpaw.readthedocs.io/documentation/parallel_runs/parallel_runs.html
+.. _here: https://gpaw.readthedocs.io/tutorialsexercises/moleculardynamics/neb/neb.html
+
 
 Using Shared Calculators
 ========================
 
 Some calculators may parallelize well outside of ASE, or constructing them
 consumes resources, for this purpose the user can allow the usage of shared
-calculators with the `allow_shared_calculator` parameter of NEB.
+calculators with the ``allow_shared_calculator`` parameter of NEB.
 
 
 .. _nebtools:
@@ -292,10 +292,4 @@ You can find more help with::
 AutoNEB
 =======
 
-.. warning::
-
-    The module from where the :class:`ase.autoneb.AutoNEB` class is imported
-    may be changed some day in a future version of ASE
-    (most likely to :mod:`ase.neb` or :mod:`ase.mep`).
-
-.. autoclass:: ase.autoneb.AutoNEB
+.. autoclass:: ase.mep.autoneb.AutoNEB

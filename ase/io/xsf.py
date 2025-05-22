@@ -1,14 +1,16 @@
+# fmt: off
+
 import numpy as np
 
 from ase.atoms import Atoms
-from ase.units import Hartree
-from ase.data import atomic_numbers
 from ase.calculators.singlepoint import SinglePointCalculator
-from ase.utils import writer, reader
+from ase.data import atomic_numbers
+from ase.units import Hartree
+from ase.utils import reader, writer
 
 
 @writer
-def write_xsf(fileobj, images, data=None):
+def write_xsf(fileobj, images, data=None, origin=None, span_vectors=None):
     is_anim = len(images) > 1
 
     if is_anim:
@@ -43,16 +45,16 @@ def write_xsf(fileobj, images, data=None):
             write_cell = (n == 0 or cell_variable)
             if write_cell:
                 if cell_variable:
-                    fileobj.write('PRIMVEC%s\n' % anim_token)
+                    fileobj.write(f'PRIMVEC{anim_token}\n')
                 else:
                     fileobj.write('PRIMVEC\n')
                 cell = atoms.get_cell()
                 for i in range(3):
                     fileobj.write(' %.14f %.14f %.14f\n' % tuple(cell[i]))
 
-            fileobj.write('PRIMCOORD%s\n' % anim_token)
+            fileobj.write(f'PRIMCOORD{anim_token}\n')
         else:
-            fileobj.write('ATOMS%s\n' % anim_token)
+            fileobj.write(f'ATOMS{anim_token}\n')
 
         # Get the forces if it's not too expensive:
         calc = atoms.calc
@@ -90,18 +92,22 @@ def write_xsf(fileobj, images, data=None):
     fileobj.write('  %d %d %d\n' % shape)
 
     cell = atoms.get_cell()
-    origin = np.zeros(3)
-    for i in range(3):
-        if not pbc[i]:
-            origin += cell[i] / shape[i]
+    if origin is None:
+        origin = np.zeros(3)
+        for i in range(3):
+            if not pbc[i]:
+                origin += cell[i] / shape[i]
     fileobj.write('  %f %f %f\n' % tuple(origin))
 
     for i in range(3):
         # XXXX is this not just supposed to be the cell?
         # What's with the strange division?
         # This disagrees with the output of Octopus.  Investigate
-        fileobj.write('  %f %f %f\n' %
-                      tuple(cell[i] * (shape[i] + 1) / shape[i]))
+        if span_vectors is None:
+            fileobj.write('  %f %f %f\n' %
+                          tuple(cell[i] * (shape[i] + 1) / shape[i]))
+        else:
+            fileobj.write('  %f %f %f\n' % tuple(span_vectors[i]))
 
     for k in range(shape[2]):
         for j in range(shape[1]):
@@ -118,9 +124,14 @@ def write_xsf(fileobj, images, data=None):
 def iread_xsf(fileobj, read_data=False):
     """Yield images and optionally data from xsf file.
 
-    Yields image1, image2, ..., imageN[, data].
+    Yields image1, image2, ..., imageN[, data, origin,
+                                        span_vectors].
 
     Images are Atoms objects and data is a numpy array.
+
+    It also returns the origin of the simulation box
+    as a numpy array and its spanning vectors as a
+     list of numpy arrays, if data is returned.
 
     Presently supports only a single 3D datagrid."""
     def _line_generator_func():
@@ -227,11 +238,16 @@ def iread_xsf(fileobj, read_data=False):
 
         shape = [int(x) for x in readline().split()]
         assert len(shape) == 3
-        readline()  # start
-        # XXX what to do about these?
+        origin = [float(x) for x in readline().split()]
+        origin = np.array(origin)
 
+        span_vectors = []
         for i in range(3):
-            readline()  # Skip 3x3 matrix for some reason
+            span_vector = [float(x) for x in readline().split()]
+            span_vector = np.array(span_vector)
+            span_vectors.append(span_vector)
+        span_vectors = np.array(span_vectors)
+        assert len(span_vectors) == len(shape)
 
         npoints = np.prod(shape)
 
@@ -243,13 +259,13 @@ def iread_xsf(fileobj, read_data=False):
         assert len(data) == npoints
         data = np.array(data, float).reshape(shape[::-1]).T
         # Note that data array is Fortran-ordered
-        yield data
+        yield data, origin, span_vectors
 
 
 def read_xsf(fileobj, index=-1, read_data=False):
     images = list(iread_xsf(fileobj, read_data=read_data))
     if read_data:
-        array = images[-1]
+        array, origin, span_vectors = images[-1]
         images = images[:-1]
-        return array, images[index]
+        return array, origin, span_vectors, images[index]
     return images[index]

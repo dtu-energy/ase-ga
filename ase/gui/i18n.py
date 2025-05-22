@@ -19,12 +19,11 @@ All modules that need translations should import _ from here,
 along with ngettext if they want to translate messages with plurals
 (e.g. "Save 1 file", "Save %d files")."""
 
-import os
 import gettext
-
+import os
 
 domain = 'ag'
-localedir = '%s/po/' % os.path.dirname(__file__)
+localedir = f'{os.path.dirname(__file__)}/po/'
 translation = gettext.translation(domain, localedir, fallback=True)
 
 

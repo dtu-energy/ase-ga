@@ -1,5 +1,5 @@
-from ase.cluster import Octahedron
 from ase.calculators.emt import EMT
+from ase.cluster import Octahedron
 from ase.optimize import BFGS
 
 atoms = Octahedron('Ag', 5, cutoff=2)

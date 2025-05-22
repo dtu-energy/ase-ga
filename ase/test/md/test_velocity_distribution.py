@@ -1,22 +1,23 @@
-import pytest
+# fmt: off
 import numpy as np
+import pytest
+
 from ase.build import molecule
 from ase.md.velocitydistribution import Stationary, ZeroRotation
-
 
 norm = np.linalg.norm
 
 
-@pytest.fixture
+@pytest.fixture()
 def atoms():
     rng = np.random.RandomState(0)
     atoms = molecule('CH3CH2OH')
-    momenta = -0.5 + rng.rand(len(atoms), 3)
+    momenta = -0.5 + rng.random((len(atoms), 3))
     atoms.set_momenta(momenta)
     return atoms
 
 
-@pytest.fixture
+@pytest.fixture()
 def stationary_atoms(atoms):
     atoms = atoms.copy()
     Stationary(atoms)

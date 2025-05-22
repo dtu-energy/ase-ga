@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Exceptions for the general error types that can occur either while
 setting up the calculator, which requires constructing KIM API C++
@@ -14,16 +16,12 @@ class KIMCalculatorError(CalculatorError):
     incompatible in some way with this calculator
     """
 
-    pass
-
 
 class KIMModelNotFound(CalculatorError):
     """
     Requested model cannot be found in any of the KIM API model
     collections on the system
     """
-
-    pass
 
 
 class KIMModelInitializationError(CalculatorError):
@@ -32,12 +30,15 @@ class KIMModelInitializationError(CalculatorError):
     successfully created
     """
 
-    pass
-
 
 class KimpyError(CalculatorError):
     """
-    A call to a kimpy function returned a non-zero error code
+    A call to a kimpy function resulted in a RuntimeError being raised
     """
 
-    pass
+
+class KIMModelParameterError(CalculatorError):
+    """
+    An attempt to either access or mutate a KIM portable model
+    parameter was unsuccessful
+    """

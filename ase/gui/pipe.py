@@ -1,3 +1,5 @@
+# fmt: off
+
 import pickle
 import sys
 
@@ -12,13 +14,13 @@ def main():
         forcefit = data
         forcefit.plot()
     elif task == 'reciprocal':
-        from ase.dft.bz import bz_plot
-        bz_plot(**data)
+        # data is a bandpath object
+        data.plot()
     elif task == 'graph':
         from ase.gui.graphs import make_plot
         make_plot(show=False, *data)
     else:
-        print('Invalid task {}'.format(task))
+        print(f'Invalid task {task}')
         sys.exit(17)
 
     # Magic string to tell GUI that things went okay:

@@ -1,3 +1,4 @@
+# fmt: off
 """
 The OPLS io module uses the coordinatetransform.py module under
 calculators/lammps/.  This test simply ensures that it uses that module
@@ -12,12 +13,12 @@ import pytest
 from ase.io.opls import OPLSff, OPLSStructure
 
 
-@pytest.fixture
+@pytest.fixture()
 def opls_structure_file_name(datadir):
     return datadir / "opls_structure_ext.xyz"
 
 
-@pytest.fixture
+@pytest.fixture()
 def opls_force_field_file_name(datadir):
     """Need to define OPLS parameters for each species in order to be able to
     write a lammps input file"""
@@ -62,6 +63,8 @@ def test_opls_write_lammps(opls_structure_file_name,
     atom3_pos = np.array(atom3_data.split()[pos_indices], dtype=float)
 
     # Check that positions match expected values
-    assert atom1_pos == pytest.approx(np.array([1.6139, -0.7621, 0.0]), abs=1e-4)
+    assert atom1_pos == pytest.approx(
+        np.array([1.6139, -0.7621, 0.0]), abs=1e-4)
     assert atom2_pos == pytest.approx(np.array([-0.3279, 0.5227, 0]), abs=1e-4)
-    assert atom3_pos == pytest.approx(np.array([-0.96, 0.5809, 0.88750]), abs=1e-4)
+    assert atom3_pos == pytest.approx(
+        np.array([-0.96, 0.5809, 0.88750]), abs=1e-4)

@@ -1,6 +1,9 @@
+# fmt: off
+
 """Ideal gas calculator - the potential energy is always zero."""
 
 import numpy as np
+
 from ase.calculators.calculator import Calculator, all_changes
 
 

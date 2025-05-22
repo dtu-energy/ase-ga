@@ -1,3 +1,5 @@
+# fmt: off
+
 """
 Implements the Rank Determination Algorithm (RDA)
 
@@ -8,16 +10,18 @@ P.M. Larsen, M. Pandey, M. Strange, and K. W. Jacobsen
 Phys. Rev. Materials 3 034003, 2019
 https://doi.org/10.1103/PhysRevMaterials.3.034003
 """
-import numpy as np
 from collections import defaultdict
-from ase.geometry.dimensionality.disjoint_set import DisjointSet
 
+import numpy as np
+
+from ase.geometry.dimensionality.disjoint_set import DisjointSet
 
 # Numpy has a large overhead for lots of small vectors.  The cross product is
 # particularly bad.  Pure python is a lot faster.
 
+
 def dot_product(A, B):
-    return sum([a * b for a, b in zip(A, B)])
+    return sum(a * b for a, b in zip(A, B))
 
 
 def cross_product(a, b):
@@ -36,12 +40,12 @@ def rank_increase(a, b):
     elif len(a) == 4:
         return False
 
-    l = a + [b]
-    w = cross_product(subtract(l[1], l[0]), subtract(l[2], l[0]))
+    L = a + [b]
+    w = cross_product(subtract(L[1], L[0]), subtract(L[2], L[0]))
     if len(a) == 2:
         return any(w)
     elif len(a) == 3:
-        return dot_product(w, subtract(l[3], l[0])) != 0
+        return dot_product(w, subtract(L[3], L[0])) != 0
     else:
         raise Exception("This shouldn't be possible.")
 
@@ -209,9 +213,9 @@ class RDA:
         """
         component_dim = {e: self.ranks[e] for e in self.roots}
         relabelled_components = self.graph.find_all(relabel=True)
-        relabelled_dim = {}
-        for k, v in component_dim.items():
-            relabelled_dim[relabelled_components[k]] = v
+        relabelled_dim = {
+            relabelled_components[k]: v for k, v in component_dim.items()
+        }
         self.cdim_cached = relabelled_dim
         self.components_cached = relabelled_components
 

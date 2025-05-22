@@ -25,9 +25,7 @@ and `\Psi_{\mathbf k n}(\mathbf r)` is the wave function.
 .. seealso::
 
    * `Tutorial using GPAW
-     <https://wiki.fysik.dtu.dk/gpaw/tutorials/stm/stm.html>`__
-   * `Execise using GPAW
-     <https://wiki.fysik.dtu.dk/gpaw/exercises/stm/stm.html>`__
+     <https://gpaw.readthedocs.io/tutorialsexercises/electronic/stm/stm.html>`__
 
 More details:
 

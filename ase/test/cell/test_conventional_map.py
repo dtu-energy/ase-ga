@@ -1,8 +1,10 @@
+# fmt: off
 import pytest
+
 from ase import Atoms
-from ase.lattice import all_variants
 from ase.build.supercells import make_supercell
 from ase.calculators.emt import EMT
+from ase.lattice import all_variants
 
 
 def emt_energy_per_atom(atoms):

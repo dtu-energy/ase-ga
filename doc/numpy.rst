@@ -48,9 +48,6 @@ The conventions of numpy's linear algebra package:
 >>> eps = eps[sorted_indices]
 >>> U = U[:, sorted_indices]
 >>>
->>> # Make print of numpy arrays less messy:
->>> np.set_printoptions(precision=3, suppress=True)
->>>
 >>> # Check that U diagonalizes H:
 >>> print(np.dot(np.dot(U.T.conj(), H), U) - np.diag(eps))
 >>> print(np.allclose(np.dot(np.dot(U.T.conj(), H), U), np.diag(eps)))

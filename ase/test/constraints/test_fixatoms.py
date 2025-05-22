@@ -1,7 +1,10 @@
+# fmt: off
+from ase import Atoms
+from ase.constraints import FixAtoms
+
+
 def test_fixatoms():
     """Test Atoms.__delitem__ with FixAtoms constraint."""
-    from ase import Atoms
-    from ase.constraints import FixAtoms
 
     for i, j in [(slice(0, -1), None),
                  (slice(0, 1), [0]),

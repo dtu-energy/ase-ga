@@ -1,9 +1,13 @@
+# fmt: off
+from io import StringIO
+
+from ase.io import read, write
+
+
 def test_jsondb():
     """Read and write json from/to file descriptor."""
-    from io import StringIO
-    from ase.io import read, write
 
-    s = u"""
+    s = """
     {"1":
          {"numbers": [1, 1],
           "positions": [[0.0, 0.0, 0.35],

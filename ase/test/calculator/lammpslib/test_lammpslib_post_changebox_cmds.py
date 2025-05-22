@@ -1,17 +1,18 @@
-import pytest
+# fmt: off
 import numpy as np
+import pytest
 
 from ase import Atoms
 
 
-@pytest.fixture
+@pytest.fixture()
 def lj_epsilons():
     # Set up original LJ epsilon energy parameter and another, modified,
     # epsilon value
     return {"eps_orig": 2.5, "eps_modified": 4.25}
 
 
-@pytest.mark.calculator_lite
+@pytest.mark.calculator_lite()
 @pytest.mark.calculator("lammpslib")
 def test_change_cell_dimensions_and_pbc(factory, dimer_params, lj_epsilons):
     """Ensure that post_change_box commands are actually executed after
@@ -47,7 +48,8 @@ def test_change_cell_dimensions_and_pbc(factory, dimer_params, lj_epsilons):
     energy_modified = dimer.get_potential_energy()
 
     eps_scaling_factor = lj_epsilons["eps_modified"] / lj_epsilons["eps_orig"]
-    assert energy_modified == pytest.approx(eps_scaling_factor * energy_orig, rel=1e-4)
+    assert energy_modified == pytest.approx(
+        eps_scaling_factor * energy_orig, rel=1e-4)
 
     # Reset dimer cell.  Also, create and attach new calculator so that
     # previous post_changebox_cmds won't be in effect.
@@ -65,7 +67,8 @@ def test_change_cell_dimensions_and_pbc(factory, dimer_params, lj_epsilons):
 
     energy_modified = dimer.get_potential_energy()
 
-    assert energy_modified == pytest.approx(eps_scaling_factor * energy_orig, rel=1e-4)
+    assert energy_modified == pytest.approx(
+        eps_scaling_factor * energy_orig, rel=1e-4)
 
 
 def calc_params_lj_changebox(spec, lj_cutoff, eps_orig, eps_modified):

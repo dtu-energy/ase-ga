@@ -1,7 +1,12 @@
+# fmt: off
+import numpy as np
+
+from ase.cluster import Icosahedron
+from ase.ga.particle_crossovers import CutSpliceCrossover
+from ase.ga.particle_mutations import COM2surfPermutation
+
+
 def test_particle_operators(seed):
-    import numpy as np
-    from ase.cluster import Icosahedron
-    from ase.ga.particle_crossovers import CutSpliceCrossover
 
     # set up the random number generator
     rng = np.random.RandomState(seed)
@@ -25,17 +30,16 @@ def test_particle_operators(seed):
     rng.shuffle(ico2.numbers)
     op = CutSpliceCrossover({(28, 29): 2.0, (28, 28): 2.0, (29, 29): 2.0},
                             rng=rng)
-    a3, desc = op.get_new_individual([ico1, ico2])
+    a3, _desc = op.get_new_individual([ico1, ico2])
 
     assert a3.get_chemical_formula() == 'Cu35Ni20'
 
-    from ase.ga.particle_mutations import COM2surfPermutation
     # from ase.ga.particle_mutations import RandomPermutation
     # from ase.ga.particle_mutations import Poor2richPermutation
     # from ase.ga.particle_mutations import Rich2poorPermutation
 
     op = COM2surfPermutation(min_ratio=0.05, rng=rng)
-    a3, desc = op.get_new_individual([ico1])
+    a3, _desc = op.get_new_individual([ico1])
     a3.info['confid'] = 3
 
     assert a3.get_chemical_formula() == 'Cu35Ni20'
@@ -50,7 +54,7 @@ def test_particle_operators(seed):
 
     atomic_conf = op.get_atomic_configuration(a3, elements=['Cu'])[-2:]
     cu3 = len([item for sublist in atomic_conf for item in sublist])
-    a4, desc = op.get_new_individual([a3])
+    a4, _desc = op.get_new_individual([a3])
     atomic_conf = op.get_atomic_configuration(a4, elements=['Cu'])[-2:]
     cu4 = len([item for sublist in atomic_conf for item in sublist])
 

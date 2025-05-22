@@ -1,6 +1,8 @@
-import os
+# fmt: off
+
 import atexit
 import functools
+import os
 import pickle
 import sys
 import time
@@ -9,36 +11,25 @@ import warnings
 import numpy as np
 
 
-def get_txt(txt, rank):
-    if hasattr(txt, 'write'):
-        # Note: User-supplied object might write to files from many ranks.
-        return txt
-    elif rank == 0:
-        if txt is None:
-            return open(os.devnull, 'w')
-        elif txt == '-':
-            return sys.stdout
-        else:
-            return open(txt, 'w', 1)
-    else:
-        return open(os.devnull, 'w')
-
-
-def paropen(name, mode='r', buffering=-1, encoding=None):
+def paropen(name, mode='r', buffering=-1, encoding=None, comm=None):
     """MPI-safe version of open function.
 
     In read mode, the file is opened on all nodes.  In write and
     append mode, the file is opened on the master only, and /dev/null
     is opened on all other nodes.
     """
-    if world.rank > 0 and mode[0] != 'r':
+    if comm is None:
+        comm = world
+    if comm.rank > 0 and mode[0] != 'r':
         name = os.devnull
     return open(name, mode, buffering, encoding)
 
 
-def parprint(*args, **kwargs):
+def parprint(*args, comm=None, **kwargs):
     """MPI-safe print - prints only from master. """
-    if world.rank == 0:
+    if comm is None:
+        comm = world
+    if comm.rank == 0:
         print(*args, **kwargs)
 
 
@@ -57,7 +48,13 @@ class DummyMPI:
         return None
 
     def sum(self, a, root=-1):
+        if np.isscalar(a):
+            warnings.warn('Please use sum_scalar(...) for scalar arguments',
+                          FutureWarning)
         return self._returnval(a)
+
+    def sum_scalar(self, a, root=-1):
+        return a
 
     def product(self, a, root=-1):
         return self._returnval(a)
@@ -77,13 +74,25 @@ class MPI:
 
     * MPI4Py
     * GPAW
+    * Asap
     * a dummy implementation for serial runs
 
     """
+
     def __init__(self):
         self.comm = None
 
     def __getattr__(self, name):
+        # Pickling of objects that carry instances of MPI class
+        # (e.g. NEB) raises RecursionError since it tries to access
+        # the optional __setstate__ method (which we do not implement)
+        # when unpickling. The two lines below prevent the
+        # RecursionError. This also affects modules that use pickling
+        # e.g. multiprocessing.  For more details see:
+        # https://gitlab.com/ase/ase/-/merge_requests/2695
+        if name == '__setstate__':
+            raise AttributeError(name)
+
         if self.comm is None:
             self.comm = _get_comm()
         return getattr(self.comm, name)
@@ -138,7 +147,17 @@ class MPI4PY:
             b = self.comm.allreduce(a)
         else:
             b = self.comm.reduce(a, root)
+        if np.isscalar(a):
+            warnings.warn('Please use sum_scalar(...) for scalar arguments',
+                          FutureWarning)
         return self._returnval(a, b)
+
+    def sum_scalar(self, a, root=-1):
+        if root == -1:
+            b = self.comm.allreduce(a)
+        else:
+            b = self.comm.reduce(a, root)
+        return b
 
     def split(self, split_size=None):
         """Divide the communicator."""
@@ -162,7 +181,7 @@ class MPI4PY:
         if self.rank == root:
             if np.isscalar(a):
                 return a
-            return
+            return None
         return self._returnval(a, b)
 
 
@@ -170,7 +189,7 @@ world = None
 
 # Check for special MPI-enabled Python interpreters:
 if '_gpaw' in sys.builtin_module_names:
-    # http://wiki.fysik.dtu.dk/gpaw
+    # http://gpaw.readthedocs.io
     import _gpaw
     world = _gpaw.Communicator()
 elif '_asap' in sys.builtin_module_names:
@@ -237,7 +256,7 @@ def parallel_function(func):
     def new_func(*args, **kwargs):
         if (world.size == 1 or
             args and getattr(args[0], 'serial', False) or
-            not kwargs.pop('parallel', True)):
+                not kwargs.pop('parallel', True)):
             # Disable:
             return func(*args, **kwargs)
 
@@ -268,7 +287,7 @@ def parallel_generator(generator):
     def new_generator(*args, **kwargs):
         if (world.size == 1 or
             args and getattr(args[0], 'serial', False) or
-            not kwargs.pop('parallel', True)):
+                not kwargs.pop('parallel', True)):
             # Disable:
             for result in generator(*args, **kwargs):
                 yield result
@@ -342,16 +361,7 @@ def distribute_cpus(size, comm):
     return mycomm, comm.size // size, tasks_rank
 
 
-class ParallelModuleWrapper:
-    def __getattr__(self, name):
-        if name == 'rank' or name == 'size':
-            warnings.warn('ase.parallel.{name} has been deprecated.  '
-                          'Please use ase.parallel.world.{name} instead.'
-                          .format(name=name),
-                          FutureWarning)
-            return getattr(world, name)
-        return getattr(_parallel, name)
-
-
-_parallel = sys.modules['ase.parallel']
-sys.modules['ase.parallel'] = ParallelModuleWrapper()  # type: ignore
+def myslice(ntotal, comm):
+    """Return the slice of your tasks for ntotal jobs"""
+    n = -(-ntotal // comm.size)  # ceil divide
+    return slice(n * comm.rank, n * (comm.rank + 1))

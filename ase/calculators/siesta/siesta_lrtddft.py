@@ -1,20 +1,27 @@
+# fmt: off
+
 import numpy as np
+
 import ase.units as un
+from ase.calculators.polarizability import StaticPolarizabilityCalculator
+
 
 class SiestaLRTDDFT:
     """Interface for linear response TDDFT for Siesta via `PyNAO`_
 
-    When using PyNAO please cite the papers indicated in the
-    `documentation <https://mbarbrywebsite.ddns.net/pynao/doc/html/references.html>`_
+    When using PyNAO please cite the papers indicated in the `documentation \
+<https://mbarbrywebsite.ddns.net/pynao/doc/html/references.html>`_
     """
+
     def __init__(self, initialize=False, **kw):
         """
         Parameters
         ----------
         initialize: bool
-            To initialize the tddft calculations before calculating the polarizability
-            Can be useful to calculate multiple frequency range without the need
-            to recalculate the kernel
+            To initialize the tddft calculations before
+            calculating the polarizability
+            Can be useful to calculate multiple frequency range
+            without the need to recalculate the kernel
         kw: dictionary
             keywords for the tddft_iter function from PyNAO
         """
@@ -22,10 +29,11 @@ class SiestaLRTDDFT:
         try:
             from pynao import tddft_iter
         except ModuleNotFoundError as err:
-            msg = "running lrtddft with Siesta calculator requires pynao package"
+            msg = ("running lrtddft with Siesta calculator "
+                   "requires pynao package")
             raise ModuleNotFoundError(msg) from err
 
-        self.initialize=initialize
+        self.initialize = initialize
         self.lrtddft_params = kw
         self.tddft = None
 
@@ -60,8 +68,8 @@ class SiestaLRTDDFT:
         atoms.calc = siesta
         atoms.get_potential_energy()
 
-
-    def get_polarizability(self, omega, Eext=np.array([1.0, 1.0, 1.0]), inter=True):
+    def get_polarizability(self, omega, Eext=np.array(
+            [1.0, 1.0, 1.0]), inter=True):
         """
         Calculate the polarizability of a molecule via linear response TDDFT
         calculation.
@@ -69,7 +77,8 @@ class SiestaLRTDDFT:
         Parameters
         ----------
         omega: float or array like
-            frequency range for which the polarizability should be computed, in eV
+            frequency range for which the polarizability should be
+            computed, in eV
 
         Returns
         -------
@@ -99,7 +108,7 @@ class SiestaLRTDDFT:
 
         # run TDDFT calculation with PyNAO
         freq=np.arange(0.0, 25.0, 0.05)
-        pmat = lr.get_polarizability(freq) 
+        pmat = lr.get_polarizability(freq)
         """
         from pynao import tddft_iter
 
@@ -115,7 +124,7 @@ class SiestaLRTDDFT:
         else:
             raise ValueError("omega soulf")
 
-        freq_cmplx = freq/un.Ha + 1j * self.tddft.eps
+        freq_cmplx = freq / un.Ha + 1j * self.tddft.eps
         if inter:
             pmat = -self.tddft.comp_polariz_inter_Edir(freq_cmplx, Eext=Eext)
             self.dn = self.tddft.dn
@@ -125,13 +134,15 @@ class SiestaLRTDDFT:
 
         return pmat
 
-class RamanCalculatorInterface(SiestaLRTDDFT):
+
+class RamanCalculatorInterface(SiestaLRTDDFT, StaticPolarizabilityCalculator):
     """Raman interface for Siesta calculator.
     When using the Raman calculator, please cite
 
-    M. Walter and M. Moseler, Ab Initio Wavelength-Dependent Raman Spectra:
-    Placzek Approximation and Beyond, J. Chem. Theory Comput. 2020, 16, 1, 576–586
-    """
+    M. Walter and M. Moseler, Ab Initio Wavelength-Dependent Raman
+    Spectra: Placzek Approximation and Beyond, J. Chem. Theory
+    Comput. 2020, 16, 1, 576–586"""
+
     def __init__(self, omega=0.0, **kw):
         """
         Parameters
@@ -146,11 +157,6 @@ class RamanCalculatorInterface(SiestaLRTDDFT):
         self.omega = omega
         super().__init__(**kw)
 
-
-    def __call__(self, *args, **kwargs):
-        """Shorthand for calculate"""
-        return self.calculate(*args, **kwargs)
-
     def calculate(self, atoms):
         """
         Calculate the polarizability for frequency omega
@@ -161,7 +167,8 @@ class RamanCalculatorInterface(SiestaLRTDDFT):
             The atoms definition of the system. Not used but required by Raman
             calculator
         """
-        pmat = self.get_polarizability(self.omega, Eext=np.array([1.0, 1.0, 1.0]))
+        pmat = self.get_polarizability(
+            self.omega, Eext=np.array([1.0, 1.0, 1.0]))
 
         # Specific for raman calls, it expects just the tensor for a single
         # frequency and need only the real part
@@ -173,7 +180,8 @@ class RamanCalculatorInterface(SiestaLRTDDFT):
 
         # Convert from atomic units to e**2 Ang**2/eV
         return pmat[:, :, 0].real * (un.Bohr**2) / un.Ha
- 
+
+
 def pol2cross_sec(p, omg):
     """
     Convert the polarizability in au to cross section in nm**2

@@ -34,7 +34,7 @@ number of "design goals" that make it:
   different purposes. There are :mod:`ase.calculators` for calculating
   energies, forces and stresses, :mod:`ase.md` and :mod:`ase.optimize` modules
   for controlling the motion of atoms, :mod:`constraints <ase.constraints>`
-  objects and filters for performing :mod:`nudged-elastic-band <ase.neb>`
+  objects and filters for performing :mod:`nudged-elastic-band <ase.mep.neb>`
   calculations etc. The modularity of the object-oriented code make it
   simple to contribute new functionality to ASE.
 
