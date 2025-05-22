@@ -3,7 +3,6 @@
 # type: ignore
 import platform
 import re
-import sys
 import tkinter as tk
 import tkinter.ttk as ttk
 from collections import namedtuple
@@ -21,12 +20,6 @@ __all__ = [
     'ASEGUIWindow', 'Button', 'CheckButton', 'ComboBox', 'Entry', 'Label',
     'Window', 'MenuItem', 'RadioButton', 'RadioButtons', 'Rows', 'Scale',
     'showinfo', 'showwarning', 'SpinBox', 'Text', 'set_windowtype']
-
-
-if sys.platform == 'darwin':
-    mouse_buttons = {2: 3, 3: 2}
-else:
-    mouse_buttons = {}
 
 
 def error(title, message=None):
@@ -424,11 +417,16 @@ class MenuItem:
         self.underline = label.find('_')
         self.label = label.replace('_', '')
 
+        is_macos = platform.system() == 'Darwin'
+
         if key:
             if key[:4] == 'Ctrl':
                 self.keyname = f'<Control-{key[-1].lower()}>'
             elif key[:3] == 'Alt':
-                self.keyname = f'<Alt-{key[-1].lower()}>'
+                if is_macos:
+                    self.keyname = f'<Command-{key[-1].lower()}>'
+                else:
+                    self.keyname = f'<Alt-{key[-1].lower()}>'
             else:
                 self.keyname = {
                     'Home': '<Home>',
@@ -446,7 +444,10 @@ class MenuItem:
         else:
             self.callback = callback
 
-        self.key = key
+        if is_macos and key is not None:
+            self.key = key.replace('Alt', 'Command')
+        else:
+            self.key = key
         self.value = value
         self.choices = choices
         self.submenu = submenu
@@ -553,7 +554,7 @@ class MainWindow(BaseWindow):
 
 def bind(callback, modifier=None):
     def handle(event):
-        event.button = mouse_buttons.get(event.num, event.num)
+        event.button = event.num
         event.key = event.keysym.lower()
         event.modifier = modifier
         callback(event)
@@ -619,17 +620,17 @@ class ASEGUIWindow(MainWindow):
         self.status = tk.Label(self.win, text='', anchor=tk.W)
         self.status.pack(side=tk.BOTTOM, fill=tk.X)
 
-        right = mouse_buttons.get(3, 3)
         self.canvas.bind('<ButtonPress>', bind(press))
-        self.canvas.bind('<B1-Motion>', bind(move))
-        self.canvas.bind(f'<B{right}-Motion>', bind(move))
+        for button in range(1, 4):
+            self.canvas.bind(f'<B{button}-Motion>', bind(move))
         self.canvas.bind('<ButtonRelease>', bind(release))
         self.canvas.bind('<Control-ButtonRelease>', bind(release, 'ctrl'))
         self.canvas.bind('<Shift-ButtonRelease>', bind(release, 'shift'))
         self.canvas.bind('<Configure>', resize)
         if not config['swap_mouse']:
-            self.canvas.bind(f'<Shift-B{right}-Motion>',
-                             bind(scroll))
+            for button in (2, 3):
+                self.canvas.bind(f'<Shift-B{button}-Motion>',
+                                 bind(scroll))
         else:
             self.canvas.bind('<Shift-B1-Motion>',
                              bind(scroll))

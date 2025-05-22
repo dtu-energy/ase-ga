@@ -157,13 +157,16 @@ class GUI(View):
         return Settings(self)
 
     def scroll(self, event):
-        CTRL = event.modifier == 'ctrl'
+        shift = 0x1
+        ctrl = 0x4
+        alt_l = 0x8
+        mac_option_key = 0x10
 
-        # Bug: Simultaneous CTRL + shift is the same as just CTRL.
-        # Therefore movement in Z direction does not support the
-        # shift modifier.
-        dxdydz = {'up': (0, 1 - CTRL, CTRL),
-                  'down': (0, -1 + CTRL, -CTRL),
+        use_small_step = bool(event.state & shift)
+        rotate_into_plane = bool(event.state & (ctrl | alt_l | mac_option_key))
+
+        dxdydz = {'up': (0, 1 - rotate_into_plane, rotate_into_plane),
+                  'down': (0, -1 + rotate_into_plane, -rotate_into_plane),
                   'right': (1, 0, 0),
                   'left': (-1, 0, 0)}.get(event.key, None)
 
@@ -186,7 +189,7 @@ class GUI(View):
             return
 
         vec = 0.1 * np.dot(self.axes, dxdydz)
-        if event.modifier == 'shift':
+        if use_small_step:
             vec *= 0.1
 
         if self.arrowkey_mode == self.ARROWKEY_MOVE:
