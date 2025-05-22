@@ -38,7 +38,7 @@ nitpick_ignore = [
     ('envvar', 'VASP_SCRIPT'),
 ]
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_book_theme'
 html_style = 'ase.css'
 html_favicon = 'static/ase.ico'
 html_static_path = ['static']
