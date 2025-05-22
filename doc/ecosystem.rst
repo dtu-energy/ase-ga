@@ -33,6 +33,12 @@ Listed in alphabetical order, for want of a better approach.
    with first-principles codes via ASE as well as other Python
    libraries.
 
+ * `DockOnSurf <https://dockonsurf.readthedocs.io/>`_:
+   DockOnSurf is a program to automatically find the most stable geometry
+   for molecules on surfaces. In a two-step screening procedure, different 
+   configurations are scanned by combining different sites, anchoring points,
+   conformers, orientations and probing dissociation of acidic protons.
+
  * `CHGNet <https://github.com/CederGroupHub/chgnet>`_:
    A pretrained universal neural network potential for charge-informed
    atomistic modeling
