@@ -22,7 +22,6 @@ source_suffix = '.rst'
 master_doc = 'index'
 project = 'ASE'
 copyright = f'{datetime.date.today().year}, ASE-developers'
-templates_path = ['templates']
 exclude_patterns = ['build']
 default_role = 'math'
 pygments_style = 'sphinx'
