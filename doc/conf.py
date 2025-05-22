@@ -38,6 +38,7 @@ nitpick_ignore = [
 ]
 
 html_theme = 'sphinx_book_theme'
+html_logo = 'static/ase256.png'
 html_favicon = 'static/ase.ico'
 html_static_path = ['static']
 html_last_updated_fmt = '%a, %d %b %Y %H:%M:%S'
