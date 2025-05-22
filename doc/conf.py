@@ -43,6 +43,11 @@ html_favicon = 'static/ase.ico'
 html_static_path = ['static']
 html_last_updated_fmt = '%a, %d %b %Y %H:%M:%S'
 
+html_theme_options = {
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html
+    'gitlab_url': 'https://gitlab.com/ase/ase',
+}
+
 latex_elements = {'papersize': 'a4paper'}
 latex_show_urls = 'inline'
 latex_show_pagerefs = True
