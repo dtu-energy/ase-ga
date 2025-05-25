@@ -460,7 +460,7 @@ def read_vasp_xml(filename='vasprun.xml', index=-1):
                         kpts_params = OrderedDict()
                         parameters['kpoints_generation'] = kpts_params
                         for par in subelem.iter():
-                            if par.tag in ['v', 'i']:
+                            if par.tag in ['v', 'i'] and "name" in par.attrib:
                                 parname = par.attrib['name'].lower()
                                 kpts_params[parname] = __get_xml_parameter(par)
 
