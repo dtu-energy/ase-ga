@@ -113,6 +113,12 @@ def test_vasp_no_cell(testdir):
         atoms.get_total_energy()
 
 
+def test_vasp_kpoints_none(atoms, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    Vasp(kpts=None).write_kpoints(atoms=atoms)
+    assert not os.path.isfile('KPOINTS')
+
+
 def test_spinpol_vs_ispin():
     """Test if `spinpol` is consistent with `ispin`"""
     atoms = molecule("O2")
