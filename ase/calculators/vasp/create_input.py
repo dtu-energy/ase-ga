@@ -1782,6 +1782,8 @@ class GenerateVaspInput:
                 raise ValueError("KSPACING value {} is not allowable. "
                                  "Please use None or a positive number."
                                  "".format(self.float_params['kspacing']))
+        if self.input_params['kpts'] is None:
+            return
 
         kpointstring = format_kpoints(
             kpts=self.input_params['kpts'],
