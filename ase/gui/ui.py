@@ -420,20 +420,38 @@ class MenuItem:
         is_macos = platform.system() == 'Darwin'
 
         if key:
-            if key[:4] == 'Ctrl':
-                self.keyname = f'<Control-{key[-1].lower()}>'
-            elif key[:3] == 'Alt':
-                if is_macos:
-                    self.keyname = f'<Command-{key[-1].lower()}>'
+            parts = key.split('+')
+            modifiers = []
+            key_char = None
+
+            for part in parts:
+                if part in ('Alt', 'Shift'):
+                    modifiers.append(part)
+                elif part == 'Ctrl':
+                    modifiers.append('Control')
+                elif len(part) == 1 and 'Shift' in modifiers:
+                    # If shift and letter, uppercase
+                    key_char = part
                 else:
-                    self.keyname = f'<Alt-{key[-1].lower()}>'
+                    # Lower case
+                    key_char = part.lower()
+
+            if is_macos:
+                modifiers = ['Command' if m == 'Alt' else m for m in modifiers]
+
+            if modifiers and key_char:
+                self.keyname = f"<{'-'.join(modifiers)}-{key_char}>"
             else:
+                # Handle special non-modifier keys
                 self.keyname = {
                     'Home': '<Home>',
                     'End': '<End>',
                     'Page-Up': '<Prior>',
                     'Page-Down': '<Next>',
-                    'Backspace': '<BackSpace>'}.get(key, key.lower())
+                    'Backspace': '<BackSpace>'
+                }.get(key, key.lower())
+        else:
+            self.keyname = None
 
         if key:
             def callback2(event=None):
