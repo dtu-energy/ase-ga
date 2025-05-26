@@ -159,7 +159,7 @@ class GUI(View):
     def scroll(self, event):
         shift = 0x1
         ctrl = 0x4
-        alt_l = 0x8
+        alt_l = 0x8 # Also Mac Command Key
         mac_option_key = 0x10
 
         use_small_step = bool(event.state & shift)
@@ -529,18 +529,18 @@ class GUI(View):
               M(_('Change View'),
                 submenu=[
                     M(_('Reset View'), self.reset_view, '='),
-                    M(_('xy-plane'), self.set_view, 'Z'),
-                    M(_('yz-plane'), self.set_view, 'X'),
-                    M(_('zx-plane'), self.set_view, 'Y'),
-                    M(_('yx-plane'), self.set_view, 'Alt+Z'),
-                    M(_('zy-plane'), self.set_view, 'Alt+X'),
-                    M(_('xz-plane'), self.set_view, 'Alt+Y'),
-                    M(_('a2,a3-plane'), self.set_view, '1'),
-                    M(_('a3,a1-plane'), self.set_view, '2'),
-                    M(_('a1,a2-plane'), self.set_view, '3'),
-                    M(_('a3,a2-plane'), self.set_view, 'Alt+1'),
-                    M(_('a1,a3-plane'), self.set_view, 'Alt+2'),
-                    M(_('a2,a1-plane'), self.set_view, 'Alt+3')]),
+                    M(_('xy-plane'), self.set_view, 'Alt+Z'),
+                    M(_('yz-plane'), self.set_view, 'Alt+X'),
+                    M(_('zx-plane'), self.set_view, 'Alt+Y'),
+                    M(_('yx-plane'), self.set_view, 'Alt+Shift+Z'),
+                    M(_('zy-plane'), self.set_view, 'Alt+Shift+X'),
+                    M(_('xz-plane'), self.set_view, 'Alt+Shift+Y'),
+                    M(_('a2,a3-plane'), self.set_view, 'Alt+A'),
+                    M(_('a3,a1-plane'), self.set_view, 'Alt+B'),
+                    M(_('a1,a2-plane'), self.set_view, 'Alt+C'),
+                    M(_('a3,a2-plane'), self.set_view, 'Alt+Shift+A'),
+                    M(_('a1,a3-plane'), self.set_view, 'Alt+Shift+B'),
+                    M(_('a2,a1-plane'), self.set_view, 'Alt+Shift+C')]),
               M(_('Settings ...'), self.settings),
               M('---'),
               M(_('VMD'), partial(self.external_viewer, 'vmd')),

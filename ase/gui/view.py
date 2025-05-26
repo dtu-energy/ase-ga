@@ -316,30 +316,30 @@ class View:
         self.focus(self)
 
     def set_view(self, key):
-        if key == 'Z':
+        if key == 'Alt+Z':
             self.axes = rotate('0.0x,0.0y,0.0z')
-        elif key == 'X':
-            self.axes = rotate('-90.0x,-90.0y,0.0z')
-        elif key == 'Y':
-            self.axes = rotate('90.0x,0.0y,90.0z')
-        elif key == 'Alt+Z':
-            self.axes = rotate('180.0x,0.0y,90.0z')
         elif key == 'Alt+X':
-            self.axes = rotate('0.0x,90.0y,0.0z')
+            self.axes = rotate('-90.0x,-90.0y,0.0z')
         elif key == 'Alt+Y':
+            self.axes = rotate('90.0x,0.0y,90.0z')
+        elif key == 'Alt+Shift+Z':
+            self.axes = rotate('180.0x,0.0y,90.0z')
+        elif key == 'Alt+Shift+X':
+            self.axes = rotate('0.0x,90.0y,0.0z')
+        elif key == 'Alt+Shift+Y':
             self.axes = rotate('-90.0x,0.0y,0.0z')
         else:
-            if key == '3':
+            if key == 'Alt+C':
                 i, j = 0, 1
-            elif key == '1':
+            elif key == 'Alt+A':
                 i, j = 1, 2
-            elif key == '2':
+            elif key == 'Alt+B':
                 i, j = 2, 0
-            elif key == 'Alt+3':
+            elif key == 'Alt+Shift+C':
                 i, j = 1, 0
-            elif key == 'Alt+1':
+            elif key == 'Alt+Shift+A':
                 i, j = 2, 1
-            elif key == 'Alt+2':
+            elif key == 'Alt+Shift+B':
                 i, j = 0, 2
 
             A = complete_cell(self.atoms.cell)
