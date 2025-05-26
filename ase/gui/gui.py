@@ -233,6 +233,18 @@ class GUI(View):
         from ase.gui.constraints import Constraints
         return Constraints(self)
 
+    def set_selected_atoms(self, selected):
+        newmask = np.zeros(len(self.images.selected), bool)
+        newmask[selected] = True
+
+        if np.array_equal(newmask, self.images.selected):
+            return
+
+        # (By creating newmask, we can avoid resetting the selection in
+        # case the selected indices are invalid)
+        self.images.selected[:] = newmask
+        self.draw()
+
     def select_all(self, key=None):
         self.images.selected[:] = True
         self.draw()

@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Callable
 
+import numpy as np
+
 import ase.gui.ui as ui
 from ase.gui.i18n import _
 
@@ -26,17 +28,17 @@ class AtomsEditor:
 
         win = ui.Window(_('Edit atoms'), wmtype='utility')
 
-        tree = ui.ttk.Treeview(win.win, selectmode='extended')
+        treeview = ui.ttk.Treeview(win.win, selectmode='extended')
         edit_entry = ui.ttk.Entry(win.win)
         edit_entry.pack(side='bottom', fill='x')
-        tree.pack(side='left', fill='y')
+        treeview.pack(side='left', fill='y')
         bar = ui.ttk.Scrollbar(
             win.win, orient='vertical', command=self.scroll_via_scrollbar
         )
-        tree.configure(yscrollcommand=self.scroll_via_treeview)
+        treeview.configure(yscrollcommand=self.scroll_via_treeview)
 
-        tree.column('#0', width=40)
-        tree.heading('#0', text=_('id'))
+        treeview.column('#0', width=40)
+        treeview.heading('#0', text=_('id'))
 
         bar.pack(side='right', fill='y')
         self.scrollbar = bar
@@ -52,7 +54,7 @@ class AtomsEditor:
             atoms.symbols[i] = value
 
         self.gui = gui
-        self.tree = tree
+        self.treeview = treeview
         self.columns = []
         self._current_entry = None
 
@@ -89,16 +91,22 @@ class AtomsEditor:
                 format_value=lambda val: f'{val:.4f}',
             )
 
-        tree.bind('<Double-1>', self.doubleclick)
+        treeview.bind('<Double-1>', self.doubleclick)
+        treeview.bind('<<TreeviewSelect>>', self.treeview_selection_changed)
 
         self.define_columns_on_widget()
         self.update_table_from_atoms()
 
         self.edit_entry = edit_entry
 
+    def treeview_selection_changed(self, event):
+        selected_items = self.treeview.selection()
+        indices = [self.rownumber(item) for item in selected_items]
+        self.gui.set_selected_atoms(indices)
+
     def scroll_via_scrollbar(self, *args, **kwargs):
         self.leave_edit_mode()
-        return self.tree.yview(*args, **kwargs)
+        return self.treeview.yview(*args, **kwargs)
 
     def scroll_via_treeview(self, *args, **kwargs):
         # Here it is important to leave edit mode, since scrolling
@@ -111,17 +119,34 @@ class AtomsEditor:
         if self._current_entry is not None:
             self._current_entry.destroy()
             self._current_entry = None
-            self.tree.focus_force()
+            self.treeview.focus_force()
 
     @property
     def atoms(self):
         return self.gui.atoms
 
     def update_table_from_atoms(self):
-        self.tree.delete(*self.tree.get_children())
+        previous_selection = [
+            self.rownumber(rowid) for rowid in self.treeview.selection()
+        ]
+
+        self.treeview.delete(*self.treeview.get_children())
         for i in range(len(self.atoms)):
             values = self.get_row_values(i)
-            self.tree.insert('', 'end', text=i, values=values)
+            self.treeview.insert(
+                '', 'end', text=i, values=values, iid=self.rowid(i)
+            )
+
+        selection = np.arange(len(self.atoms))[self.gui.images.selected]
+
+        rowids = [self.rowid(index) for index in selection]
+        # Note: This will cause us to update the selection, which can lead
+        # to infinite recursion since we'll also end up updating the table.
+        # Except the GUI catches that the selection did not in fact change,
+        # and therefore does not update again.
+        #
+        # This could be made a little bit more obvious/robust
+        self.treeview.selection_set(*rowids)
 
     def get_row_values(self, i):
         return [
@@ -134,24 +159,31 @@ class AtomsEditor:
         self.columns.append(column)
 
     def define_columns_on_widget(self):
-        self.tree['columns'] = [column.name for column in self.columns]
+        self.treeview['columns'] = [column.name for column in self.columns]
         for column in self.columns:
-            self.tree.heading(column.name, text=column.displayname)
-            self.tree.column(column.name, width=column.widget_width, anchor='e')
+            self.treeview.heading(column.name, text=column.displayname)
+            self.treeview.column(
+                column.name, width=column.widget_width, anchor='e'
+            )
+
+    def rowid(self, rownumber: int) -> str:
+        return f'R{rownumber}'
+
+    def rownumber(self, rowid: str) -> int:
+        assert rowid[0] == 'R'
+        return int(rowid[1:])
 
     def doubleclick(self, event):
-        row_id = self.tree.identify_row(event.y)
-        column_id = self.tree.identify_column(event.x)
+        row_id = self.treeview.identify_row(event.y)
+        column_id = self.treeview.identify_column(event.x)
 
         assert column_id.startswith('#'), repr(column_id)
-        assert row_id.startswith('I'), repr(row_id)
 
         column_no = int(column_id[1:]) - 1
         if column_no == -1:
             return  # This is the ID column.
 
-        # WTH why in the name of the devil does it use hexadecimal
-        row_no = int(row_id[1:], base=16) - 1
+        row_no = self.rownumber(rowid)
 
         assert 0 <= column_no < len(self.columns)
         assert 0 <= row_no < len(self.atoms)
@@ -159,7 +191,7 @@ class AtomsEditor:
         content = self.columns[column_no].getvalue(self.atoms, row_no)
 
         assert self._current_entry is None
-        entry = ui.ttk.Entry(self.tree)
+        entry = ui.ttk.Entry(self.treeview)
         entry.insert(0, content)
         entry.focus_force()
         entry.selection_range(0, 'end')
@@ -170,16 +202,16 @@ class AtomsEditor:
             try:
                 column.setvalue(self.atoms, row_no, value)
                 text = column.format_value(column.getvalue(self.atoms, row_no))
-                self.tree.set(row_id, column_id, value=text)
+                self.treeview.set(row_id, column_id, value=text)
                 self.gui.set_frame()
             finally:
-                self.tree.focus_force()
+                self.treeview.focus_force()
                 self.leave_edit_mode()
 
         entry.bind('<FocusOut>', apply_change)
         entry.bind('<Return>', apply_change)
         entry.bind('<Escape>', lambda *args: self.leave_edit_mode())
 
-        x, y, width, height = self.tree.bbox(row_id, column_id)
+        x, y, width, height = self.treeview.bbox(row_id, column_id)
         entry.place(x=x, y=y, height=height)
         self._current_entry = entry
