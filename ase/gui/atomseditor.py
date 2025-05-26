@@ -126,10 +126,6 @@ class AtomsEditor:
         return self.gui.atoms
 
     def update_table_from_atoms(self):
-        previous_selection = [
-            self.rownumber(rowid) for rowid in self.treeview.selection()
-        ]
-
         self.treeview.delete(*self.treeview.get_children())
         for i in range(len(self.atoms)):
             values = self.get_row_values(i)
@@ -183,7 +179,7 @@ class AtomsEditor:
         if column_no == -1:
             return  # This is the ID column.
 
-        row_no = self.rownumber(rowid)
+        row_no = self.rownumber(row_id)
 
         assert 0 <= column_no < len(self.columns)
         assert 0 <= row_no < len(self.atoms)
