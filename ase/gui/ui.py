@@ -425,18 +425,19 @@ class MenuItem:
             key_char = None
 
             for part in parts:
-                part_lower = part.lower()
-                if part_lower in ('ctrl', 'control'):
+                if part in ('Alt', 'Shift'):
+                    modifiers.append(part)
+                elif part == 'Ctrl':
                     modifiers.append('Control')
-                elif part_lower == 'alt':
-                    modifiers.append('Command' if is_macos else 'Alt')
-                elif part_lower == 'shift':
-                    modifiers.append('Shift')
-                elif len(part_lower) == 1 and 'Shift' in modifiers:
-                    # If shift and letter, set uppercase
-                    key_char = part.upper()
+                elif len(part) == 1 and 'Shift' in modifiers:
+                    # If shift and letter, uppercase
+                    key_char = part
                 else:
-                    key_char = part_lower
+                    # Lower case
+                    key_char = part.lower()
+
+            if is_macos:
+                modifiers = ['Command' if m == 'Alt' else m for m in modifiers]
 
             if modifiers and key_char:
                 self.keyname = f"<{'-'.join(modifiers)}-{key_char}>"
