@@ -159,7 +159,7 @@ class GUI(View):
     def scroll(self, event):
         shift = 0x1
         ctrl = 0x4
-        alt_l = 0x8 # Also Mac Command Key
+        alt_l = 0x8  # Also Mac Command Key
         mac_option_key = 0x10
 
         use_small_step = bool(event.state & shift)
