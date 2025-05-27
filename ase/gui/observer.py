@@ -33,7 +33,12 @@ class Observers:
                 try:
                     observer()
                 except Exception as ex:
-                    warnings.warn(f'Suppressed exception in observer: {ex}')
+                    import traceback
+
+                    tb = ''.join(traceback.format_exception(ex))
+                    warnings.warn(
+                        f'Suppressed exception in observer {observer}: {tb}'
+                    )
                     continue
 
         self.observer_weakrefs = weakrefs_still_alive

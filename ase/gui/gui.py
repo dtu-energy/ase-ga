@@ -27,7 +27,7 @@ class GUIObservers:
     def __init__(self):
         self.new_atoms = Observers()
         self.set_atoms = Observers()
-        self.draw = Observers()
+        self.change_atoms = Observers()
 
 
 class GUI(View):
@@ -236,6 +236,18 @@ class GUI(View):
         from ase.gui.constraints import Constraints
         return Constraints(self)
 
+    def set_selected_atoms(self, selected):
+        newmask = np.zeros(len(self.images.selected), bool)
+        newmask[selected] = True
+
+        if np.array_equal(newmask, self.images.selected):
+            return
+
+        # (By creating newmask, we can avoid resetting the selection in
+        # case the selected indices are invalid)
+        self.images.selected[:] = newmask
+        self.draw()
+
     def select_all(self, key=None):
         self.images.selected[:] = True
         self.draw()
@@ -342,6 +354,10 @@ class GUI(View):
     def cell_editor(self, key=None):
         from ase.gui.celleditor import CellEditor
         return CellEditor(self)
+
+    def atoms_editor(self, key=None):
+        from ase.gui.atomseditor import AtomsEditor
+        return AtomsEditor(self)
 
     def quick_info_window(self, key=None):
         from ase.gui.quickinfo import info
@@ -489,7 +505,8 @@ class GUI(View):
               M(_('_Add atoms'), self.add_atoms, 'Ctrl+A'),
               M(_('_Delete selected atoms'), self.delete_selected_atoms,
                 'Backspace'),
-              M(_('Edit _cell'), self.cell_editor, 'Ctrl+E'),
+              M(_('Edit _cell …'), self.cell_editor, 'Ctrl+E'),
+              M(_('Edit _atoms …'), self.atoms_editor, 'A'),
               M('---'),
               M(_('_First image'), self.step, 'Home'),
               M(_('_Previous image'), self.step, 'Page-Up'),

@@ -548,3 +548,58 @@ def runcallbacks(win):
 def test_callbacks(display):
     win = window()
     win.win.after_idle(runcallbacks)
+
+
+def test_atoms_editor_set_values(gui, atoms):
+    editor = gui.atoms_editor()
+
+    assert str(atoms.symbols) == 'Ti16'
+    entry, apply_change = editor.edit_field(row_id='R3', column_id='#1')
+    entry.delete(0, 'end')
+    entry.insert(0, 'Pu')
+    apply_change()
+
+    assert str(atoms.symbols) == 'Ti3PuTi12'
+
+    for i in range(3):
+        # Edit each coordinate:
+        entry, apply_change = editor.edit_field('R4', f'#{2 + i}')
+        entry.delete(0, 'end')
+        value = str(5.1 + i)
+        entry.insert(0, value)
+        apply_change()
+
+    assert atoms.positions[4] == pytest.approx([5.1, 6.1, 7.1])
+
+
+def test_atoms_editor_change_listener(gui, atoms):
+    editor = gui.atoms_editor()
+    entry, _ = editor.edit_field('R2', '#1')
+    assert entry.get() == 'Ti'
+    editor.leave_edit_mode()
+
+    atoms = molecule('CH3CH2OH')
+    gui.new_atoms(atoms)
+    entry, _ = editor.edit_field('R2', '#1')
+    assert entry.get() == 'O'
+
+
+def test_atoms_editor_select_in_gui(gui, atoms):
+    """Test that contents of editor updates when atoms change."""
+    editor = gui.atoms_editor()
+    assert sum(gui.images.selected) == 0
+    assert len(editor.treeview.selection()) == 0
+
+    gui.set_selected_atoms([2, 5, 6])
+    selection = editor.treeview.selection()
+    assert selection == ('R2', 'R5', 'R6')
+
+
+def test_atoms_editor_select_in_editor(gui, atoms):
+    """Test that GUI selection changes when editor selection does."""
+    editor = gui.atoms_editor()
+    editor.treeview.selection_set('R6', 'R7', 'R8', 'R10')
+    editor.treeview.event_generate('<<TreeviewSelect>>')
+    print(gui.images.selected)
+    assert all(gui.images.selected[[6, 7, 8, 10]])
+    assert sum(gui.images.selected) == 4
