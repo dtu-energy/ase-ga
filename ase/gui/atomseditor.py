@@ -65,22 +65,21 @@ class AtomsEditor:
         )
         columns.append(symbols_column)
 
+        class GetSetPos:
+            def __init__(self, c):
+                self.c = c
+
+            def set_position(self, atoms, i, value):
+                try:
+                    value = float(value)
+                except ValueError:
+                    return
+                atoms.positions[i, self.c] = value
+
+            def get_position(self, atoms, i):
+                return atoms.positions[i, self.c]
+
         for c, axisname in enumerate('xyz'):
-
-            class GetSetPos:
-                def __init__(self, c):
-                    self.c = c
-
-                def set_position(self, atoms, i, value):
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        return
-                    atoms.positions[i, self.c] = value
-
-                def get_position(self, atoms, i):
-                    return atoms.positions[i, self.c]
-
             column = Column(
                 axisname,
                 axisname,
