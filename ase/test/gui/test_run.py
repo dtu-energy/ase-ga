@@ -548,3 +548,25 @@ def runcallbacks(win):
 def test_callbacks(display):
     win = window()
     win.win.after_idle(runcallbacks)
+
+
+def test_atoms_editor_set_values(gui, atoms):
+    editor = gui.atoms_editor()
+
+    assert str(atoms.symbols) == 'Ti16'
+    entry, apply_change = editor.edit_field(row_id='R3', column_id='#1')
+    entry.delete(0, 'end')
+    entry.insert(0, 'Pu')
+    apply_change()
+
+    assert str(atoms.symbols) == 'Ti3PuTi12'
+
+    for i in range(3):
+        # Edit each coordinate:
+        entry, apply_change = editor.edit_field('R4', f'#{2 + i}')
+        entry.delete(0, 'end')
+        value = str(5.1 + i)
+        entry.insert(0, value)
+        apply_change()
+
+    assert atoms.positions[4] == pytest.approx([5.1, 6.1, 7.1])

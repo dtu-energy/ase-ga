@@ -50,7 +50,7 @@ class AtomsEditor:
             from ase.data import atomic_numbers
 
             if value not in atomic_numbers:
-                pass  # Display error?
+                return  # Display error?
             atoms.symbols[i] = value
 
         self.gui = gui
@@ -159,28 +159,45 @@ class AtomsEditor:
         for column in self.columns:
             self.treeview.heading(column.name, text=column.displayname)
             self.treeview.column(
-                column.name, width=column.widget_width, anchor='e'
+                column.name, width=column.widget_width, anchor='e',
             )
 
     def rowid(self, rownumber: int) -> str:
         return f'R{rownumber}'
 
     def rownumber(self, rowid: str) -> int:
-        assert rowid[0] == 'R'
+        assert rowid.startswith('R'), repr(rowid)
         return int(rowid[1:])
+
+    def set_value(self, column_no: int, row_no: int, value: object) -> None:
+        column = self.columns[column_no]
+        column.setvalue(self.atoms, row_no, value)
+        text = column.format_value(column.getvalue(self.atoms, row_no))
+
+        # The text that we set here is not what matters: It may be rounded.
+        # It was column.setvalue() which did the actual change.
+        self.treeview.set(self.rowid(row_no), column.name, value=text)
+
+        # (Maybe it is not always necessary to redraw everything.)
+        self.gui.set_frame()
 
     def doubleclick(self, event):
         row_id = self.treeview.identify_row(event.y)
         column_id = self.treeview.identify_column(event.x)
+        if not row_id or not column_id:
+            return  # clicked outside actual rows/columns
+        self.edit_field(row_id, column_id)
 
+    def edit_field(self, row_id, column_id):
         assert column_id.startswith('#'), repr(column_id)
-
         column_no = int(column_id[1:]) - 1
+
         if column_no == -1:
             return  # This is the ID column.
 
-        row_no = self.rownumber(row_id)
+        name = self.treeview['columns'][column_no]
 
+        row_no = self.rownumber(row_id)
         assert 0 <= column_no < len(self.columns)
         assert 0 <= row_no < len(self.atoms)
 
@@ -192,22 +209,23 @@ class AtomsEditor:
         entry.focus_force()
         entry.selection_range(0, 'end')
 
-        def apply_change(event):
+        def apply_change(_event=None):
             column = self.columns[column_no]
             value = entry.get()
             try:
-                column.setvalue(self.atoms, row_no, value)
-                text = column.format_value(column.getvalue(self.atoms, row_no))
-                self.treeview.set(row_id, column_id, value=text)
-                self.gui.set_frame()
+                self.set_value(column_no, row_no, value)
             finally:
+                # Focus was given to the text field, now return it:
                 self.treeview.focus_force()
                 self.leave_edit_mode()
 
         entry.bind('<FocusOut>', apply_change)
-        entry.bind('<Return>', apply_change)
+        ui.bind_enter(entry, apply_change)
         entry.bind('<Escape>', lambda *args: self.leave_edit_mode())
 
-        x, y, width, height = self.treeview.bbox(row_id, column_id)
-        entry.place(x=x, y=y, height=height)
+        bbox = self.treeview.bbox(row_id, column_id)
+        if bbox:  # (bbox is '' when testing without display)
+            x, y, width, height = bbox
+            entry.place(x=x, y=y, height=height)
         self._current_entry = entry
+        return entry, apply_change
