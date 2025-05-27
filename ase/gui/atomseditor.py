@@ -57,11 +57,7 @@ class AtomsEditor:
 
         columns = []
         symbols_column = Column(
-            'symbol',
-            _('symbol'),
-            60,
-            lambda atoms, i: atoms.symbols[i],
-            set_symbol,
+            'symbol', _('symbol'), 60, get_symbol, set_symbol
         )
         columns.append(symbols_column)
 
