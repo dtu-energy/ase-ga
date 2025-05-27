@@ -503,7 +503,7 @@ class GUI(View):
               M(_('_Delete selected atoms'), self.delete_selected_atoms,
                 'Backspace'),
               M(_('Edit _cell …'), self.cell_editor, 'Ctrl+E'),
-              M(_('Edit _atoms …'), self.atoms_editor, 'Ctrl+T'),
+              M(_('Edit _atoms …'), self.atoms_editor, 'A'),
               M('---'),
               M(_('_First image'), self.step, 'Home'),
               M(_('_Previous image'), self.step, 'Page-Up'),

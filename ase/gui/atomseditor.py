@@ -138,12 +138,10 @@ class AtomsEditor:
         selection = np.arange(len(self.atoms))[self.gui.images.selected]
 
         rowids = [self.rowid(index) for index in selection]
-        # Note: This will cause us to update the selection, which can lead
-        # to infinite recursion since we'll also end up updating the table.
-        # Except the GUI catches that the selection did not in fact change,
-        # and therefore does not update again.
-        #
-        # This could be made a little bit more obvious/robust
+        # Note: selection_set() does *not* fire an event, and therefore
+        # we do not need to worry about infinite recursion.
+        # However the event listening is wonky now because we need
+        # better GUI change listeners.
         self.treeview.selection_set(*rowids)
 
     def get_row_values(self, i):
