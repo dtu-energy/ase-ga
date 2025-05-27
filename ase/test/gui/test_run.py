@@ -570,3 +570,15 @@ def test_atoms_editor_set_values(gui, atoms):
         apply_change()
 
     assert atoms.positions[4] == pytest.approx([5.1, 6.1, 7.1])
+
+
+def test_atoms_editor_change_listener(gui, atoms):
+    editor = gui.atoms_editor()
+    entry, _ = editor.edit_field('R2', '#1')
+    assert entry.get() == 'Ti'
+    editor.leave_edit_mode()
+
+    atoms = molecule('CH3CH2OH')
+    gui.new_atoms(atoms)
+    entry, _ = editor.edit_field('R2', '#1')
+    assert entry.get() == 'O'
