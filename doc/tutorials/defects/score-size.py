@@ -18,8 +18,12 @@ for fname in glob.glob('Popt*2*.json'):
         y.append(rec['dev'])
 
     plt.figure(figsize=(4, 3))
-    plt.text(1950, 0.35,
-             tag.replace('2', r' $\rightarrow$ '), horizontalalignment='right')
+    plt.text(
+        1950,
+        0.35,
+        tag.replace('2', r' $\rightarrow$ '),
+        horizontalalignment='right',
+    )
     plt.xlabel(r'Number of primitive unit cells $N_{uc}$')
     plt.ylabel(r'Optimality measure $\bar \Delta$')
     plt.axis([0, 2000, -0.025, 0.4])

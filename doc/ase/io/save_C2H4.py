@@ -11,8 +11,13 @@ high_bondorder_pairs = {}
 high_bondorder_pairs[(0, 1)] = ((0, 0, 0), 2, (0.17, 0.17, 0))
 bondpairs = set_high_bondorder_pairs(bondpairs, high_bondorder_pairs)
 
-renderer = write('C2H4.pov', C2H4, format='pov',
-                 radii=r, rotation='90y',
-                 povray_settings=dict(canvas_width=200, bondatoms=bondpairs))
+renderer = write(
+    'C2H4.pov',
+    C2H4,
+    format='pov',
+    radii=r,
+    rotation='90y',
+    povray_settings=dict(canvas_width=200, bondatoms=bondpairs),
+)
 
 renderer.render()

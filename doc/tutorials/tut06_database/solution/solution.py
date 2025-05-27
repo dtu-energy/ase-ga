@@ -19,9 +19,9 @@ for f in structures:
 
 for row in db.select():
     atoms = row.toatoms()
-    calc = GPAW(mode=PW(400),
-                kpts=(4, 4, 4),
-                txt=f'{row.formula}-gpaw.txt', xc='LDA')
+    calc = GPAW(
+        mode=PW(400), kpts=(4, 4, 4), txt=f'{row.formula}-gpaw.txt', xc='LDA'
+    )
     atoms.calc = calc
     atoms.get_stress()
     filter = ExpCellFilter(atoms)
@@ -32,9 +32,9 @@ for row in db.select():
 
 for row in db.select(relaxed=True):
     atoms = row.toatoms()
-    calc = GPAW(mode=PW(400),
-                kpts=(4, 4, 4),
-                txt=f'{row.formula}-gpaw.txt', xc='LDA')
+    calc = GPAW(
+        mode=PW(400), kpts=(4, 4, 4), txt=f'{row.formula}-gpaw.txt', xc='LDA'
+    )
     atoms.calc = calc
     atoms.get_potential_energy()
     bg, _, _ = bandgap(calc=atoms.calc)

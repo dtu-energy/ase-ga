@@ -24,19 +24,25 @@ dos = ph.get_dos(kpts=(20, 20, 20)).sample_grid(npts=100, width=1e-3)
 import matplotlib.pyplot as plt  # noqa
 
 fig = plt.figure(figsize=(7, 4))
-ax = fig.add_axes([.12, .07, .67, .85])
+ax = fig.add_axes([0.12, 0.07, 0.67, 0.85])
 
 emax = 0.035
 bs.plot(ax=ax, emin=0.0, emax=emax)
 
-dosax = fig.add_axes([.8, .07, .17, .85])
-dosax.fill_between(dos.get_weights(), dos.get_energies(), y2=0, color='grey',
-                   edgecolor='k', lw=1)
+dosax = fig.add_axes([0.8, 0.07, 0.17, 0.85])
+dosax.fill_between(
+    dos.get_weights(),
+    dos.get_energies(),
+    y2=0,
+    color='grey',
+    edgecolor='k',
+    lw=1,
+)
 
 dosax.set_ylim(0, emax)
 dosax.set_yticks([])
 dosax.set_xticks([])
-dosax.set_xlabel("DOS", fontsize=18)
+dosax.set_xlabel('DOS', fontsize=18)
 
 fig.savefig('Al_phonon.png')
 
@@ -46,8 +52,9 @@ fig.savefig('Al_phonon.png')
 
 # Write modes for specific q-vector to trajectory files:
 L = path.special_points['L']
-ph.write_modes([l / 2 for l in L], branches=[2], repeat=(8, 8, 8), kT=3e-4,
-               center=True)
+ph.write_modes(
+    [l / 2 for l in L], branches=[2], repeat=(8, 8, 8), kT=3e-4, center=True
+)
 
 
 # Generate gif animation:

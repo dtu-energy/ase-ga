@@ -32,8 +32,7 @@ with open('ase-db.txt', 'w') as fd:
     fd.write(output.decode())
 with open('ase-db-long.txt', 'w') as fd:
     fd.write('$ ase db abc.db relaxed=1 -l\n')
-    output = subprocess.check_output(
-        ['ase', 'db', 'abc.db', 'relaxed=1', '-l'])
+    output = subprocess.check_output(['ase', 'db', 'abc.db', 'relaxed=1', '-l'])
     fd.write(output.decode())
 
 row = c.get(relaxed=1, calculator='emt')
@@ -58,5 +57,9 @@ with open('known-keys.csv', 'w') as fd:
         unit = keydesc.unit
         if unit == '|e|':
             unit = r'\|e|'
-        print('{},{},{},{}'.format(
-            key, keydesc.shortdesc, keydesc.longdesc, unit), file=fd)
+        print(
+            '{},{},{},{}'.format(
+                key, keydesc.shortdesc, keydesc.longdesc, unit
+            ),
+            file=fd,
+        )

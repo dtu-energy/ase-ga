@@ -38,8 +38,7 @@ p = np.linalg.lstsq(functions.T, energies, rcond=-1)[0]
 # --- literalinclude division line 5 ---
 p0 = p[0]
 p1 = p[1:3]
-p2 = np.array([(2 * p[3], p[4]),
-               (p[4], 2 * p[5])])
+p2 = np.array([(2 * p[3], p[4]), (p[4], 2 * p[5])])
 a0, c0 = np.linalg.solve(p2.T, -p1)
 
 with open('lattice_constant.csv', 'w') as fd:

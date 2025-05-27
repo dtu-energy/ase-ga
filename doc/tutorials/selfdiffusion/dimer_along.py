@@ -1,4 +1,5 @@
 """Dimer: Diffusion along rows"""
+
 from math import sqrt
 
 import numpy as np
@@ -14,11 +15,12 @@ from ase.optimize import QuasiNewton
 a = 4.0614
 b = a / sqrt(2)
 h = b / 2
-initial = Atoms('Al2',
-                positions=[(0, 0, 0),
-                           (a / 2, b / 2, -h)],
-                cell=(a, b, 2 * h),
-                pbc=(1, 1, 0))
+initial = Atoms(
+    'Al2',
+    positions=[(0, 0, 0), (a / 2, b / 2, -h)],
+    cell=(a, b, 2 * h),
+    pbc=(1, 1, 0),
+)
 initial *= (2, 2, 2)
 initial.append(Atom('Al', (a / 2, b / 2, 3 * h)))
 initial.center(vacuum=4.0, axis=2)
@@ -45,10 +47,12 @@ traj.write()
 d_mask = [False] * (N - 1) + [True]
 
 # Set up the dimer:
-d_control = DimerControl(initial_eigenmode_method='displacement',
-                         displacement_method='vector',
-                         logfile=None,
-                         mask=d_mask)
+d_control = DimerControl(
+    initial_eigenmode_method='displacement',
+    displacement_method='vector',
+    logfile=None,
+    mask=d_mask,
+)
 d_atoms = MinModeAtoms(initial, d_control)
 
 # Displacement settings:
@@ -60,9 +64,7 @@ displacement_vector[-1, 1] = 0.001
 d_atoms.displace(displacement_vector=displacement_vector)
 
 # Converge to a saddle point:
-dim_rlx = MinModeTranslate(d_atoms,
-                           trajectory=traj,
-                           logfile=None)
+dim_rlx = MinModeTranslate(d_atoms, trajectory=traj, logfile=None)
 dim_rlx.run(fmax=0.001)
 
 diff = initial.get_potential_energy() - e0

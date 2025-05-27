@@ -17,23 +17,25 @@ slab.set_constraint(FixAtoms(mask=len(slab) * [True]))
 # and three spanning vectors (v1, v2, v3)
 pos = slab.get_positions()
 cell = slab.get_cell()
-p0 = np.array([0., 0., max(pos[:, 2]) + 2.])
+p0 = np.array([0.0, 0.0, max(pos[:, 2]) + 2.0])
 v1 = cell[0, :] * 0.8
 v2 = cell[1, :] * 0.8
 v3 = cell[2, :]
-v3[2] = 3.
+v3[2] = 3.0
 
 # Define the composition of the atoms to optimize
 atom_numbers = 2 * [47] + 2 * [79]
 
 # define the closest distance two atoms of a given species can be to each other
 unique_atom_types = get_all_atom_types(slab, atom_numbers)
-blmin = closest_distances_generator(atom_numbers=unique_atom_types,
-                                    ratio_of_covalent_radii=0.7)
+blmin = closest_distances_generator(
+    atom_numbers=unique_atom_types, ratio_of_covalent_radii=0.7
+)
 
 # create the starting population
-sg = StartGenerator(slab, atom_numbers, blmin,
-                    box_to_place_in=[p0, [v1, v2, v3]])
+sg = StartGenerator(
+    slab, atom_numbers, blmin, box_to_place_in=[p0, [v1, v2, v3]]
+)
 
 # generate the starting population
 population_size = 20
@@ -43,9 +45,9 @@ starting_population = [sg.get_new_candidate() for i in range(population_size)]
 # view(starting_population)        # to see the starting population
 
 # create the database to store information in
-d = PrepareDB(db_file_name=db_file,
-              simulation_cell=slab,
-              stoichiometry=atom_numbers)
+d = PrepareDB(
+    db_file_name=db_file, simulation_cell=slab, stoichiometry=atom_numbers
+)
 
 for a in starting_population:
     d.add_unrelaxed_candidate(a)

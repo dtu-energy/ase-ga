@@ -22,9 +22,11 @@ data = {}  # Dict[str, Dict[str, float]]
 for path in Path().glob('*.traj'):
     symbol = path.stem
     e0, v0, B, Bp = fit(symbol)
-    data[symbol] = {'emt_energy': e0,
-                    'emt_volume': v0,
-                    'emt_B': B,
-                    'emt_Bp': Bp}
+    data[symbol] = {
+        'emt_energy': e0,
+        'emt_volume': v0,
+        'emt_B': B,
+        'emt_Bp': Bp,
+    }
 
 Path('fit.json').write_text(json.dumps(data))

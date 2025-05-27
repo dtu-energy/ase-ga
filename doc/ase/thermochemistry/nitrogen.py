@@ -14,9 +14,12 @@ vib = Vibrations(atoms)
 vib.run()
 vib_energies = vib.get_energies()
 
-thermo = IdealGasThermo(vib_energies=vib_energies,
-                        potentialenergy=potentialenergy,
-                        atoms=atoms,
-                        geometry='linear',
-                        symmetrynumber=2, spin=0)
-G = thermo.get_gibbs_energy(temperature=298.15, pressure=101325.)
+thermo = IdealGasThermo(
+    vib_energies=vib_energies,
+    potentialenergy=potentialenergy,
+    atoms=atoms,
+    geometry='linear',
+    symmetrynumber=2,
+    spin=0,
+)
+G = thermo.get_gibbs_energy(temperature=298.15, pressure=101325.0)
