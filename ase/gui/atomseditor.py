@@ -159,7 +159,9 @@ class AtomsEditor:
         for column in self.columns:
             self.treeview.heading(column.name, text=column.displayname)
             self.treeview.column(
-                column.name, width=column.widget_width, anchor='e',
+                column.name,
+                width=column.widget_width,
+                anchor='e',
             )
 
     def rowid(self, rownumber: int) -> str:
@@ -195,8 +197,6 @@ class AtomsEditor:
         if column_no == -1:
             return  # This is the ID column.
 
-        name = self.treeview['columns'][column_no]
-
         row_no = self.rownumber(row_id)
         assert 0 <= column_no < len(self.columns)
         assert 0 <= row_no < len(self.atoms)
@@ -210,7 +210,6 @@ class AtomsEditor:
         entry.selection_range(0, 'end')
 
         def apply_change(_event=None):
-            column = self.columns[column_no]
             value = entry.get()
             try:
                 self.set_value(column_no, row_no, value)
