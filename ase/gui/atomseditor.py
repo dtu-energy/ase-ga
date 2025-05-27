@@ -18,10 +18,8 @@ class Column:
 
 
 class AtomsEditor:
-    # * We need to know whenever anything changes, so we can update the table.
-    # * Therefore, the main GUI should provide a listener for any atoms change.
-    # * Currently anything that changes the atoms also remembers to call
-    #   one or more of draw(), set_frame(), or new_atoms().
+    # We subscribe to gui.draw() calls in order to track changes,
+    # but we should have an actual "atoms changed" event instead.
 
     def __init__(self, gui):
         gui.obs.change_atoms.register(self.update_table_from_atoms)
@@ -55,16 +53,17 @@ class AtomsEditor:
 
         self.gui = gui
         self.treeview = treeview
-        self.columns = []
         self._current_entry = None
 
-        self.define_column(
+        columns = []
+        symbols_column = Column(
             'symbol',
             _('symbol'),
             60,
             lambda atoms, i: atoms.symbols[i],
             set_symbol,
         )
+        columns.append(symbols_column)
 
         for c, axisname in enumerate('xyz'):
 
@@ -82,7 +81,7 @@ class AtomsEditor:
                 def get_position(self, atoms, i):
                     return atoms.positions[i, self.c]
 
-            self.define_column(
+            column = Column(
                 axisname,
                 axisname,
                 92,
@@ -90,6 +89,9 @@ class AtomsEditor:
                 GetSetPos(c).set_position,
                 format_value=lambda val: f'{val:.4f}',
             )
+            columns.append(column)
+
+        self.columns = columns
 
         treeview.bind('<Double-1>', self.doubleclick)
         treeview.bind('<<TreeviewSelect>>', self.treeview_selection_changed)
@@ -109,7 +111,7 @@ class AtomsEditor:
         return self.treeview.yview(*args, **kwargs)
 
     def scroll_via_treeview(self, *args, **kwargs):
-        # Here it is important to leave edit mode, since scrolling
+        # Here it is important to leave edit mode since scrolling
         # invalidates the widget location.  Alternatively we could keep
         # it open as long as we move it but that sounds like work
         self.leave_edit_mode()
@@ -146,13 +148,9 @@ class AtomsEditor:
 
     def get_row_values(self, i):
         return [
-            column.format_value(column.getvalue(self.gui.atoms, i))
+            column.format_value(column.getvalue(self.atoms, i))
             for column in self.columns
         ]
-
-    def define_column(self, *args, **kwargs):
-        column = Column(*args, **kwargs)
-        self.columns.append(column)
 
     def define_columns_on_widget(self):
         self.treeview['columns'] = [column.name for column in self.columns]
