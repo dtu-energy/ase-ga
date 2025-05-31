@@ -64,7 +64,9 @@ def test_initialize_from_params_from_dict(si_parameters):
     np.testing.assert_allclose(potential_energy, -9.260818674314585, atol=1e-8)
 
 
-def test_set_parameters(si_parameters: dict[tuple, TersoffParameters]) -> None:
+def test_set_parameters(
+    si_parameters: dict[tuple[str, str, str], TersoffParameters],
+) -> None:
     """Test updating parameters of the Tersoff calculator."""
     calc = Tersoff(si_parameters)
     key = ('Si', 'Si', 'Si')
