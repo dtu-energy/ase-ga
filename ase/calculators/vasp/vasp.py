@@ -1198,7 +1198,7 @@ class Vasp(GenerateVaspInput, Calculator):  # type: ignore[misc]
                     i_freq.append(float(data[-2]))
         return freq, i_freq
 
-    def _read_massweighted_hessian_xml(self) -> np.ndarray:
+    def _read_massweighted_hessian_xml(self):
         """Read the Mass Weighted Hessian from vasprun.xml.
 
         Returns:
