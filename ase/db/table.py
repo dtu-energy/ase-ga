@@ -60,11 +60,17 @@ def cutlist(lst, length):
 
 
 class Table:
-    def __init__(self, connection, unique_key='id', verbosity=1, cut=35):
+    def __init__(
+        self,
+        connection,
+        unique_key: str = 'id',
+        verbosity: int = 1,
+        cut: int = 35,
+    ):
         self.connection = connection
         self.verbosity = verbosity
         self.cut = cut
-        self.rows = []
+        self.rows: list[Row] = []
         self.columns = None
         self.id = None
         self.right = None
