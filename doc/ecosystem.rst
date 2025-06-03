@@ -117,6 +117,12 @@ Listed in alphabetical order, for want of a better approach.
    A flexible platform for high-throughput, database-driven computational 
    materials science and quantum chemistry workflows built around ASE.
 
+ * `RAFFLE <https://github.com/ExeQuantCode/RAFFLE>`_:
+   Iterative local atomic descriptor based interface prediction.
+   RAFFLE iteratively generates and evaluates interface
+   structures based on atomic features and energies, efficiently identifying
+   low-energy configurations.
+
  * `SchNet Pack <https://github.com/atomistic-machine-learning/schnetpack>`_:
    Deep Neural Networks for Atomistic Systems
 
