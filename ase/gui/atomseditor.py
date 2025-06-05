@@ -130,7 +130,8 @@ class AtomsEditor:
                 '', 'end', text=i, values=values, iid=self.rowid(i)
             )
 
-        selection = np.arange(len(self.atoms))[self.gui.images.selected]
+        mask = self.gui.images.selected[: len(self.atoms)]
+        selection = np.arange(len(self.atoms))[mask]
 
         rowids = [self.rowid(index) for index in selection]
         # Note: selection_set() does *not* fire an event, and therefore
