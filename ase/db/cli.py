@@ -293,7 +293,7 @@ def row2str(row) -> str:
     fmt = ('   {0}|     {1}|{2[0]:>11}|{2[1]:>11}|{2[2]:>11}|' +
            '{3:>10}|{4:>10}')
     for p, axis, L, A in zip(row.pbc, t['cell'], t['lengths'], t['angles']):
-        S.append(fmt.format(c, [' no', 'yes'][p], axis, L, A))
+        S.append(fmt.format(c, [' no', 'yes'][int(p)], axis, L, A))
         c += 1
     S.append('')
 
