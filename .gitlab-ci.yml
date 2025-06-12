@@ -229,8 +229,11 @@ pages:
   stage: deploy
   dependencies:
     - coverage-combine
+    - doc
   script:
+    - mkdir public
     - mv coverage-html public/
+    - mv $CI_PROJECT_DIR/doc/build/html/* public/
   artifacts:
     paths:
       - public
