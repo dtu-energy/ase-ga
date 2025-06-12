@@ -192,13 +192,14 @@ doc:
     - scriv collect --keep || echo Not compiling changelog then  # Avoid error
     - python -m ase.utils.sphinx run # test scripts
     - sphinx-build -W doc doc/build
+    - mv doc/build web-html
   cache:
     paths:
       - $PIP_CACHE_DIR
     key: doc
   artifacts:
     paths:
-      - $CI_PROJECT_DIR/doc/build/
+      - web-html
     expire_in: 1 week
 
 distribution-package:
@@ -233,7 +234,9 @@ pages:
   script:
     - mkdir public
     - mv coverage-html public/
-    - mv $CI_PROJECT_DIR/doc/build/html/* public/
+    - pwd
+    - ls
+    - mv web-html/* public/
   artifacts:
     paths:
       - public
