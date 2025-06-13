@@ -30,7 +30,7 @@ from typing import (
     IO,
     Any,
     Dict,
-    Iterable,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -823,7 +823,7 @@ def iread(
         parallel: bool = True,
         do_not_split_by_at_sign: bool = False,
         **kwargs
-) -> Iterable[Atoms]:
+) -> Iterator[Atoms]:
     """Iterator for reading Atoms objects from file.
 
     Works as the `read` function, but yields one Atoms object at a time
