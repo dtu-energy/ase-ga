@@ -1569,34 +1569,14 @@ class Atoms:
             2nd rotation around the z axis.
 
         """
+        from scipy.spatial.transform import Rotation as R
+
         center = self._centering_as_array(center)
 
-        phi *= pi / 180
-        theta *= pi / 180
-        psi *= pi / 180
+        # passive rotations (negative angles) for backward compatibility
+        rotation = R.from_euler('zxz', (-phi, -theta, -psi), degrees=True)
 
-        # First move the molecule to the origin In contrast to MATLAB,
-        # numpy broadcasts the smaller array to the larger row-wise,
-        # so there is no need to play with the Kronecker product.
-        rcoords = self.positions - center
-        # First Euler rotation about z in matrix form
-        D = np.array(((cos(phi), sin(phi), 0.),
-                      (-sin(phi), cos(phi), 0.),
-                      (0., 0., 1.)))
-        # Second Euler rotation about x:
-        C = np.array(((1., 0., 0.),
-                      (0., cos(theta), sin(theta)),
-                      (0., -sin(theta), cos(theta))))
-        # Third Euler rotation, 2nd rotation about z:
-        B = np.array(((cos(psi), sin(psi), 0.),
-                      (-sin(psi), cos(psi), 0.),
-                      (0., 0., 1.)))
-        # Total Euler rotation
-        A = np.dot(B, np.dot(C, D))
-        # Do the rotation
-        rcoords = np.dot(A, np.transpose(rcoords))
-        # Move back to the rotation point
-        self.positions = np.transpose(rcoords) + center
+        self.positions = rotation.apply(self.positions - center) + center
 
     def get_dihedral(self, a0, a1, a2, a3, mic=False):
         """Calculate dihedral angle.
