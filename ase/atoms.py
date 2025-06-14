@@ -8,11 +8,15 @@
 This module defines the central object in the ASE package: the Atoms
 object.
 """
+from __future__ import annotations
+
 import copy
 import numbers
 from math import cos, pi, sin
+from typing import overload, Union
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 import ase.units as units
 from ase.atom import Atom
@@ -1135,7 +1139,13 @@ class Atoms:
     def __iter__(self):
         for i in range(len(self)):
             yield self[i]
-
+ 
+    @overload
+    def __getitem__(self, i: Union[int, np.integer]) -> Atom: ...
+        
+    @overload
+    def __getitem__(self, i: Union[ArrayLike, slice]) -> Atoms: ...
+        
     def __getitem__(self, i):
         """Return a subset of the atoms.
 
