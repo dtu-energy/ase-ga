@@ -17,7 +17,7 @@ from typing import Sequence, Union, overload
 
 import numpy as np
 
-import ase.units as units
+from ase import units
 from ase.atom import Atom
 from ase.cell import Cell
 from ase.data import atomic_masses, atomic_masses_common
@@ -1550,23 +1550,32 @@ class Atoms:
             center = np.array(center, float)
         return center
 
-    def euler_rotate(self, phi=0.0, theta=0.0, psi=0.0, center=(0, 0, 0)):
+    def euler_rotate(
+        self,
+        phi: float = 0.0,
+        theta: float = 0.0,
+        psi: float = 0.0,
+        center: Sequence[float] = (0.0, 0.0, 0.0),
+    ) -> None:
         """Rotate atoms via Euler angles (in degrees).
 
         See e.g http://mathworld.wolfram.com/EulerAngles.html for explanation.
 
-        Parameters:
+        Note that the rotations in this method are passive and applied **not**
+        to the atomic coordinates in the present frame **but** the frame itself.
 
-        center :
+        Parameters
+        ----------
+        phi : float
+            The 1st rotation angle around the z axis.
+        theta : float
+            Rotation around the x axis.
+        psi : float
+            2nd rotation around the z axis.
+        center : Sequence[float], default = (0.0, 0.0, 0.0)
             The point to rotate about. A sequence of length 3 with the
             coordinates, or 'COM' to select the center of mass, 'COP' to
             select center of positions or 'COU' to select center of cell.
-        phi :
-            The 1st rotation angle around the z axis.
-        theta :
-            Rotation around the x axis.
-        psi :
-            2nd rotation around the z axis.
 
         """
         from scipy.spatial.transform import Rotation as R
