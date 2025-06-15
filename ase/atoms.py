@@ -13,10 +13,9 @@ from __future__ import annotations
 import copy
 import numbers
 from math import cos, pi, sin
-from typing import Union, overload
+from typing import Sequence, Union, overload
 
 import numpy as np
-from numpy.typing import ArrayLike
 
 import ase.units as units
 from ase.atom import Atom
@@ -1141,10 +1140,10 @@ class Atoms:
             yield self[i]
 
     @overload
-    def __getitem__(self, i: Union[int, np.integer]) -> Atom: ...  # type: ignore[overload-overlap]
+    def __getitem__(self, i: numbers.Integral) -> Atom: ...
 
     @overload
-    def __getitem__(self, i: Union[ArrayLike, slice]) -> Atoms: ...
+    def __getitem__(self, i: Union[Sequence, slice, np.ndarray]) -> Atoms: ...
 
     def __getitem__(self, i):
         """Return a subset of the atoms.
