@@ -1141,7 +1141,7 @@ class Atoms:
             yield self[i]
 
     @overload
-    def __getitem__(self, i: Union[int, np.integer]) -> Atom: ... # type: ignore[overload-overlap]
+    def __getitem__(self, i: Union[int, np.integer]) -> Atom: ...  # type: ignore[overload-overlap]
 
     @overload
     def __getitem__(self, i: Union[ArrayLike, slice]) -> Atoms: ...
