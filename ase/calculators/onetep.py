@@ -1,5 +1,3 @@
-# fmt: off
-
 """ONETEP interface for the Atomic Simulation Environment (ASE) package
 
 T. Demeyere, T.Demeyere@soton.ac.uk (2023)
