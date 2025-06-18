@@ -838,7 +838,7 @@ def write_xyz(fileobj, images, comment='', columns=None,
                     voigt_6_to_full_3x3_stress(atoms.info['stress'])
 
         if columns is None:
-            fr_cols = (['symbols', 'positions']
+            fr_cols = (['symbols', 'positions', 'move_mask']
                        + [key for key in atoms.arrays if
                           key not in ['symbols', 'positions', 'numbers',
                                       'species', 'pos']])
