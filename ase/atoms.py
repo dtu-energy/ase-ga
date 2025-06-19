@@ -314,6 +314,52 @@ class Atoms:
         manipulations."""
         return self.arrays['numbers']
 
+    @property
+    def positions(self):
+        """Attribute for direct manipulation of the positions."""
+        return self._get_positions()
+
+    @positions.setter
+    def positions(self, pos):
+        self._set_positions(pos)
+
+    def _get_positions(self):
+        """Return reference to positions-array for in-place manipulations."""
+        return self.arrays['positions']
+
+    def _set_positions(self, pos):
+        """Set positions directly, bypassing constraints."""
+        self.arrays['positions'][:] = pos
+
+    def set_positions(self, newpositions, apply_constraint=True):
+        """Set positions, honoring any constraints. To ignore constraints,
+        use *apply_constraint=False*."""
+        if self.constraints and apply_constraint:
+            newpositions = np.array(newpositions, float)
+            for constraint in self.constraints:
+                constraint.adjust_positions(self, newpositions)
+
+        self.set_array('positions', newpositions, shape=(3,))
+
+    def get_positions(self, wrap=False, **wrap_kw):
+        """Get array of positions.
+
+        Parameters:
+
+        wrap: bool
+            wrap atoms back to the cell before returning positions
+        wrap_kw: (keyword=value) pairs
+            optional keywords `pbc`, `center`, `pretty_translation`, `eps`,
+            see :func:`ase.geometry.wrap_positions`
+        """
+        from ase.geometry import wrap_positions
+        if wrap:
+            if 'pbc' not in wrap_kw:
+                wrap_kw['pbc'] = self.pbc
+            return wrap_positions(self.positions, self.cell, **wrap_kw)
+        else:
+            return self.arrays['positions'].copy()
+
     @deprecated("Please use atoms.calc = calc", FutureWarning)
     def set_calculator(self, calc=None):
         """Attach calculator object.
@@ -762,35 +808,6 @@ class Atoms:
         except AttributeError:
             from ase.calculators.calculator import PropertyNotImplementedError
             raise PropertyNotImplementedError
-
-    def set_positions(self, newpositions, apply_constraint=True):
-        """Set positions, honoring any constraints. To ignore constraints,
-        use *apply_constraint=False*."""
-        if self.constraints and apply_constraint:
-            newpositions = np.array(newpositions, float)
-            for constraint in self.constraints:
-                constraint.adjust_positions(self, newpositions)
-
-        self.set_array('positions', newpositions, shape=(3,))
-
-    def get_positions(self, wrap=False, **wrap_kw):
-        """Get array of positions.
-
-        Parameters:
-
-        wrap: bool
-            wrap atoms back to the cell before returning positions
-        wrap_kw: (keyword=value) pairs
-            optional keywords `pbc`, `center`, `pretty_translation`, `eps`,
-            see :func:`ase.geometry.wrap_positions`
-        """
-        from ase.geometry import wrap_positions
-        if wrap:
-            if 'pbc' not in wrap_kw:
-                wrap_kw['pbc'] = self.pbc
-            return wrap_positions(self.positions, self.cell, **wrap_kw)
-        else:
-            return self.arrays['positions'].copy()
 
     def get_potential_energy(self, force_consistent=False,
                              apply_constraint=True):
@@ -2036,23 +2053,6 @@ class Atoms:
                 'You have {} lattice vectors: volume not defined'
                 .format(self.cell.rank))
         return self.cell.volume
-
-    @property
-    def positions(self):
-        """Attribute for direct manipulation of the positions."""
-        return self._get_positions()
-
-    @positions.setter
-    def positions(self, pos):
-        self._set_positions(pos)
-
-    def _get_positions(self):
-        """Return reference to positions-array for in-place manipulations."""
-        return self.arrays['positions']
-
-    def _set_positions(self, pos):
-        """Set positions directly, bypassing constraints."""
-        self.arrays['positions'][:] = pos
 
     @property
     def cell(self):
