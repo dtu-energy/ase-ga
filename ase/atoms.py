@@ -8,13 +8,16 @@
 This module defines the central object in the ASE package: the Atoms
 object.
 """
+from __future__ import annotations
+
 import copy
 import numbers
 from math import cos, pi, sin
+from typing import Sequence, Union, overload
 
 import numpy as np
 
-import ase.units as units
+from ase import units
 from ase.atom import Atom
 from ase.cell import Cell
 from ase.data import atomic_masses, atomic_masses_common
@@ -1168,6 +1171,12 @@ class Atoms:
         for i in range(len(self)):
             yield self[i]
 
+    @overload
+    def __getitem__(self, i: Union[int, np.integer]) -> Atom: ...
+
+    @overload
+    def __getitem__(self, i: Union[Sequence, slice, np.ndarray]) -> Atoms: ...
+
     def __getitem__(self, i):
         """Return a subset of the atoms.
 
@@ -1573,53 +1582,42 @@ class Atoms:
             center = np.array(center, float)
         return center
 
-    def euler_rotate(self, phi=0.0, theta=0.0, psi=0.0, center=(0, 0, 0)):
+    def euler_rotate(
+        self,
+        phi: float = 0.0,
+        theta: float = 0.0,
+        psi: float = 0.0,
+        center: Sequence[float] = (0.0, 0.0, 0.0),
+    ) -> None:
         """Rotate atoms via Euler angles (in degrees).
 
         See e.g http://mathworld.wolfram.com/EulerAngles.html for explanation.
 
-        Parameters:
+        Note that the rotations in this method are passive and applied **not**
+        to the atomic coordinates in the present frame **but** the frame itself.
 
-        center :
+        Parameters
+        ----------
+        phi : float
+            The 1st rotation angle around the z axis.
+        theta : float
+            Rotation around the x axis.
+        psi : float
+            2nd rotation around the z axis.
+        center : Sequence[float], default = (0.0, 0.0, 0.0)
             The point to rotate about. A sequence of length 3 with the
             coordinates, or 'COM' to select the center of mass, 'COP' to
             select center of positions or 'COU' to select center of cell.
-        phi :
-            The 1st rotation angle around the z axis.
-        theta :
-            Rotation around the x axis.
-        psi :
-            2nd rotation around the z axis.
 
         """
+        from scipy.spatial.transform import Rotation as R
+
         center = self._centering_as_array(center)
 
-        phi *= pi / 180
-        theta *= pi / 180
-        psi *= pi / 180
+        # passive rotations (negative angles) for backward compatibility
+        rotation = R.from_euler('zxz', (-phi, -theta, -psi), degrees=True)
 
-        # First move the molecule to the origin In contrast to MATLAB,
-        # numpy broadcasts the smaller array to the larger row-wise,
-        # so there is no need to play with the Kronecker product.
-        rcoords = self.positions - center
-        # First Euler rotation about z in matrix form
-        D = np.array(((cos(phi), sin(phi), 0.),
-                      (-sin(phi), cos(phi), 0.),
-                      (0., 0., 1.)))
-        # Second Euler rotation about x:
-        C = np.array(((1., 0., 0.),
-                      (0., cos(theta), sin(theta)),
-                      (0., -sin(theta), cos(theta))))
-        # Third Euler rotation, 2nd rotation about z:
-        B = np.array(((cos(psi), sin(psi), 0.),
-                      (-sin(psi), cos(psi), 0.),
-                      (0., 0., 1.)))
-        # Total Euler rotation
-        A = np.dot(B, np.dot(C, D))
-        # Do the rotation
-        rcoords = np.dot(A, np.transpose(rcoords))
-        # Move back to the rotation point
-        self.positions = np.transpose(rcoords) + center
+        self.positions = rotation.apply(self.positions - center) + center
 
     def get_dihedral(self, a0, a1, a2, a3, mic=False):
         """Calculate dihedral angle.

@@ -1,5 +1,3 @@
-# fmt: off
-
 """ONETEP interface for the Atomic Simulation Environment (ASE) package
 
 T. Demeyere, T.Demeyere@soton.ac.uk (2023)
@@ -31,8 +29,7 @@ class OnetepProfile(BaseProfile):
         command: str
             The onetep command (not including inputfile).
         **kwargs: dict
-            Additional kwargs are passed to the BaseProfile
-            class.
+            Additional kwargs are passed to the BaseProfile class.
         """
         super().__init__(command, **kwargs)
         self.pseudo_path = pseudo_path
@@ -58,15 +55,22 @@ class OnetepTemplate(CalculatorTemplate):
                 'energy',
                 'free_energy',
                 'forces',
-                'stress'])
+                'stress',
+            ],
+        )
         self.inputname = f'{self._label}.dat'
         self.outputname = f'{self._label}.out'
         self.errorname = f'{self._label}.err'
         self.append = append
 
     def execute(self, directory, profile):
-        profile.run(directory, self.inputname, self.outputname,
-                    self.errorname, append=self.append)
+        profile.run(
+            directory,
+            self.inputname,
+            self.outputname,
+            self.errorname,
+            append=self.append,
+        )
 
     def read_results(self, directory):
         output_path = directory / self.outputname
@@ -82,8 +86,13 @@ class OnetepTemplate(CalculatorTemplate):
         keywords.setdefault('pseudo_path', profile.pseudo_path)
         parameters['keywords'] = keywords
 
-        write(input_path, atoms, format='onetep-in',
-              properties=properties, **parameters)
+        write(
+            input_path,
+            atoms,
+            format='onetep-in',
+            properties=properties,
+            **parameters,
+        )
 
     def load_profile(self, cfg, **kwargs):
         return OnetepProfile.from_config(cfg, self.name, **kwargs)
@@ -92,8 +101,6 @@ class OnetepTemplate(CalculatorTemplate):
 class Onetep(GenericFileIOCalculator):
     """
     Class for the ONETEP calculator, uses ase/io/onetep.py.
-    Need the env variable "ASE_ONETEP_COMMAND" defined to
-    properly work. All other options are passed in kwargs.
 
     Parameters
     ----------
@@ -149,18 +156,13 @@ class Onetep(GenericFileIOCalculator):
            are valid ONETEP keywords.
     """
 
-    def __init__(
-            self,
-            *,
-            profile=None,
-            directory='.',
-            **kwargs):
-
+    def __init__(self, *, profile=None, directory='.', **kwargs):
         self.keywords = kwargs.get('keywords', None)
-        self.template = OnetepTemplate(
-            append=kwargs.pop('append', False)
-        )
+        self.template = OnetepTemplate(append=kwargs.pop('append', False))
 
-        super().__init__(profile=profile, template=self.template,
-                         directory=directory,
-                         parameters=kwargs)
+        super().__init__(
+            profile=profile,
+            template=self.template,
+            directory=directory,
+            parameters=kwargs,
+        )
