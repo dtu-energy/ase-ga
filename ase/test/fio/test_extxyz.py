@@ -324,6 +324,7 @@ def test_json_scalars():
     assert abs(b.info['val_2'] - 42.0) < 1e-6
     assert abs(b.info['val_3'] - 42) == 0
 
+
 @pytest.mark.parametrize(
     'columns',
     [None, ['symbols', 'positions', 'move_mask']],
