@@ -202,7 +202,7 @@ class Atoms:
             if info is None:
                 info = copy.deepcopy(atoms.info)
 
-        self.arrays = {}
+        self.arrays: dict[str, np.ndarray] = {}
 
         if symbols is not None and numbers is not None:
             raise TypeError('Use only one of "symbols" and "numbers".')
@@ -279,6 +279,38 @@ class Atoms:
         new_symbols = Symbols.fromsymbols(obj)
         self.numbers[:] = new_symbols.numbers
 
+    def get_chemical_symbols(self):
+        """Get list of chemical symbol strings.
+
+        Equivalent to ``list(atoms.symbols)``."""
+        return list(self.symbols)
+
+    def set_chemical_symbols(self, symbols):
+        """Set chemical symbols."""
+        self.set_array('numbers', symbols2numbers(symbols), int, ())
+
+    @property
+    def numbers(self):
+        """Attribute for direct manipulation of the atomic numbers."""
+        return self._get_atomic_numbers()
+
+    @numbers.setter
+    def numbers(self, numbers):
+        self.set_atomic_numbers(numbers)
+
+    def set_atomic_numbers(self, numbers):
+        """Set atomic numbers."""
+        self.set_array('numbers', numbers, int, ())
+
+    def get_atomic_numbers(self):
+        """Get integer array of atomic numbers."""
+        return self.arrays['numbers'].copy()
+
+    def _get_atomic_numbers(self):
+        """Return reference to atomic numbers for in-place
+        manipulations."""
+        return self.arrays['numbers']
+
     @deprecated("Please use atoms.calc = calc", FutureWarning)
     def set_calculator(self, calc=None):
         """Attach calculator object.
@@ -332,6 +364,18 @@ class Atoms:
         """
         return self.cell.rank
 
+    @property
+    def constraints(self):
+        return self._get_constraints()
+
+    @constraints.setter
+    def constraints(self, constraint):
+        self.set_constraint(constraint)
+
+    @constraints.deleter
+    def constraints(self):
+        self._del_constraints()
+
     def set_constraint(self, constraint=None):
         """Apply one or more constrains.
 
@@ -352,9 +396,6 @@ class Atoms:
 
     def _del_constraints(self):
         self._constraints = []
-
-    constraints = property(_get_constraints, set_constraint, _del_constraints,
-                           'Constraints of the atoms.')
 
     def get_number_of_degrees_of_freedom(self):
         """Calculate the number of degrees of freedom in the system."""
@@ -555,24 +596,6 @@ class Atoms:
         # XXX extend has to calculator properties
         return name in self.arrays
 
-    def set_atomic_numbers(self, numbers):
-        """Set atomic numbers."""
-        self.set_array('numbers', numbers, int, ())
-
-    def get_atomic_numbers(self):
-        """Get integer array of atomic numbers."""
-        return self.arrays['numbers'].copy()
-
-    def get_chemical_symbols(self):
-        """Get list of chemical symbol strings.
-
-        Equivalent to ``list(atoms.symbols)``."""
-        return list(self.symbols)
-
-    def set_chemical_symbols(self, symbols):
-        """Set chemical symbols."""
-        self.set_array('numbers', symbols2numbers(symbols), int, ())
-
     def get_chemical_formula(self, mode='hill', empirical=False):
         """Get the chemical formula as a string based on the chemical symbols.
 
@@ -626,16 +649,31 @@ class Atoms:
                     constraint.adjust_momenta(self, momenta)
         self.set_array('momenta', momenta, float, (3,))
 
-    def set_velocities(self, velocities):
-        """Set the momenta by specifying the velocities."""
-        self.set_momenta(self.get_masses()[:, np.newaxis] * velocities)
-
     def get_momenta(self):
         """Get array of momenta."""
         if 'momenta' in self.arrays:
             return self.arrays['momenta'].copy()
         else:
             return np.zeros((len(self), 3))
+
+    @property
+    def velocities(self):
+        """Direct manipulation of the velocities."""
+        return self.get_velocities()
+
+    @velocities.setter
+    def velocities(self, velocities):
+        self.set_velocities(velocities)
+
+    def get_velocities(self):
+        """Get array of velocities."""
+        momenta = self.get_momenta()
+        masses = self.get_masses()
+        return momenta / masses[:, np.newaxis]
+
+    def set_velocities(self, velocities):
+        """Set the momenta by specifying the velocities."""
+        self.set_momenta(self.get_masses()[:, np.newaxis] * velocities)
 
     def set_masses(self, masses='defaults'):
         """Set atomic masses in atomic mass units.
@@ -799,12 +837,6 @@ class Atoms:
         if momenta is None:
             return 0.0
         return 0.5 * np.vdot(momenta, self.get_velocities())
-
-    def get_velocities(self):
-        """Get array of velocities."""
-        momenta = self.get_momenta()
-        masses = self.get_masses()
-        return momenta / masses[:, np.newaxis]
 
     def get_total_energy(self):
         """Get the total energy - potential plus kinetic energy."""
@@ -2007,6 +2039,15 @@ class Atoms:
                 .format(self.cell.rank))
         return self.cell.volume
 
+    @property
+    def positions(self):
+        """Attribute for direct manipulation of the positions."""
+        return self._get_positions()
+
+    @positions.setter
+    def positions(self, pos):
+        self._set_positions(pos)
+
     def _get_positions(self):
         """Return reference to positions-array for in-place manipulations."""
         return self.arrays['positions']
@@ -2014,19 +2055,6 @@ class Atoms:
     def _set_positions(self, pos):
         """Set positions directly, bypassing constraints."""
         self.arrays['positions'][:] = pos
-
-    positions = property(_get_positions, _set_positions,
-                         doc='Attribute for direct ' +
-                         'manipulation of the positions.')
-
-    def _get_atomic_numbers(self):
-        """Return reference to atomic numbers for in-place
-        manipulations."""
-        return self.arrays['numbers']
-
-    numbers = property(_get_atomic_numbers, set_atomic_numbers,
-                       doc='Attribute for direct ' +
-                       'manipulation of the atomic numbers.')
 
     @property
     def cell(self):
