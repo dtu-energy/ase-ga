@@ -1135,6 +1135,57 @@ def get_lattice_from_canonical_cell(cell, eps=2e-4):
     return LatticeChecker(cell, eps).match()
 
 
+class LatticeMatcher:
+    def __init__(self, cell, pbc, eps):
+        self.orig_cell = cell
+        self.pbc = cell.any(1) & pbc2pbc(pbc)
+        self.cell = cell.uncomplete(pbc)
+        self.eps = eps
+        self.niggli_cell, self.niggli_op = self.cell.niggli_reduce(eps=eps)
+
+        # We tabulate the cell's Niggli-mapped versions so we don't need to
+        # redo any work when the same Niggli-operation appears multiple times
+        # in the table:
+        self.memory = {}
+
+    def match(self, latname, operations):
+        matches = []
+
+        for op_key in operations:
+            checker_and_op = self.memory.get(op_key)
+            if checker_and_op is None:
+                # op_3x3 is the 3x3 form of the operation that maps
+                # Niggli cell to AFlow form.
+                op_3x3 = np.array(op_key).reshape(3, 3)
+                candidate = Cell(np.linalg.inv(op_3x3.T) @ self.niggli_cell)
+                checker = LatticeChecker(candidate, eps=self.eps)
+                self.memory[op_key] = (checker, op_3x3)
+            else:
+                checker, op_3x3 = checker_and_op
+
+            lat = checker.query(latname)
+            if lat is not None:
+                # This is the full operation encompassing
+                # both Niggli reduction of user input and mapping the
+                # Niggli reduced form to standard (AFlow) form.
+                op = op_3x3 @ np.linalg.inv(self.niggli_op)
+                matches.append(Match(lat, op))
+
+        return matches
+
+
+class Match:
+    def __init__(self, lat, op):
+        self.lat = lat
+        self.op = op
+
+    def __len__(self):
+        return 2
+
+    def __getitem__(self, i):
+        return (self.lat, self.op)[i]
+
+
 def identify_lattice(cell, eps=2e-4, *, pbc=True):
     """Find Bravais lattice representing this cell.
 
@@ -1143,50 +1194,26 @@ def identify_lattice(cell, eps=2e-4, *, pbc=True):
     and angles as the Bravais lattice object."""
     from ase.geometry.bravais_type_engine import niggli_op_table
 
-    pbc = cell.any(1) & pbc2pbc(pbc)
-    npbc = sum(pbc)
-
-    cell = cell.uncomplete(pbc)
-    rcell, reduction_op = cell.niggli_reduce(eps=eps)
-
-    # We tabulate the cell's Niggli-mapped versions so we don't need to
-    # redo any work when the same Niggli-operation appears multiple times
-    # in the table:
-    memory = {}
+    checker = LatticeMatcher(cell, pbc, eps=eps)
 
     # We loop through the most symmetric kinds (CUB etc.) and return
     # the first one we find:
-    for latname in LatticeChecker.check_orders[npbc]:
+    for latname in LatticeChecker.check_orders[checker.cell.rank]:
         # There may be multiple Niggli operations that produce valid
         # lattices, at least for MCL.  In that case we will pick the
         # one whose angle is closest to 90, but it means we cannot
-        # just return the first one we find so we must remember then:
-        matching_lattices = []
+        # just return the first one we find so we must remember them:
+        matches = checker.match(latname, niggli_op_table[latname])
 
-        for op_key in niggli_op_table[latname]:
-            checker_and_op = memory.get(op_key)
-            if checker_and_op is None:
-                normalization_op = np.array(op_key).reshape(3, 3)
-                candidate = Cell(np.linalg.inv(normalization_op.T) @ rcell)
-                checker = LatticeChecker(candidate, eps=eps)
-                memory[op_key] = (checker, normalization_op)
-            else:
-                checker, normalization_op = checker_and_op
-
-            lat = checker.query(latname)
-            if lat is not None:
-                op = normalization_op @ np.linalg.inv(reduction_op)
-                matching_lattices.append((lat, op))
-
-        if not matching_lattices:
+        if not matches:
             continue  # Move to next Bravais lattice
 
-        lat, op = pick_best_lattice(matching_lattices)
+        match = pick_best_lattice(matches)
 
-        if npbc == 2 and op[2, 2] < 0:
-            op = flip_2d_handedness(op)
+        if checker.cell.rank == 2 and match.op[2, 2] < 0:
+            match.op = flip_2d_handedness(match.op)
 
-        return lat, op
+        return match
 
     raise RuntimeError('Failed to recognize lattice')
 
@@ -1210,7 +1237,7 @@ def pick_best_lattice(matching_lattices):
         cell = lat.tocell().complete()
         orthogonality_defect = np.prod(cell.lengths()) / cell.volume
         if orthogonality_defect < best_defect:
-            best = lat, op
+            best = Match(lat, op)
             best_defect = orthogonality_defect
     return best
 
