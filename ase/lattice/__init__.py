@@ -1,6 +1,7 @@
 # fmt: off
 
 from abc import ABC, abstractmethod
+from functools import cached_property
 from typing import Dict, List
 
 import numpy as np
@@ -1179,12 +1180,10 @@ class Match:
         self.lat = lat
         self.op = op
 
-    def __len__(self):
-        return 2
-
-    def __getitem__(self, i):
-        return (self.lat, self.op)[i]
-
+    @cached_property
+    def orthogonality_defect(self):
+        cell = self.lat.tocell().complete()
+        return np.prod(cell.lengths()) / cell.volume
 
 def identify_lattice(cell, eps=2e-4, *, pbc=True):
     """Find Bravais lattice representing this cell.
@@ -1208,12 +1207,12 @@ def identify_lattice(cell, eps=2e-4, *, pbc=True):
         if not matches:
             continue  # Move to next Bravais lattice
 
-        match = pick_best_lattice(matches)
+        best = min(matches, key=lambda match: match.orthogonality_defect)
 
-        if checker.cell.rank == 2 and match.op[2, 2] < 0:
-            match.op = flip_2d_handedness(match.op)
+        if checker.cell.rank == 2 and best.op[2, 2] < 0:
+            best.op = flip_2d_handedness(best.op)
 
-        return match
+        return best.lat, best.op
 
     raise RuntimeError('Failed to recognize lattice')
 
@@ -1227,19 +1226,6 @@ def flip_2d_handedness(op):
     # z axis and interchanges x/y:
     repair_op = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
     return repair_op @ op
-
-
-def pick_best_lattice(matching_lattices):
-    """Return (lat, op) with lowest orthogonality defect."""
-    best = None
-    best_defect = np.inf
-    for lat, op in matching_lattices:
-        cell = lat.tocell().complete()
-        orthogonality_defect = np.prod(cell.lengths()) / cell.volume
-        if orthogonality_defect < best_defect:
-            best = Match(lat, op)
-            best_defect = orthogonality_defect
-    return best
 
 
 class LatticeChecker:
