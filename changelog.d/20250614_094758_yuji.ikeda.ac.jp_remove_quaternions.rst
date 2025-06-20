@@ -1,0 +1,6 @@
+Other changes
+-------------
+
+- Removed `Quaternions` (subclass of `Atoms`).
+  The `quaternions` read from a LAMMPS data file is still accessible as an array
+  in `Atoms`. (:mr:`3709`)

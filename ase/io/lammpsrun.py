@@ -12,7 +12,6 @@ from ase.calculators.lammps import convert
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.data import atomic_masses, chemical_symbols
 from ase.parallel import paropen
-from ase.quaternions import Quaternions
 
 
 def read_lammps_dump(infileobj, **kwargs):
@@ -167,14 +166,14 @@ def lammps_data_to_ase_atoms(
         cell = prismobj.update_cell(cell)
 
     if quaternions is not None:
-        out_atoms = Quaternions(
+        out_atoms = atomsobj(
             symbols=elements,
             positions=positions,
             cell=cell,
             celldisp=celldisp,
             pbc=pbc,
-            quaternions=quaternions,
         )
+        out_atoms.new_array('quaternions', quaternions, dtype=float)
     elif positions is not None:
         # reverse coordinations transform to lammps system
         # (for all vectors = pos, vel, force)
