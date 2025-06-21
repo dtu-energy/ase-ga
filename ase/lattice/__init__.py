@@ -1164,13 +1164,15 @@ class LatticeMatcher:
             else:
                 checker, op_3x3 = checker_and_op
 
-            lat = checker.query(latname)
-            if lat is not None:
-                # This is the full operation encompassing
-                # both Niggli reduction of user input and mapping the
-                # Niggli reduced form to standard (AFlow) form.
-                op = op_3x3 @ np.linalg.inv(self.niggli_op)
-                matches.append(Match(lat, op))
+            lat, err = checker.query(latname)
+            if lat is None or err > self.eps:
+                continue
+
+            # This is the full operation encompassing
+            # both Niggli reduction of user input and mapping the
+            # Niggli reduced form to standard (AFlow) form.
+            op = op_3x3 @ np.linalg.inv(self.niggli_op)
+            matches.append(Match(lat, op))
 
         return matches
 
@@ -1184,6 +1186,7 @@ class Match:
     def orthogonality_defect(self):
         cell = self.lat.tocell().complete()
         return np.prod(cell.lengths()) / cell.volume
+
 
 def identify_lattice(cell, eps=2e-4, *, pbc=True):
     """Find Bravais lattice representing this cell.
@@ -1266,24 +1269,21 @@ class LatticeChecker:
     def _check(self, latcls, *args):
         if any(arg <= 0 for arg in args):
             return None
+
         try:
-            lat = latcls(*args)
+            return latcls(*args)
         except UnconventionalLattice:
             return None
-
-        newcell = lat.tocell()
-        err = celldiff(self.cell, newcell)
-        if err < self.eps:
-            return lat
 
     def match(self):
         """Match cell against all lattices, returning most symmetric match.
 
         Returns the lattice object.  Raises RuntimeError on failure."""
         for name in self.check_orders[self.cell.rank]:
-            lat = self.query(name)
-            if lat:
+            lat, err = self.query(name)
+            if lat and err < self.eps:
                 return lat
+
         raise RuntimeError('Could not find lattice type for cell '
                            'with lengths and angles {}'
                            .format(self.cell.cellpar().tolist()))
@@ -1293,8 +1293,14 @@ class LatticeChecker:
 
         Return lattice object on success, None on failure."""
         meth = getattr(self, latname)
+
         lat = meth()
-        return lat
+        if lat is None:
+            return None, None
+
+        newcell = lat.tocell()
+        err = celldiff(self.cell, newcell)
+        return lat, err
 
     def LINE(self):
         return self._check(LINE, self.lengths[0])
