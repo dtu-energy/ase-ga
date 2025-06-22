@@ -1133,7 +1133,7 @@ def get_lattice_from_canonical_cell(cell, eps=2e-4):
 
     If the given cell does not resemble the known form of a Bravais
     lattice, raise RuntimeError."""
-    return LatticeChecker(cell, eps).match()
+    return NormalizedLatticeMatcher(cell, eps).match()
 
 
 class LatticeMatcher:
@@ -1159,7 +1159,7 @@ class LatticeMatcher:
                 # Niggli cell to AFlow form.
                 op_3x3 = np.array(op_key).reshape(3, 3)
                 candidate = Cell(np.linalg.inv(op_3x3.T) @ self.niggli_cell)
-                checker = LatticeChecker(candidate, eps=self.eps)
+                checker = NormalizedLatticeMatcher(candidate, eps=self.eps)
                 self.memory[op_key] = (checker, op_3x3)
             else:
                 checker, op_3x3 = checker_and_op
@@ -1196,23 +1196,23 @@ def identify_lattice(cell, eps=2e-4, *, pbc=True):
     and angles as the Bravais lattice object."""
     from ase.geometry.bravais_type_engine import niggli_op_table
 
-    checker = LatticeMatcher(cell, pbc, eps=eps)
+    matcher = LatticeMatcher(cell, pbc, eps=eps)
 
     # We loop through the most symmetric kinds (CUB etc.) and return
     # the first one we find:
-    for latname in LatticeChecker.check_orders[checker.cell.rank]:
+    for latname in lattice_check_orders[matcher.cell.rank]:
         # There may be multiple Niggli operations that produce valid
         # lattices, at least for MCL.  In that case we will pick the
         # one whose angle is closest to 90, but it means we cannot
         # just return the first one we find so we must remember them:
-        matches = checker.match(latname, niggli_op_table[latname])
+        matches = matcher.match(latname, niggli_op_table[latname])
 
         if not matches:
             continue  # Move to next Bravais lattice
 
         best = min(matches, key=lambda match: match.orthogonality_defect)
 
-        if checker.cell.rank == 2 and best.op[2, 2] < 0:
+        if matcher.cell.rank == 2 and best.op[2, 2] < 0:
             best.op = flip_2d_handedness(best.op)
 
         return best.lat, best.op
@@ -1231,14 +1231,22 @@ def flip_2d_handedness(op):
     return repair_op @ op
 
 
-class LatticeChecker:
-    # The check order is slightly different than elsewhere listed order
-    # as we need to check HEX/RHL before the ORCx family.
-    check_orders = {
-        1: ['LINE'],
-        2: ['SQR', 'RECT', 'HEX2D', 'CRECT', 'OBL'],
-        3: ['CUB', 'FCC', 'BCC', 'TET', 'BCT', 'HEX', 'RHL',
-            'ORC', 'ORCF', 'ORCI', 'ORCC', 'MCL', 'MCLC', 'TRI']}
+# Map of number of dimensions to order in which to check lattices.
+# We check most symmetric lattices first, so we can terminate early
+# when a match is found.
+#
+# The check order is slightly different than elsewhere listed order,
+# as we need to check HEX/RHL before the ORCx family.
+lattice_check_orders = {
+    1: ['LINE'],
+    2: ['SQR', 'RECT', 'HEX2D', 'CRECT', 'OBL'],
+    3: ['CUB', 'FCC', 'BCC', 'TET', 'BCT', 'HEX', 'RHL',
+        'ORC', 'ORCF', 'ORCI', 'ORCC', 'MCL', 'MCLC', 'TRI']}
+
+
+class NormalizedLatticeMatcher:
+    # This class checks that a candidate cell matches the normalized
+    # form of a Bravais lattice.  It's used internally by the LatticeMatcher.
 
     def __init__(self, cell, eps=2e-4):
         """Generate Bravais lattices that look (or not) like the given cell.
@@ -1279,7 +1287,7 @@ class LatticeChecker:
         """Match cell against all lattices, returning most symmetric match.
 
         Returns the lattice object.  Raises RuntimeError on failure."""
-        for name in self.check_orders[self.cell.rank]:
+        for name in lattice_check_orders[self.cell.rank]:
             lat, err = self.query(name)
             if lat and err < self.eps:
                 return lat
