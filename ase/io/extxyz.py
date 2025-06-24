@@ -893,7 +893,7 @@ def write_xyz(fileobj, images, comment='', columns=None,
 
         # Move mask
         if 'move_mask' in fr_cols:
-            cnstr = images[0]._get_constraints()
+            cnstr = images[0].constraints
             if len(cnstr) > 0:
                 c0 = cnstr[0]
                 if isinstance(c0, FixAtoms):

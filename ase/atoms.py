@@ -295,7 +295,7 @@ class Atoms:
     @property
     def numbers(self):
         """Attribute for direct manipulation of the atomic numbers."""
-        return self._get_atomic_numbers()
+        return self.arrays['numbers']
 
     @numbers.setter
     def numbers(self, numbers):
@@ -309,26 +309,13 @@ class Atoms:
         """Get integer array of atomic numbers."""
         return self.arrays['numbers'].copy()
 
-    def _get_atomic_numbers(self):
-        """Return reference to atomic numbers for in-place
-        manipulations."""
-        return self.arrays['numbers']
-
     @property
     def positions(self):
         """Attribute for direct manipulation of the positions."""
-        return self._get_positions()
+        return self.arrays['positions']
 
     @positions.setter
     def positions(self, pos):
-        self._set_positions(pos)
-
-    def _get_positions(self):
-        """Return reference to positions-array for in-place manipulations."""
-        return self.arrays['positions']
-
-    def _set_positions(self, pos):
-        """Set positions directly, bypassing constraints."""
         self.arrays['positions'][:] = pos
 
     def set_positions(self, newpositions, apply_constraint=True):
@@ -415,7 +402,7 @@ class Atoms:
 
     @property
     def constraints(self):
-        return self._get_constraints()
+        return self._constraints
 
     @constraints.setter
     def constraints(self, constraint):
@@ -423,7 +410,7 @@ class Atoms:
 
     @constraints.deleter
     def constraints(self):
-        self._del_constraints()
+        self._constraints = []
 
     def set_constraint(self, constraint=None):
         """Apply one or more constrains.
@@ -439,12 +426,6 @@ class Atoms:
                 self._constraints = list(constraint)
             else:
                 self._constraints = [constraint]
-
-    def _get_constraints(self):
-        return self._constraints
-
-    def _del_constraints(self):
-        self._constraints = []
 
     def get_number_of_degrees_of_freedom(self):
         """Calculate the number of degrees of freedom in the system."""
@@ -704,15 +685,6 @@ class Atoms:
             return self.arrays['momenta'].copy()
         else:
             return np.zeros((len(self), 3))
-
-    @property
-    def velocities(self):
-        """Direct manipulation of the velocities."""
-        return self.get_velocities()
-
-    @velocities.setter
-    def velocities(self, velocities):
-        self.set_velocities(velocities)
 
     def get_velocities(self):
         """Get array of velocities."""
