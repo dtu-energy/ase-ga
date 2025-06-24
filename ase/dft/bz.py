@@ -342,8 +342,6 @@ def bz_plot(cell: Cell, vectors: bool = False, paths=None, points=None,
 
             for name, point in zip(names, points):
                 name = normalize_name(name)
-                for transform in transforms:
-                    point = transform.apply(point)
                 point = point[:plotter.axis_dim]
                 ax.text(*point, rf'$\mathrm{{{name}}}$',
                         color='g', **plotter.label_options(point))
