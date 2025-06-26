@@ -205,7 +205,7 @@ class Atoms:
             if info is None:
                 info = copy.deepcopy(atoms.info)
 
-        self.arrays = {}
+        self.arrays: dict[str, np.ndarray] = {}
 
         if symbols is not None and numbers is not None:
             raise TypeError('Use only one of "symbols" and "numbers".')
@@ -282,6 +282,71 @@ class Atoms:
         new_symbols = Symbols.fromsymbols(obj)
         self.numbers[:] = new_symbols.numbers
 
+    def get_chemical_symbols(self):
+        """Get list of chemical symbol strings.
+
+        Equivalent to ``list(atoms.symbols)``."""
+        return list(self.symbols)
+
+    def set_chemical_symbols(self, symbols):
+        """Set chemical symbols."""
+        self.set_array('numbers', symbols2numbers(symbols), int, ())
+
+    @property
+    def numbers(self):
+        """Attribute for direct manipulation of the atomic numbers."""
+        return self.arrays['numbers']
+
+    @numbers.setter
+    def numbers(self, numbers):
+        self.set_atomic_numbers(numbers)
+
+    def set_atomic_numbers(self, numbers):
+        """Set atomic numbers."""
+        self.set_array('numbers', numbers, int, ())
+
+    def get_atomic_numbers(self):
+        """Get integer array of atomic numbers."""
+        return self.arrays['numbers'].copy()
+
+    @property
+    def positions(self):
+        """Attribute for direct manipulation of the positions."""
+        return self.arrays['positions']
+
+    @positions.setter
+    def positions(self, pos):
+        self.arrays['positions'][:] = pos
+
+    def set_positions(self, newpositions, apply_constraint=True):
+        """Set positions, honoring any constraints. To ignore constraints,
+        use *apply_constraint=False*."""
+        if self.constraints and apply_constraint:
+            newpositions = np.array(newpositions, float)
+            for constraint in self.constraints:
+                constraint.adjust_positions(self, newpositions)
+
+        self.set_array('positions', newpositions, shape=(3,))
+
+    def get_positions(self, wrap=False, **wrap_kw):
+        """Get array of positions.
+
+        Parameters:
+
+        wrap: bool
+            wrap atoms back to the cell before returning positions
+        wrap_kw: (keyword=value) pairs
+            optional keywords `pbc`, `center`, `pretty_translation`, `eps`,
+            see :func:`ase.geometry.wrap_positions`
+        """
+        from ase.geometry import wrap_positions
+        if wrap:
+            if 'pbc' not in wrap_kw:
+                wrap_kw['pbc'] = self.pbc
+            return wrap_positions(self.positions, self.cell, **wrap_kw)
+        else:
+            return self.arrays['positions'].copy()
+
     @deprecated("Please use atoms.calc = calc", FutureWarning)
     def set_calculator(self, calc=None):
         """Attach calculator object.
@@ -335,6 +400,18 @@ class Atoms:
         """
         return self.cell.rank
 
+    @property
+    def constraints(self):
+        return self._constraints
+
+    @constraints.setter
+    def constraints(self, constraint):
+        self.set_constraint(constraint)
+
+    @constraints.deleter
+    def constraints(self):
+        self._constraints = []
+
     def set_constraint(self, constraint=None):
         """Apply one or more constrains.
 
@@ -349,15 +426,6 @@ class Atoms:
                 self._constraints = list(constraint)
             else:
                 self._constraints = [constraint]
-
-    def _get_constraints(self):
-        return self._constraints
-
-    def _del_constraints(self):
-        self._constraints = []
-
-    constraints = property(_get_constraints, set_constraint, _del_constraints,
-                           'Constraints of the atoms.')
 
     def get_number_of_degrees_of_freedom(self):
         """Calculate the number of degrees of freedom in the system."""
@@ -558,24 +626,6 @@ class Atoms:
         # XXX extend has to calculator properties
         return name in self.arrays
 
-    def set_atomic_numbers(self, numbers):
-        """Set atomic numbers."""
-        self.set_array('numbers', numbers, int, ())
-
-    def get_atomic_numbers(self):
-        """Get integer array of atomic numbers."""
-        return self.arrays['numbers'].copy()
-
-    def get_chemical_symbols(self):
-        """Get list of chemical symbol strings.
-
-        Equivalent to ``list(atoms.symbols)``."""
-        return list(self.symbols)
-
-    def set_chemical_symbols(self, symbols):
-        """Set chemical symbols."""
-        self.set_array('numbers', symbols2numbers(symbols), int, ())
-
     def get_chemical_formula(self, mode='hill', empirical=False):
         """Get the chemical formula as a string based on the chemical symbols.
 
@@ -629,16 +679,22 @@ class Atoms:
                     constraint.adjust_momenta(self, momenta)
         self.set_array('momenta', momenta, float, (3,))
 
-    def set_velocities(self, velocities):
-        """Set the momenta by specifying the velocities."""
-        self.set_momenta(self.get_masses()[:, np.newaxis] * velocities)
-
     def get_momenta(self):
         """Get array of momenta."""
         if 'momenta' in self.arrays:
             return self.arrays['momenta'].copy()
         else:
             return np.zeros((len(self), 3))
+
+    def get_velocities(self):
+        """Get array of velocities."""
+        momenta = self.get_momenta()
+        masses = self.get_masses()
+        return momenta / masses[:, np.newaxis]
+
+    def set_velocities(self, velocities):
+        """Set the momenta by specifying the velocities."""
+        self.set_momenta(self.get_masses()[:, np.newaxis] * velocities)
 
     def set_masses(self, masses='defaults'):
         """Set atomic masses in atomic mass units.
@@ -725,35 +781,6 @@ class Atoms:
             from ase.calculators.calculator import PropertyNotImplementedError
             raise PropertyNotImplementedError
 
-    def set_positions(self, newpositions, apply_constraint=True):
-        """Set positions, honoring any constraints. To ignore constraints,
-        use *apply_constraint=False*."""
-        if self.constraints and apply_constraint:
-            newpositions = np.array(newpositions, float)
-            for constraint in self.constraints:
-                constraint.adjust_positions(self, newpositions)
-
-        self.set_array('positions', newpositions, shape=(3,))
-
-    def get_positions(self, wrap=False, **wrap_kw):
-        """Get array of positions.
-
-        Parameters:
-
-        wrap: bool
-            wrap atoms back to the cell before returning positions
-        wrap_kw: (keyword=value) pairs
-            optional keywords `pbc`, `center`, `pretty_translation`, `eps`,
-            see :func:`ase.geometry.wrap_positions`
-        """
-        from ase.geometry import wrap_positions
-        if wrap:
-            if 'pbc' not in wrap_kw:
-                wrap_kw['pbc'] = self.pbc
-            return wrap_positions(self.positions, self.cell, **wrap_kw)
-        else:
-            return self.arrays['positions'].copy()
-
     def get_potential_energy(self, force_consistent=False,
                              apply_constraint=True):
         """Calculate potential energy.
@@ -802,12 +829,6 @@ class Atoms:
         if momenta is None:
             return 0.0
         return 0.5 * np.vdot(momenta, self.get_velocities())
-
-    def get_velocities(self):
-        """Get array of velocities."""
-        momenta = self.get_momenta()
-        masses = self.get_masses()
-        return momenta / masses[:, np.newaxis]
 
     def get_total_energy(self):
         """Get the total energy - potential plus kinetic energy."""
@@ -2004,27 +2025,6 @@ class Atoms:
                 'You have {} lattice vectors: volume not defined'
                 .format(self.cell.rank))
         return self.cell.volume
-
-    def _get_positions(self):
-        """Return reference to positions-array for in-place manipulations."""
-        return self.arrays['positions']
-
-    def _set_positions(self, pos):
-        """Set positions directly, bypassing constraints."""
-        self.arrays['positions'][:] = pos
-
-    positions = property(_get_positions, _set_positions,
-                         doc='Attribute for direct ' +
-                         'manipulation of the positions.')
-
-    def _get_atomic_numbers(self):
-        """Return reference to atomic numbers for in-place
-        manipulations."""
-        return self.arrays['numbers']
-
-    numbers = property(_get_atomic_numbers, set_atomic_numbers,
-                       doc='Attribute for direct ' +
-                       'manipulation of the atomic numbers.')
 
     @property
     def cell(self):
