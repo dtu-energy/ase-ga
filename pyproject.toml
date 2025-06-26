@@ -122,6 +122,7 @@ categories = [
     'Molecular dynamics',
     'GUI',
     'Development',
+    'Documentation',
     'Other changes',
     'Bugfixes'
 ]
