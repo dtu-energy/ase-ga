@@ -369,3 +369,43 @@ def test_constraints(vasprun):
 
     assert isinstance(atoms.constraints[1], FixAtoms)
     assert np.all(atoms.constraints[1].index == [1])
+
+
+def test_vasprun_line_mode(vasprun):
+    line_mode = """\
+ <kpoints>
+  <generation param="listgenerated">
+   <i name="divisions" type="int">       2 </i>
+   <v>       0.00000000       0.00000000       0.00000000 </v>
+   <v>       0.50000000       0.50000000       0.00000000 </v>
+   <v>       0.50000000       0.75000000       0.25000000 </v>
+   <v>       0.00000000       0.00000000       0.00000000 </v>
+  </generation>
+  <varray name="kpointlist" >
+   <v>       0.00000000       0.00000000       0.00000000 </v>
+   <v>       0.50000000       0.50000000       0.00000000 </v>
+   <v>       0.50000000       0.50000000       0.00000000 </v>
+   <v>       0.50000000       0.75000000       0.25000000 </v>
+   <v>       0.50000000       0.75000000       0.25000000 </v>
+   <v>       0.00000000       0.00000000       0.00000000 </v>
+  </varray>
+  <varray name="weights" >
+   <v>       0.16666667 </v>
+   <v>       0.16666667 </v>
+   <v>       0.16666667 </v>
+   <v>       0.16666667 </v>
+   <v>       0.16666667 </v>
+   <v>       0.16666667 </v>
+  </varray>
+  <kpoints_labels>
+   <i name="Γ" type="int">       1 </i>
+   <i name="X" type="int">       2 </i>
+   <i name="X" type="int">       3 </i>
+   <i name="W" type="int">       4 </i>
+   <i name="W" type="int">       5 </i>
+   <i name="Γ" type="int">       6 </i>
+  </kpoints_labels>
+ </kpoints>
+"""
+    assert read(StringIO(vasprun + line_mode),
+                format="vasp-xml")

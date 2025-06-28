@@ -60,7 +60,7 @@ def test_jsonio_constraints_cartesian(silver_bulk):
     assert np.array_equal(c1[0].mask, c2[0].mask)
 
 
-def test_jsonio_constraints_fix_atoms_empty(silver_bulk):
+def test_jsonio_constraints_fix_atoms_empty(silver_bulk: Atoms) -> None:
     a = np.empty(0, dtype=int)
     silver_bulk.set_constraint(FixAtoms(a))
     new_atoms: Atoms = decode(encode(silver_bulk))

@@ -87,9 +87,6 @@ class Images:
             self._images.append(atoms)
             self.have_varying_species |= not np.array_equal(self[0].numbers,
                                                             atoms.numbers)
-            if hasattr(self, 'Q'):
-                assert False  # XXX askhl fix quaternions
-                self.Q[i] = atoms.get_quaternions()
             if (atoms.pbc != self[0].pbc).any():
                 warning = True
 

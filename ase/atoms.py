@@ -8,13 +8,16 @@
 This module defines the central object in the ASE package: the Atoms
 object.
 """
+from __future__ import annotations
+
 import copy
 import numbers
 from math import cos, pi, sin
+from typing import Sequence, Union, overload
 
 import numpy as np
 
-import ase.units as units
+from ase import units
 from ase.atom import Atom
 from ase.cell import Cell
 from ase.data import atomic_masses, atomic_masses_common
@@ -202,7 +205,7 @@ class Atoms:
             if info is None:
                 info = copy.deepcopy(atoms.info)
 
-        self.arrays = {}
+        self.arrays: dict[str, np.ndarray] = {}
 
         if symbols is not None and numbers is not None:
             raise TypeError('Use only one of "symbols" and "numbers".')
@@ -279,6 +282,71 @@ class Atoms:
         new_symbols = Symbols.fromsymbols(obj)
         self.numbers[:] = new_symbols.numbers
 
+    def get_chemical_symbols(self):
+        """Get list of chemical symbol strings.
+
+        Equivalent to ``list(atoms.symbols)``."""
+        return list(self.symbols)
+
+    def set_chemical_symbols(self, symbols):
+        """Set chemical symbols."""
+        self.set_array('numbers', symbols2numbers(symbols), int, ())
+
+    @property
+    def numbers(self):
+        """Attribute for direct manipulation of the atomic numbers."""
+        return self.arrays['numbers']
+
+    @numbers.setter
+    def numbers(self, numbers):
+        self.set_atomic_numbers(numbers)
+
+    def set_atomic_numbers(self, numbers):
+        """Set atomic numbers."""
+        self.set_array('numbers', numbers, int, ())
+
+    def get_atomic_numbers(self):
+        """Get integer array of atomic numbers."""
+        return self.arrays['numbers'].copy()
+
+    @property
+    def positions(self):
+        """Attribute for direct manipulation of the positions."""
+        return self.arrays['positions']
+
+    @positions.setter
+    def positions(self, pos):
+        self.arrays['positions'][:] = pos
+
+    def set_positions(self, newpositions, apply_constraint=True):
+        """Set positions, honoring any constraints. To ignore constraints,
+        use *apply_constraint=False*."""
+        if self.constraints and apply_constraint:
+            newpositions = np.array(newpositions, float)
+            for constraint in self.constraints:
+                constraint.adjust_positions(self, newpositions)
+
+        self.set_array('positions', newpositions, shape=(3,))
+
+    def get_positions(self, wrap=False, **wrap_kw):
+        """Get array of positions.
+
+        Parameters:
+
+        wrap: bool
+            wrap atoms back to the cell before returning positions
+        wrap_kw: (keyword=value) pairs
+            optional keywords `pbc`, `center`, `pretty_translation`, `eps`,
+            see :func:`ase.geometry.wrap_positions`
+        """
+        from ase.geometry import wrap_positions
+        if wrap:
+            if 'pbc' not in wrap_kw:
+                wrap_kw['pbc'] = self.pbc
+            return wrap_positions(self.positions, self.cell, **wrap_kw)
+        else:
+            return self.arrays['positions'].copy()
+
     @deprecated("Please use atoms.calc = calc", FutureWarning)
     def set_calculator(self, calc=None):
         """Attach calculator object.
@@ -332,6 +400,18 @@ class Atoms:
         """
         return self.cell.rank
 
+    @property
+    def constraints(self):
+        return self._constraints
+
+    @constraints.setter
+    def constraints(self, constraint):
+        self.set_constraint(constraint)
+
+    @constraints.deleter
+    def constraints(self):
+        self._constraints = []
+
     def set_constraint(self, constraint=None):
         """Apply one or more constrains.
 
@@ -346,15 +426,6 @@ class Atoms:
                 self._constraints = list(constraint)
             else:
                 self._constraints = [constraint]
-
-    def _get_constraints(self):
-        return self._constraints
-
-    def _del_constraints(self):
-        self._constraints = []
-
-    constraints = property(_get_constraints, set_constraint, _del_constraints,
-                           'Constraints of the atoms.')
 
     def get_number_of_degrees_of_freedom(self):
         """Calculate the number of degrees of freedom in the system."""
@@ -555,24 +626,6 @@ class Atoms:
         # XXX extend has to calculator properties
         return name in self.arrays
 
-    def set_atomic_numbers(self, numbers):
-        """Set atomic numbers."""
-        self.set_array('numbers', numbers, int, ())
-
-    def get_atomic_numbers(self):
-        """Get integer array of atomic numbers."""
-        return self.arrays['numbers'].copy()
-
-    def get_chemical_symbols(self):
-        """Get list of chemical symbol strings.
-
-        Equivalent to ``list(atoms.symbols)``."""
-        return list(self.symbols)
-
-    def set_chemical_symbols(self, symbols):
-        """Set chemical symbols."""
-        self.set_array('numbers', symbols2numbers(symbols), int, ())
-
     def get_chemical_formula(self, mode='hill', empirical=False):
         """Get the chemical formula as a string based on the chemical symbols.
 
@@ -626,16 +679,22 @@ class Atoms:
                     constraint.adjust_momenta(self, momenta)
         self.set_array('momenta', momenta, float, (3,))
 
-    def set_velocities(self, velocities):
-        """Set the momenta by specifying the velocities."""
-        self.set_momenta(self.get_masses()[:, np.newaxis] * velocities)
-
     def get_momenta(self):
         """Get array of momenta."""
         if 'momenta' in self.arrays:
             return self.arrays['momenta'].copy()
         else:
             return np.zeros((len(self), 3))
+
+    def get_velocities(self):
+        """Get array of velocities."""
+        momenta = self.get_momenta()
+        masses = self.get_masses()
+        return momenta / masses[:, np.newaxis]
+
+    def set_velocities(self, velocities):
+        """Set the momenta by specifying the velocities."""
+        self.set_momenta(self.get_masses()[:, np.newaxis] * velocities)
 
     def set_masses(self, masses='defaults'):
         """Set atomic masses in atomic mass units.
@@ -722,35 +781,6 @@ class Atoms:
             from ase.calculators.calculator import PropertyNotImplementedError
             raise PropertyNotImplementedError
 
-    def set_positions(self, newpositions, apply_constraint=True):
-        """Set positions, honoring any constraints. To ignore constraints,
-        use *apply_constraint=False*."""
-        if self.constraints and apply_constraint:
-            newpositions = np.array(newpositions, float)
-            for constraint in self.constraints:
-                constraint.adjust_positions(self, newpositions)
-
-        self.set_array('positions', newpositions, shape=(3,))
-
-    def get_positions(self, wrap=False, **wrap_kw):
-        """Get array of positions.
-
-        Parameters:
-
-        wrap: bool
-            wrap atoms back to the cell before returning positions
-        wrap_kw: (keyword=value) pairs
-            optional keywords `pbc`, `center`, `pretty_translation`, `eps`,
-            see :func:`ase.geometry.wrap_positions`
-        """
-        from ase.geometry import wrap_positions
-        if wrap:
-            if 'pbc' not in wrap_kw:
-                wrap_kw['pbc'] = self.pbc
-            return wrap_positions(self.positions, self.cell, **wrap_kw)
-        else:
-            return self.arrays['positions'].copy()
-
     def get_potential_energy(self, force_consistent=False,
                              apply_constraint=True):
         """Calculate potential energy.
@@ -799,12 +829,6 @@ class Atoms:
         if momenta is None:
             return 0.0
         return 0.5 * np.vdot(momenta, self.get_velocities())
-
-    def get_velocities(self):
-        """Get array of velocities."""
-        momenta = self.get_momenta()
-        masses = self.get_masses()
-        return momenta / masses[:, np.newaxis]
 
     def get_total_energy(self):
         """Get the total energy - potential plus kinetic energy."""
@@ -1135,6 +1159,12 @@ class Atoms:
     def __iter__(self):
         for i in range(len(self)):
             yield self[i]
+
+    @overload
+    def __getitem__(self, i: Union[int, np.integer]) -> Atom: ...
+
+    @overload
+    def __getitem__(self, i: Union[Sequence, slice, np.ndarray]) -> Atoms: ...
 
     def __getitem__(self, i):
         """Return a subset of the atoms.
@@ -1541,53 +1571,42 @@ class Atoms:
             center = np.array(center, float)
         return center
 
-    def euler_rotate(self, phi=0.0, theta=0.0, psi=0.0, center=(0, 0, 0)):
+    def euler_rotate(
+        self,
+        phi: float = 0.0,
+        theta: float = 0.0,
+        psi: float = 0.0,
+        center: Sequence[float] = (0.0, 0.0, 0.0),
+    ) -> None:
         """Rotate atoms via Euler angles (in degrees).
 
         See e.g http://mathworld.wolfram.com/EulerAngles.html for explanation.
 
-        Parameters:
+        Note that the rotations in this method are passive and applied **not**
+        to the atomic coordinates in the present frame **but** the frame itself.
 
-        center :
+        Parameters
+        ----------
+        phi : float
+            The 1st rotation angle around the z axis.
+        theta : float
+            Rotation around the x axis.
+        psi : float
+            2nd rotation around the z axis.
+        center : Sequence[float], default = (0.0, 0.0, 0.0)
             The point to rotate about. A sequence of length 3 with the
             coordinates, or 'COM' to select the center of mass, 'COP' to
             select center of positions or 'COU' to select center of cell.
-        phi :
-            The 1st rotation angle around the z axis.
-        theta :
-            Rotation around the x axis.
-        psi :
-            2nd rotation around the z axis.
 
         """
+        from scipy.spatial.transform import Rotation as R
+
         center = self._centering_as_array(center)
 
-        phi *= pi / 180
-        theta *= pi / 180
-        psi *= pi / 180
+        # passive rotations (negative angles) for backward compatibility
+        rotation = R.from_euler('zxz', (-phi, -theta, -psi), degrees=True)
 
-        # First move the molecule to the origin In contrast to MATLAB,
-        # numpy broadcasts the smaller array to the larger row-wise,
-        # so there is no need to play with the Kronecker product.
-        rcoords = self.positions - center
-        # First Euler rotation about z in matrix form
-        D = np.array(((cos(phi), sin(phi), 0.),
-                      (-sin(phi), cos(phi), 0.),
-                      (0., 0., 1.)))
-        # Second Euler rotation about x:
-        C = np.array(((1., 0., 0.),
-                      (0., cos(theta), sin(theta)),
-                      (0., -sin(theta), cos(theta))))
-        # Third Euler rotation, 2nd rotation about z:
-        B = np.array(((cos(psi), sin(psi), 0.),
-                      (-sin(psi), cos(psi), 0.),
-                      (0., 0., 1.)))
-        # Total Euler rotation
-        A = np.dot(B, np.dot(C, D))
-        # Do the rotation
-        rcoords = np.dot(A, np.transpose(rcoords))
-        # Move back to the rotation point
-        self.positions = np.transpose(rcoords) + center
+        self.positions = rotation.apply(self.positions - center) + center
 
     def get_dihedral(self, a0, a1, a2, a3, mic=False):
         """Calculate dihedral angle.
@@ -2006,27 +2025,6 @@ class Atoms:
                 'You have {} lattice vectors: volume not defined'
                 .format(self.cell.rank))
         return self.cell.volume
-
-    def _get_positions(self):
-        """Return reference to positions-array for in-place manipulations."""
-        return self.arrays['positions']
-
-    def _set_positions(self, pos):
-        """Set positions directly, bypassing constraints."""
-        self.arrays['positions'][:] = pos
-
-    positions = property(_get_positions, _set_positions,
-                         doc='Attribute for direct ' +
-                         'manipulation of the positions.')
-
-    def _get_atomic_numbers(self):
-        """Return reference to atomic numbers for in-place
-        manipulations."""
-        return self.arrays['numbers']
-
-    numbers = property(_get_atomic_numbers, set_atomic_numbers,
-                       doc='Attribute for direct ' +
-                       'manipulation of the atomic numbers.')
 
     @property
     def cell(self):

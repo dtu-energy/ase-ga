@@ -184,7 +184,7 @@ doc:
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache-doc"
   before_script:
-    - pip install scriv
+    - pip install scriv sphinx_book_theme
     - pip install --no-deps .[docs]
     - ase info
     - which sphinx-build
@@ -192,13 +192,14 @@ doc:
     - scriv collect --keep || echo Not compiling changelog then  # Avoid error
     - python -m ase.utils.sphinx run # test scripts
     - sphinx-build -W doc doc/build
+    - mv doc/build web-html
   cache:
     paths:
       - $PIP_CACHE_DIR
     key: doc
   artifacts:
     paths:
-      - $CI_PROJECT_DIR/doc/build/
+      - web-html
     expire_in: 1 week
 
 distribution-package:
@@ -229,8 +230,13 @@ pages:
   stage: deploy
   dependencies:
     - coverage-combine
+    - doc
   script:
-    - mv coverage-html public
+    - mkdir public
+    - mv coverage-html public/
+    - pwd
+    - ls
+    - mv web-html/* public/
   artifacts:
     paths:
       - public

@@ -27,7 +27,7 @@ class GUIObservers:
     def __init__(self):
         self.new_atoms = Observers()
         self.set_atoms = Observers()
-        self.draw = Observers()
+        self.change_atoms = Observers()
 
 
 class GUI(View):
@@ -157,13 +157,16 @@ class GUI(View):
         return Settings(self)
 
     def scroll(self, event):
-        CTRL = event.modifier == 'ctrl'
+        shift = 0x1
+        ctrl = 0x4
+        alt_l = 0x8  # Also Mac Command Key
+        mac_option_key = 0x10
 
-        # Bug: Simultaneous CTRL + shift is the same as just CTRL.
-        # Therefore movement in Z direction does not support the
-        # shift modifier.
-        dxdydz = {'up': (0, 1 - CTRL, CTRL),
-                  'down': (0, -1 + CTRL, -CTRL),
+        use_small_step = bool(event.state & shift)
+        rotate_into_plane = bool(event.state & (ctrl | alt_l | mac_option_key))
+
+        dxdydz = {'up': (0, 1 - rotate_into_plane, rotate_into_plane),
+                  'down': (0, -1 + rotate_into_plane, -rotate_into_plane),
                   'right': (1, 0, 0),
                   'left': (-1, 0, 0)}.get(event.key, None)
 
@@ -186,7 +189,7 @@ class GUI(View):
             return
 
         vec = 0.1 * np.dot(self.axes, dxdydz)
-        if event.modifier == 'shift':
+        if use_small_step:
             vec *= 0.1
 
         if self.arrowkey_mode == self.ARROWKEY_MOVE:
@@ -232,6 +235,18 @@ class GUI(View):
     def constraints_window(self):
         from ase.gui.constraints import Constraints
         return Constraints(self)
+
+    def set_selected_atoms(self, selected):
+        newmask = np.zeros(len(self.images.selected), bool)
+        newmask[selected] = True
+
+        if np.array_equal(newmask, self.images.selected):
+            return
+
+        # (By creating newmask, we can avoid resetting the selection in
+        # case the selected indices are invalid)
+        self.images.selected[:] = newmask
+        self.draw()
 
     def select_all(self, key=None):
         self.images.selected[:] = True
@@ -339,6 +354,10 @@ class GUI(View):
     def cell_editor(self, key=None):
         from ase.gui.celleditor import CellEditor
         return CellEditor(self)
+
+    def atoms_editor(self, key=None):
+        from ase.gui.atomseditor import AtomsEditor
+        return AtomsEditor(self)
 
     def quick_info_window(self, key=None):
         from ase.gui.quickinfo import info
@@ -486,7 +505,8 @@ class GUI(View):
               M(_('_Add atoms'), self.add_atoms, 'Ctrl+A'),
               M(_('_Delete selected atoms'), self.delete_selected_atoms,
                 'Backspace'),
-              M(_('Edit _cell'), self.cell_editor, 'Ctrl+E'),
+              M(_('Edit _cell …'), self.cell_editor, 'Ctrl+E'),
+              M(_('Edit _atoms …'), self.atoms_editor, 'A'),
               M('---'),
               M(_('_First image'), self.step, 'Home'),
               M(_('_Previous image'), self.step, 'Page-Up'),
@@ -529,15 +549,15 @@ class GUI(View):
                     M(_('xy-plane'), self.set_view, 'Z'),
                     M(_('yz-plane'), self.set_view, 'X'),
                     M(_('zx-plane'), self.set_view, 'Y'),
-                    M(_('yx-plane'), self.set_view, 'Alt+Z'),
-                    M(_('zy-plane'), self.set_view, 'Alt+X'),
-                    M(_('xz-plane'), self.set_view, 'Alt+Y'),
-                    M(_('a2,a3-plane'), self.set_view, '1'),
-                    M(_('a3,a1-plane'), self.set_view, '2'),
-                    M(_('a1,a2-plane'), self.set_view, '3'),
-                    M(_('a3,a2-plane'), self.set_view, 'Alt+1'),
-                    M(_('a1,a3-plane'), self.set_view, 'Alt+2'),
-                    M(_('a2,a1-plane'), self.set_view, 'Alt+3')]),
+                    M(_('yx-plane'), self.set_view, 'Shift+Z'),
+                    M(_('zy-plane'), self.set_view, 'Shift+X'),
+                    M(_('xz-plane'), self.set_view, 'Shift+Y'),
+                    M(_('a2,a3-plane'), self.set_view, 'I'),
+                    M(_('a3,a1-plane'), self.set_view, 'J'),
+                    M(_('a1,a2-plane'), self.set_view, 'K'),
+                    M(_('a3,a2-plane'), self.set_view, 'Shift+I'),
+                    M(_('a1,a3-plane'), self.set_view, 'Shift+J'),
+                    M(_('a2,a1-plane'), self.set_view, 'Shift+K')]),
               M(_('Settings ...'), self.settings),
               M('---'),
               M(_('VMD'), partial(self.external_viewer, 'vmd')),

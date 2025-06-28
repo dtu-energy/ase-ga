@@ -41,8 +41,8 @@ Highlights
 ----------
 
 * Major improvements to :func:`~ase.build.find_optimal_cell_shape`: improve target metric; ensure rotationally invariant results; avoid negative determinants; improved performance via vectorisation (:mr:`3404`, :mr:`3441`, :mr:`3474`). The ``norm`` argument to :func:`ase.build.supercells.get_deviation_from_optimal_cell_shape` is now deprecated.
-* Added new FiniteDifferenceCalculator which wraps other calculator for finite-difference forces and strains (:mr:`3509`)
-* Added two new MD thermostats: :class:`ase.md.bussi.Bussi` (:mr:`3350`) and :class:`ase.md.nosef_hoover_chain.NoseHooverChainNVT` (:mr:`3508`)
+* Added new :class:`~ase.calculators.fd.FiniteDifferenceCalculator`, which wraps other calculator for finite-difference forces and strains (:mr:`3509`)
+* Added two new MD thermostats: :class:`ase.md.bussi.Bussi` (:mr:`3350`) and :class:`ase.md.nose_hoover_chain.NoseHooverChainNVT` (:mr:`3508`)
 * Added atom-projected partial phonon dos to :func:`ase.phonons.Phonons.get_dos` (:mr:`3460`)
 * New module :mod:`ase.pourbaix` written to replace
   :class:`ase.phasediagram.Pourbaix` (:mr:`3280`), with improved energy definition and visualisation

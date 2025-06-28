@@ -322,25 +322,25 @@ class View:
             self.axes = rotate('-90.0x,-90.0y,0.0z')
         elif key == 'Y':
             self.axes = rotate('90.0x,0.0y,90.0z')
-        elif key == 'Alt+Z':
+        elif key == 'Shift+Z':
             self.axes = rotate('180.0x,0.0y,90.0z')
-        elif key == 'Alt+X':
+        elif key == 'Shift+X':
             self.axes = rotate('0.0x,90.0y,0.0z')
-        elif key == 'Alt+Y':
+        elif key == 'Shift+Y':
             self.axes = rotate('-90.0x,0.0y,0.0z')
         else:
-            if key == '3':
-                i, j = 0, 1
-            elif key == '1':
+            if key == 'I':
                 i, j = 1, 2
-            elif key == '2':
+            elif key == 'J':
                 i, j = 2, 0
-            elif key == 'Alt+3':
-                i, j = 1, 0
-            elif key == 'Alt+1':
+            elif key == 'K':
+                i, j = 0, 1
+            elif key == 'Shift+I':
                 i, j = 2, 1
-            elif key == 'Alt+2':
+            elif key == 'Shift+J':
                 i, j = 0, 2
+            elif key == 'Shift+K':
+                i, j = 1, 0
 
             A = complete_cell(self.atoms.cell)
             x1 = A[i]
@@ -562,7 +562,14 @@ class View:
         if status:
             self.status.status(self.atoms)
 
-        self.obs.draw.notify()
+        # Currently we change the atoms all over the place willy-nilly
+        # and then call draw().  For which reason we abuse draw() to notify
+        # the observers about general changes.
+        #
+        # We should refactor so change_atoms is only emitted
+        # when when atoms actually change, and maybe have a separate signal
+        # to listen to e.g. changes of view.
+        self.obs.change_atoms.notify()
 
     def arrow(self, coords, width):
         line = self.window.line

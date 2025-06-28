@@ -1,0 +1,5 @@
+Calculators
+-----------
+
+- Added toggles between analytical and numerical forces/stress in
+  :class:`~ase.calculators.fd.FiniteDifferenceCalculator` (:mr:`3678`)

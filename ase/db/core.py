@@ -389,10 +389,10 @@ class Database:
 
     def __init__(
         self,
-        filename=None,
-        create_indices=True,
-        use_lock_file=False,
-        serial=False,
+        filename: str = None,
+        create_indices: bool = True,
+        use_lock_file: bool = False,
+        serial: bool = False,
     ):
         """Database object.
 
@@ -405,14 +405,13 @@ class Database:
             filename = os.path.expanduser(filename)
         self.filename = filename
         self.create_indices = create_indices
+        self.lock = None
         if use_lock_file and isinstance(filename, str):
             self.lock = Lock(filename + '.lock', world=DummyMPI())
-        else:
-            self.lock = None
         self.serial = serial
 
         # Decription of columns and other stuff:
-        self._metadata: Dict[str, Any] = None
+        self._metadata = None
 
     @property
     def metadata(self) -> Dict[str, Any]:

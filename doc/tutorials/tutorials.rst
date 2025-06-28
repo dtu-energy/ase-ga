@@ -101,7 +101,7 @@ For more details:
 
 * Look at the documentation for the individual :ref:`modules <ase>`.
 * Browse the :git:`source code <>` online.
-
+* `External tutorial part of Openscience and ASE workshop, Daresbury 2023  <https://ase-workshop-2023.github.io/tutorial/>`_
 
 Videos
 ------

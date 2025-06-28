@@ -1,0 +1,46 @@
+.. A new scriv changelog fragment.
+..
+.. Uncomment the section that is right (remove the leading dots).
+.. For top level release notes, leave all the headers commented out.
+..
+.. I/O
+.. ---
+..
+.. - A bullet item for the I/O category.
+..
+.. Calculators
+.. -----------
+..
+.. - A bullet item for the Calculators category.
+..
+.. Optimizers
+.. ----------
+..
+.. - A bullet item for the Optimizers category.
+..
+.. Molecular dynamics
+.. ------------------
+..
+.. - A bullet item for the Molecular dynamics category.
+..
+GUI
+---
+
+- Changed Alt+X, Alt+Y, Alt+Z to Shift+X, Shift+Y, Shift+Z to view planes from "other side"
+- Changed views into basis vector planes to I, J, K, Shift+I, Shift+J, Shift+K
+
+.. Development
+.. -----------
+..
+.. - A bullet item for the Development category.
+..
+.. Other changes
+.. -------------
+..
+.. - A bullet item for the Other changes category.
+..
+.. Bugfixes
+.. --------
+..
+.. - A bullet item for the Bugfixes category.
+..

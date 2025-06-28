@@ -22,7 +22,6 @@ source_suffix = '.rst'
 master_doc = 'index'
 project = 'ASE'
 copyright = f'{datetime.date.today().year}, ASE-developers'
-templates_path = ['templates']
 exclude_patterns = ['build']
 default_role = 'math'
 pygments_style = 'sphinx'
@@ -38,11 +37,18 @@ nitpick_ignore = [
     ('envvar', 'VASP_SCRIPT'),
 ]
 
-html_theme = 'sphinx_rtd_theme'
-html_style = 'ase.css'
+html_theme = 'sphinx_book_theme'
+html_logo = 'static/ase256.png'
 html_favicon = 'static/ase.ico'
 html_static_path = ['static']
 html_last_updated_fmt = '%a, %d %b %Y %H:%M:%S'
+
+html_theme_options = {
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html
+    'gitlab_url': 'https://gitlab.com/ase/ase',
+    # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/indices.html
+    'primary_sidebar_end': ['indices.html'],
+}
 
 latex_elements = {'papersize': 'a4paper'}
 latex_show_urls = 'inline'

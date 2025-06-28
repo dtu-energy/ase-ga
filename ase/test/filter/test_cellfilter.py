@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 import ase
+from ase import Atoms
 from ase.build import bulk
 from ase.calculators.test import gradient_test
 from ase.filters import ExpCellFilter, Filter, FrechetCellFilter, UnitCellFilter
@@ -28,8 +29,8 @@ def atoms(asap3) -> ase.Atoms:
 @pytest.mark.parametrize(
     'cellfilter', [UnitCellFilter, FrechetCellFilter, ExpCellFilter]
 )
-def test_get_and_set_positions(atoms, cellfilter):
-    filter: Filter = cellfilter(atoms)
+def test_get_and_set_positions(atoms: Atoms, cellfilter: type[Filter]) -> None:
+    filter = cellfilter(atoms)
     pos = filter.get_positions()
     filter.set_positions(pos)
     pos2 = filter.get_positions()
