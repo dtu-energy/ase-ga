@@ -10,6 +10,7 @@ from ase.io.jsonio import decode, encode, read_json, write_json
 def test_jsonio():
     """Test serialization of ndarrays and other stuff."""
     assert decode(encode(np.int64(42))) == 42
+    assert decode(encode(np.float32(42.0))) == 42.0
 
     c = np.array([0.1j])
     assert (decode(encode(c)) == c).all()
