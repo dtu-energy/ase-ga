@@ -55,7 +55,7 @@ class OptimizableAtoms(Optimizable):
         else:
             return True
 
-    def get_potential_energy(self):
+    def get_value(self):
         force_consistent = self._use_force_consistent_energy
         return self.atoms.get_potential_energy(
             force_consistent=force_consistent)
@@ -426,7 +426,7 @@ class Optimizer(Dynamics):
         if forces is None:
             forces = self.optimizable.get_forces()
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.optimizable.get_potential_energy()
+        e = self.optimizable.get_value()
         T = time.localtime()
         if self.logfile is not None:
             name = self.__class__.__name__

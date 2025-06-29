@@ -155,6 +155,6 @@ class BasinHopping(Dynamics):
             if self.lm_trajectory is not None:
                 self.lm_trajectory.write(self.optimizable)
 
-            self.energy = self.optimizable.get_potential_energy()
+            self.energy = self.optimizable.get_value()
 
         return self.energy

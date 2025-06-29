@@ -267,7 +267,7 @@ class NEBOptimizable(Optimizable):
     def get_forces(self):
         return self.neb.get_forces()
 
-    def get_potential_energy(self):
+    def get_value(self):
         return self.neb.get_potential_energy()
 
     def get_positions(self):

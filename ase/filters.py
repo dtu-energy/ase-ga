@@ -43,7 +43,7 @@ class OptimizableFilter(Optimizable):
         else:
             return True
 
-    def get_potential_energy(self):
+    def get_value(self):
         force_consistent = self._use_force_consistent_energy
         return self.filterobj.get_potential_energy(
             force_consistent=force_consistent)

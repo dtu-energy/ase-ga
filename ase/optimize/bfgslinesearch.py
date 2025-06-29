@@ -174,7 +174,7 @@ class BFGSLineSearch(Optimizer):
         self.optimizable.set_positions(x.reshape(-1, 3))
         self.function_calls += 1
         # Scale the problem as SciPy uses I as initial Hessian.
-        return self.optimizable.get_potential_energy() / self.alpha
+        return self.optimizable.get_value() / self.alpha
 
     def fprime(self, x):
         """Gradient of the objective function for use of the optimizers"""
@@ -213,7 +213,7 @@ class BFGSLineSearch(Optimizer):
         if forces is None:
             forces = self.optimizable.get_forces()
         fmax = sqrt((forces**2).sum(axis=1).max())
-        e = self.optimizable.get_potential_energy()
+        e = self.optimizable.get_value()
         T = time.localtime()
         name = self.__class__.__name__
         w = self.logfile.write

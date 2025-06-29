@@ -226,7 +226,7 @@ class LBFGS(Optimizer):
         """Objective function for use of the optimizers"""
         self.optimizable.set_positions(x.reshape(-1, 3))
         self.function_calls += 1
-        return self.optimizable.get_potential_energy()
+        return self.optimizable.get_value()
 
     def fprime(self, x):
         """Gradient of the objective function for use of the optimizers"""

@@ -256,12 +256,12 @@ class GPMin(Optimizer, GaussianProcess):
             f = optimizable.get_forces()
 
         r0 = optimizable.get_positions().reshape(-1)
-        e0 = optimizable.get_potential_energy()
+        e0 = optimizable.get_value()
         self.update(r0, e0, f)
 
         r1 = self.relax_model(r0)
         optimizable.set_positions(r1.reshape(-1, 3))
-        e1 = optimizable.get_potential_energy()
+        e1 = optimizable.get_value()
         f1 = optimizable.get_forces()
         self.function_calls += 1
         self.force_calls += 1
@@ -271,7 +271,7 @@ class GPMin(Optimizer, GaussianProcess):
             r1 = self.relax_model(r0)
 
             optimizable.set_positions(r1.reshape(-1, 3))
-            e1 = optimizable.get_potential_energy()
+            e1 = optimizable.get_value()
             f1 = optimizable.get_forces()
             self.function_calls += 1
             self.force_calls += 1

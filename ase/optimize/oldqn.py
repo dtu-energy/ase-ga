@@ -297,7 +297,7 @@ class GoodOldQuasiNewton(Optimizer):
         pos = self.optimizable.get_positions().ravel()
         G = -self.optimizable.get_forces().ravel()
 
-        energy = self.optimizable.get_potential_energy()
+        energy = self.optimizable.get_value()
 
         if hasattr(self, 'oldenergy'):
             self.write_log('energies ' + str(energy) +

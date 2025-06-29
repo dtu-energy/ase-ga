@@ -79,7 +79,7 @@ class SciPyOptimizer(Optimizer):
         """Objective function for use of the optimizers"""
         self.optimizable.set_positions(x.reshape(-1, 3))
         # Scale the problem as SciPy uses I as initial Hessian.
-        return self.optimizable.get_potential_energy() / self.H0
+        return self.optimizable.get_value() / self.H0
 
     def fprime(self, x):
         """Gradient of the objective function for use of the optimizers"""
@@ -251,7 +251,7 @@ class SciPyGradientlessOptimizer(Optimizer):
         self.optimizable.set_positions(x.reshape(-1, 3))
         self.function_calls += 1
         # Scale the problem as SciPy uses I as initial Hessian.
-        return self.optimizable.get_potential_energy()
+        return self.optimizable.get_value()
 
     def callback(self, x):
         """Callback function to be run after each iteration by SciPy

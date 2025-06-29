@@ -170,13 +170,13 @@ class FIRE(Optimizer):
         if self.v is None:
             self.v = np.zeros((len(optimizable), 3))
             if self.downhill_check:
-                self.e_last = optimizable.get_potential_energy()
+                self.e_last = optimizable.get_value()
                 self.r_last = optimizable.get_positions().copy()
                 self.v_last = self.v.copy()
         else:
             is_uphill = False
             if self.downhill_check:
-                e = optimizable.get_potential_energy()
+                e = optimizable.get_value()
                 # Check if the energy actually decreased
                 if e > self.e_last:
                     # If not, reset to old positions...
@@ -186,7 +186,7 @@ class FIRE(Optimizer):
                             self.e_last)
                     optimizable.set_positions(self.r_last)
                     is_uphill = True
-                self.e_last = optimizable.get_potential_energy()
+                self.e_last = optimizable.get_value()
                 self.r_last = optimizable.get_positions().copy()
                 self.v_last = self.v.copy()
 
