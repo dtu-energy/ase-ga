@@ -264,8 +264,8 @@ class NEBOptimizable(Optimizable):
     def __init__(self, neb):
         self.neb = neb
 
-    def get_forces(self):
-        return self.neb.get_forces()
+    def get_gradient(self):
+        return self.neb.get_forces().ravel()
 
     def get_value(self):
         return self.neb.get_potential_energy()

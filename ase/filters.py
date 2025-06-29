@@ -28,8 +28,8 @@ class OptimizableFilter(Optimizable):
     def set_positions(self, positions):
         self.filterobj.set_positions(positions)
 
-    def get_forces(self):
-        return self.filterobj.get_forces()
+    def get_gradient(self):
+        return self.filterobj.get_forces().ravel()
 
     @cached_property
     def _use_force_consistent_energy(self):

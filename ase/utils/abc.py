@@ -20,7 +20,11 @@ class Optimizable(collections.abc.Sized):
         ...
 
     @abstractmethod
-    def get_forces(self):
+    def get_gradient(self):
+        # Callers who want Nx3 will do ".get_gradient().reshape(-1, 3)".
+        # We can probably weed out most such reshapings.
+        # Grep for the above expression in order to find places that should
+        # be updated.
         ...
 
     @abstractmethod

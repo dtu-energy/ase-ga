@@ -148,7 +148,7 @@ class FIRE2(Optimizer):
         optimizable = self.optimizable
 
         if f is None:
-            f = optimizable.get_forces()
+            f = optimizable.get_gradient().reshape(-1, 3)
 
         if self.v is None:
             self.v = np.zeros((len(optimizable), 3))
@@ -172,7 +172,7 @@ class FIRE2(Optimizer):
                 self.v[:] *= 0.0
 
         # euler semi implicit
-        f = optimizable.get_forces()
+        f = optimizable.get_gradient().reshape(-1, 3)
         self.v += self.dt * f
 
         if self.use_abc:

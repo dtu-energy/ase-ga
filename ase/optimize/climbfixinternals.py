@@ -179,7 +179,8 @@ class BFGSClimbFixInternals(BFGS):
 
     def get_total_forces(self):
         """Return forces obeying all constraints plus projected forces."""
-        return self.optimizable.get_forces() + self.get_projected_forces()
+        forces = self.optimizable.get_gradient().reshape(-1, 3)
+        return forces + self.get_projected_forces()
 
     def converged(self, forces=None):
         """Did the optimization converge based on the total forces?"""

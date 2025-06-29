@@ -165,7 +165,7 @@ class FIRE(Optimizer):
         optimizable = self.optimizable
 
         if f is None:
-            f = optimizable.get_forces()
+            f = optimizable.get_gradient().reshape(-1, 3)
 
         if self.v is None:
             self.v = np.zeros((len(optimizable), 3))

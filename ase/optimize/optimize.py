@@ -34,8 +34,8 @@ class OptimizableAtoms(Optimizable):
     def set_positions(self, positions):
         self.atoms.set_positions(positions)
 
-    def get_forces(self):
-        return self.atoms.get_forces()
+    def get_gradient(self):
+        return self.atoms.get_forces().ravel()
 
     @cached_property
     def _use_force_consistent_energy(self):
@@ -233,7 +233,7 @@ class Dynamics(IOContext):
         self.max_steps = self.nsteps + steps
 
         # compute the initial step
-        self.optimizable.get_forces()
+        self.optimizable.get_gradient()
 
         # log the initial step
         if self.nsteps == 0:
@@ -419,12 +419,12 @@ class Optimizer(Dynamics):
     def converged(self, forces=None):
         """Did the optimization converge?"""
         if forces is None:
-            forces = self.optimizable.get_forces()
+            forces = self.optimizable.get_gradient().reshape(-1, 3)
         return self.optimizable.converged(forces, self.fmax)
 
     def log(self, forces=None):
         if forces is None:
-            forces = self.optimizable.get_forces()
+            forces = self.optimizable.get_gradient().reshape(-1, 3)
         fmax = sqrt((forces ** 2).sum(axis=1).max())
         e = self.optimizable.get_value()
         T = time.localtime()

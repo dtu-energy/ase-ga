@@ -124,7 +124,7 @@ class LBFGS(Optimizer):
         then take it"""
 
         if forces is None:
-            forces = self.optimizable.get_forces()
+            forces = self.optimizable.get_gradient().reshape(-1, 3)
 
         pos = self.optimizable.get_positions()
 
@@ -233,7 +233,7 @@ class LBFGS(Optimizer):
         self.optimizable.set_positions(x.reshape(-1, 3))
         self.force_calls += 1
         # Remember that forces are minus the gradient!
-        return - self.optimizable.get_forces().reshape(-1)
+        return - self.optimizable.get_gradient()
 
     def line_search(self, r, g, e):
         self.p = self.p.ravel()

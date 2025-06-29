@@ -97,7 +97,7 @@ class BFGS(Optimizer):
         optimizable = self.optimizable
 
         if forces is None:
-            forces = optimizable.get_forces()
+            forces = optimizable.get_gradient().reshape(-1, 3)
 
         pos = optimizable.get_positions()
         dpos, steplengths = self.prepare_step(pos, forces)
@@ -174,10 +174,10 @@ class BFGS(Optimizer):
         self.H = None
         atoms = traj[0]
         pos0 = atoms.get_positions().ravel()
-        forces0 = atoms.get_forces().ravel()
+        forces0 = atoms.get_gradient()
         for atoms in traj:
             pos = atoms.get_positions().ravel()
-            forces = atoms.get_forces().ravel()
+            forces = atoms.get_gradient()
             self.update(pos, forces, pos0, forces0)
             pos0 = pos
             forces0 = forces

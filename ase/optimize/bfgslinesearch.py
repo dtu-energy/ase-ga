@@ -109,7 +109,7 @@ class BFGSLineSearch(Optimizer):
         optimizable = self.optimizable
 
         if forces is None:
-            forces = optimizable.get_forces()
+            forces = optimizable.get_gradient().reshape(-1, 3)
 
         r = optimizable.get_positions()
         r = r.reshape(-1)
@@ -182,7 +182,7 @@ class BFGSLineSearch(Optimizer):
         self.force_calls += 1
         # Remember that forces are minus the gradient!
         # Scale the problem as SciPy uses I as initial Hessian.
-        forces = self.optimizable.get_forces().reshape(-1)
+        forces = self.optimizable.get_gradient()
         return - forces / self.alpha
 
     def replay_trajectory(self, traj):
@@ -211,7 +211,7 @@ class BFGSLineSearch(Optimizer):
         if self.logfile is None:
             return
         if forces is None:
-            forces = self.optimizable.get_forces()
+            forces = self.optimizable.get_gradient().reshape(-1, 3)
         fmax = sqrt((forces**2).sum(axis=1).max())
         e = self.optimizable.get_value()
         T = time.localtime()

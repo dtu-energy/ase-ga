@@ -292,10 +292,10 @@ class GoodOldQuasiNewton(Optimizer):
         """
 
         if forces is None:
-            forces = self.optimizable.get_forces()
+            forces = self.optimizable.get_gradient().reshape(-1, 3)
 
         pos = self.optimizable.get_positions().ravel()
-        G = -self.optimizable.get_forces().ravel()
+        G = -self.optimizable.get_gradient()
 
         energy = self.optimizable.get_value()
 

@@ -65,7 +65,7 @@ class MDMin(Optimizer):
         optimizable = self.optimizable
 
         if forces is None:
-            forces = optimizable.get_forces()
+            forces = optimizable.get_gradient().reshape(-1, 3)
 
         if self.v is None:
             self.v = np.zeros((len(optimizable), 3))
