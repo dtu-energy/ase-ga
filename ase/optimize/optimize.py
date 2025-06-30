@@ -28,14 +28,11 @@ class OptimizableAtoms(Optimizable):
     def __init__(self, atoms):
         self.atoms = atoms
 
-    def get_positions(self):
-        return self.atoms.get_positions()
-
     def get_x(self):
         return self.atoms.get_positions().ravel()
 
-    def set_positions(self, positions):
-        self.atoms.set_positions(positions)
+    def set_x(self, x):
+        self.atoms.set_positions(x.reshape(-1, 3))
 
     def get_gradient(self):
         return self.atoms.get_forces().ravel()

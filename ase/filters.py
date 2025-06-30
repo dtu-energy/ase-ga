@@ -28,6 +28,9 @@ class OptimizableFilter(Optimizable):
     def set_positions(self, positions):
         self.filterobj.set_positions(positions)
 
+    def set_x(self, x):
+        self.set_positions(x.reshape(-1, 3))
+
     def get_gradient(self):
         return self.filterobj.get_forces().ravel()
 

@@ -270,14 +270,14 @@ class NEBOptimizable(Optimizable):
     def get_value(self):
         return self.neb.get_potential_energy()
 
-    def get_positions(self):
-        return self.neb.get_positions()
-
     def get_x(self):
         return self.neb.get_positions().ravel()
 
     def set_positions(self, positions):
         self.neb.set_positions(positions)
+
+    def set_x(self, x):
+        self.neb.set_positions(x.reshape(-1, 3))
 
     def __len__(self):
         return len(self.neb)
