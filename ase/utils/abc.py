@@ -1,6 +1,3 @@
-# fmt: off
-
-import collections
 from abc import abstractmethod
 
 import numpy as np
@@ -10,37 +7,45 @@ import numpy as np
 # Can we find a better way?
 
 
-class Optimizable:  # (collections.abc.Sized):
+class Optimizable:
     @abstractmethod
-    def get_x(self):
-        ...
+    def ndofs(self) -> int:
+        """Return number of degrees of freedom."""
 
     @abstractmethod
-    def set_x(self, x):
-        ...
+    def get_x(self) -> np.ndarray:
+        """Return current coordinates as a flat ndarray."""
 
     @abstractmethod
-    def get_gradient(self):
+    def set_x(self, x: np.ndarray) -> None:
+        """Set flat ndarray as current coordinates."""
+
+    @abstractmethod
+    def get_gradient(self) -> np.ndarray:
+        """Return gradient at current coordinates as flat ndarray."""
         # Callers who want Nx3 will do ".get_gradient().reshape(-1, 3)".
         # We can probably weed out most such reshapings.
         # Grep for the above expression in order to find places that should
         # be updated.
-        ...
 
     @abstractmethod
-    def get_value(self):
-        ...
+    def get_value(self) -> float:
+        """Return function value at current coordinates."""
 
     @abstractmethod
     def iterimages(self):
-        ...
+        """Yield domain objects that can be saved as trajectory.
 
-    @abstractmethod
-    def ndofs(self):
-        ...
+        For example this can yield Atoms objects if the optimizer
+        has a trajectory that can write Atoms objects."""
 
-    def converged(self, forces, fmax):
+    def converged(self, forces: np.ndarray, fmax: float) -> bool:
+        """Standard implementation of convergence criterion.
+
+        This assumes that forces are the actual (Nx3) forces.
+        We can hopefully change this."""
         return np.linalg.norm(forces, axis=1).max() < fmax
 
-    def __ase_optimizable__(self):
+    def __ase_optimizable__(self) -> 'Optimizable':
+        """Return self, being already an Optimizable."""
         return self
