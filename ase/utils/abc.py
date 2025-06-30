@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 import numpy as np
 
@@ -7,7 +7,7 @@ import numpy as np
 # Can we find a better way?
 
 
-class Optimizable:
+class Optimizable(ABC):
     @abstractmethod
     def ndofs(self) -> int:
         """Return number of degrees of freedom."""
