@@ -279,6 +279,9 @@ class NEBOptimizable(Optimizable):
     def __len__(self):
         return len(self.neb)
 
+    def ndofs(self):
+        return 3 * len(self.neb)
+
     def iterimages(self):
         return self.neb.iterimages()
 

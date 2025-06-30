@@ -51,6 +51,9 @@ class OptimizableFilter(Optimizable):
     def __len__(self):
         return len(self.filterobj)
 
+    def ndofs(self):
+        return 3 * len(self.filterobj)
+
     def iterimages(self):
         return self.filterobj.iterimages()
 

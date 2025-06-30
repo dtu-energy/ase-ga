@@ -69,6 +69,9 @@ class OptimizableAtoms(Optimizable):
         # of this to be the number of DOFs
         return len(self.atoms)
 
+    def ndofs(self):
+        return 3 * len(self.atoms)
+
 
 class Dynamics(IOContext):
     """Base-class for all MD and structure optimization classes."""
