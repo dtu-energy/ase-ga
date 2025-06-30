@@ -418,7 +418,7 @@ class Optimizer(Dynamics):
         """Did the optimization converge?"""
         if forces is None:
             forces = self.optimizable.get_gradient().reshape(-1, 3)
-        return self.optimizable.converged(forces, self.fmax)
+        return self.optimizable.converged(forces.ravel(), self.fmax)
 
     def log(self, forces=None):
         if forces is None:
