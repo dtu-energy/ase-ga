@@ -174,7 +174,8 @@ class BFGSClimbFixInternals(BFGS):
         """Return the projected forces along the constrained coordinate in
         uphill direction (negative sign)."""
         forces = self.constr2climb.projected_forces
-        forces = -forces.reshape(self.optimizable.get_positions().shape)
+        # XXX simplify me once optimizable shape shenanigans have converged
+        forces = -forces.reshape(self.optimizable.get_x().reshape(-1, 3).shape)
         return forces
 
     def get_total_forces(self):
