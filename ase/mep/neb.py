@@ -273,6 +273,9 @@ class NEBOptimizable(Optimizable):
     def get_positions(self):
         return self.neb.get_positions()
 
+    def get_x(self):
+        return self.neb.get_positions().ravel()
+
     def set_positions(self, positions):
         self.neb.set_positions(positions)
 

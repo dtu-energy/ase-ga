@@ -31,6 +31,9 @@ class OptimizableAtoms(Optimizable):
     def get_positions(self):
         return self.atoms.get_positions()
 
+    def get_x(self):
+        return self.atoms.get_positions().ravel()
+
     def set_positions(self, positions):
         self.atoms.set_positions(positions)
 

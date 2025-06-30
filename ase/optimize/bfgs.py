@@ -99,7 +99,7 @@ class BFGS(Optimizer):
         if forces is None:
             forces = optimizable.get_gradient().reshape(-1, 3)
 
-        pos = optimizable.get_positions()
+        pos = optimizable.get_x().reshape(-1, 3)
         dpos, steplengths = self.prepare_step(pos, forces)
         dpos = self.determine_step(dpos, steplengths)
         optimizable.set_positions(pos + dpos)

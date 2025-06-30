@@ -111,8 +111,7 @@ class BFGSLineSearch(Optimizer):
         if forces is None:
             forces = optimizable.get_gradient().reshape(-1, 3)
 
-        r = optimizable.get_positions()
-        r = r.reshape(-1)
+        r = optimizable.get_x()
         g = -forces.reshape(-1) / self.alpha
         p0 = self.p
         self.update(r, g, self.r0, self.g0, p0)

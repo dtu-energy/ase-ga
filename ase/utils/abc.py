@@ -15,9 +15,15 @@ class Optimizable(collections.abc.Sized):
     def get_positions(self):
         ...
 
+    def get_x(self):
+        return self.get_positions().ravel()
+
     @abstractmethod
     def set_positions(self, positions):
         ...
+
+    def set_x(self, x):
+        self.set_positions(x.reshape(-1, 3))
 
     @abstractmethod
     def get_gradient(self):
