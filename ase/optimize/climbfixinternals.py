@@ -190,9 +190,9 @@ class BFGSClimbFixInternals(BFGS):
         gradient = self.get_total_forces().ravel()
         return super().converged(gradient=gradient)
 
-    def log(self, forces=None):
-        forces = forces or self.get_total_forces()
-        super().log(forces=forces)
+    def log(self, gradient):
+        forces = self.get_total_forces()
+        super().log(gradient=forces.ravel())
 
 
 def get_fixinternals(atoms):

@@ -108,9 +108,9 @@ class CellAwareBFGS(BFGS):
             return Dynamics.run(self, steps=steps)
         return Dynamics.run(self)
 
-    def log(self, forces=None):
-        if forces is None:
-            forces = self.atoms.atoms.get_forces()
+    def log(self, gradient):
+        # XXX ignoring gradient
+        forces = self.atoms.atoms.get_forces()
         fmax = (forces ** 2).sum(axis=1).max() ** 0.5
         e = self.optimizable.get_value()
         T = time.localtime()

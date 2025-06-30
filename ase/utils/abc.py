@@ -45,8 +45,11 @@ class Optimizable(ABC):
         This assumes that forces are the actual (Nx3) forces.
         We can hopefully change this."""
         assert gradient.ndim == 1
-        forces = gradient.reshape(-1, 3)
-        return np.linalg.norm(forces, axis=1).max() < fmax
+        return self.gradient_norm(gradient) < fmax
+
+    def gradient_norm(self, gradient):
+        forces = gradient.reshape(-1, 3)  # XXX Cartesian
+        return np.linalg.norm(forces, axis=1).max()
 
     def __ase_optimizable__(self) -> 'Optimizable':
         """Return self, being already an Optimizable."""

@@ -231,11 +231,11 @@ class Dynamics(IOContext):
         self.max_steps = self.nsteps + steps
 
         # compute the initial step
-        self.optimizable.get_gradient()
+        gradient = self.optimizable.get_gradient()
 
         # log the initial step
         if self.nsteps == 0:
-            self.log()
+            self.log(gradient)
 
             # we write a trajectory file if it is None
             if self.trajectory is None:
@@ -257,7 +257,8 @@ class Dynamics(IOContext):
             self.nsteps += 1
 
             # log the step
-            self.log()
+            gradient = self.optimizable.get_gradient()
+            self.log(gradient)
             self.call_observers()
 
             # check convergence
@@ -292,7 +293,7 @@ class Dynamics(IOContext):
         Optimizer """
         return False
 
-    def log(self, *args):
+    def log(self, *args, **kwargs):
         """ a dummy function as placeholder for a real logger, e.g. in
         Optimizer """
         return True
@@ -421,10 +422,8 @@ class Optimizer(Dynamics):
         assert gradient.ndim == 1
         return self.optimizable.converged(gradient, self.fmax)
 
-    def log(self, forces=None):
-        if forces is None:
-            forces = self.optimizable.get_gradient().reshape(-1, 3)
-        fmax = sqrt((forces ** 2).sum(axis=1).max())
+    def log(self, gradient):
+        fmax = self.optimizable.gradient_norm(gradient)
         e = self.optimizable.get_value()
         T = time.localtime()
         if self.logfile is not None:

@@ -206,12 +206,10 @@ class BFGSLineSearch(Optimizer):
             self.r0 = r0
             self.g0 = g0
 
-    def log(self, forces=None):
+    def log(self, gradient):
         if self.logfile is None:
             return
-        if forces is None:
-            forces = self.optimizable.get_gradient().reshape(-1, 3)
-        fmax = sqrt((forces**2).sum(axis=1).max())
+        fmax = self.optimizable.gradient_norm(gradient)
         e = self.optimizable.get_value()
         T = time.localtime()
         name = self.__class__.__name__

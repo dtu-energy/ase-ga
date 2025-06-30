@@ -119,7 +119,8 @@ class SciPyOptimizer(Optimizer):
         try:
             # As SciPy does not log the zeroth iteration, we do that manually
             if self.nsteps == 0:
-                self.log()
+                gradient = self.optimizable.get_gradient()
+                self.log(gradient)
                 self.call_observers()
 
             self.max_steps = steps + self.nsteps
