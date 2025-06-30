@@ -122,6 +122,9 @@ class BFGSClimbFixInternals(BFGS):
         self.autolog = 'logfile' not in self.optB_kwargs
         self.autotraj = 'trajectory' not in self.optB_kwargs
 
+    def Nx3(self, array):
+        return array.reshape(-1, 3)
+
     def read(self):
         (self.H, self.pos0, self.forces0, self.maxstep,
          self.targetvalue) = self.load()
@@ -138,14 +141,15 @@ class BFGSClimbFixInternals(BFGS):
     def pretend2climb(self):
         """Get directions for climbing and climb with optimizer 'A'."""
         proj_forces = self.get_projected_forces()
-        pos = self.optimizable.get_x().reshape(-1, 3)
+        pos = self.optimizable.get_x()
         dpos, steplengths = self.prepare_step(pos, proj_forces)
         dpos = self.determine_step(dpos, steplengths)
         return pos, dpos
 
     def update_positions_and_targetvalue(self, pos, dpos):
         """Adjust constrained targetvalue of constraint and update positions."""
-        self.constr2climb.adjust_positions(pos, pos + dpos)  # update sigma
+        self.constr2climb.adjust_positions(
+            self.Nx3(pos), self.Nx3(pos + dpos))  # update sigma
         self.targetvalue += self.constr2climb.sigma          # climb constraint
         self.constr2climb.targetvalue = self.targetvalue     # adjust positions
         # XXX very magical ...
@@ -176,12 +180,12 @@ class BFGSClimbFixInternals(BFGS):
         uphill direction (negative sign)."""
         forces = self.constr2climb.projected_forces
         # XXX simplify me once optimizable shape shenanigans have converged
-        forces = -forces.reshape(self.optimizable.get_x().reshape(-1, 3).shape)
+        forces = -forces.ravel()
         return forces
 
     def get_total_forces(self):
         """Return forces obeying all constraints plus projected forces."""
-        forces = self.optimizable.get_gradient().reshape(-1, 3)
+        forces = self.optimizable.get_gradient()
         return forces + self.get_projected_forces()
 
     def converged(self, gradient):

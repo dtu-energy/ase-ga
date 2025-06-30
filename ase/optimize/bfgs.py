@@ -93,25 +93,26 @@ class BFGS(Optimizer):
         else:
             self.H, self.pos0, self.forces0, self.maxstep = file
 
-    def step(self, forces=None):
+    def step(self, gradient=None):
         optimizable = self.optimizable
 
-        if forces is None:
-            forces = optimizable.get_gradient().reshape(-1, 3)
+        if gradient is None:
+            gradient = optimizable.get_gradient()
 
-        pos = optimizable.get_x().reshape(-1, 3)
-        dpos, steplengths = self.prepare_step(pos, forces)
+        pos = optimizable.get_x()
+        dpos, steplengths = self.prepare_step(pos, gradient)
         dpos = self.determine_step(dpos, steplengths)
-        optimizable.set_x((pos + dpos).ravel())
+        optimizable.set_x(pos + dpos)
         if isinstance(self.atoms, UnitCellFilter):
             self.dump((self.H, self.pos0, self.forces0, self.maxstep,
                        self.atoms.orig_cell))
         else:
             self.dump((self.H, self.pos0, self.forces0, self.maxstep))
 
-    def prepare_step(self, pos, forces):
-        forces = forces.reshape(-1)
-        self.update(pos.flat, forces, self.pos0, self.forces0)
+    def prepare_step(self, pos, gradient):
+        pos = pos.ravel()
+        gradient = gradient.ravel()
+        self.update(pos, gradient, self.pos0, self.forces0)
         omega, V = eigh(self.H)
 
         # FUTURE: Log this properly
@@ -126,10 +127,12 @@ class BFGS(Optimizer):
         #         self.logfile.write(msg)
         #         self.logfile.flush()
 
-        dpos = np.dot(V, np.dot(forces, V) / np.fabs(omega)).reshape((-1, 3))
-        steplengths = (dpos**2).sum(1)**0.5
-        self.pos0 = pos.flat.copy()
-        self.forces0 = forces.copy()
+        dpos = np.dot(V, np.dot(gradient, V) / np.fabs(omega))
+        # XXX Here we are calling gradient_norm() on some positions.
+        # Should there be a general norm concept
+        steplengths = self.optimizable.gradient_norm(dpos)
+        self.pos0 = pos
+        self.forces0 = gradient.copy()
         return dpos, steplengths
 
     def determine_step(self, dpos, steplengths):
