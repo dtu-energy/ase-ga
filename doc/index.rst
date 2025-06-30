@@ -73,6 +73,8 @@ News
 
 * :ref:`ASE version 3.23.0 <releasenotes>` released (31 May 2024).
 
+* Workshop focusing on `Open Science with the Atomic Simulation Environment <https://www.cecam.org/workshop-details/open-science-with-the-atomic-simulation-environment-1245>`_ held at Daresbury Laboratory, UK April 24-28, 2023. (`Workshop site including tutorials <https://ase-workshop-2023.github.io/home/index.html>`_)
+
 * :ref:`ASE version 3.22.1 <releasenotes>` released (1 December 2021).
 
 * :ref:`ASE version 3.22.0 <releasenotes>` released (24 June 2021).
