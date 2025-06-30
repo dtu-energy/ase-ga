@@ -184,7 +184,7 @@ class FIRE(Optimizer):
                         self.position_reset_callback(
                             optimizable, self.r_last, e,
                             self.e_last)
-                    optimizable.set_positions(self.r_last)
+                    optimizable.set_x(self.r_last.ravel())
                     is_uphill = True
                 self.e_last = optimizable.get_value()
                 self.r_last = optimizable.get_x().reshape(-1, 3).copy()
@@ -210,5 +210,5 @@ class FIRE(Optimizer):
         if normdr > self.maxstep:
             dr = self.maxstep * dr / normdr
         r = optimizable.get_x().reshape(-1, 3)
-        optimizable.set_positions(r + dr)
+        optimizable.set_x((r + dr).ravel())
         self.dump((self.v, self.dt))

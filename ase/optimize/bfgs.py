@@ -102,7 +102,7 @@ class BFGS(Optimizer):
         pos = optimizable.get_x().reshape(-1, 3)
         dpos, steplengths = self.prepare_step(pos, forces)
         dpos = self.determine_step(dpos, steplengths)
-        optimizable.set_positions(pos + dpos)
+        optimizable.set_x((pos + dpos).ravel())
         if isinstance(self.atoms, UnitCellFilter):
             self.dump((self.H, self.pos0, self.forces0, self.maxstep,
                        self.atoms.orig_cell))

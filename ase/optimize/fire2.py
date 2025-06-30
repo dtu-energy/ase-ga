@@ -168,7 +168,7 @@ class FIRE2(Optimizer):
 
                 dr = - 0.5 * self.dt * self.v
                 r = optimizable.get_x().reshape(-1, 3)
-                optimizable.set_positions(r + dr)
+                optimizable.set_x((r + dr).ravel())
                 self.v[:] *= 0.0
 
         # euler semi implicit
@@ -211,6 +211,6 @@ class FIRE2(Optimizer):
                 dr = self.maxstep * dr / normdr
 
         r = optimizable.get_x().reshape(-1, 3)
-        optimizable.set_positions(r + dr)
+        optimizable.set_x((r + dr).ravel())
 
         self.dump((self.v, self.dt))

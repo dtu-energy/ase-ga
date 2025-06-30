@@ -131,7 +131,7 @@ class BFGSLineSearch(Optimizer):
             raise RuntimeError("LineSearch failed!")
 
         dr = self.alpha_k * self.p
-        optimizable.set_positions((r + dr).reshape(len(optimizable), -1))
+        optimizable.set_x(r + dr)
         self.r0 = r
         self.g0 = g
         self.dump((self.r0, self.g0, self.e0, self.task, self.H))
@@ -170,14 +170,14 @@ class BFGSLineSearch(Optimizer):
 
     def func(self, x):
         """Objective function for use of the optimizers"""
-        self.optimizable.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_x(x)
         self.function_calls += 1
         # Scale the problem as SciPy uses I as initial Hessian.
         return self.optimizable.get_value() / self.alpha
 
     def fprime(self, x):
         """Gradient of the objective function for use of the optimizers"""
-        self.optimizable.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_x(x)
         self.force_calls += 1
         # Remember that forces are minus the gradient!
         # Scale the problem as SciPy uses I as initial Hessian.

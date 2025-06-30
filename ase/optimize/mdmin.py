@@ -88,5 +88,5 @@ class MDMin(Optimizer):
         # than self.maxstep are scaled to it.
         scaling = self.maxstep / (1e-6 + np.max(np.linalg.norm(dpos, axis=1)))
         dpos *= np.clip(scaling, 0.0, 1.0)
-        optimizable.set_positions(pos + dpos)
+        optimizable.set_x((pos + dpos).ravel())
         self.dump((self.v, self.dt))

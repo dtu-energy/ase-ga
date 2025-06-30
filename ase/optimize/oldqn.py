@@ -313,7 +313,7 @@ class GoodOldQuasiNewton(Optimizer):
 
             if (energy - self.oldenergy) > de:
                 self.write_log('reject step')
-                self.optimizable.set_positions(self.oldpos.reshape((-1, 3)))
+                self.optimizable.set_x(self.oldpos)
                 G = self.oldG
                 energy = self.oldenergy
                 self.radius *= 0.5
@@ -371,7 +371,7 @@ class GoodOldQuasiNewton(Optimizer):
         self.gbar_estimate = self.get_gbar_estimate(D, Gbar, b)
         self.old_gbar = Gbar
 
-        self.optimizable.set_positions(pos.reshape((-1, 3)))
+        self.optimizable.set_x(pos)
 
     def get_energy_estimate(self, D, Gbar, b):
 

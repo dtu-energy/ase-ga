@@ -260,7 +260,7 @@ class GPMin(Optimizer, GaussianProcess):
         self.update(r0, e0, f)
 
         r1 = self.relax_model(r0)
-        optimizable.set_positions(r1.reshape(-1, 3))
+        optimizable.set_x(r1)
         e1 = optimizable.get_value()
         f1 = optimizable.get_gradient().reshape(-1, 3)
         self.function_calls += 1
@@ -270,7 +270,7 @@ class GPMin(Optimizer, GaussianProcess):
             self.update(r1, e1, f1)
             r1 = self.relax_model(r0)
 
-            optimizable.set_positions(r1.reshape(-1, 3))
+            optimizable.set_x(r1)
             e1 = optimizable.get_value()
             f1 = optimizable.get_gradient().reshape(-1, 3)
             self.function_calls += 1

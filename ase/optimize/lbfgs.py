@@ -161,7 +161,7 @@ class LBFGS(Optimizer):
             self.force_calls += 1
             self.function_calls += 1
             dr = self.determine_step(self.p) * self.damping
-        self.optimizable.set_positions(pos + dr)
+        self.optimizable.set_x((pos + dr).ravel())
 
         self.iteration += 1
         self.r0 = pos
@@ -224,13 +224,13 @@ class LBFGS(Optimizer):
 
     def func(self, x):
         """Objective function for use of the optimizers"""
-        self.optimizable.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_x(x)
         self.function_calls += 1
         return self.optimizable.get_value()
 
     def fprime(self, x):
         """Gradient of the objective function for use of the optimizers"""
-        self.optimizable.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_x(x)
         self.force_calls += 1
         # Remember that forces are minus the gradient!
         return - self.optimizable.get_gradient()

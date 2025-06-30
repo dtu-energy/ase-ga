@@ -147,7 +147,7 @@ class BasinHopping(Dynamics):
         """Return the energy of the nearest local minimum."""
         if np.any(self.positions != positions):
             self.positions = positions
-            self.optimizable.set_positions(positions)
+            self.optimizable.set_x(positions.ravel())
 
             with self.optimizer(self.optimizable,
                                 logfile=self.optimizer_logfile) as opt:
