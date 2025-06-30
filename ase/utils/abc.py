@@ -15,9 +15,6 @@ class Optimizable(collections.abc.Sized):
     def get_x(self):
         ...
 
-    def set_positions(self, positions):
-        self.set_x(positions.ravel())
-
     @abstractmethod
     def set_x(self, x):
         ...
