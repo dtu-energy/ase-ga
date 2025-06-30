@@ -167,7 +167,7 @@ class FIRE2(Optimizer):
                 self.a = self.astart
 
                 dr = - 0.5 * self.dt * self.v
-                r = optimizable.get_positions()
+                r = optimizable.get_x().reshape(-1, 3)
                 optimizable.set_positions(r + dr)
                 self.v[:] *= 0.0
 
@@ -210,7 +210,7 @@ class FIRE2(Optimizer):
             if normdr > self.maxstep:
                 dr = self.maxstep * dr / normdr
 
-        r = optimizable.get_positions()
+        r = optimizable.get_x().reshape(-1, 3)
         optimizable.set_positions(r + dr)
 
         self.dump((self.v, self.dt))

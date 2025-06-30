@@ -294,7 +294,7 @@ class GoodOldQuasiNewton(Optimizer):
         if forces is None:
             forces = self.optimizable.get_gradient().reshape(-1, 3)
 
-        pos = self.optimizable.get_positions().ravel()
+        pos = self.optimizable.get_x()
         G = -self.optimizable.get_gradient()
 
         energy = self.optimizable.get_value()
@@ -363,7 +363,7 @@ class GoodOldQuasiNewton(Optimizer):
         for i in range(n):
             step += D[i] * V[i]
 
-        pos = self.optimizable.get_positions().ravel()
+        pos = self.optimizable.get_x()
         pos += step
 
         energy_estimate = self.get_energy_estimate(D, Gbar, b)

@@ -73,17 +73,17 @@ class SciPyOptimizer(Optimizer):
 
         This class is mostly usable for subclasses wanting to redefine the
         parameters (and the objective function)"""
-        return self.optimizable.get_positions().reshape(-1)
+        return self.optimizable.get_x()
 
     def f(self, x):
         """Objective function for use of the optimizers"""
-        self.optimizable.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_x(x)
         # Scale the problem as SciPy uses I as initial Hessian.
         return self.optimizable.get_value() / self.H0
 
     def fprime(self, x):
         """Gradient of the objective function for use of the optimizers"""
-        self.optimizable.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_x(x)
         self.force_calls += 1
 
         if self.callback_always:
@@ -244,11 +244,11 @@ class SciPyGradientlessOptimizer(Optimizer):
 
         This class is mostly usable for subclasses wanting to redefine the
         parameters (and the objective function)"""
-        return self.optimizable.get_positions().reshape(-1)
+        return self.optimizable.get_x().reshape(-1)
 
     def f(self, x):
         """Objective function for use of the optimizers"""
-        self.optimizable.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_x(x)
         self.function_calls += 1
         # Scale the problem as SciPy uses I as initial Hessian.
         return self.optimizable.get_value()

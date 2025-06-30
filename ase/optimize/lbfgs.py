@@ -126,7 +126,7 @@ class LBFGS(Optimizer):
         if forces is None:
             forces = self.optimizable.get_gradient().reshape(-1, 3)
 
-        pos = self.optimizable.get_positions()
+        pos = self.optimizable.get_x().reshape(-1, 3)
 
         self.update(pos, forces, self.r0, self.f0)
 

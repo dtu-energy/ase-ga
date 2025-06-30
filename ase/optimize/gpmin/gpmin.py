@@ -255,7 +255,7 @@ class GPMin(Optimizer, GaussianProcess):
         if f is None:
             f = optimizable.get_gradient().reshape(-1, 3)
 
-        r0 = optimizable.get_positions().reshape(-1)
+        r0 = optimizable.get_x()
         e0 = optimizable.get_value()
         self.update(r0, e0, f)
 

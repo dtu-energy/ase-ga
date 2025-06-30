@@ -79,7 +79,7 @@ class MDMin(Optimizer):
                 self.v[:] = forces * vf / np.vdot(forces, forces)
 
         self.v += 0.5 * self.dt * forces
-        pos = optimizable.get_positions()
+        pos = optimizable.get_x().reshape(-1, 3)
         dpos = self.dt * self.v
 
         # For any dpos magnitude larger than maxstep, scaling
