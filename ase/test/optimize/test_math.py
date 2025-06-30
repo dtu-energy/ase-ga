@@ -53,8 +53,10 @@ def test_booth():
 
     x0 = [1.234, 2.345]
     target = BoothFunctionOptimizable(x0)
-    opt = BFGS(target)
-    opt.run(fmax=1e-9)
 
-    assert target.xy == pytest.approx([1, 3], abs=1e-7)
-    assert target.get_value() == pytest.approx(0)
+    eps = 1e-8
+    with BFGS(target) as opt:
+        opt.run(fmax=eps)
+
+    assert target.xy == pytest.approx([1, 3], abs=eps)
+    assert target.get_value() == pytest.approx(0, abs=eps**2)
