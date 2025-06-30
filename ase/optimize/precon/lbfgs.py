@@ -398,10 +398,10 @@ class PreconLBFGS(Optimizer):
                     (name, self.nsteps, T[3], T[4], T[5], e, fmax))
             self.logfile.flush()
 
-    def converged(self, forces=None):
+    def converged(self, gradient):
         """Did the optimization converge?"""
-        if forces is None:
-            forces = self._actual_atoms.get_forces()
+        # XXX ignoring gradient
+        forces = self._actual_atoms.get_forces()
         if isinstance(self._actual_atoms, UnitCellFilter):
             natoms = len(self._actual_atoms.atoms)
             forces, stress = forces[:natoms], self._actual_atoms.stress

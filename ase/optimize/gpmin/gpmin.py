@@ -210,7 +210,6 @@ class GPMin(Optimizer, GaussianProcess):
         """
         # update the training set
         self.x_list.append(r)
-        f = f.reshape(-1)
         y = np.append(np.array(e).reshape(-1), -f)
         self.y_list.append(y)
 
@@ -262,7 +261,7 @@ class GPMin(Optimizer, GaussianProcess):
         r1 = self.relax_model(r0)
         optimizable.set_x(r1)
         e1 = optimizable.get_value()
-        f1 = optimizable.get_gradient().reshape(-1, 3)
+        f1 = optimizable.get_gradient()
         self.function_calls += 1
         self.force_calls += 1
         count = 0
@@ -272,7 +271,7 @@ class GPMin(Optimizer, GaussianProcess):
 
             optimizable.set_x(r1)
             e1 = optimizable.get_value()
-            f1 = optimizable.get_gradient().reshape(-1, 3)
+            f1 = optimizable.get_gradient()
             self.function_calls += 1
             self.force_calls += 1
             if self.converged(f1):

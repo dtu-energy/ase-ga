@@ -214,5 +214,5 @@ class ODE12r(SciPyOptimizer):
                verbose=self.verbose,
                apply_precon=self.apply_precon,
                callback=self.callback,
-               converged=lambda F, X: self.converged(F.reshape(-1, 3)),
+               converged=lambda gradient, X: self.converged(gradient),
                rtol=self.rtol)

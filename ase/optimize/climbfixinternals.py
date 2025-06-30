@@ -160,7 +160,8 @@ class BFGSClimbFixInternals(BFGS):
         fmax = self.get_scaled_fmax()
         with self.optB(self.optimizable.atoms, **self.optB_kwargs) as opt:
             opt.run(fmax)  # optimize with scaled fmax
-            if self.converged() and fmax > self.optB_fmax:
+            grad = self.optimizable.get_gradient()
+            if self.converged(grad) and fmax > self.optB_fmax:
                 # (final) optimization with desired fmax
                 opt.run(self.optB_fmax)
 
@@ -183,10 +184,11 @@ class BFGSClimbFixInternals(BFGS):
         forces = self.optimizable.get_gradient().reshape(-1, 3)
         return forces + self.get_projected_forces()
 
-    def converged(self, forces=None):
+    def converged(self, gradient):
         """Did the optimization converge based on the total forces?"""
-        forces = forces or self.get_total_forces()
-        return super().converged(forces=forces)
+        # XXX ignoring gradient
+        gradient = self.get_total_forces().ravel()
+        return super().converged(gradient=gradient)
 
     def log(self, forces=None):
         forces = forces or self.get_total_forces()
