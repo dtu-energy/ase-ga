@@ -151,7 +151,7 @@ class FIRE2(Optimizer):
             f = optimizable.get_gradient().reshape(-1, 3)
 
         if self.v is None:
-            self.v = np.zeros((len(optimizable), 3))
+            self.v = np.zeros(optimizable.ndofs()).reshape(-1, 3)
         else:
 
             vf = np.vdot(f, self.v)

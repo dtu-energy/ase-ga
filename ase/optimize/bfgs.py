@@ -79,7 +79,7 @@ class BFGS(Optimizer):
 
     def initialize(self):
         # initial hessian
-        self.H0 = np.eye(3 * len(self.optimizable)) * self.alpha
+        self.H0 = np.eye(self.optimizable.ndofs()) * self.alpha
 
         self.H = None
         self.pos0 = None

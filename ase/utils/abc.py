@@ -10,7 +10,7 @@ import numpy as np
 # Can we find a better way?
 
 
-class Optimizable(collections.abc.Sized):
+class Optimizable:  # (collections.abc.Sized):
     @abstractmethod
     def get_x(self):
         ...

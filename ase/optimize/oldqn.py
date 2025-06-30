@@ -166,7 +166,7 @@ class GoodOldQuasiNewton(Optimizer):
         self.verbosity = verbosity
         self.diagonal = diagonal
 
-        n = len(self.optimizable) * 3
+        n = self.optimizable.ndofs()
         if radius is None:
             self.radius = 0.05 * np.sqrt(n) / 10.0
         else:
@@ -201,7 +201,7 @@ class GoodOldQuasiNewton(Optimizer):
 
     def set_default_hessian(self):
         # set unit matrix
-        n = len(self.optimizable) * 3
+        n = self.optimizable.ndofs()
         hessian = np.zeros((n, n))
         for i in range(n):
             hessian[i][i] = self.diagonal

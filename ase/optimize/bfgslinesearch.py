@@ -120,8 +120,8 @@ class BFGSLineSearch(Optimizer):
 
         self.p = -np.dot(self.H, g)
         p_size = np.sqrt((self.p**2).sum())
-        if p_size <= np.sqrt(len(optimizable) * 1e-10):
-            self.p /= (p_size / np.sqrt(len(optimizable) * 1e-10))
+        if p_size <= np.sqrt(optimizable.ndofs() / 3 * 1e-10):
+            self.p /= (p_size / np.sqrt(optimizable.ndofs() / 3 * 1e-10))
         ls = LineSearch()
         self.alpha_k, e, self.e0, self.no_update = \
             ls._line_search(self.func, self.fprime, r, self.p, g, e, self.e0,
@@ -137,9 +137,9 @@ class BFGSLineSearch(Optimizer):
         self.dump((self.r0, self.g0, self.e0, self.task, self.H))
 
     def update(self, r, g, r0, g0, p0):
-        self.I = eye(len(self.optimizable) * 3, dtype=int)
+        self.I = eye(self.optimizable.ndofs(), dtype=int)
         if self.H is None:
-            self.H = eye(3 * len(self.optimizable))
+            self.H = eye(self.optimizable.ndofs())
             # self.B = np.linalg.inv(self.H)
             return
         else:

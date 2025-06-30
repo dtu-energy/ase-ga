@@ -48,9 +48,6 @@ class OptimizableFilter(Optimizable):
         return self.filterobj.get_potential_energy(
             force_consistent=force_consistent)
 
-    def __len__(self):
-        return len(self.filterobj)
-
     def ndofs(self):
         return 3 * len(self.filterobj)
 

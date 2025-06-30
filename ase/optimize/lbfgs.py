@@ -156,7 +156,7 @@ class LBFGS(Optimizer):
         if self.use_line_search is True:
             e = self.func(pos)
             self.line_search(pos, g, e)
-            dr = (self.alpha_k * self.p).reshape(len(self.optimizable), -1)
+            dr = (self.alpha_k * self.p).reshape(-1, 3)
         else:
             self.force_calls += 1
             self.function_calls += 1
@@ -238,8 +238,8 @@ class LBFGS(Optimizer):
     def line_search(self, r, g, e):
         self.p = self.p.ravel()
         p_size = np.sqrt((self.p**2).sum())
-        if p_size <= np.sqrt(len(self.optimizable) * 1e-10):
-            self.p /= (p_size / np.sqrt(len(self.optimizable) * 1e-10))
+        if p_size <= np.sqrt(self.optimizable.ndofs() / 3 * 1e-10):
+            self.p /= (p_size / np.sqrt(self.optimizable.ndofs() / 3 * 1e-10))
         g = g.ravel()
         r = r.ravel()
         ls = LineSearch()

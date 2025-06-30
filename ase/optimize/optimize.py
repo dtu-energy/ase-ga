@@ -64,11 +64,6 @@ class OptimizableAtoms(Optimizable):
         # XXX document purpose of iterimages
         return self.atoms.iterimages()
 
-    def __len__(self):
-        # TODO: return 3 * len(self.atoms), because we want the length
-        # of this to be the number of DOFs
-        return len(self.atoms)
-
     def ndofs(self):
         return 3 * len(self.atoms)
 

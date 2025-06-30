@@ -276,9 +276,6 @@ class NEBOptimizable(Optimizable):
     def set_x(self, x):
         self.neb.set_positions(x.reshape(-1, 3))
 
-    def __len__(self):
-        return len(self.neb)
-
     def ndofs(self):
         return 3 * len(self.neb)
 
