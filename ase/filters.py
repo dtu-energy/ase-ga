@@ -22,8 +22,8 @@ class OptimizableFilter(Optimizable):
     def __init__(self, filterobj):
         self.filterobj = filterobj
 
-    def get_positions(self):
-        return self.filterobj.get_positions()
+    def get_x(self):
+        return self.filterobj.get_positions().ravel()
 
     def set_positions(self, positions):
         self.filterobj.set_positions(positions)

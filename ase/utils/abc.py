@@ -12,11 +12,8 @@ import numpy as np
 
 class Optimizable(collections.abc.Sized):
     @abstractmethod
-    def get_positions(self):
-        ...
-
     def get_x(self):
-        return self.get_positions().ravel()
+        ...
 
     @abstractmethod
     def set_positions(self, positions):
