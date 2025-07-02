@@ -140,9 +140,7 @@ def read_magres(fd, include_unrecognised=False):
 
         # Atom label, atom index and 3x3 tensor
         def sitensor33(name):
-            return lambda d: {'atom': {'label': data[0],
-                                       'index': int(data[1])},
-                              name: tensor33([float(x) for x in data[2:]])}
+            return lambda d: _parse_sitensor33(name, data)
 
         # 2x(Atom label, atom index) and 3x3 tensor
         def sisitensor33(name):
@@ -175,6 +173,79 @@ def read_magres(fd, include_unrecognised=False):
             data_dict[tag].append(tags[tag](data))
 
         return data_dict
+
+    def _unmunge_label_index(label_index: str) -> tuple[str, str]:
+        """Splits a label_index string into a label and an index,
+        where the index is always the final 3 digits.
+
+        This function handles cases where the site label and index are combined
+        in CASTEP magres files (versions < 23),
+        e.g., 'H1222' instead of 'H1' and '222'.
+
+        Since site labels can contain numbers (e.g., H1, H2, H1a),
+        we extract the index as the final 3 digits.
+        The remaining characters form the label.
+
+        Note: Only call this function when label and index are confirmed
+        to be combined (detected by the line having 10 fields instead of 11).
+
+        Parameters
+        ----------
+        label_index : str
+            The input string containing the combined label and index
+            (e.g., 'H1222')
+
+        Returns
+        -------
+        tuple[str, str]
+            A tuple of (label, index) strings (e.g., ('H1', '222'))
+
+        Raises
+        ------
+        RuntimeError
+            If the index is >999 (not supported by this solution))
+            If invalid data format or regex match failure
+
+        Examples
+        --------
+        >>> _unmunge_label_index('H1222')
+        ('H1', '222')
+        >>> _unmunge_label_index('C201')
+        ('C', '201')
+        >>> _unmunge_label_index('H23104')
+        ('H23', '104')
+        >>> _unmunge_label_index('H1a100')
+        ('H1a', '100')
+        """
+        match = re.match(r'(.+?)(\d{3})$', label_index)
+        if match:
+            label, index = match.groups()
+            if not isinstance(label, str) or not isinstance(index, str):
+                raise RuntimeError("Regex match produced non-string values")
+            if index == '000':
+                raise RuntimeError(
+                    "Index greater than 999 detected. This is not supported in "
+                    "magres files with munged label and indices. "
+                    "Try manually unmunging the label and index."
+                )
+            return (label, index)
+        raise RuntimeError('Invalid data in magres block. '
+                          'Check the site labels and indices.')
+
+    def _parse_sitensor33(name, data):
+        # We expect label, index, and then the 3x3 tensor
+        if len(data) == 10:
+            label, index = _unmunge_label_index(data[0])
+            data = [label, index] + data[1:]
+        if len(data) != 11:
+            raise ValueError(
+                f"Expected 11 values for {name} tensor data, "
+                f"got {len(data)}"
+            )
+
+        return {'atom': {'label': data[0],
+                         'index': int(data[1])},
+                name: tensor33([float(x) for x in data[2:]])}
 
     def parse_atoms_block(block):
         """
@@ -241,12 +312,6 @@ def read_magres(fd, include_unrecognised=False):
                      'calculation': parse_generic_block, }
 
     file_contents = fd.read()
-
-    # Solve incompatibility for atomic indices above 100
-    pattern_ms = r'(ms [a-zA-Z]{1,2})(\d+)'
-    file_contents = re.sub(pattern_ms, r'\g<1> \g<2>', file_contents)
-    pattern_efg = r'(efg [a-zA-Z]{1,2})(\d+)'
-    file_contents = re.sub(pattern_efg, r'\g<1> \g<2>', file_contents)
 
     # This works as a validity check
     version = get_version(file_contents)
