@@ -5,7 +5,7 @@ from ase.utils.abc import Optimizable
 
 
 class BoothFunctionOptimizable(Optimizable):
-    """
+    """Optimizable based on the “Booth” function.
 
     https://en.wikipedia.org/wiki/Test_functions_for_optimization
     """
