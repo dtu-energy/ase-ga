@@ -5,7 +5,6 @@ import time
 import warnings
 from collections.abc import Callable
 from functools import cached_property
-from math import sqrt
 from os.path import isfile
 from pathlib import Path
 from typing import IO, Any, Dict, List, Optional, Tuple, Union

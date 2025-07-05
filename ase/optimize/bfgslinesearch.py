@@ -11,7 +11,7 @@ import time
 from typing import IO, Optional, Union
 
 import numpy as np
-from numpy import absolute, eye, isinf, sqrt
+from numpy import absolute, eye, isinf
 
 from ase import Atoms
 from ase.optimize.optimize import Optimizer
