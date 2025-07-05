@@ -14,10 +14,10 @@ class BoothFunctionOptimizable(Optimizable):
         self.xy = np.array(x0)
 
     def get_x(self):
-        return np.array([*self.xy, 0])  # XXX
+        return self.xy.copy()
 
     def set_x(self, x):
-        self.xy[:] = x[:2]  # XXX
+        self.xy[:] = x
 
     @property
     def x(self):
@@ -39,13 +39,16 @@ class BoothFunctionOptimizable(Optimizable):
         x, y = self.xy
         a, b = self.ab(*self.xy)
         # XXX negative gradient
-        return -np.array([2 * a + 4 * b, 4 * a + 2 * b, 0])  # XXX
+        return -np.array([2 * a + 4 * b, 4 * a + 2 * b])
 
     def iterimages(self):
         return iter([])
 
     def ndofs(self):
-        return 3  # XXX len(self.xy) + 1
+        return len(self.xy)
+
+    def gradient_norm(self, gradient):
+        return np.linalg.norm(gradient)
 
 
 def test_booth():
