@@ -79,7 +79,7 @@ class BFGS(Optimizer):
 
     def initialize(self):
         # initial hessian
-        self.H0 = np.eye(3 * len(self.optimizable)) * self.alpha
+        self.H0 = np.eye(self.optimizable.ndofs()) * self.alpha
 
         self.H = None
         self.pos0 = None
@@ -97,12 +97,12 @@ class BFGS(Optimizer):
         optimizable = self.optimizable
 
         if forces is None:
-            forces = optimizable.get_forces()
+            forces = optimizable.get_gradient().reshape(-1, 3)
 
-        pos = optimizable.get_positions()
+        pos = optimizable.get_x().reshape(-1, 3)
         dpos, steplengths = self.prepare_step(pos, forces)
         dpos = self.determine_step(dpos, steplengths)
-        optimizable.set_positions(pos + dpos)
+        optimizable.set_x((pos + dpos).ravel())
         if isinstance(self.atoms, UnitCellFilter):
             self.dump((self.H, self.pos0, self.forces0, self.maxstep,
                        self.atoms.orig_cell))

@@ -124,9 +124,9 @@ class LBFGS(Optimizer):
         then take it"""
 
         if forces is None:
-            forces = self.optimizable.get_forces()
+            forces = self.optimizable.get_gradient().reshape(-1, 3)
 
-        pos = self.optimizable.get_positions()
+        pos = self.optimizable.get_x().reshape(-1, 3)
 
         self.update(pos, forces, self.r0, self.f0)
 
@@ -156,12 +156,12 @@ class LBFGS(Optimizer):
         if self.use_line_search is True:
             e = self.func(pos)
             self.line_search(pos, g, e)
-            dr = (self.alpha_k * self.p).reshape(len(self.optimizable), -1)
+            dr = (self.alpha_k * self.p).reshape(-1, 3)
         else:
             self.force_calls += 1
             self.function_calls += 1
             dr = self.determine_step(self.p) * self.damping
-        self.optimizable.set_positions(pos + dr)
+        self.optimizable.set_x((pos + dr).ravel())
 
         self.iteration += 1
         self.r0 = pos
@@ -224,22 +224,22 @@ class LBFGS(Optimizer):
 
     def func(self, x):
         """Objective function for use of the optimizers"""
-        self.optimizable.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_x(x)
         self.function_calls += 1
-        return self.optimizable.get_potential_energy()
+        return self.optimizable.get_value()
 
     def fprime(self, x):
         """Gradient of the objective function for use of the optimizers"""
-        self.optimizable.set_positions(x.reshape(-1, 3))
+        self.optimizable.set_x(x)
         self.force_calls += 1
         # Remember that forces are minus the gradient!
-        return - self.optimizable.get_forces().reshape(-1)
+        return - self.optimizable.get_gradient()
 
     def line_search(self, r, g, e):
         self.p = self.p.ravel()
         p_size = np.sqrt((self.p**2).sum())
-        if p_size <= np.sqrt(len(self.optimizable) * 1e-10):
-            self.p /= (p_size / np.sqrt(len(self.optimizable) * 1e-10))
+        if p_size <= np.sqrt(self.optimizable.ndofs() / 3 * 1e-10):
+            self.p /= (p_size / np.sqrt(self.optimizable.ndofs() / 3 * 1e-10))
         g = g.ravel()
         r = r.ravel()
         ls = LineSearch()

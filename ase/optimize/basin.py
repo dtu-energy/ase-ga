@@ -74,11 +74,11 @@ class BasinHopping(Dynamics):
         return d
 
     def initialize(self):
-        positions = self.optimizable.get_positions()
+        positions = self.optimizable.get_x().reshape(-1, 3)
         self.positions = np.zeros_like(positions)
         self.Emin = self.get_energy(positions) or 1.e32
-        self.rmin = self.optimizable.get_positions()
-        self.positions = self.optimizable.get_positions()
+        self.rmin = self.optimizable.get_x().reshape(-1, 3)
+        self.positions = self.optimizable.get_x().reshape(-1, 3)
         self.call_observers()
         self.log(-1, self.Emin, self.Emin)
 
@@ -97,7 +97,7 @@ class BasinHopping(Dynamics):
             if En < self.Emin:
                 # new minimum found
                 self.Emin = En
-                self.rmin = self.optimizable.get_positions()
+                self.rmin = self.optimizable.get_x().reshape(-1, 3)
                 self.call_observers()
             self.log(step, En, self.Emin)
 
@@ -147,7 +147,7 @@ class BasinHopping(Dynamics):
         """Return the energy of the nearest local minimum."""
         if np.any(self.positions != positions):
             self.positions = positions
-            self.optimizable.set_positions(positions)
+            self.optimizable.set_x(positions.ravel())
 
             with self.optimizer(self.optimizable,
                                 logfile=self.optimizer_logfile) as opt:
@@ -155,6 +155,6 @@ class BasinHopping(Dynamics):
             if self.lm_trajectory is not None:
                 self.lm_trajectory.write(self.optimizable)
 
-            self.energy = self.optimizable.get_potential_energy()
+            self.energy = self.optimizable.get_value()
 
         return self.energy

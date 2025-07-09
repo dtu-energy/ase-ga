@@ -264,20 +264,20 @@ class NEBOptimizable(Optimizable):
     def __init__(self, neb):
         self.neb = neb
 
-    def get_forces(self):
-        return self.neb.get_forces()
+    def get_gradient(self):
+        return self.neb.get_forces().ravel()
 
-    def get_potential_energy(self):
+    def get_value(self):
         return self.neb.get_potential_energy()
 
-    def get_positions(self):
-        return self.neb.get_positions()
+    def get_x(self):
+        return self.neb.get_positions().ravel()
 
-    def set_positions(self, positions):
-        self.neb.set_positions(positions)
+    def set_x(self, x):
+        self.neb.set_positions(x.reshape(-1, 3))
 
-    def __len__(self):
-        return len(self.neb)
+    def ndofs(self):
+        return 3 * len(self.neb)
 
     def iterimages(self):
         return self.neb.iterimages()

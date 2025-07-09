@@ -22,14 +22,14 @@ class OptimizableFilter(Optimizable):
     def __init__(self, filterobj):
         self.filterobj = filterobj
 
-    def get_positions(self):
-        return self.filterobj.get_positions()
+    def get_x(self):
+        return self.filterobj.get_positions().ravel()
 
-    def set_positions(self, positions):
-        self.filterobj.set_positions(positions)
+    def set_x(self, x):
+        self.filterobj.set_positions(x.reshape(-1, 3))
 
-    def get_forces(self):
-        return self.filterobj.get_forces()
+    def get_gradient(self):
+        return self.filterobj.get_forces().ravel()
 
     @cached_property
     def _use_force_consistent_energy(self):
@@ -43,13 +43,13 @@ class OptimizableFilter(Optimizable):
         else:
             return True
 
-    def get_potential_energy(self):
+    def get_value(self):
         force_consistent = self._use_force_consistent_energy
         return self.filterobj.get_potential_energy(
             force_consistent=force_consistent)
 
-    def __len__(self):
-        return len(self.filterobj)
+    def ndofs(self):
+        return 3 * len(self.filterobj)
 
     def iterimages(self):
         return self.filterobj.iterimages()

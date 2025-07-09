@@ -166,7 +166,7 @@ class GoodOldQuasiNewton(Optimizer):
         self.verbosity = verbosity
         self.diagonal = diagonal
 
-        n = len(self.optimizable) * 3
+        n = self.optimizable.ndofs()
         if radius is None:
             self.radius = 0.05 * np.sqrt(n) / 10.0
         else:
@@ -201,7 +201,7 @@ class GoodOldQuasiNewton(Optimizer):
 
     def set_default_hessian(self):
         # set unit matrix
-        n = len(self.optimizable) * 3
+        n = self.optimizable.ndofs()
         hessian = np.zeros((n, n))
         for i in range(n):
             hessian[i][i] = self.diagonal
@@ -292,12 +292,12 @@ class GoodOldQuasiNewton(Optimizer):
         """
 
         if forces is None:
-            forces = self.optimizable.get_forces()
+            forces = self.optimizable.get_gradient().reshape(-1, 3)
 
-        pos = self.optimizable.get_positions().ravel()
-        G = -self.optimizable.get_forces().ravel()
+        pos = self.optimizable.get_x()
+        G = -self.optimizable.get_gradient()
 
-        energy = self.optimizable.get_potential_energy()
+        energy = self.optimizable.get_value()
 
         if hasattr(self, 'oldenergy'):
             self.write_log('energies ' + str(energy) +
@@ -313,7 +313,7 @@ class GoodOldQuasiNewton(Optimizer):
 
             if (energy - self.oldenergy) > de:
                 self.write_log('reject step')
-                self.optimizable.set_positions(self.oldpos.reshape((-1, 3)))
+                self.optimizable.set_x(self.oldpos)
                 G = self.oldG
                 energy = self.oldenergy
                 self.radius *= 0.5
@@ -363,7 +363,7 @@ class GoodOldQuasiNewton(Optimizer):
         for i in range(n):
             step += D[i] * V[i]
 
-        pos = self.optimizable.get_positions().ravel()
+        pos = self.optimizable.get_x()
         pos += step
 
         energy_estimate = self.get_energy_estimate(D, Gbar, b)
@@ -371,7 +371,7 @@ class GoodOldQuasiNewton(Optimizer):
         self.gbar_estimate = self.get_gbar_estimate(D, Gbar, b)
         self.old_gbar = Gbar
 
-        self.optimizable.set_positions(pos.reshape((-1, 3)))
+        self.optimizable.set_x(pos)
 
     def get_energy_estimate(self, D, Gbar, b):
 

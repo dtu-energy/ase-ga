@@ -148,10 +148,10 @@ class FIRE2(Optimizer):
         optimizable = self.optimizable
 
         if f is None:
-            f = optimizable.get_forces()
+            f = optimizable.get_gradient().reshape(-1, 3)
 
         if self.v is None:
-            self.v = np.zeros((len(optimizable), 3))
+            self.v = np.zeros(optimizable.ndofs()).reshape(-1, 3)
         else:
 
             vf = np.vdot(f, self.v)
@@ -167,12 +167,12 @@ class FIRE2(Optimizer):
                 self.a = self.astart
 
                 dr = - 0.5 * self.dt * self.v
-                r = optimizable.get_positions()
-                optimizable.set_positions(r + dr)
+                r = optimizable.get_x().reshape(-1, 3)
+                optimizable.set_x((r + dr).ravel())
                 self.v[:] *= 0.0
 
         # euler semi implicit
-        f = optimizable.get_forces()
+        f = optimizable.get_gradient().reshape(-1, 3)
         self.v += self.dt * f
 
         if self.use_abc:
@@ -210,7 +210,7 @@ class FIRE2(Optimizer):
             if normdr > self.maxstep:
                 dr = self.maxstep * dr / normdr
 
-        r = optimizable.get_positions()
-        optimizable.set_positions(r + dr)
+        r = optimizable.get_x().reshape(-1, 3)
+        optimizable.set_x((r + dr).ravel())
 
         self.dump((self.v, self.dt))

@@ -28,14 +28,14 @@ class OptimizableAtoms(Optimizable):
     def __init__(self, atoms):
         self.atoms = atoms
 
-    def get_positions(self):
-        return self.atoms.get_positions()
+    def get_x(self):
+        return self.atoms.get_positions().ravel()
 
-    def set_positions(self, positions):
-        self.atoms.set_positions(positions)
+    def set_x(self, x):
+        self.atoms.set_positions(x.reshape(-1, 3))
 
-    def get_forces(self):
-        return self.atoms.get_forces()
+    def get_gradient(self):
+        return self.atoms.get_forces().ravel()
 
     @cached_property
     def _use_force_consistent_energy(self):
@@ -55,7 +55,7 @@ class OptimizableAtoms(Optimizable):
         else:
             return True
 
-    def get_potential_energy(self):
+    def get_value(self):
         force_consistent = self._use_force_consistent_energy
         return self.atoms.get_potential_energy(
             force_consistent=force_consistent)
@@ -64,10 +64,8 @@ class OptimizableAtoms(Optimizable):
         # XXX document purpose of iterimages
         return self.atoms.iterimages()
 
-    def __len__(self):
-        # TODO: return 3 * len(self.atoms), because we want the length
-        # of this to be the number of DOFs
-        return len(self.atoms)
+    def ndofs(self):
+        return 3 * len(self.atoms)
 
 
 class Dynamics(IOContext):
@@ -233,7 +231,7 @@ class Dynamics(IOContext):
         self.max_steps = self.nsteps + steps
 
         # compute the initial step
-        self.optimizable.get_forces()
+        self.optimizable.get_gradient()
 
         # log the initial step
         if self.nsteps == 0:
@@ -419,14 +417,14 @@ class Optimizer(Dynamics):
     def converged(self, forces=None):
         """Did the optimization converge?"""
         if forces is None:
-            forces = self.optimizable.get_forces()
+            forces = self.optimizable.get_gradient().reshape(-1, 3)
         return self.optimizable.converged(forces, self.fmax)
 
     def log(self, forces=None):
         if forces is None:
-            forces = self.optimizable.get_forces()
+            forces = self.optimizable.get_gradient().reshape(-1, 3)
         fmax = sqrt((forces ** 2).sum(axis=1).max())
-        e = self.optimizable.get_potential_energy()
+        e = self.optimizable.get_value()
         T = time.localtime()
         if self.logfile is not None:
             name = self.__class__.__name__

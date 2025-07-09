@@ -65,10 +65,10 @@ class MDMin(Optimizer):
         optimizable = self.optimizable
 
         if forces is None:
-            forces = optimizable.get_forces()
+            forces = optimizable.get_gradient().reshape(-1, 3)
 
         if self.v is None:
-            self.v = np.zeros((len(optimizable), 3))
+            self.v = np.zeros(optimizable.ndofs()).reshape(-1, 3)
         else:
             self.v += 0.5 * self.dt * forces
             # Correct velocities:
@@ -79,7 +79,7 @@ class MDMin(Optimizer):
                 self.v[:] = forces * vf / np.vdot(forces, forces)
 
         self.v += 0.5 * self.dt * forces
-        pos = optimizable.get_positions()
+        pos = optimizable.get_x().reshape(-1, 3)
         dpos = self.dt * self.v
 
         # For any dpos magnitude larger than maxstep, scaling
@@ -88,5 +88,5 @@ class MDMin(Optimizer):
         # than self.maxstep are scaled to it.
         scaling = self.maxstep / (1e-6 + np.max(np.linalg.norm(dpos, axis=1)))
         dpos *= np.clip(scaling, 0.0, 1.0)
-        optimizable.set_positions(pos + dpos)
+        optimizable.set_x((pos + dpos).ravel())
         self.dump((self.v, self.dt))
