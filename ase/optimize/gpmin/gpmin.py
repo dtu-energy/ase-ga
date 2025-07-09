@@ -253,16 +253,16 @@ class GPMin(Optimizer, GaussianProcess):
     def step(self, f=None):
         optimizable = self.optimizable
         if f is None:
-            f = optimizable.get_forces()
+            f = optimizable.get_gradient().reshape(-1, 3)
 
-        r0 = optimizable.get_positions().reshape(-1)
-        e0 = optimizable.get_potential_energy()
+        r0 = optimizable.get_x()
+        e0 = optimizable.get_value()
         self.update(r0, e0, f)
 
         r1 = self.relax_model(r0)
-        optimizable.set_positions(r1.reshape(-1, 3))
-        e1 = optimizable.get_potential_energy()
-        f1 = optimizable.get_forces()
+        optimizable.set_x(r1)
+        e1 = optimizable.get_value()
+        f1 = optimizable.get_gradient().reshape(-1, 3)
         self.function_calls += 1
         self.force_calls += 1
         count = 0
@@ -270,9 +270,9 @@ class GPMin(Optimizer, GaussianProcess):
             self.update(r1, e1, f1)
             r1 = self.relax_model(r0)
 
-            optimizable.set_positions(r1.reshape(-1, 3))
-            e1 = optimizable.get_potential_energy()
-            f1 = optimizable.get_forces()
+            optimizable.set_x(r1)
+            e1 = optimizable.get_value()
+            f1 = optimizable.get_gradient().reshape(-1, 3)
             self.function_calls += 1
             self.force_calls += 1
             if self.converged(f1):

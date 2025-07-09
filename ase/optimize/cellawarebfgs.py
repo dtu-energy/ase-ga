@@ -112,7 +112,7 @@ class CellAwareBFGS(BFGS):
         if forces is None:
             forces = self.atoms.atoms.get_forces()
         fmax = (forces ** 2).sum(axis=1).max() ** 0.5
-        e = self.optimizable.get_potential_energy()
+        e = self.optimizable.get_value()
         T = time.localtime()
         smax = abs(self.atoms.atoms.get_stress(voigt=False) *
                    self.atoms.mask).max()

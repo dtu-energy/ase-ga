@@ -138,7 +138,7 @@ class BFGSClimbFixInternals(BFGS):
     def pretend2climb(self):
         """Get directions for climbing and climb with optimizer 'A'."""
         proj_forces = self.get_projected_forces()
-        pos = self.optimizable.get_positions()
+        pos = self.optimizable.get_x().reshape(-1, 3)
         dpos, steplengths = self.prepare_step(pos, proj_forces)
         dpos = self.determine_step(dpos, steplengths)
         return pos, dpos
@@ -148,8 +148,8 @@ class BFGSClimbFixInternals(BFGS):
         self.constr2climb.adjust_positions(pos, pos + dpos)  # update sigma
         self.targetvalue += self.constr2climb.sigma          # climb constraint
         self.constr2climb.targetvalue = self.targetvalue     # adjust positions
-        self.optimizable.set_positions(
-            self.optimizable.get_positions())   # to targetvalue
+        # XXX very magical ...
+        self.optimizable.set_x(self.optimizable.get_x())   # to targetvalue
 
     def relax_remaining_dof(self):
         """Optimize remaining degrees of freedom with optimizer 'B'."""
@@ -174,12 +174,14 @@ class BFGSClimbFixInternals(BFGS):
         """Return the projected forces along the constrained coordinate in
         uphill direction (negative sign)."""
         forces = self.constr2climb.projected_forces
-        forces = -forces.reshape(self.optimizable.get_positions().shape)
+        # XXX simplify me once optimizable shape shenanigans have converged
+        forces = -forces.reshape(self.optimizable.get_x().reshape(-1, 3).shape)
         return forces
 
     def get_total_forces(self):
         """Return forces obeying all constraints plus projected forces."""
-        return self.optimizable.get_forces() + self.get_projected_forces()
+        forces = self.optimizable.get_gradient().reshape(-1, 3)
+        return forces + self.get_projected_forces()
 
     def converged(self, forces=None):
         """Did the optimization converge based on the total forces?"""
