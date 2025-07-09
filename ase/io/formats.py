@@ -25,7 +25,7 @@ import sys
 import warnings
 from importlib import import_module
 from importlib.metadata import entry_points
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from typing import (
     IO,
     Any,
@@ -67,27 +67,6 @@ class IOFormat:
         self.globs: List[str] = []
         self.magic: List[str] = []
         self.magic_regex: Optional[bytes] = None
-
-    def open(self, fname, mode: str = 'r') -> IO:
-        # We might want append mode, too
-        # We can allow more flags as needed (buffering etc.)
-        if mode not in list('rwa'):
-            raise ValueError("Only modes allowed are 'r', 'w', and 'a'")
-        if mode == 'r' and not self.can_read:
-            raise NotImplementedError('No reader implemented for {} format'
-                                      .format(self.name))
-        if mode == 'w' and not self.can_write:
-            raise NotImplementedError('No writer implemented for {} format'
-                                      .format(self.name))
-        if mode == 'a' and not self.can_append:
-            raise NotImplementedError('Appending not supported by {} format'
-                                      .format(self.name))
-
-        if self.isbinary:
-            mode += 'b'
-
-        path = Path(fname)
-        return path.open(mode, encoding=self.encoding)
 
     def _buf_as_filelike(self, data: Union[str, bytes]) -> IO:
         encoding = self.encoding
