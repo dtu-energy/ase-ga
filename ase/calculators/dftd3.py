@@ -315,20 +315,14 @@ class PureDFTD3(FileIOCalculator):
         else:
             damppars = None
 
-        pbc = any(atoms.pbc)
-        if pbc and not all(atoms.pbc):
-            warn('WARNING! dftd3 can only calculate the dispersion energy '
-                 'of non-periodic or 3D-periodic systems. We will treat '
-                 'this system as 3D-periodic!')
-
         if self.comm.rank == 0:
             self._actually_write_input(
                 directory=Path(self.directory), atoms=atoms,
                 properties=properties, prefix=self.label,
-                damppars=damppars, pbc=pbc)
+                damppars=damppars, pbc=any(atoms.pbc))
 
     def _actually_write_input(self, directory, prefix, atoms, properties,
-                              damppars, pbc):
+                              damppars, pbc: bool):
         if pbc:
             fname = directory / f'{prefix}.POSCAR'
             # We sort the atoms so that the atomtypes list becomes as
