@@ -160,8 +160,7 @@ class AimsTemplate(CalculatorTemplate):
         write_control(control, atoms, parameters)
 
     def execute(self, directory, profile):
-        profile.run(directory, None, self.outputname,
-                    errorfile=self.errorname)
+        profile.run(directory, None, self.outputname, errorfile=self.errorname)
 
     def read_results(self, directory):
         from ase.io.aims import read_aims_results
@@ -173,7 +172,7 @@ class AimsTemplate(CalculatorTemplate):
         return AimsProfile.from_config(cfg, self.name, **kwargs)
 
     def socketio_argv(self, profile, unixsocket, port):
-        return [profile.command]
+        return profile._split_command
 
     def socketio_parameters(self, unixsocket, port):
         if port:

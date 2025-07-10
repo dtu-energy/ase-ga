@@ -2,7 +2,7 @@
 
 import os
 import socket
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from subprocess import PIPE, Popen
 
 import numpy as np
@@ -247,6 +247,13 @@ class FileIOSocketClientLauncher:
                 argv = template.socketio_argv(
                     profile, unixsocket=None, port=port
                 )
+
+            if hasattr(self.calc.template, "outputname"):
+                with ExitStack() as stack:
+                    output_path = self.calc.template.outputname
+                    fd_out = stack.enter_context(open(output_path, "w"))
+                    return Popen(argv, cwd=cwd, env=os.environ, stdout=fd_out)
+
             return Popen(argv, cwd=cwd, env=os.environ)
         else:
             # Old FileIOCalculator:
