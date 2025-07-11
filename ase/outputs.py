@@ -71,7 +71,8 @@ all_outputs: dict[str, Property] = {}
 class Property(ABC):
     def __init__(self, name: str, dtype: type, shapespec: tuple) -> None:
         self.name = name
-        assert dtype in [float, int]  # Others?
+        if dtype not in {float, int}:  # Others?
+            raise ValueError(dtype)
         self.dtype = dtype
         self.shapespec = shapespec
 
