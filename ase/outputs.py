@@ -1,5 +1,7 @@
 """Module for ``Property`` and ``Properties``."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Sequence, Union
@@ -8,21 +10,21 @@ import numpy as np
 
 
 class Properties(Mapping):
-    def __init__(self, dct):
-        self._dct = {}
+    def __init__(self, dct: dict) -> None:
+        self._dct: dict[str, Property] = {}
         for name, value in dct.items():
             self._setvalue(name, value)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._dct)
 
     def __iter__(self):
         return iter(self._dct)
 
-    def __getitem__(self, name):
+    def __getitem__(self, name) -> Property:
         return self._dct[name]
 
-    def _setvalue(self, name, value):
+    def _setvalue(self, name: str, value) -> None:
         if name in self._dct:
             # Which error should we raise for already existing property?
             raise ValueError(f'{name} already set')
@@ -41,7 +43,7 @@ class Properties(Mapping):
 
         self._dct[name] = value
 
-    def shape_is_consistent(self, prop, value) -> bool:
+    def shape_is_consistent(self, prop: Property, value) -> bool:
         """Return whether shape of values is consistent with properties.
 
         For example, forces of shape (7, 3) are consistent
@@ -58,16 +60,16 @@ class Properties(Mapping):
                 return False
         return True
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         clsname = type(self).__name__
         return f'({clsname}({self._dct})'
 
 
-all_outputs = {}
+all_outputs: dict[str, Property] = {}
 
 
 class Property(ABC):
-    def __init__(self, name, dtype, shapespec):
+    def __init__(self, name: str, dtype: type, shapespec: tuple) -> None:
         self.name = name
         assert dtype in [float, int]  # Others?
         self.dtype = dtype
@@ -83,7 +85,7 @@ class Property(ABC):
 
 
 class ScalarProperty(Property):
-    def __init__(self, name, dtype):
+    def __init__(self, name: str, dtype: type) -> None:
         super().__init__(name, dtype, ())
 
     def normalize_type(self, value):
