@@ -1,4 +1,4 @@
-# fmt: off
+"""Module for ``Property`` and ``Properties``."""
 
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
@@ -74,8 +74,7 @@ class Property(ABC):
         self.shapespec = shapespec
 
     @abstractmethod
-    def normalize_type(self, value):
-        ...
+    def normalize_type(self, value): ...
 
     def __repr__(self) -> str:
         typename = self.dtype.__name__  # Extend to other than float/int?
@@ -104,9 +103,9 @@ ShapeSpec = Union[str, int]
 
 
 def _defineprop(
-        name: str,
-        dtype: type = float,
-        shape: Union[ShapeSpec, Sequence[ShapeSpec]] = ()
+    name: str,
+    dtype: type = float,
+    shape: Union[ShapeSpec, Sequence[ShapeSpec]] = (),
 ) -> Property:
     """Create, register, and return a property."""
 
