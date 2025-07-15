@@ -173,8 +173,9 @@ class MolecularDynamics(Dynamics):
     def get_time(self):
         return self.nsteps * self.dt
 
-    def converged(self):
+    def converged(self, gradient=None):
         """ MD is 'converged' when number of maximum steps is reached. """
+        # We take gradient now (due to optimizers).  Should refactor.
         return self.nsteps >= self.max_steps
 
     def _get_com_velocity(self, velocity):

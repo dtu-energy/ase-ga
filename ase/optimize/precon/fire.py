@@ -158,10 +158,10 @@ class PreconFIRE(Optimizer):
         self.smax = smax
         return Optimizer.run(self, fmax, steps)
 
-    def converged(self, forces=None):
+    def converged(self, gradient):
         """Did the optimization converge?"""
-        if forces is None:
-            forces = self._actual_atoms.get_forces()
+        # XXX ignoring gradient
+        forces = self._actual_atoms.get_forces()
         if isinstance(self._actual_atoms, UnitCellFilter):
             natoms = len(self._actual_atoms.atoms)
             forces, stress = forces[:natoms], self._actual_atoms.stress
@@ -172,9 +172,8 @@ class PreconFIRE(Optimizer):
             fmax_sq = (forces**2).sum(axis=1).max()
             return fmax_sq < self.fmax**2
 
-    def log(self, forces=None):
-        if forces is None:
-            forces = self._actual_atoms.get_forces()
+    def log(self, gradient):
+        forces = self._actual_atoms.get_forces()
         if isinstance(self._actual_atoms, UnitCellFilter):
             natoms = len(self._actual_atoms.atoms)
             forces, stress = forces[:natoms], self._actual_atoms.stress

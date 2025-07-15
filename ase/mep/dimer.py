@@ -1078,10 +1078,9 @@ class MinModeTranslate(Optimizer):
         self.direction_old = direction.copy()
         return self.cg_direction.copy()
 
-    def log(self, f=None, stepsize=None):
+    def log(self, gradient, stepsize=None):
         """Log each step of the optimization."""
-        if f is None:
-            f = self.dimeratoms.get_forces()
+        f = self.dimeratoms.get_forces()
         if self.logfile is not None:
             T = time.localtime()
             e = self.dimeratoms.get_potential_energy()

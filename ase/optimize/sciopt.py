@@ -106,10 +106,11 @@ class SciPyOptimizer(Optimizer):
         """
         if self.nsteps < self.max_steps:
             self.nsteps += 1
-        f = self.optimizable.get_gradient().reshape(-1, 3)
+        gradient = self.optimizable.get_gradient()
+        f = gradient.reshape(-1, 3)
         self.log(f)
         self.call_observers()
-        if self.converged(f):
+        if self.converged(gradient):
             raise Converged
 
     def run(self, fmax=0.05, steps=100000000):
@@ -118,7 +119,8 @@ class SciPyOptimizer(Optimizer):
         try:
             # As SciPy does not log the zeroth iteration, we do that manually
             if self.nsteps == 0:
-                self.log()
+                gradient = self.optimizable.get_gradient()
+                self.log(gradient)
                 self.call_observers()
 
             self.max_steps = steps + self.nsteps
@@ -127,7 +129,8 @@ class SciPyOptimizer(Optimizer):
             self.call_fmin(fmax / self.H0, steps)
         except Converged:
             pass
-        return self.converged()
+        gradient = self.optimizable.get_gradient()
+        return self.converged(gradient)
 
     def dump(self, data):
         pass

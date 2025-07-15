@@ -93,9 +93,9 @@ class CellAwareBFGS(BFGS):
         cell_H[np.ix_(ind, ind)] = C_ijkl.reshape((9, 9))[
             np.ix_(ind, ind)] * self.atoms.atoms.cell.volume
 
-    def converged(self, forces=None):
-        if forces is None:
-            forces = self.atoms.atoms.get_forces()
+    def converged(self, gradient):
+        # XXX currently ignoring gradient
+        forces = self.atoms.atoms.get_forces()
         stress = self.atoms.atoms.get_stress(voigt=False) * self.atoms.mask
         return np.max(np.sum(forces**2, axis=1))**0.5 < self.fmax and \
             np.max(np.abs(stress)) < self.smax
@@ -108,9 +108,9 @@ class CellAwareBFGS(BFGS):
             return Dynamics.run(self, steps=steps)
         return Dynamics.run(self)
 
-    def log(self, forces=None):
-        if forces is None:
-            forces = self.atoms.atoms.get_forces()
+    def log(self, gradient):
+        # XXX ignoring gradient
+        forces = self.atoms.atoms.get_forces()
         fmax = (forces ** 2).sum(axis=1).max() ** 0.5
         e = self.optimizable.get_value()
         T = time.localtime()

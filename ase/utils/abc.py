@@ -43,12 +43,17 @@ class Optimizable(ABC):
         For example this can yield Atoms objects if the optimizer
         has a trajectory that can write Atoms objects."""
 
-    def converged(self, forces: np.ndarray, fmax: float) -> bool:
+    def converged(self, gradient: np.ndarray, fmax: float) -> bool:
         """Standard implementation of convergence criterion.
 
         This assumes that forces are the actual (Nx3) forces.
         We can hopefully change this."""
-        return np.linalg.norm(forces, axis=1).max() < fmax
+        assert gradient.ndim == 1
+        return self.gradient_norm(gradient) < fmax
+
+    def gradient_norm(self, gradient):
+        forces = gradient.reshape(-1, 3)  # XXX Cartesian
+        return np.linalg.norm(forces, axis=1).max()
 
     def __ase_optimizable__(self) -> 'Optimizable':
         """Return self, being already an Optimizable."""

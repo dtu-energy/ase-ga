@@ -233,7 +233,7 @@ class LBFGS(Optimizer):
         self.optimizable.set_x(x)
         self.force_calls += 1
         # Remember that forces are minus the gradient!
-        return - self.optimizable.get_gradient()
+        return -self.optimizable.get_gradient()
 
     def line_search(self, r, g, e):
         self.p = self.p.ravel()
