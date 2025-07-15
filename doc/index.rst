@@ -63,11 +63,17 @@ Mopac_
 News
 ====
 
+* Workshop focusing on the `extended ASE ecosystem
+  <https://www.cecam.org/workshop-details/the-atomic-simulation-environment-ecosystem-present-and-perspectives-1373>`_
+  held at CECAM, EPFL, Switzerland June 23-27, 2025 (29 June 2025).
+
 * :ref:`ASE version 3.25.0 <releasenotes>` released (11 April 2025).
 
 * :ref:`ASE version 3.24.0 <releasenotes>` released (28 December 2024).
 
 * :ref:`ASE version 3.23.0 <releasenotes>` released (31 May 2024).
+
+* Workshop focusing on `Open Science with the Atomic Simulation Environment <https://www.cecam.org/workshop-details/open-science-with-the-atomic-simulation-environment-1245>`_ held at Daresbury Laboratory, UK April 24-28, 2023. (`Workshop site including tutorials <https://ase-workshop-2023.github.io/home/index.html>`_)
 
 * :ref:`ASE version 3.22.1 <releasenotes>` released (1 December 2021).
 

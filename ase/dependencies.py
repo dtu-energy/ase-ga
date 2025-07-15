@@ -1,6 +1,5 @@
 # fmt: off
 
-import importlib
 from typing import List, Tuple
 
 from ase.utils import (
@@ -13,13 +12,20 @@ def format_dependency(modname: str) -> Tuple[str, str]:
     """Return (name, info) for given module.
 
     If possible, info is the path to the module's package."""
+    import importlib.metadata
+
     try:
         module = importlib.import_module(modname)
     except ImportError:
         return modname, 'not installed'
 
-    version = getattr(module, '__version__', '?')
+    if modname == 'flask':
+        version = importlib.metadata.version('flask')
+    else:
+        version = getattr(module, '__version__', '?')
+
     name = f'{modname}-{version}'
+
     if modname == 'ase':
         githash = search_current_git_hash(module)
         if githash:
