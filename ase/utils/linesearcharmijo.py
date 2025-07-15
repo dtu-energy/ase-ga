@@ -6,20 +6,12 @@ import math
 
 import numpy as np
 
-# CO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-try:
-    import scipy
-    import scipy.linalg
-    have_scipy = True
-except ImportError:
-    have_scipy = False
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+import scipy
+import scipy.linalg
 
 from ase.utils import longsum
 
 logger = logging.getLogger(__name__)
-
-# CO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
 class LinearPath:
@@ -86,10 +78,6 @@ class RumPath:
                              is accelerated; array of scalars, same length as
                              rigid_units
         """
-
-        if not have_scipy:
-            raise RuntimeError(
-                "RumPath depends on scipy, which could not be imported")
 
         # keep some stuff stored
         self.rotation_factors = rotation_factors
