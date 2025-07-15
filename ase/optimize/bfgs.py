@@ -177,10 +177,10 @@ class BFGS(Optimizer):
         self.H = None
         atoms = traj[0]
         pos0 = atoms.get_positions().ravel()
-        forces0 = atoms.get_gradient()
+        forces0 = atoms.get_forces().ravel()
         for atoms in traj:
             pos = atoms.get_positions().ravel()
-            forces = atoms.get_gradient()
+            forces = atoms.get_forces().ravel()
             self.update(pos, forces, pos0, forces0)
             pos0 = pos
             forces0 = forces
