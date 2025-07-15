@@ -19,14 +19,6 @@ class BoothFunctionOptimizable(Optimizable):
     def set_x(self, x):
         self.xy[:] = x
 
-    @property
-    def x(self):
-        return self.xy[0]
-
-    @property
-    def y(self):
-        return self.xy[1]
-
     @staticmethod
     def ab(x, y):
         return x + 2 * y - 7, 2 * x + y - 5
