@@ -256,27 +256,27 @@ from ase.utils import get_python_package_path_description, seterr, workdir
 #     return CalculatorInputs(factory, kwargs)
 
 
-# def check_missing_init(module):
-#     # We don't like missing __init__.py because pytest imports those
-#     # as toplevel modules, which can cause clashes.
-#     if not module.__name__.startswith('ase.test.'):
-#         raise RuntimeError(
-#             f'Test module {module.__name__} at {module.__file__} does not '
-#             'start with "ase.test".  Maybe __init__.py is missing?')
+def check_missing_init(module):
+    # We don't like missing __init__.py because pytest imports those
+    # as toplevel modules, which can cause clashes.
+    if not module.__name__.startswith('ase.test.'):
+        raise RuntimeError(
+            f'Test module {module.__name__} at {module.__file__} does not '
+            'start with "ase.test".  Maybe __init__.py is missing?')
 
 
-# def pytest_generate_tests(metafunc):
-#     check_missing_init(metafunc.module)
+def pytest_generate_tests(metafunc):
+    # check_missing_init(metafunc.module)
 
-#     parametrize_calculator_tests(metafunc)
+    # parametrize_calculator_tests(metafunc)
 
-#     if 'seed' in metafunc.fixturenames:
-#         seeds = metafunc.config.getoption('seed')
-#         if len(seeds) == 0:
-#             seeds = [0]
-#         else:
-#             seeds = list(map(int, seeds))
-#         metafunc.parametrize('seed', seeds)
+    if 'seed' in metafunc.fixturenames:
+        seeds = metafunc.config.getoption('seed')
+        if len(seeds) == 0:
+            seeds = [0]
+        else:
+            seeds = list(map(int, seeds))
+        metafunc.parametrize('seed', seeds)
 
 
 # @pytest.fixture()

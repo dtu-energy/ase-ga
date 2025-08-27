@@ -2,6 +2,8 @@
 import numpy as np
 import pytest
 
+from pathlib import Path
+
 from ase.build import fcc111
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
@@ -25,9 +27,12 @@ db_file = 'gadb.db'
 
 
 @pytest.mark.slow()
-def test_basic_example_main_run(seed, testdir):
+def test_basic_example_main_run(seed, tmp_path):
     # set up the random number generator
     rng = np.random.RandomState(seed)
+    
+    # Set up the database file in a temporary path
+    db_path = Path(tmp_path) / db_file
 
     # create the surface
     slab = fcc111('Au', size=(4, 4, 1), vacuum=10.0, orthogonal=True)
@@ -69,7 +74,7 @@ def test_basic_example_main_run(seed, testdir):
     # view(starting_population)        # to see the starting population
 
     # create the database to store information in
-    d = PrepareDB(db_file_name=db_file,
+    d = PrepareDB(db_file_name=db_path,
                   simulation_cell=slab,
                   stoichiometry=atom_numbers)
 
@@ -86,7 +91,7 @@ def test_basic_example_main_run(seed, testdir):
     n_to_test = 5
 
     # Initialize the different components of the GA
-    da = DataConnection('gadb.db')
+    da = DataConnection(db_path)
     atom_numbers_to_optimize = da.get_atom_numbers_to_optimize()
     n_to_optimize = len(atom_numbers_to_optimize)
     slab = da.get_slab()

@@ -1,6 +1,8 @@
 # fmt: off
 import numpy as np
 
+from pathlib import Path
+
 from ase.build import fcc111
 from ase.constraints import FixAtoms
 from ase.ga import set_raw_score
@@ -11,10 +13,14 @@ from ase.ga.utilities import closest_distances_generator
 db_file = 'gadb_logics_test.db'
 
 
-def test_database_logic(seed, testdir):
+def test_database_logic(seed, tmp_path):
 
     # set up the random number generator
     rng = np.random.RandomState(seed)
+    
+    # Set up the database file in a temporary path
+    db_path = Path(tmp_path) / db_file
+    
 
     slab = fcc111('Au', size=(4, 4, 2), vacuum=10.0, orthogonal=True)
     slab.set_constraint(FixAtoms(mask=slab.positions[:, 2] <= 10.))
@@ -47,7 +53,7 @@ def test_database_logic(seed, testdir):
     # generate the starting population
     starting_population = [sg.get_new_candidate() for _ in range(20)]
 
-    d = PrepareDB(db_file_name=db_file,
+    d = PrepareDB(db_file_name=db_path,
                   simulation_cell=slab,
                   stoichiometry=atom_numbers)
 
@@ -55,7 +61,7 @@ def test_database_logic(seed, testdir):
         d.add_unrelaxed_candidate(a)
 
     # and now for the actual test
-    dc = DataConnection(db_file)
+    dc = DataConnection(db_path)
 
     dc.get_slab()
     dc.get_atom_numbers_to_optimize()
