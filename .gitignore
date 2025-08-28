@@ -6,11 +6,6 @@ MANIFEST
 */.DS_Store
 *.traj
 /build
-/ase.egg-info
-/ase/db/static/jsmol
-doc/ase/dft/bztable.rst
-doc/tutorials/deltacodesdft/fit.json
-doc/ase/io/formatoptions.rst
 
 # Editor backup files
 *~
@@ -23,9 +18,6 @@ doc/ase/io/formatoptions.rst
 
 # Vim swap files:
 .*.sw?
-
-# Translation template
-ase/gui/po/ag.pot
 
 # Pytest and code coverage:
 .cache
