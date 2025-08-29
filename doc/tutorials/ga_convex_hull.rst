@@ -1,3 +1,5 @@
+.. _convex_hull_tutorial:
+
 =====================================================
 Determination of convex hull with a genetic algorithm
 =====================================================
