@@ -1,7 +1,12 @@
-import datetime
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path('..', 'src').resolve()))
+
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',  # one page per object
     'sphinx.ext.doctest',
     'sphinx.ext.extlinks',
     'sphinx.ext.mathjax',
@@ -58,10 +63,16 @@ html_theme_options = {
 #     ('index', 'ASE.tex', 'ASE', 'ASE-developers', 'howto', not True)
 # ]
 
-# intersphinx_mapping = {
-#     'gpaw': ('https://gpaw.readthedocs.io', None),
-#     'python': ('https://docs.python.org/3.10', None),
-# }
+# Don't sort members alphabetically
+autodoc_member_order = 'bysource'
+
+# Don't evaluate default arguments
+autodoc_preserve_defaults = True
+
+intersphinx_mapping = {
+    'ase': ('https://ase-lib.org/', None),
+    'python': ('https://docs.python.org/3.10', None),
+}
 
 # # Avoid GUI windows during doctest:
 # doctest_global_setup = """
