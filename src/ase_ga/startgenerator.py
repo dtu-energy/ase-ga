@@ -6,7 +6,7 @@ import numpy as np
 from ase import Atoms
 from ase.build import molecule
 from ase.data import atomic_numbers
-from ase.ga.utilities import (
+from ase_ga.utilities import (
     atoms_too_close,
     atoms_too_close_two_sets,
     closest_distances_generator,
@@ -123,9 +123,9 @@ class StartGenerator:
 
         By default, no splitting is applied (splits = None = {(1,): 1}).
 
-    cellbounds: ase.ga.utilities.CellBounds instance
+    cellbounds: ase_ga.utilities.CellBounds instance
         Describing limits on the cell shape, see
-        :class:`~ase.ga.utilities.CellBounds`.
+        :class:`~ase_ga.utilities.CellBounds`.
         Note that it only make sense to impose conditions
         regarding cell vectors which have been marked as
         variable (see number_of_variable_cell_vectors).

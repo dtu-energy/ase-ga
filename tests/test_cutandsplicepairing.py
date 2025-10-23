@@ -3,9 +3,9 @@ import numpy as np
 
 from ase.build import fcc111
 from ase.constraints import FixAtoms
-from ase.ga.cutandsplicepairing import CutAndSplicePairing
-from ase.ga.startgenerator import StartGenerator
-from ase.ga.utilities import atoms_too_close, closest_distances_generator
+from ase_ga.cutandsplicepairing import CutAndSplicePairing
+from ase_ga.startgenerator import StartGenerator
+from ase_ga.utilities import atoms_too_close, closest_distances_generator
 
 
 def test_cutandsplicepairing(seed):

@@ -2,8 +2,8 @@
 import numpy as np
 
 from ase.cluster import Icosahedron
-from ase.ga.particle_crossovers import CutSpliceCrossover
-from ase.ga.particle_mutations import COM2surfPermutation
+from ase_ga.particle_crossovers import CutSpliceCrossover
+from ase_ga.particle_mutations import COM2surfPermutation
 
 
 def test_particle_operators(seed):
@@ -34,9 +34,9 @@ def test_particle_operators(seed):
 
     assert a3.get_chemical_formula() == 'Cu35Ni20'
 
-    # from ase.ga.particle_mutations import RandomPermutation
-    # from ase.ga.particle_mutations import Poor2richPermutation
-    # from ase.ga.particle_mutations import Rich2poorPermutation
+    # from ase_ga.particle_mutations import RandomPermutation
+    # from ase_ga.particle_mutations import Poor2richPermutation
+    # from ase_ga.particle_mutations import Rich2poorPermutation
 
     op = COM2surfPermutation(min_ratio=0.05, rng=rng)
     a3, _desc = op.get_new_individual([ico1])

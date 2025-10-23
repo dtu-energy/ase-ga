@@ -3,7 +3,7 @@
 case the relaxation went wrong. """
 from optparse import OptionParser
 
-from ase.ga.data import DataConnection
+from ase_ga.data import DataConnection
 
 try:
     input = raw_input  # Python 2+3 compatibility

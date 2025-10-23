@@ -3,9 +3,9 @@ import numpy as np
 
 from ase.build import fcc111
 from ase.constraints import FixAtoms
-from ase.ga.standardmutations import PermutationMutation, RattleMutation
-from ase.ga.startgenerator import StartGenerator
-from ase.ga.utilities import closest_distances_generator
+from ase_ga.standardmutations import PermutationMutation, RattleMutation
+from ase_ga.startgenerator import StartGenerator
+from ase_ga.utilities import closest_distances_generator
 
 
 def test_mutations(seed):

@@ -6,7 +6,7 @@ atoms objects.
 """
 import numpy as np
 
-from ase.ga.offspring_creator import OffspringCreator
+from ase_ga.offspring_creator import OffspringCreator
 
 
 class ElementCrossover(OffspringCreator):

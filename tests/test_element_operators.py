@@ -2,9 +2,9 @@
 import numpy as np
 
 from ase import Atoms
-from ase.ga import get_raw_score, set_raw_score
-from ase.ga.element_crossovers import OnePointElementCrossover
-from ase.ga.element_mutations import (
+from ase_ga import get_raw_score, set_raw_score
+from ase_ga.element_crossovers import OnePointElementCrossover
+from ase_ga.element_mutations import (
     MoveDownMutation,
     MoveLeftMutation,
     MoveRightMutation,

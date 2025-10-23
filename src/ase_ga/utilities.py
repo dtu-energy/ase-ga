@@ -9,7 +9,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from ase.data import covalent_radii
-from ase.ga import get_neighbor_list
+from ase_ga import get_neighbor_list
 from ase.geometry.cell import cell_to_cellpar
 from ase.geometry.rdf import get_rdf
 from ase.io import read, write
@@ -541,7 +541,7 @@ class CellBounds:
 
     Example:
 
-    >>> from ase.ga.utilities import CellBounds
+    >>> from ase_ga.utilities import CellBounds
     >>> CellBounds(bounds={'phi': [20, 160],
     ...                    'chi': [60, 120],
     ...                    'psi': [20, 160],

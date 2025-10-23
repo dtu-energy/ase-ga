@@ -2,9 +2,9 @@
 import pytest
 
 from ase.build import fcc111
-from ase.ga import set_raw_score
-from ase.ga.data import DataConnection, PrepareDB
-from ase.ga.offspring_creator import OffspringCreator
+from ase_ga import set_raw_score
+from ase_ga.data import DataConnection, PrepareDB
+from ase_ga.offspring_creator import OffspringCreator
 
 
 def test_add_candidates(tmp_path):

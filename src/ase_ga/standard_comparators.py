@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ase.ga import get_raw_score
+from ase_ga import get_raw_score
 
 
 def get_sorted_dist_list(atoms, mic=False):

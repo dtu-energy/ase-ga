@@ -2,7 +2,7 @@
 """ Program for extracting all relaxed structures from a GA run. """
 from optparse import OptionParser
 
-from ase.ga.data import DataConnection
+from ase_ga.data import DataConnection
 from ase.io import write
 
 description = 'Extracts all relaxed structures and ' + \

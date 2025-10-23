@@ -8,7 +8,7 @@ from operator import itemgetter
 import numpy as np
 
 from ase.db.core import now
-from ase.ga import get_raw_score
+from ase_ga import get_raw_score
 
 
 def count_looks_like(a, all_cand, comp):
@@ -61,7 +61,7 @@ class Population:
         self.dc = data_connection
         self.pop_size = population_size
         if comparator is None:
-            from ase.ga.standard_comparators import AtomsComparator
+            from ase_ga.standard_comparators import AtomsComparator
             comparator = AtomsComparator()
         self.comparator = comparator
         self.logfile = logfile

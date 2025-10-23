@@ -4,8 +4,8 @@
 import numpy as np
 
 from ase import Atoms
-from ase.ga.offspring_creator import OffspringCreator
-from ase.ga.utilities import (
+from ase_ga.offspring_creator import OffspringCreator
+from ase_ga.utilities import (
     atoms_too_close,
     atoms_too_close_two_sets,
     gather_atoms_by_tag,
@@ -125,9 +125,9 @@ class CutAndSplicePairing(OffspringCreator):
         to the child. If None, each parent must contribute
         at least one atom.
 
-    cellbounds: ase.ga.utilities.CellBounds instance
+    cellbounds: ase_ga.utilities.CellBounds instance
         Describing limits on the cell shape, see
-        :class:`~ase.ga.utilities.CellBounds`.
+        :class:`~ase_ga.utilities.CellBounds`.
         Note that it only make sense to impose conditions
         regarding cell vectors which have been marked as
         variable (see number_of_variable_cell_vectors).

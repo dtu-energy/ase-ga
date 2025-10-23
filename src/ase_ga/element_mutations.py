@@ -5,7 +5,7 @@ atoms objects."""
 import numpy as np
 
 from ase.data import atomic_numbers
-from ase.ga.offspring_creator import OffspringCreator
+from ase_ga.offspring_creator import OffspringCreator
 
 
 def chunks(line, n):

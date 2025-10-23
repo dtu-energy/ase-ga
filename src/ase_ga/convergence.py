@@ -2,7 +2,7 @@
 
 """Classes that determine convergence of an algorithm run
 based on population stagnation or max raw score reached"""
-from ase.ga import get_raw_score
+from ase_ga import get_raw_score
 
 
 class Convergence:

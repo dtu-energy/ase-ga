@@ -7,19 +7,19 @@ from pathlib import Path
 from ase.build import fcc111
 from ase.calculators.emt import EMT
 from ase.constraints import FixAtoms
-from ase.ga import set_raw_score
-from ase.ga.cutandsplicepairing import CutAndSplicePairing
-from ase.ga.data import DataConnection, PrepareDB
-from ase.ga.offspring_creator import OperationSelector
-from ase.ga.population import Population
-from ase.ga.standard_comparators import InteratomicDistanceComparator
-from ase.ga.standardmutations import (
+from ase_ga import set_raw_score
+from ase_ga.cutandsplicepairing import CutAndSplicePairing
+from ase_ga.data import DataConnection, PrepareDB
+from ase_ga.offspring_creator import OperationSelector
+from ase_ga.population import Population
+from ase_ga.standard_comparators import InteratomicDistanceComparator
+from ase_ga.standardmutations import (
     MirrorMutation,
     PermutationMutation,
     RattleMutation,
 )
-from ase.ga.startgenerator import StartGenerator
-from ase.ga.utilities import closest_distances_generator, get_all_atom_types
+from ase_ga.startgenerator import StartGenerator
+from ase_ga.utilities import closest_distances_generator, get_all_atom_types
 from ase.io import write
 from ase.optimize import BFGS
 

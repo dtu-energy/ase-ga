@@ -7,7 +7,7 @@ import os
 
 import ase.db
 from ase import Atoms
-from ase.ga import get_raw_score, set_neighbor_list, set_parametrization
+from ase_ga import get_raw_score, set_neighbor_list, set_parametrization
 
 
 def split_description(desc):

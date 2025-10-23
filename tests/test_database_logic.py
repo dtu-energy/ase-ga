@@ -5,10 +5,10 @@ from pathlib import Path
 
 from ase.build import fcc111
 from ase.constraints import FixAtoms
-from ase.ga import set_raw_score
-from ase.ga.data import DataConnection, PrepareDB
-from ase.ga.startgenerator import StartGenerator
-from ase.ga.utilities import closest_distances_generator
+from ase_ga import set_raw_score
+from ase_ga.data import DataConnection, PrepareDB
+from ase_ga.startgenerator import StartGenerator
+from ase_ga.utilities import closest_distances_generator
 
 db_file = 'gadb_logics_test.db'
 
