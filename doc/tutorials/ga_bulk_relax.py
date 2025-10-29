@@ -1,6 +1,6 @@
 from ase.build import niggli_reduce
 from ase.calculators.singlepoint import SinglePointCalculator
-from ase.constraints import ExpCellFilter
+from ase.filters import ExpCellFilter
 from ase.ga import set_raw_score
 from ase.optimize import FIRE
 
@@ -43,13 +43,12 @@ def relax(atoms, cellbounds=None):
                 return
 
         ecf = ExpCellFilter(atoms)
-        dyn = FIRE(ecf, maxmove=0.2, logfile=None, trajectory=None)
-        dyn.run(fmax=1e-3, steps=100)
+        dyn = FIRE(ecf, maxstep=0.2, logfile=None, trajectory=None)
+        converged = dyn.run(fmax=1e-3, steps=100)
 
-        converged = dyn.converged()
         niter += 1
 
-    dyn = FIRE(atoms, maxmove=0.2, logfile=None, trajectory=None)
+    dyn = FIRE(atoms, maxstep=0.2, logfile=None, trajectory=None)
     dyn.run(fmax=1e-2, steps=100)
 
     e = atoms.get_potential_energy()
