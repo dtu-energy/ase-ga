@@ -26,7 +26,6 @@ from ase.optimize import BFGS
 db_file = 'gadb.db'
 
 
-@pytest.mark.slow()
 def test_basic_example_main_run(seed, tmp_path):
     # set up the random number generator
     rng = np.random.RandomState(seed)

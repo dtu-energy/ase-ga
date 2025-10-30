@@ -23,7 +23,6 @@ from ase_ga.utilities import (
 )
 
 
-@pytest.mark.slow()
 def test_bulk_operators(seed, tmp_path):
     # set up the random number generator
     rng = np.random.RandomState(seed)
