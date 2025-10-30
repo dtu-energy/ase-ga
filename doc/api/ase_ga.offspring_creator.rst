@@ -26,7 +26,6 @@ Mutation
    ase_ga.particle_mutations
    ase_ga.soft_mutation
    ase_ga.standardmutations
-   ase_ga.slab_operators
 
 Documentation
 -------------
