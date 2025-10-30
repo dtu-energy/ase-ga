@@ -29,10 +29,10 @@ jobs:
       - name: Sync (install) project with uv
         run: |
           if [ -f uv.lock ]; then
-            uv sync --locked --all-extras --dev
+            uv sync --locked --dev
           else
             # First run (no lock yet) — resolve and create one for future runs
-            uv sync --all-extras --dev
+            uv sync --dev
           fi
 
       - name: Run tests

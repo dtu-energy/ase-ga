@@ -50,13 +50,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-uv-
 
-      - name: Sync (install) project with uv
+      - name: Sync (install) project with uv, --all-groups to get docs dependencies as well
         run: |
           if [ -f uv.lock ]; then
-            uv sync --locked --all-extras --dev --docs
+            uv sync --locked --all-groups
           else
             # First run (no lock yet) — resolve and create one for future runs
-            uv sync --all-extras --dev --docs
+            uv sync --all-groups
           fi
 
       - name: Build Sphinx HTML docs
