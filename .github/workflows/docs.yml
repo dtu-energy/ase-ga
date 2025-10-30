@@ -1,0 +1,93 @@
+name: Docs
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - "doc/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "doc/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Sphinx (uv)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Automatically installs uv + Python (faster and simpler)
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+
+      - name: Cache uv virtual environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            .venv
+            ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('pyproject.toml', 'uv.lock', 'doc/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Sync (install) project with uv
+        run: |
+          if [ -f uv.lock ]; then
+            uv sync --locked --all-extras --dev
+          else
+            # First run (no lock yet) — resolve and create one for future runs
+            uv sync --all-extras --dev
+          fi
+
+      - name: Build Sphinx HTML docs
+        working-directory: doc
+        env:
+          SPHINXOPTS: "-W --keep-going"
+        run: |
+          . ../.venv/bin/activate
+          sphinx-build -b html . build/html
+
+      - name: Upload built docs for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: doc/build/html
+
+      - name: Upload docs as PR artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-html
+          path: doc/build/html
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
