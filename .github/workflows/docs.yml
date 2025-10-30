@@ -53,10 +53,10 @@ jobs:
       - name: Sync (install) project with uv
         run: |
           if [ -f uv.lock ]; then
-            uv sync --locked --all-extras --dev
+            uv sync --locked --all-extras --dev --docs
           else
             # First run (no lock yet) — resolve and create one for future runs
-            uv sync --all-extras --dev
+            uv sync --all-extras --dev --docs
           fi
 
       - name: Build Sphinx HTML docs

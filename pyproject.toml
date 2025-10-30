@@ -43,15 +43,6 @@ dev = [
 docs = ['sphinx', 'sphinx_book_theme', 'pillow']
 lint = ['mypy', 'ruff', 'coverage', 'types-docutils', 'types-PyMySQL', 'flake8']
 
-# [tool.pytest.ini_options]
-# testpaths = ['ase/test']
-# markers = [
-#     'calculator: parametrizes calculator tests with calculator factories',
-#     'calculator_lite: for calculator tests; include in calculators-lite job',
-#     'optimize: tests of optimizers',
-#     'slow: test takes longer than a few seconds',
-# ]
-
 [tool.mypy]
 ignore_missing_imports = true
 no_implicit_optional = false
