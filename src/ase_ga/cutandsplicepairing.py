@@ -171,7 +171,7 @@ class CutAndSplicePairing(OffspringCreator):
 
         w_adapt: weight of the new vs the old scaling volume
         n_adapt: number of best candidates in the population that
-                 are used to calculate the new scaling volume
+        are used to calculate the new scaling volume
         """
         if not n_adapt:
             # take best 20% of the population
