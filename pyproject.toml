@@ -5,12 +5,22 @@ build-backend = "hatchling.build"
 [project]
 name = 'ase-ga'
 description='The Genetic Algorithm for the Atomic Simulation Environment'
-version = "1.0.0"
+version = "1.0.1b1"
 readme = 'README.md'
-license-files = ['LICENSE']
+license = "LGPL-2.1-or-later"
+license-files = ['LICENSE', 'COPYING*']
+authors = [
+    { name = "Lasse B. Vilhelmsen" },
+    { name = "Steen Lysgaard" },
+    { name = "Peter Bjerre Jensen" },
+    { name = "Maxime Van den Bossche" },
+    { name = "Paul C. Jennings" },
+    { name = "Shuang Han" },
+]
 maintainers = [
     { name = "Steen Lysgaard", email = "stly@dtu.dk" }
-]    
+]
+keywords = ["crystalstructure", "genetic algorithm", "evolutionary algorithm", "atomic structures"]
 
 classifiers = [
     'Development Status :: 6 - Mature',
