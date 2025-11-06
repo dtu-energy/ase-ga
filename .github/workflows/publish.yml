@@ -1,15 +1,14 @@
 name: Publish to PyPI
 
-on:
-  release:
-    types: [ published ]
-    branches: [ master ]
-  workflow_dispatch:
+on: push
 
 jobs:
   build-and-publish:
+    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
     runs-on: ubuntu-latest
-    environment: publish
+    environment:
+      name: publish
+      url: https://pypi.org/p/ase-ga
     permissions:
       id-token: write
 
