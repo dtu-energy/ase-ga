@@ -1,0 +1,32 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [ published ]
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment: publish
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          version: "0.9.7"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Build ase-ga
+        run: uv build --no-sources
+
+      - name: Publish ase-ga
+        run: uv publish
