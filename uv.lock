@@ -65,7 +65,7 @@ wheels = [
 
 [[package]]
 name = "ase-ga"
-version = "1.0.3"
+version = "1.0.4b1"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
