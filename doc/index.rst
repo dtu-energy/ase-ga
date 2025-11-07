@@ -115,21 +115,16 @@ See the :ref:`api` for the full auto-generated API docs.
 Examples
 --------
 
-Browse example scripts in the ``examples/`` directory:
-
-- ``cluster_search.py`` – Gold clusters on MgO surfaces  
-- ``bulk_search.py`` – Search for Ag₂₄ bulk polymorphs using EMT potentials
+Coming up
 
 Changelog
 ---------
 
-Find release notes in ``changelog.rst``. Notably, ASE version 3.9.0 (May 2015) first introduced the ``ase.ga`` module, and recent versions have extended support for crystal structure prediction operators.
+Notably, ASE version 3.9.0 (May 2015) first introduced the ``ase.ga`` module, and recent versions have extended support for crystal structure prediction operators.
 
 Releases include:
 
-- **v0.1** – Initial extraction from ASE  
-- **v0.2** – Added bulk GA operators  
-- **...**
+- **v1.0.0** – Initial extraction from ASE  
 
 Contributing
 ------------
@@ -141,6 +136,5 @@ Support
 
 If you have questions or encounter issues:
 
-- Join the ASE mailing list or community forums  
 - File an issue at the project’s GitHub repository
 
