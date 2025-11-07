@@ -129,12 +129,12 @@ Releases include:
 Contributing
 ------------
 
-Contributions are welcome! Please follow the coding style, tests, and guidelines in ``CONTRIBUTING.md``.
+Contributions are welcome! Please follow the coding style, tests, and guidelines in :doc:`contributing`.
 
 Support
 -------
 
 If you have questions or encounter issues:
 
-- File an issue at the project’s GitHub repository
+- File an issue at the project’s GitHub repository https://github.com/dtu-energy/ase-ga/issues
 
